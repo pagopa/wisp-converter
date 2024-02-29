@@ -1,0 +1,55 @@
+package it.gov.pagopa.wispconverter.config;
+
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
+import org.springframework.data.redis.connection.lettuce.LettuceClientConfiguration;
+import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
+import org.springframework.data.redis.serializer.StringRedisSerializer;
+
+@Configuration
+public class RedisConfig {
+
+    @Value("${spring.redis.host}")
+    private String host;
+
+    @Value("${spring.redis.port}")
+    private int port;
+
+    @Value("${spring.redis.password}")
+    private String password;
+
+    @Bean
+    public ObjectMapper registerObjectMapper() {
+        ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
+        objectMapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
+        return objectMapper;
+    }
+
+    @Bean
+    public LettuceConnectionFactory registerRedisConnectionFactory() {
+        RedisStandaloneConfiguration redisConfiguration = new RedisStandaloneConfiguration(host, port);
+        redisConfiguration.setPassword(password);
+        LettuceClientConfiguration lettuceConfig = LettuceClientConfiguration.builder().useSsl().build();
+        return new LettuceConnectionFactory(redisConfiguration, lettuceConfig);
+    }
+
+    @Bean
+    @Qualifier("object")
+    public RedisTemplate<String, Object> registerRedisSimpleTemplate(final LettuceConnectionFactory connectionFactory, ObjectMapper objectMapper) {
+        RedisTemplate<String, Object> template = new RedisTemplate<>();
+        template.setKeySerializer(new StringRedisSerializer());
+        Jackson2JsonRedisSerializer<Object> redisSerializer = new Jackson2JsonRedisSerializer<>(Object.class);
+        redisSerializer.setObjectMapper(objectMapper);
+        template.setValueSerializer(redisSerializer);
+        template.setConnectionFactory(connectionFactory);
+        return template;
+    }
+}
