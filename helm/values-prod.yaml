@@ -82,7 +82,7 @@ microservice-chart:
       # required
       APPLICATIONINSIGHTS_CONNECTION_STRING: 'ai-p-connection-string'
       OTEL_EXPORTER_OTLP_HEADERS: elastic-apm-secret-token
-      REDIS_PASSWORD: 'redis-password'
+      REDIS_PASSWORD: 'redis-primary-key'
     keyvault:
       name: "pagopa-p-nodo-kv"
       tenantId: "7788edaf-0346-4068-9d79-c868aed15b3d"
