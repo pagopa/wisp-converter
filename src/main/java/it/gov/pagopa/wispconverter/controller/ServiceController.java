@@ -11,7 +11,7 @@ import javax.xml.bind.JAXBElement;
 
 @Endpoint
 @Slf4j
-public class ConversionController {
+public class ServiceController {
 
     @SoapAction("nodoInviaRPT")
     @PayloadRoot(localPart = "nodoInviaRPTReq")
