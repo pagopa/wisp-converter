@@ -46,8 +46,7 @@ public class RedisConfig {
     public RedisTemplate<String, Object> registerRedisSimpleTemplate(final LettuceConnectionFactory connectionFactory, ObjectMapper objectMapper) {
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setKeySerializer(new StringRedisSerializer());
-        Jackson2JsonRedisSerializer<Object> redisSerializer = new Jackson2JsonRedisSerializer<>(Object.class);
-        redisSerializer.setObjectMapper(objectMapper);
+        Jackson2JsonRedisSerializer<Object> redisSerializer = new Jackson2JsonRedisSerializer<>(objectMapper, Object.class);
         template.setValueSerializer(redisSerializer);
         template.setConnectionFactory(connectionFactory);
         return template;
