@@ -1,9 +1,12 @@
 package it.gov.pagopa.wispconverter.util;
 
+import it.gov.pagopa.wispconverter.exception.conversion.ConversionException;
+import it.gov.pagopa.wispconverter.model.nodoperpa.*;
+import it.gov.pagopa.wispconverter.model.unmarshall.RPTRequest;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
-import java.util.Calendar;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -35,21 +38,33 @@ public class CommonUtility {
         return Optional.ofNullable(value).orElse(false);
     }
 
-    /**
-     * @param headers header of the CSV file
-     * @param rows    data of the CSV file
-     * @return byte array of the CSV using commas (;) as separator
-     */
-    public static byte[] createCsv(List<String> headers, List<List<String>> rows) {
-        var csv = new StringBuilder();
-        csv.append(String.join(";", headers));
-        rows.forEach(row -> csv.append(System.lineSeparator()).append(String.join(";", row)));
-        return csv.toString().getBytes();
+    @SuppressWarnings({"rawtypes"})
+    public static String getCreditorInstitutionCode(RPTRequest rptRequest) throws ConversionException {
+        String creditorInstitutionCode;
+        Object header = rptRequest.getHeader();
+        if (header instanceof IntestazionePPT intestazionePPT) {
+            creditorInstitutionCode = intestazionePPT.getIdentificativoDominio();
+        } else if (header instanceof IntestazioneCarrelloPPT intestazioneCarrelloPPT) {
+            creditorInstitutionCode = intestazioneCarrelloPPT.getIdentificativoCarrello();
+        } else {
+            throw new ConversionException("");
+        }
+        return creditorInstitutionCode;
     }
 
-    public static long getTimelapse(long startTime) {
-        return Calendar.getInstance().getTimeInMillis() - startTime;
+    @SuppressWarnings({"rawtypes"})
+    public static List<byte[]> getAllRawRPTs(RPTRequest rptRequest) throws ConversionException {
+        List<byte[]> rawRPTs = new ArrayList<>();
+        Object body = rptRequest.getBody();
+        if (body instanceof NodoInviaRPT nodoInviaRPT) {
+            rawRPTs.add(nodoInviaRPT.getRpt());
+        } else if (body instanceof NodoInviaCarrelloRPT nodoInviaCarrelloRPT) {
+            rawRPTs.addAll(nodoInviaCarrelloRPT.getListaRPT().getElementoListaRPT().stream()
+                    .map(TipoElementoListaRPT::getRpt)
+                    .toList());
+        } else {
+            throw new ConversionException("");
+        }
+        return rawRPTs;
     }
-
-
 }
