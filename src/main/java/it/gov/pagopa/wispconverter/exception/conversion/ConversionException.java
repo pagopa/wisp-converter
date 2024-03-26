@@ -4,7 +4,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.springframework.validation.annotation.Validated;
 
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotNull;
 
 /**
  * Exception made in order to handle all conversion errors

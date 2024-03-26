@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 public interface IUVGeneratorClient {
 
     @Retryable(
-            exclude = FeignException.FeignClientException.class,
+            noRetryFor = FeignException.FeignClientException.class,
             maxAttemptsExpression = "${client.retry.max-attempts}",
             backoff = @Backoff(delayExpression = "${client.retry.max-delay}"))
     @PostMapping(

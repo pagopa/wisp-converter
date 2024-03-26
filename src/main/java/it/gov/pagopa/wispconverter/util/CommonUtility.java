@@ -1,8 +1,8 @@
 package it.gov.pagopa.wispconverter.util;
 
-import it.gov.pagopa.wispconverter.exception.conversion.ConversionException;
-import it.gov.pagopa.wispconverter.model.nodoperpa.*;
-import it.gov.pagopa.wispconverter.model.unmarshall.RPTRequest;
+//import it.gov.pagopa.wispconverter.exception.conversion.ConversionException;
+//import it.gov.pagopa.wispconverter.model.nodoperpa.*;
+//import it.gov.pagopa.wispconverter.model.unmarshall.RPTRequest;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
@@ -38,33 +38,33 @@ public class CommonUtility {
         return Optional.ofNullable(value).orElse(false);
     }
 
-    @SuppressWarnings({"rawtypes"})
-    public static String getCreditorInstitutionCode(RPTRequest rptRequest) throws ConversionException {
-        String creditorInstitutionCode;
-        Object header = rptRequest.getHeader();
-        if (header instanceof IntestazionePPT intestazionePPT) {
-            creditorInstitutionCode = intestazionePPT.getIdentificativoDominio();
-        } else if (header instanceof IntestazioneCarrelloPPT intestazioneCarrelloPPT) {
-            creditorInstitutionCode = intestazioneCarrelloPPT.getIdentificativoCarrello();
-        } else {
-            throw new ConversionException("");
-        }
-        return creditorInstitutionCode;
-    }
-
-    @SuppressWarnings({"rawtypes"})
-    public static List<byte[]> getAllRawRPTs(RPTRequest rptRequest) throws ConversionException {
-        List<byte[]> rawRPTs = new ArrayList<>();
-        Object body = rptRequest.getBody();
-        if (body instanceof NodoInviaRPT nodoInviaRPT) {
-            rawRPTs.add(nodoInviaRPT.getRpt());
-        } else if (body instanceof NodoInviaCarrelloRPT nodoInviaCarrelloRPT) {
-            rawRPTs.addAll(nodoInviaCarrelloRPT.getListaRPT().getElementoListaRPT().stream()
-                    .map(TipoElementoListaRPT::getRpt)
-                    .toList());
-        } else {
-            throw new ConversionException("");
-        }
-        return rawRPTs;
-    }
+//    @SuppressWarnings({"rawtypes"})
+//    public static String getCreditorInstitutionCode(RPTRequest rptRequest) throws ConversionException {
+//        String creditorInstitutionCode;
+//        Object header = rptRequest.getHeader();
+//        if (header instanceof IntestazionePPT intestazionePPT) {
+//            creditorInstitutionCode = intestazionePPT.getIdentificativoDominio();
+//        } else if (header instanceof IntestazioneCarrelloPPT intestazioneCarrelloPPT) {
+//            creditorInstitutionCode = intestazioneCarrelloPPT.getIdentificativoCarrello();
+//        } else {
+//            throw new ConversionException("");
+//        }
+//        return creditorInstitutionCode;
+//    }
+//
+//    @SuppressWarnings({"rawtypes"})
+//    public static List<byte[]> getAllRawRPTs(RPTRequest rptRequest) throws ConversionException {
+//        List<byte[]> rawRPTs = new ArrayList<>();
+//        Object body = rptRequest.getBody();
+//        if (body instanceof NodoInviaRPT nodoInviaRPT) {
+//            rawRPTs.add(nodoInviaRPT.getRpt());
+//        } else if (body instanceof NodoInviaCarrelloRPT nodoInviaCarrelloRPT) {
+//            rawRPTs.addAll(nodoInviaCarrelloRPT.getListaRPT().getElementoListaRPT().stream()
+//                    .map(TipoElementoListaRPT::getRpt)
+//                    .toList());
+//        } else {
+//            throw new ConversionException("");
+//        }
+//        return rawRPTs;
+//    }
 }
