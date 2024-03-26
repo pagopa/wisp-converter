@@ -2,9 +2,8 @@ package it.gov.pagopa.wispconverter.config;
 
 import it.gov.pagopa.wispconverter.exception.AppException;
 
-import java.util.Set;
-import javax.validation.ConstraintViolation;
-import javax.validation.Validator;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validator;
 
 import org.apache.commons.lang3.StringUtils;
 import org.aspectj.lang.JoinPoint;
@@ -14,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import java.util.Set;
 
 @Aspect
 @Component
@@ -24,7 +24,7 @@ public class ResponseValidator {
 
 
     /**
-     * This method validates the response annotated with the {@link javax.validation.constraints}
+     * This method validates the response annotated with the {@link jakarta.validation.constraints}
      *
      * @param joinPoint not used
      * @param result    the response to validate

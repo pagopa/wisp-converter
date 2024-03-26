@@ -19,11 +19,13 @@
     </springProfile>
 
     <springProfile name="default">
-        <springProperty name="ECS_SERVICE_VERSION" source="info.application.version"/>
+        <springProperty name="OTEL_SERVICE_NAME" source="otel.service.name"/>
+        <springProperty name="SERVICE_VERSION" source="info.application.version"/>
+        <springProperty name="ENV" source="info.properties.environment"/>
         <appender name="ECS_JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
             <encoder class="co.elastic.logging.logback.EcsEncoder">
                 <serviceName>${OTEL_SERVICE_NAME}</serviceName>
-                <serviceVersion>${ECS_SERVICE_VERSION}</serviceVersion>
+                <serviceVersion>${SERVICE_VERSION}</serviceVersion>
                 <serviceEnvironment>${ENV}</serviceEnvironment>
             </encoder>
         </appender>
