@@ -5,21 +5,28 @@ import it.gov.pagopa.wispconverter.client.IUVGeneratorClient;
 import it.gov.pagopa.wispconverter.exception.conversion.ConversionException;
 import it.gov.pagopa.wispconverter.model.client.iuvgenerator.IUVGeneratorRequest;
 import it.gov.pagopa.wispconverter.model.client.iuvgenerator.IUVGeneratorResponse;
-import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
-@RequiredArgsConstructor
+@Slf4j
 public class NAVGeneratorService {
 
     private final IUVGeneratorClient iuvGeneratorClient;
 
-    @Value("${wisp-converter.aux-digit}")
-    private String auxDigit;
+    private final String auxDigit;
 
-    @Value("${wisp-converter.segregation-code}")
-    private String segregationCode;
+    private final String segregationCode;
+
+    public NAVGeneratorService(@Autowired IUVGeneratorClient iuvGeneratorClient,
+                               @Value("${wisp-converter.aux-digit}") String auxDigit,
+                               @Value("${wisp-converter.segregation-code}") String segregationCode) {
+        this.iuvGeneratorClient = iuvGeneratorClient;
+        this.auxDigit = auxDigit;
+        this.segregationCode = segregationCode;
+    }
 
     public String getNAVCodeFromIUVGenerator(String creditorInstitutionCode) throws ConversionException {
         // generating request body

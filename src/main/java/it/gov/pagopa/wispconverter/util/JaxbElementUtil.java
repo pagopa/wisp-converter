@@ -1,10 +1,7 @@
 package it.gov.pagopa.wispconverter.util;
 
-;
-import it.gov.pagopa.wispconverter.entity.Primitive;
 import it.gov.pagopa.wispconverter.exception.AppError;
 import it.gov.pagopa.wispconverter.exception.AppException;
-import it.gov.pagopa.wispconverter.exception.conversion.ConversionException;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBElement;
 import jakarta.xml.bind.JAXBException;
@@ -21,13 +18,11 @@ import org.xmlsoap.schemas.soap.envelope.Body;
 import org.xmlsoap.schemas.soap.envelope.Envelope;
 import org.xmlsoap.schemas.soap.envelope.Header;
 
-import javax.xml.XMLConstants;
-import javax.xml.namespace.QName;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import java.io.*;
-import java.util.Arrays;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.util.List;
 
 @Slf4j
@@ -42,7 +37,7 @@ public class JaxbElementUtil {
     private static final String RPT_NAMESPACE_URI = "http://www.digitpa.gov.it/schemas/2011/Pagamenti/";
     private static final String RPT_LOCAL_NAME = "RPT";
 
-   private final DocumentBuilderFactory documentBuilderFactory;
+    private final DocumentBuilderFactory documentBuilderFactory;
 
     private Element convertToElement(InputSource is, String nameSpaceUri, String localName) {
         try {
@@ -52,8 +47,7 @@ public class JaxbElementUtil {
             if (nodeList.getLength() == 0) {
                 throw new AppException(AppError.PAYLOAD_CONVERSION_ERROR, "NodeList is empty");
             }
-            Element element = (Element) nodeList.item(0);
-            return element;
+            return (Element) nodeList.item(0);
         } catch (ParserConfigurationException | IOException | SAXException e) {
             log.error("Errore durante il parsing", e);
             throw new AppException(AppError.PAYLOAD_CONVERSION_ERROR, e, e.getMessage());
@@ -73,36 +67,37 @@ public class JaxbElementUtil {
     }
 
 
-    public Element convertToEnvelopeElement(byte[] source){
+    public Element convertToEnvelopeElement(byte[] source) {
         return convertToElement(new InputSource(new ByteArrayInputStream(source)), ENVELOPE_NAMESPACE_URI, ENVELOPE_LOCAL_NAME);
     }
-    public Element convertToRPTElement(byte[] source){
+
+    public Element convertToRPTElement(byte[] source) {
         return convertToElement(new InputSource(new ByteArrayInputStream(source)), RPT_NAMESPACE_URI, RPT_LOCAL_NAME);
     }
 
 
-    public <T> T getSoapHeader(Envelope envelope, Class<T> targetType){
+    public <T> T getSoapHeader(Envelope envelope, Class<T> targetType) {
         Header header = envelope.getHeader();
-        if(header == null){
+        if (header == null) {
             throw new AppException(AppError.PAYLOAD_CONVERSION_ERROR, "header is null");
         }
 
         List<Object> list = header.getAny();
-        if(list == null || list.isEmpty()){
+        if (list == null || list.isEmpty()) {
             throw new AppException(AppError.PAYLOAD_CONVERSION_ERROR, "headerValue is null or is empty");
         }
         Element element = (Element) list.get(0);
         return convertToBean(element, targetType);
     }
 
-    public <T> T getSoapBody(Envelope envelope, Class<T> targetType){
+    public <T> T getSoapBody(Envelope envelope, Class<T> targetType) {
         Body body = envelope.getBody();
-        if(body == null){
+        if (body == null) {
             throw new AppException(AppError.PAYLOAD_CONVERSION_ERROR, "body is null");
         }
 
         List<Object> list = body.getAny();
-        if(list == null || list.isEmpty()){
+        if (list == null || list.isEmpty()) {
             throw new AppException(AppError.PAYLOAD_CONVERSION_ERROR, "bodyValue is null or is empty");
         }
         Element element = (Element) list.get(0);

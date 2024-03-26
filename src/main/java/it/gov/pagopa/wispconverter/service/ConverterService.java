@@ -10,6 +10,7 @@ import gov.telematici.pagamenti.ws.ppthead.IntestazionePPT;
 import it.gov.digitpa.schemas._2011.pagamenti.CtRichiestaPagamentoTelematico;
 import it.gov.pagopa.wispconverter.entity.Primitive;
 import it.gov.pagopa.wispconverter.entity.RPTRequestEntity;
+import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.exception.conversion.ConversionException;
 import it.gov.pagopa.wispconverter.model.client.gpd.MultiplePaymentPosition;
 import it.gov.pagopa.wispconverter.model.client.gpd.PaymentPosition;
@@ -138,7 +139,7 @@ public class ConverterService {
                 default ->
                         throw new ConversionException(String.format("Unable to unmarshall RPT header or body. No valid parsing process was defined for the primitive [%s].", primitive));
             }
-        } catch (IOException e) {
+        } catch (IOException | AppException e) {
             throw new ConversionException("Unable to unmarshall Envelope content. ", e);
         }
 
