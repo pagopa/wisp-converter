@@ -4,7 +4,7 @@
     "description": "A service that permits to handle nodoInviaRPT and nodoInviaCarrelloRPT request from WISP, interfacing",
     "termsOfService": "https://www.pagopa.gov.it/",
     "title": "wisp-converter",
-    "version": "0.0.1-1-NOD-781-dismissione-wisp-sviluppo-conversione-rpt-in-pd"
+    "version": "0.0.2"
   },
   "servers": [
     {
