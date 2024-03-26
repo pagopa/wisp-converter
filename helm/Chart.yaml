@@ -2,8 +2,8 @@ apiVersion: v2
 name: pagopa-wisp-converter
 description: A service that permits to handle nodoInviaRPT and nodoInviaCarrelloRPT request from WISP, interfacing them with GPD system
 type: application
-version: 0.1.0
-appVersion: 0.0.1
+version: 0.2.0
+appVersion: 0.0.1-1-NOD-781-dismissione-wisp-sviluppo-conversione-rpt-in-pd
 dependencies:
   - name: microservice-chart
     version: 3.0.0
