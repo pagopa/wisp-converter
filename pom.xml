@@ -28,7 +28,8 @@
         <azure-sdk-bom.version>1.2.21</azure-sdk-bom.version>
         <netty.version>4.1.101.Final</netty.version>
         <cosmos-data-version>3.32.0</cosmos-data-version>
-        <openfeign-version>3.1.8</openfeign-version>
+        <openfeign-version>4.1.0</openfeign-version>
+        <cxf.version>3.0.5</cxf.version>
     </properties>
 
     <dependencies>
@@ -52,14 +53,6 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web-services</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-cache</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.github.ben-manes.caffeine</groupId>
-            <artifactId>caffeine</artifactId>
         </dependency>
 
         <!-- Spring utils-->
@@ -202,60 +195,54 @@
                     </excludes>
                 </configuration>
             </plugin>
-            <!-- Plugin required to build java classes from XSD using XJC -->
+            <!-- Plugin required to build java classes from XSD using CXF -->
             <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>jaxb2-maven-plugin</artifactId>
-                <version>2.5.0</version>
+                <groupId>org.apache.cxf</groupId>
+                <artifactId>cxf-codegen-plugin</artifactId>
+                <version>4.0.4</version>
                 <executions>
                     <execution>
                         <id>wsdl-to-java</id>
                         <phase>generate-sources</phase>
-                        <goals>
-                            <goal>xjc</goal>
-                        </goals>
                         <configuration>
-                            <sourceType>wsdl</sourceType>
-                            <sources>
-                                <source>${project.basedir}/src/main/resources/wsdl/NodoPerPa.wsdl</source>
-                            </sources>
-                            <packageName>it.gov.pagopa.wispconverter.model.nodoperpa</packageName>
-                            <clearOutputDir>false</clearOutputDir>
+                            <sourceRoot>${project.build.directory}/generated-sources</sourceRoot>
+                            <wsdlOptions>
+                                <wsdlOption>
+                                    <wsdl>${basedir}/src/main/resources/wsdl/NodoPerPa.wsdl</wsdl>
+                                    <wsdlLocation>classpath:wsdl/NodoPerPa.wsdl</wsdlLocation>
+                                </wsdlOption>
+                            </wsdlOptions>
                         </configuration>
+                        <goals>
+                            <goal>wsdl2java</goal>
+                        </goals>
                     </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.cxf</groupId>
+                <artifactId>cxf-xjc-plugin</artifactId>
+                <version>4.0.1</version>
+                <executions>
                     <execution>
                         <id>xsd-to-java</id>
                         <phase>generate-sources</phase>
                         <goals>
-                            <goal>xjc</goal>
+                            <goal>xsdtojava</goal>
                         </goals>
                         <configuration>
-                            <sources>
-                                <source>${project.basedir}/src/main/resources/xsd/PagInf_RPT_RT_6_2_0.xsd</source>
-                            </sources>
-                            <packageName>it.gov.pagopa.wispconverter.model.rpt</packageName>
-                            <clearOutputDir>false</clearOutputDir>
+                            <sourceRoot>${project.build.directory}/generated-sources</sourceRoot>
+                            <xsdOptions>
+                                <xsdOption>
+                                    <xsd>${project.basedir}/src/main/resources/xsd/PagInf_RPT_RT_6_2_0.xsd</xsd>
+                                </xsdOption>
+                            </xsdOptions>
                         </configuration>
                     </execution>
                 </executions>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.glassfish.jaxb</groupId>
-                        <artifactId>jaxb-runtime</artifactId>
-                        <version>2.3.3</version>
-                    </dependency>
-                    <dependency>
-                        <groupId>org.glassfish.jaxb</groupId>
-                        <artifactId>jaxb-core</artifactId>
-                        <version>2.3.0.1</version>
-                    </dependency>
-                    <dependency>
-                        <groupId>org.glassfish.jaxb</groupId>
-                        <artifactId>jaxb-xjc</artifactId>
-                        <version>2.3.3</version>
-                    </dependency>
-                </dependencies>
             </plugin>
+
+
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>

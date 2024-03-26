@@ -42,7 +42,7 @@ public class RedisConfig {
     }
 
     @Bean
-    @Qualifier("object")
+    @Qualifier("redisSimpleTemplate")
     public RedisTemplate<String, Object> registerRedisSimpleTemplate(final LettuceConnectionFactory connectionFactory, ObjectMapper objectMapper) {
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setKeySerializer(new StringRedisSerializer());

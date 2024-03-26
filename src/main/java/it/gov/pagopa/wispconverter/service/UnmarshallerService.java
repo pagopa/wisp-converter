@@ -1,22 +1,25 @@
 package it.gov.pagopa.wispconverter.service;
 
+import gov.telematici.pagamenti.ws.NodoInviaCarrelloRPT;
+import gov.telematici.pagamenti.ws.NodoInviaRPT;
+import gov.telematici.pagamenti.ws.TipoElementoListaRPT;
+import gov.telematici.pagamenti.ws.ppthead.IntestazioneCarrelloPPT;
+import gov.telematici.pagamenti.ws.ppthead.IntestazionePPT;
+import it.gov.digitpa.schemas._2011.pagamenti.CtRichiestaPagamentoTelematico;
 import it.gov.pagopa.wispconverter.entity.Primitive;
 import it.gov.pagopa.wispconverter.entity.RPTRequestEntity;
 import it.gov.pagopa.wispconverter.exception.conversion.ConversionException;
-import it.gov.pagopa.wispconverter.model.nodoperpa.IntestazioneCarrelloPPT;
-import it.gov.pagopa.wispconverter.model.nodoperpa.IntestazionePPT;
-import it.gov.pagopa.wispconverter.model.nodoperpa.NodoInviaCarrelloRPT;
-import it.gov.pagopa.wispconverter.model.nodoperpa.NodoInviaRPT;
-import it.gov.pagopa.wispconverter.model.rpt.CtRichiestaPagamentoTelematico;
+import it.gov.pagopa.wispconverter.model.unmarshall.RPTContent;
 import it.gov.pagopa.wispconverter.model.unmarshall.RPTRequest;
+import jakarta.xml.bind.JAXBContext;
+import jakarta.xml.bind.JAXBException;
+import jakarta.xml.bind.Unmarshaller;
+import org.bouncycastle.util.encoders.Base64;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Unmarshaller;
 import javax.xml.parsers.DocumentBuilder;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -59,9 +62,22 @@ public class UnmarshallerService {
         return response;
     }
 
-    public CtRichiestaPagamentoTelematico unmarshall(byte[] content) throws ConversionException {
+    @SuppressWarnings({"rawtypes"})
+    public CtRichiestaPagamentoTelematico unmarshall(RPTContent rptContent) throws ConversionException {
         CtRichiestaPagamentoTelematico rpt;
         try {
+            // extracting byte array containing Base64 of RPT
+            byte[] base64Content;
+            Object wrapper = rptContent.getWrappedRPT();
+            if (wrapper instanceof NodoInviaRPT nodoInviaRPT) {
+                base64Content = nodoInviaRPT.getRpt();
+            } else if (wrapper instanceof TipoElementoListaRPT tipoElementoListaRPT) {
+                base64Content = tipoElementoListaRPT.getRpt();
+            } else {
+                throw new ConversionException("Unable to unmarshall RPT content for CtRichiestaPagamentoTelematico. Invalid class for RPT wrapper.");
+            }
+            // converting Base64 to XML string
+            byte[] content = Base64.decode(new String(base64Content));
             // unmarshalling header content
             Unmarshaller rptUnmarshaller = rptContext.createUnmarshaller();
             Document rptDoc = this.docBuilder.parse(new ByteArrayInputStream(content));

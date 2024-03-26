@@ -1,10 +1,9 @@
 package it.gov.pagopa.wispconverter.exception.conversion;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.springframework.validation.annotation.Validated;
-
-import javax.validation.constraints.NotNull;
 
 /**
  * Exception made in order to handle all conversion errors
