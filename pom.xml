@@ -15,7 +15,9 @@
     <artifactId>wisp-converter</artifactId>
     <version>0.0.1</version>
     <name>pagoPA WISP Converter</name>
-    <description>A service that permits to handle nodoInviaRPT and nodoInviaCarrelloRPT request from WISP, interfacing them with GPD system</description>
+    <description>A service that permits to handle nodoInviaRPT and nodoInviaCarrelloRPT request from WISP, interfacing
+        them with GPD system
+    </description>
 
     <properties>
         <java.version>17</java.version>
