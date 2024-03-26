@@ -25,6 +25,8 @@
         <aspectjrt.version>1.9.20.1</aspectjrt.version>
         <azure-sdk-bom.version>1.2.21</azure-sdk-bom.version>
         <netty.version>4.1.101.Final</netty.version>
+        <cosmos-data-version>3.32.0</cosmos-data-version>
+        <openfeign-version>3.1.8</openfeign-version>
     </properties>
 
     <dependencies>
@@ -45,17 +47,9 @@
             <artifactId>spring-boot-starter-aop</artifactId>
         </dependency>
 
-<!--        <dependency>-->
-<!--            <groupId>org.springframework.boot</groupId>-->
-<!--            <artifactId>spring-boot-starter-data-jpa</artifactId>-->
-<!--        </dependency>-->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web-services</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -84,6 +78,27 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- Data persistence -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.azure</groupId>
+            <artifactId>azure-spring-data-cosmos</artifactId>
+            <version>${cosmos-data-version}</version>
+        </dependency>
+
+        <!-- Feign client -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-openfeign</artifactId>
+            <version>${openfeign-version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.retry</groupId>
+            <artifactId>spring-retry</artifactId>
+        </dependency>
 
         <!-- Swagger/OpenAPI -->
         <dependency>
@@ -185,7 +200,60 @@
                     </excludes>
                 </configuration>
             </plugin>
-
+            <!-- Plugin required to build java classes from XSD using XJC -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>jaxb2-maven-plugin</artifactId>
+                <version>2.5.0</version>
+                <executions>
+                    <execution>
+                        <id>wsdl-to-java</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>xjc</goal>
+                        </goals>
+                        <configuration>
+                            <sourceType>wsdl</sourceType>
+                            <sources>
+                                <source>${project.basedir}/src/main/resources/wsdl/NodoPerPa.wsdl</source>
+                            </sources>
+                            <packageName>it.gov.pagopa.wispconverter.model.nodoperpa</packageName>
+                            <clearOutputDir>false</clearOutputDir>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>xsd-to-java</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>xjc</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>${project.basedir}/src/main/resources/xsd/PagInf_RPT_RT_6_2_0.xsd</source>
+                            </sources>
+                            <packageName>it.gov.pagopa.wispconverter.model.rpt</packageName>
+                            <clearOutputDir>false</clearOutputDir>
+                        </configuration>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.glassfish.jaxb</groupId>
+                        <artifactId>jaxb-runtime</artifactId>
+                        <version>2.3.3</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.glassfish.jaxb</groupId>
+                        <artifactId>jaxb-core</artifactId>
+                        <version>2.3.0.1</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.glassfish.jaxb</groupId>
+                        <artifactId>jaxb-xjc</artifactId>
+                        <version>2.3.3</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
@@ -225,8 +293,8 @@
         </plugins>
         <resources>
             <resource>
-                <filtering>true</filtering>
                 <directory>src/main/resources</directory>
+                <filtering>true</filtering>
             </resource>
         </resources>
         <testResources>
