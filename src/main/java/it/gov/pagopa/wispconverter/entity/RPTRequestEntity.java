@@ -21,7 +21,5 @@ public class RPTRequestEntity {
 
     private String primitive;
 
-    private String header;
-
-    private String body;
+    private String payload;
 }

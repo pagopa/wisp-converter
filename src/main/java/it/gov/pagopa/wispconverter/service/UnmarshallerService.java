@@ -89,7 +89,8 @@ public class UnmarshallerService {
     }
 
     private RPTRequest<IntestazionePPT, NodoInviaRPT> unmarshallNodoInviaRPT(RPTRequestEntity entity) throws ConversionException {
-        RPTRequest<IntestazionePPT, NodoInviaRPT> rptRequest;
+        RPTRequest<IntestazionePPT, NodoInviaRPT> rptRequest = null;
+        /*
         try {
             // unmarshalling header content
             Unmarshaller intestazionePPTUnmarshaller = intestazionePPTContext.createUnmarshaller();
@@ -109,11 +110,13 @@ public class UnmarshallerService {
         } catch (JAXBException | IOException | SAXException e) {
             throw new ConversionException("Unable to unmarshall RPT header or body for NodoInviaRPT. ", e);
         }
+         */
         return rptRequest;
     }
 
     private RPTRequest<IntestazioneCarrelloPPT, NodoInviaCarrelloRPT> unmarshallNodoInviaCarrelloRPT(RPTRequestEntity entity) throws ConversionException {
-        RPTRequest<IntestazioneCarrelloPPT, NodoInviaCarrelloRPT> rptRequest;
+        RPTRequest<IntestazioneCarrelloPPT, NodoInviaCarrelloRPT> rptRequest = null;
+        /*
         try {
             // unmarshalling header content
             Unmarshaller intestazioneCarrelloPPTUnmarshaller = intestazioneCarrelloPPTContext.createUnmarshaller();
@@ -133,6 +136,7 @@ public class UnmarshallerService {
         } catch (JAXBException | IOException | SAXException e) {
             throw new ConversionException("Unable to unmarshall RPT header or body for NodoInviaCarrelloRPT. ", e);
         }
+         */
         return rptRequest;
     }
 }
