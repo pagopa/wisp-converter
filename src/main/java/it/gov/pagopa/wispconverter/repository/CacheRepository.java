@@ -6,12 +6,17 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
+import java.time.Duration;
+
 @Component
 @Slf4j
 public class CacheRepository {
 
     @Autowired
-    @Qualifier("object")
-    private RedisTemplate<String, Object> template;
+    @Qualifier("redisSimpleTemplate")
+    private RedisTemplate<String, Object> redisSimpleTemplate;
 
+    public void insert(String key, String value, long ttlInMinutes) {
+        this.redisSimpleTemplate.opsForValue().set(key, value, Duration.ofMinutes(ttlInMinutes));
+    }
 }
