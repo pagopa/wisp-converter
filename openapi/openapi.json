@@ -1,10 +1,10 @@
 {
   "openapi": "3.0.1",
   "info": {
-    "description": "A service that permits to handle nodoInviaRPT and nodoInviaCarrelloRPT request from WISP, interfacing them with GPD system",
+    "description": "A service that permits to handle nodoInviaRPT and nodoInviaCarrelloRPT request from WISP, interfacing",
     "termsOfService": "https://www.pagopa.gov.it/",
     "title": "wisp-converter",
-    "version": "0.0.1"
+    "version": "0.0.1-1-NOD-781-dismissione-wisp-sviluppo-conversione-rpt-in-pd"
   },
   "servers": [
     {
@@ -82,6 +82,89 @@
           }
         ],
         "summary": "Return OK if application is started",
+        "tags": [
+          "Home"
+        ]
+      },
+      "parameters": [
+        {
+          "description": "This header identifies the call, if not passed it is self-generated. This ID is returned in the response.",
+          "in": "header",
+          "name": "X-Request-Id",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    "/redirect": {
+      "get": {
+        "operationId": "redirect",
+        "parameters": [
+          {
+            "example": "identificativoIntermediarioPA_sessionId",
+            "in": "query",
+            "name": "sessionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirect to Checkout service.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "This header identifies the call",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Wrong or missing function key.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "This header identifies the call",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "This header identifies the call",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "text/html": {}
+            },
+            "description": "Internal server error.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "This header identifies the call",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
         "tags": [
           "Home"
         ]
