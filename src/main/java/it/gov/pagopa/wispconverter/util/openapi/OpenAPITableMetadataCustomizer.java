@@ -1,4 +1,4 @@
-package it.gov.pagopa.wispconverter.util;
+package it.gov.pagopa.wispconverter.util.openapi;
 
 import io.swagger.v3.oas.models.Operation;
 import org.springdoc.core.customizers.OperationCustomizer;

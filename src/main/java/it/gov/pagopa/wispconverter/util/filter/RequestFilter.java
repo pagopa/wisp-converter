@@ -1,4 +1,4 @@
-package it.gov.pagopa.wispconverter.util;
+package it.gov.pagopa.wispconverter.util.filter;
 
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;

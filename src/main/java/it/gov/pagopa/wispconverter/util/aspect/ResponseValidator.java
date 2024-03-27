@@ -1,4 +1,4 @@
-package it.gov.pagopa.wispconverter.util;
+package it.gov.pagopa.wispconverter.util.aspect;
 
 import it.gov.pagopa.wispconverter.exception.AppException;
 import jakarta.validation.ConstraintViolation;

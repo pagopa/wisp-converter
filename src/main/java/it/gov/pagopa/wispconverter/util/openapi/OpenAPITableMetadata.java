@@ -1,4 +1,4 @@
-package it.gov.pagopa.wispconverter.util;
+package it.gov.pagopa.wispconverter.util.openapi;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

@@ -1,4 +1,4 @@
-package it.gov.pagopa.wispconverter.util;
+package it.gov.pagopa.wispconverter.util.aspect;
 
 import it.gov.pagopa.wispconverter.controller.advice.model.ProblemJsonResponse;
 import it.gov.pagopa.wispconverter.exception.AppError;
