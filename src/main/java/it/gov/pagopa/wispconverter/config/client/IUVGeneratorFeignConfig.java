@@ -1,16 +1,18 @@
 package it.gov.pagopa.wispconverter.config.client;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class IUVGeneratorFeignConfig extends AuthFeignConfig {
 
-    private static final String IUVGENERATOR_SUBKEY_PLACEHOLDER = "${client.iuv-generator.subscription-key}";
+    @Value("${client.iuv-generator.subscription-key}")
+    private String subscriptionKey;
 
-    @Autowired
-    public IUVGeneratorFeignConfig(@Value(IUVGENERATOR_SUBKEY_PLACEHOLDER) String subscriptionKey) {
-        this.subscriptionKey = subscriptionKey;
+    @Override
+    public String getSubscriptionKey() {
+        return this.subscriptionKey;
     }
 }

@@ -1,16 +1,18 @@
 package it.gov.pagopa.wispconverter.config.client;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class DecouplerCachingFeignConfig extends AuthFeignConfig {
 
-    private static final String DECOUPLER_CACHING_SUBSCRIPTION_KEY = "${client.decoupler-caching.subscription-key}";
+    @Value("${client.decoupler-caching.subscription-key}")
+    private String subscriptionKey;
 
-    @Autowired
-    public DecouplerCachingFeignConfig(@Value(DECOUPLER_CACHING_SUBSCRIPTION_KEY) String subscriptionKey) {
-        this.subscriptionKey = subscriptionKey;
+    @Override
+    public String getSubscriptionKey() {
+        return this.subscriptionKey;
     }
 }

@@ -1,12 +1,13 @@
 package it.gov.pagopa.wispconverter.exception;
 
-import java.util.Formatter;
+import it.gov.pagopa.wispconverter.controller.advice.ErrorHandler;
 import jakarta.validation.constraints.NotNull;
-
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
+
+import java.util.Formatter;
 
 /**
  * Custom exception.

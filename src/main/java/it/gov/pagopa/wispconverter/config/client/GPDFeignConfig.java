@@ -1,16 +1,18 @@
 package it.gov.pagopa.wispconverter.config.client;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class GPDFeignConfig extends AuthFeignConfig {
 
-    private static final String GPD_SUBKEY_PLACEHOLDER = "${client.gpd.subscription-key}";
+    @Value("${client.gpd.subscription-key}")
+    private String subscriptionKey;
 
-    @Autowired
-    public GPDFeignConfig(@Value(GPD_SUBKEY_PLACEHOLDER) String subscriptionKey) {
-        this.subscriptionKey = subscriptionKey;
+    @Override
+    public String getSubscriptionKey() {
+        return this.subscriptionKey;
     }
 }

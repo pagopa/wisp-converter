@@ -1,34 +1,30 @@
 package it.gov.pagopa.wispconverter.service;
 
 import feign.FeignException;
-import it.gov.pagopa.wispconverter.client.IUVGeneratorClient;
-import it.gov.pagopa.wispconverter.exception.conversion.ConversionException;
-import it.gov.pagopa.wispconverter.model.client.iuvgenerator.IUVGeneratorRequest;
-import it.gov.pagopa.wispconverter.model.client.iuvgenerator.IUVGeneratorResponse;
+import it.gov.pagopa.wispconverter.client.iuvgenerator.IUVGeneratorClient;
+import it.gov.pagopa.wispconverter.client.iuvgenerator.model.IUVGeneratorRequest;
+import it.gov.pagopa.wispconverter.client.iuvgenerator.model.IUVGeneratorResponse;
+import it.gov.pagopa.wispconverter.exception.AppError;
+import it.gov.pagopa.wispconverter.exception.AppException;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class NAVGeneratorService {
 
     private final IUVGeneratorClient iuvGeneratorClient;
 
-    private final String auxDigit;
+    @Value("${wisp-converter.aux-digit}")
+    private String auxDigit;
 
-    private final String segregationCode;
+    @Value("${wisp-converter.segregation-code}")
+    private String segregationCode;
 
-    public NAVGeneratorService(@Autowired IUVGeneratorClient iuvGeneratorClient,
-                               @Value("${wisp-converter.aux-digit}") String auxDigit,
-                               @Value("${wisp-converter.segregation-code}") String segregationCode) {
-        this.iuvGeneratorClient = iuvGeneratorClient;
-        this.auxDigit = auxDigit;
-        this.segregationCode = segregationCode;
-    }
-
-    public String getNAVCodeFromIUVGenerator(String creditorInstitutionCode) throws ConversionException {
+    public String getNAVCodeFromIUVGenerator(String creditorInstitutionCode) {
         // generating request body
         IUVGeneratorRequest request = IUVGeneratorRequest.builder()
                 .auxDigit(this.auxDigit)
@@ -39,11 +35,11 @@ public class NAVGeneratorService {
         try {
             IUVGeneratorResponse response = this.iuvGeneratorClient.generate(creditorInstitutionCode, request);
             if (response == null) {
-                throw new ConversionException("Unable to retrieve NAV code from IUV Generator service. Retrieved null response.");
+                throw new AppException(AppError.UNKNOWN);
             }
             navCode = response.getIuv();
         } catch (FeignException e) {
-            throw new ConversionException("Unable to retrieve NAV code from IUV Generator service. An error occurred during communication with service:", e);
+            throw new AppException(AppError.UNKNOWN);
         }
         return navCode;
     }

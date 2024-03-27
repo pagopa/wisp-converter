@@ -8,12 +8,13 @@ public abstract class AuthFeignConfig {
 
     static final String HEADER_REQUEST_ID = "X-Request-Id";
     static final String HEADER_SUBSCRIPTION_KEY = "Ocp-Apim-Subscription-Key";
-    protected String subscriptionKey;
 
     @Bean
     public RequestInterceptor requestIdInterceptor() {
         return requestTemplate -> requestTemplate
                 .header(HEADER_REQUEST_ID, MDC.get("requestId"))
-                .header(HEADER_SUBSCRIPTION_KEY, subscriptionKey);
+                .header(HEADER_SUBSCRIPTION_KEY, getSubscriptionKey());
     }
+
+    public abstract String getSubscriptionKey();
 }

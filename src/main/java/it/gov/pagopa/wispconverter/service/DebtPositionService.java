@@ -1,37 +1,51 @@
 package it.gov.pagopa.wispconverter.service;
 
 import feign.FeignException;
-import it.gov.pagopa.wispconverter.client.GPDClient;
-import it.gov.pagopa.wispconverter.exception.conversion.ConversionException;
-import it.gov.pagopa.wispconverter.model.client.gpd.MultiplePaymentPosition;
-import it.gov.pagopa.wispconverter.model.client.gpd.PaymentPosition;
+import it.gov.pagopa.wispconverter.client.gpd.GPDClient;
+import it.gov.pagopa.wispconverter.client.gpd.model.MultiplePaymentPosition;
+import it.gov.pagopa.wispconverter.client.gpd.model.PaymentPosition;
+import it.gov.pagopa.wispconverter.exception.AppError;
+import it.gov.pagopa.wispconverter.exception.AppException;
+import it.gov.pagopa.wispconverter.service.mapper.DebtPositionMapper;
+import it.gov.pagopa.wispconverter.service.model.RPTContentDTO;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class DebtPositionService {
 
     private final GPDClient gpdClient;
 
-    public DebtPositionService(@Autowired GPDClient gpdClient) {
-        this.gpdClient = gpdClient;
+    private final DebtPositionMapper mapper;
+
+    public void executeBulkCreation(List<RPTContentDTO> rptContentDTOs) {
+
+        try {
+            Map<String, List<RPTContentDTO>> paymentPositionsByDomain = rptContentDTOs.stream().collect(Collectors.groupingBy(RPTContentDTO::getIdDominio));
+
+            paymentPositionsByDomain.forEach((key, value) -> {
+                List<PaymentPosition> paymentPositions = value.stream().map(mapper::toPaymentPosition).toList();
+
+                // generating request
+                MultiplePaymentPosition request = MultiplePaymentPosition.builder()
+                        .paymentPositions(paymentPositions)
+                        .build();
+
+                // communicating with GPD-core service in order to execute the operation
+                this.gpdClient.executeBulkCreation(key, request);
+            });
+
+        } catch (FeignException e) {
+            throw new AppException(AppError.UNKNOWN);
+        }
     }
 
-    public MultiplePaymentPosition executeBulkCreation(String creditorInstitutionCode, List<PaymentPosition> paymentPositions) throws ConversionException {// generating request body
-        // generating request
-        MultiplePaymentPosition request = MultiplePaymentPosition.builder()
-                .paymentPositions(paymentPositions)
-                .build();
-        try {
-            // communicating with GPD-core service in order to execute the operation
-            this.gpdClient.executeBulkCreation(creditorInstitutionCode, request);
-        } catch (FeignException e) {
-            throw new ConversionException("Unable to generate debt position with GPD-core service. An error occurred during communication with service:", e);
-        }
-        return request;
-    }
+
 }

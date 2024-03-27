@@ -3,8 +3,6 @@ package it.gov.pagopa.wispconverter.service;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.net.URI;
-
 @Service
 @Slf4j
 public class CheckoutService {
@@ -13,7 +11,7 @@ public class CheckoutService {
 
     }
 
-    public URI executeCall() {
+    public String executeCall() {
 
         // execute mapping for Checkout carts invocation
 
