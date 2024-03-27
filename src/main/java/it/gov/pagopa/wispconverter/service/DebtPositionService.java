@@ -25,13 +25,14 @@ public class DebtPositionService {
 
     private final DebtPositionMapper mapper;
 
-    public void executeBulkCreation(List<RPTContentDTO> rptContentDTOs) {
+    public void createDebtPositions(List<RPTContentDTO> rptContentDTOs) {
 
         try {
             Map<String, List<RPTContentDTO>> paymentPositionsByDomain = rptContentDTOs.stream().collect(Collectors.groupingBy(RPTContentDTO::getIdDominio));
 
-            paymentPositionsByDomain.forEach((key, value) -> {
-                List<PaymentPosition> paymentPositions = value.stream().map(mapper::toPaymentPosition).toList();
+            paymentPositionsByDomain.forEach((creditorInstitutionId, rptContents) -> {
+
+                List<PaymentPosition> paymentPositions = rptContents.stream().map(mapper::toPaymentPosition).toList();
 
                 // generating request
                 MultiplePaymentPosition request = MultiplePaymentPosition.builder()
@@ -39,7 +40,7 @@ public class DebtPositionService {
                         .build();
 
                 // communicating with GPD-core service in order to execute the operation
-                this.gpdClient.executeBulkCreation(key, request);
+                this.gpdClient.executeBulkCreation(creditorInstitutionId, request);
             });
 
         } catch (FeignException e) {
