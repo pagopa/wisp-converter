@@ -35,8 +35,8 @@ public class CacheService {
         try {
 
             rptContentDTOs.forEach(e -> {
-                String idIntermediarioPA = e.getIdIntermediarioPA();
-                String noticeNumber = e.getNav();
+                String idIntermediarioPA = e.getCreditorInstitutionBrokerId();
+                String noticeNumber = e.getNoticeNumber();
 
                 String requestIDForDecoupler = String.format(COMPOSITE_TWOVALUES_KEY_TEMPLATE, idIntermediarioPA, noticeNumber); // TODO can be optimized in a single request???
                 this.decouplerCachingClient.storeKeyInCacheByAPIM(requestIDForDecoupler);

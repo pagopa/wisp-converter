@@ -64,10 +64,10 @@ public class RPTExtractorService {
         NodoInviaRPT soapBody = jaxbElementUtil.getSoapBody(envelope, NodoInviaRPT.class);
         String creditorInstitutionId = soapHeader.getIdentificativoDominio();
         return Collections.singletonList(RPTContentDTO.builder()
-                .idDominio(creditorInstitutionId)
-                .idIntermediarioPA(soapHeader.getIdentificativoIntermediarioPA())
-                .nav(getNAVCodeFromIUVGenerator(creditorInstitutionId))
-                .multibeneficiario(false)
+                .creditorInstitutionId(creditorInstitutionId)
+                .creditorInstitutionBrokerId(soapHeader.getIdentificativoIntermediarioPA())
+                .noticeNumber(getNAVCodeFromIUVGenerator(creditorInstitutionId))
+                .multibeneficiary(false)
                 .rpt(extractRPT(soapBody.getRpt()))
                 .build());
     }
@@ -84,10 +84,10 @@ public class RPTExtractorService {
                     rpt.getDomain().getDomainId();
 
             return RPTContentDTO.builder()
-                    .idDominio(creditorInstitutionId)
-                    .idIntermediarioPA(soapHeader.getIdentificativoIntermediarioPA())
-                    .nav(getNAVCodeFromIUVGenerator(creditorInstitutionId))
-                    .multibeneficiario(isMultibeneficiary)
+                    .creditorInstitutionId(creditorInstitutionId)
+                    .creditorInstitutionBrokerId(soapHeader.getIdentificativoIntermediarioPA())
+                    .noticeNumber(getNAVCodeFromIUVGenerator(creditorInstitutionId))
+                    .multibeneficiary(isMultibeneficiary)
                     .rpt(rpt)
                     .build();
         }).toList();

@@ -11,12 +11,10 @@ import lombok.*;
 @ToString
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class RPTContentDTO {
-    private String idDominio;
-    private String idIntermediarioPA;
-    private Boolean multibeneficiario;
-    private String nav;
+
+    private String creditorInstitutionId;
+    private String creditorInstitutionBrokerId;
+    private Boolean multibeneficiary;
+    private String noticeNumber;
     private PaymentRequestDTO rpt;
-    //private CtRichiestaPagamentoTelematico rpt;
-
-
 }

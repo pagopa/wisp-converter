@@ -28,7 +28,7 @@ public class DebtPositionService {
     public void createDebtPositions(List<RPTContentDTO> rptContentDTOs) {
 
         try {
-            Map<String, List<RPTContentDTO>> paymentPositionsByDomain = rptContentDTOs.stream().collect(Collectors.groupingBy(RPTContentDTO::getIdDominio));
+            Map<String, List<RPTContentDTO>> paymentPositionsByDomain = rptContentDTOs.stream().collect(Collectors.groupingBy(RPTContentDTO::getCreditorInstitutionId));
 
             paymentPositionsByDomain.forEach((creditorInstitutionId, rptContents) -> {
 
