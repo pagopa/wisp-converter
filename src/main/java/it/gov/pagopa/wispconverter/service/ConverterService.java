@@ -8,7 +8,7 @@ import gov.telematici.pagamenti.ws.ppthead.IntestazioneCarrelloPPT;
 import gov.telematici.pagamenti.ws.ppthead.IntestazionePPT;
 import it.gov.digitpa.schemas._2011.pagamenti.CtRichiestaPagamentoTelematico;
 import it.gov.pagopa.wispconverter.client.gpd.model.PaymentPosition;
-import it.gov.pagopa.wispconverter.exception.AppError;
+import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
@@ -92,9 +92,9 @@ public class ConverterService {
     private RPTRequestEntity getRPTRequestEntity(String sessionId) {
         try {
             Optional<RPTRequestEntity> optRPTReqEntity = this.rptRequestRepository.findById(sessionId);
-            return optRPTReqEntity.orElseThrow(() -> new AppException(AppError.UNKNOWN));
+            return optRPTReqEntity.orElseThrow(() -> new AppException(AppErrorCodeMessageEnum.PERSISTENCE_));
         } catch (CosmosException | CosmosAccessException e) {
-            throw new AppException(AppError.UNKNOWN);
+            throw new AppException(AppErrorCodeMessageEnum.PERSISTENCE_);
         }
         // TODO RE
     }
@@ -135,7 +135,7 @@ public class ConverterService {
                             .build();
                 }).toList();
             }
-            default -> throw new AppException(AppError.UNKNOWN);
+            default -> throw new AppException(AppErrorCodeMessageEnum.PARSING_);
         }
     }
 

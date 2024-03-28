@@ -1,0 +1,4 @@
+# Set the default behavior, in case people don't have core.autocrlf set.
+* text=auto working-tree-encoding=UTF-8
+
+*.sh text eol=lf working-tree-encoding=UTF-8

@@ -1,176 +1,139 @@
 package it.gov.pagopa.wispconverter.controller.advice;
 
-import it.gov.pagopa.wispconverter.controller.advice.model.ProblemJsonResponse;
-import it.gov.pagopa.wispconverter.exception.AppError;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import it.gov.pagopa.wispconverter.controller.advice.model.ApiErrorResponse;
+import it.gov.pagopa.wispconverter.exception.AppClientException;
+import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
+import it.gov.pagopa.wispconverter.util.AppErrorUtil;
 import jakarta.validation.ConstraintViolationException;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.TypeMismatchException;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
-import org.springframework.http.ResponseEntity;
+import org.apache.commons.lang3.tuple.Pair;
+import org.springframework.http.*;
 import org.springframework.http.converter.HttpMessageNotReadableException;
-import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
-import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * All Exceptions are handled by this class
  */
 @ControllerAdvice
 @Slf4j
+@RequiredArgsConstructor
 public class ErrorHandler extends ResponseEntityExceptionHandler {
 
-    /**
-     * Handle if the input request is not a valid JSON
-     *
-     * @param ex      {@link HttpMessageNotReadableException} exception raised
-     * @param headers of the response
-     * @param status  of the response
-     * @param request from frontend
-     * @return a {@link ProblemJsonResponse} as response with the cause and with a 400 as HTTP status
-     */
-    @Override
-    protected ResponseEntity<Object> handleHttpMessageNotReadable(HttpMessageNotReadableException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
-        log.warn("Input not readable: ", ex);
-        var errorResponse = ProblemJsonResponse.builder()
-                .status(HttpStatus.BAD_REQUEST.value())
-                .title(AppError.BAD_REQUEST.getTitle())
-                .detail("Invalid input format")
-                .build();
-        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    private final AppErrorUtil appErrorUtil;
+
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "500", description = "Internal Server Error", content = {
+                    @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ApiErrorResponse.class), examples = {@ExampleObject(
+                            """
+                                    {
+                                        "errorId": "68ce8c6a-6d53-486c-97fe-79430d24fb7d",
+                                        "timestamp": "2023-10-09T08:01:39.421224Z",
+                                        "httpStatusCode": 500,
+                                        "httpStatusDescription": "Internal Server Error",
+                                        "appErrorCode": "WIC-0500",
+                                        "message": "An unexpected error has occurred. Please contact support"
+                                    }
+                                    """
+                    )})
+            }),
+            @ApiResponse(responseCode = "400", description = "Bad Request", content = {
+                    @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ApiErrorResponse.class), examples = {@ExampleObject(
+                            """
+                                    {
+                                        "timestamp": "2023-10-09T07:53:14.077792Z",
+                                        "httpStatusCode": 400,
+                                        "httpStatusDescription": "Bad Request",
+                                        "appErrorCode": "WIC-0400",
+                                        "message": "Bad request",
+                                        "errors": [
+                                            {
+                                                "message": "Field error in ..."
+                                            }
+                                        ]
+                                    }
+                                    """
+                    )})
+            }),
+            @ApiResponse(responseCode = "404", description = "Not found", content = {
+                    @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ApiErrorResponse.class), examples = {@ExampleObject(
+                            """
+                                    {
+                                        "timestamp": "2023-10-09T07:53:43.367312Z",
+                                        "httpStatusCode": 404,
+                                        "httpStatusDescription": "Not Found",
+                                        "appErrorCode": "WIC-0404",
+                                        "message": "Request POST /api/v1/..... not found"
+                                    }
+                                    """
+                    )})
+            })
+    })
+    @ExceptionHandler({AppException.class, AppClientException.class})
+    public ResponseEntity<ApiErrorResponse> handleAppException(AppException appEx) {
+        Pair<HttpStatus, ApiErrorResponse> httpStatusApiErrorResponsePair = appErrorUtil.buildApiErrorResponse(appEx, null, null);
+        return ResponseEntity.status(httpStatusApiErrorResponsePair.getLeft())
+                .body(httpStatusApiErrorResponsePair.getRight());
     }
 
-    /**
-     * Handle if missing some request parameters in the request
-     *
-     * @param ex      {@link MissingServletRequestParameterException} exception raised
-     * @param headers of the response
-     * @param status  of the response
-     * @param request from frontend
-     * @return a {@link ProblemJsonResponse} as response with the cause and with a 400 as HTTP status
-     */
-    @Override
-    protected ResponseEntity<Object> handleMissingServletRequestParameter(MissingServletRequestParameterException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
-        log.warn("Missing request parameter: ", ex);
-        var errorResponse = ProblemJsonResponse.builder()
-                .status(HttpStatus.BAD_REQUEST.value())
-                .title(AppError.BAD_REQUEST.getTitle())
-                .detail(ex.getMessage())
-                .build();
-        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
-    }
-
-
-    /**
-     * Customize the response for TypeMismatchException.
-     *
-     * @param ex      the exception
-     * @param headers the headers to be written to the response
-     * @param status  the selected response status
-     * @param request the current request
-     * @return a {@code ResponseEntity} instance
-     */
-    @Override
-    protected ResponseEntity<Object> handleTypeMismatch(TypeMismatchException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
-        log.warn("Type mismatch: ", ex);
-        var errorResponse = ProblemJsonResponse.builder()
-                .status(HttpStatus.BAD_REQUEST.value())
-                .title(AppError.BAD_REQUEST.getTitle())
-                .detail(String.format("Invalid value %s for property %s", ex.getValue(),
-                        ((MethodArgumentTypeMismatchException) ex).getName()))
-                .build();
-        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
-    }
-
-    /**
-     * Handle if validation constraints are unsatisfied
-     *
-     * @param ex      {@link MethodArgumentNotValidException} exception raised
-     * @param headers of the response
-     * @param status  of the response
-     * @param request from frontend
-     * @return a {@link ProblemJsonResponse} as response with the cause and with a 400 as HTTP status
-     */
     @Override
     protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
-        List<String> details = new ArrayList<>();
-        for (FieldError error : ex.getBindingResult().getFieldErrors()) {
-            details.add(error.getField() + ": " + error.getDefaultMessage());
-        }
-        var detailsMessage = String.join(", ", details);
-        log.warn("Input not valid: " + detailsMessage);
-        var errorResponse = ProblemJsonResponse.builder()
-                .status(HttpStatus.BAD_REQUEST.value())
-                .title(AppError.BAD_REQUEST.getTitle())
-                .detail(detailsMessage)
-                .build();
-        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+        List<ApiErrorResponse.ErrorMessage> errorMessages = ex.getBindingResult().getAllErrors().stream()
+                .map(oe -> ApiErrorResponse.ErrorMessage.builder().message(oe.toString()).build())
+                .collect(Collectors.toList());
+        AppException appEx = new AppException(ex, AppErrorCodeMessageEnum.BAD_REQUEST);
+        Pair<HttpStatus, ApiErrorResponse> httpStatusApiErrorResponsePair = appErrorUtil.buildApiErrorResponse(appEx, null, errorMessages);
+        return ResponseEntity.status(httpStatusApiErrorResponsePair.getLeft())
+                .body(httpStatusApiErrorResponsePair.getRight());
     }
 
-    @ExceptionHandler({ConstraintViolationException.class})
-    public ResponseEntity<ProblemJsonResponse> handleConstraintViolationException(
-            final ConstraintViolationException ex, final WebRequest request) {
-        log.warn("Validation Error raised:", ex);
-        var errorResponse = ProblemJsonResponse.builder()
-                .status(HttpStatus.BAD_REQUEST.value())
-                .title(AppError.BAD_REQUEST.getTitle())
-                .detail(ex.getMessage())
-                .build();
-        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ApiErrorResponse> handleGenericException(Exception ex, WebRequest request) {
+        String errorId = UUID.randomUUID().toString();
+        log.error(String.format("ExceptionHandler: ErrorId=[%s] %s", errorId, ex.getMessage()), ex);
+
+        AppException appEx = new AppException(ex, AppErrorCodeMessageEnum.ERROR);
+        // errorId viene usato solo per i casi di eccezioni non gestite
+        Pair<HttpStatus, ApiErrorResponse> httpStatusApiErrorResponsePair = appErrorUtil.buildApiErrorResponse(appEx, errorId, null);
+        return ResponseEntity.status(httpStatusApiErrorResponsePair.getLeft())
+                .body(httpStatusApiErrorResponsePair.getRight());
     }
 
-
-    /**
-     * Handle if a {@link AppException} is raised
-     *
-     * @param ex      {@link AppException} exception raised
-     * @param request from frontend
-     * @return a {@link ProblemJsonResponse} as response with the cause and with an appropriated HTTP status
-     */
-    @ExceptionHandler({AppException.class})
-    public ResponseEntity<ProblemJsonResponse> handleAppException(final AppException ex,
-                                                                  final WebRequest request) {
-        if (ex.getCause() != null) {
-            log.warn("App Exception raised: " + ex.getMessage() + "\nCause of the App Exception: ",
-                    ex.getCause());
-        } else {
-            log.warn("App Exception raised: ", ex);
-        }
-        var errorResponse = ProblemJsonResponse.builder()
-                .status(ex.getHttpStatus().value())
-                .title(ex.getTitle())
-                .detail(ex.getMessage())
-                .build();
-        return new ResponseEntity<>(errorResponse, ex.getHttpStatus());
+    @ExceptionHandler(ConstraintViolationException.class)
+    public final ResponseEntity<ApiErrorResponse> handleConstraintViolation(ConstraintViolationException ex, WebRequest request) {
+        List<ApiErrorResponse.ErrorMessage> errorMessages = ex.getConstraintViolations().stream()
+                .map(oe -> ApiErrorResponse.ErrorMessage.builder().message(oe.getMessage()).build())
+                .collect(Collectors.toList());
+        AppException appEx = new AppException(ex, AppErrorCodeMessageEnum.BAD_REQUEST);
+        Pair<HttpStatus, ApiErrorResponse> httpStatusApiErrorResponsePair = appErrorUtil.buildApiErrorResponse(appEx, null, errorMessages);
+        return ResponseEntity.status(httpStatusApiErrorResponsePair.getLeft())
+                .body(httpStatusApiErrorResponsePair.getRight());
     }
 
-
-    /**
-     * Handle if a {@link Exception} is raised
-     *
-     * @param ex      {@link Exception} exception raised
-     * @param request from frontend
-     * @return a {@link ProblemJsonResponse} as response with the cause and with 500 as HTTP status
-     */
-    @ExceptionHandler({Exception.class})
-    public ResponseEntity<ProblemJsonResponse> handleGenericException(final Exception ex,
-                                                                      final WebRequest request) {
-        log.error("Generic Exception raised:", ex);
-        var errorResponse = ProblemJsonResponse.builder()
-                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                .title(AppError.INTERNAL_SERVER_ERROR.getTitle())
-                .detail(ex.getMessage())
-                .build();
-        return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+    @Override
+    protected ResponseEntity<Object> handleHttpMessageNotReadable(HttpMessageNotReadableException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        List<ApiErrorResponse.ErrorMessage> errorMessages = Stream.of(ex.getCause().getMessage())
+                .map(oe -> ApiErrorResponse.ErrorMessage.builder().message(oe).build())
+                .collect(Collectors.toList());
+        AppException appEx = new AppException(ex, AppErrorCodeMessageEnum.BAD_REQUEST);
+        Pair<HttpStatus, ApiErrorResponse> httpStatusApiErrorResponsePair = appErrorUtil.buildApiErrorResponse(appEx, null, errorMessages);
+        return ResponseEntity.status(httpStatusApiErrorResponsePair.getLeft())
+                .body(httpStatusApiErrorResponsePair.getRight());
     }
+
 }

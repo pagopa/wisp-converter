@@ -1,6 +1,6 @@
 package it.gov.pagopa.wispconverter.util;
 
-import it.gov.pagopa.wispconverter.exception.AppError;
+import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBElement;
@@ -45,12 +45,12 @@ public class JaxbElementUtil {
             Document doc = db.parse(is);
             NodeList nodeList = doc.getElementsByTagNameNS(nameSpaceUri, localName);
             if (nodeList.getLength() == 0) {
-                throw new AppException(AppError.PAYLOAD_CONVERSION_ERROR, "NodeList is empty");
+                throw new AppException(AppErrorCodeMessageEnum.PARSING_JAXB_EMPTY_NODE_ELEMENT, 0);
             }
             return (Element) nodeList.item(0);
         } catch (ParserConfigurationException | IOException | SAXException e) {
             log.error("Errore durante il parsing", e);
-            throw new AppException(AppError.PAYLOAD_CONVERSION_ERROR, e, e.getMessage());
+            throw new AppException(e, AppErrorCodeMessageEnum.PARSING_JAXB_PARSE_ERROR, e.getMessage());
         }
     }
 
@@ -62,7 +62,7 @@ public class JaxbElementUtil {
             return jaxbElement.getValue();
         } catch (JAXBException e) {
             log.error("Errore durante unmarshal", e);
-            throw new AppException(AppError.PAYLOAD_CONVERSION_ERROR, e, e.getMessage());
+            throw new AppException(AppErrorCodeMessageEnum.PARSING_, e, e.getMessage());
         }
     }
 
@@ -79,12 +79,12 @@ public class JaxbElementUtil {
     public <T> T getSoapHeader(Envelope envelope, Class<T> targetType) {
         Header header = envelope.getHeader();
         if (header == null) {
-            throw new AppException(AppError.PAYLOAD_CONVERSION_ERROR, "header is null");
+            throw new AppException(AppErrorCodeMessageEnum.PARSING_, "header is null");
         }
 
         List<Object> list = header.getAny();
         if (list == null || list.isEmpty()) {
-            throw new AppException(AppError.PAYLOAD_CONVERSION_ERROR, "headerValue is null or is empty");
+            throw new AppException(AppErrorCodeMessageEnum.PARSING_, "headerValue is null or is empty");
         }
         Element element = (Element) list.get(0);
         return convertToBean(element, targetType);
@@ -93,12 +93,12 @@ public class JaxbElementUtil {
     public <T> T getSoapBody(Envelope envelope, Class<T> targetType) {
         Body body = envelope.getBody();
         if (body == null) {
-            throw new AppException(AppError.PAYLOAD_CONVERSION_ERROR, "body is null");
+            throw new AppException(AppErrorCodeMessageEnum.PARSING_, "body is null");
         }
 
         List<Object> list = body.getAny();
         if (list == null || list.isEmpty()) {
-            throw new AppException(AppError.PAYLOAD_CONVERSION_ERROR, "bodyValue is null or is empty");
+            throw new AppException(AppErrorCodeMessageEnum.PARSING_, "bodyValue is null or is empty");
         }
         Element element = (Element) list.get(0);
         return convertToBean(element, targetType);
