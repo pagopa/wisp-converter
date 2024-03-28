@@ -1,5 +1,6 @@
 package it.gov.pagopa.wispconverter.util.aspect;
 
+import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
@@ -8,7 +9,6 @@ import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.AfterReturning;
 import org.aspectj.lang.annotation.Aspect;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
@@ -45,7 +45,7 @@ public class ResponseValidator {
                     sb.append(error.getPropertyPath()).append(" ").append(error.getMessage()).append(". ");
                 }
                 var msg = StringUtils.chop(sb.toString());
-                throw new AppException(HttpStatus.INTERNAL_SERVER_ERROR, "Invalid response", msg);
+                throw new AppException(AppErrorCodeMessageEnum.ERROR, "Invalid response", msg);
             }
         }
     }
