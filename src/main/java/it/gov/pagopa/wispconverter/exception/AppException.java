@@ -11,21 +11,15 @@ public class AppException extends RuntimeException {
 
     private final transient Object[] args;
 
-    public AppException(Throwable cause, AppErrorCodeMessageEnum codeMessage) {
+    public AppException(Throwable cause, AppErrorCodeMessageEnum codeMessage, Serializable... args) {
         super(cause);
         this.codeMessage = codeMessage;
-        this.args = null;
-    }
-
-    public AppException(AppErrorCodeMessageEnum codeMessage) {
-        super();
-        this.codeMessage = codeMessage;
-        this.args = null;
+        this.args = args.length > 0 ? args.clone() : null;
     }
 
     public AppException(AppErrorCodeMessageEnum codeMessage, Serializable... args) {
         super();
         this.codeMessage = codeMessage;
-        this.args = args.clone();
+        this.args = args.length > 0 ? args.clone() : null;
     }
 }

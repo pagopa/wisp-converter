@@ -17,26 +17,22 @@ import java.util.Locale;
 @Component
 @RequiredArgsConstructor
 public class AppErrorUtil {
-  private final MessageSource messageSource;
+    private final MessageSource messageSource;
 
-  public Pair<HttpStatus, ApiErrorResponse> buildApiErrorResponse(
-          AppException appEx, String errorId, List<ApiErrorResponse.ErrorMessage> errorMessageList) {
-    Locale locale = LocaleContextHolder.getLocale();
-    AppErrorCodeMessageEnum codeMessage = appEx.getCodeMessage();
-    HttpStatus status = codeMessage.getHttpStatus();
-    String errorMessageKey = codeMessage.getErrorMessageKey();
+    public Pair<HttpStatus, ApiErrorResponse> buildApiErrorResponse(AppException appEx, String errorId, List<ApiErrorResponse.ErrorMessage> errorMessageList) {
+        Locale locale = LocaleContextHolder.getLocale();
+        AppErrorCodeMessageEnum codeMessage = appEx.getCodeMessage();
+        HttpStatus status = codeMessage.getHttpStatus();
+        String errorMessageKey = codeMessage.getErrorMessageKey();
 
-    return Pair.of(
-        status,
-        ApiErrorResponse.builder()
-            .errorId(errorId)
-            .timestamp(Instant.now())
-            .httpStatusCode(status.value())
-            .httpStatusDescription(status.getReasonPhrase())
-            .appErrorCode(
-                String.format("%s-%s", Constants.SERVICE_CODE_APP, codeMessage.getErrorCode()))
-            .message(messageSource.getMessage(errorMessageKey, appEx.getArgs(), locale))
-            .errors(errorMessageList)
-            .build());
-  }
+        return Pair.of(status, ApiErrorResponse.builder()
+                .errorId(errorId)
+                .timestamp(Instant.now())
+                .httpStatusCode(status.value())
+                .httpStatusDescription(status.getReasonPhrase())
+                .appErrorCode(String.format("%s-%s", Constants.SERVICE_CODE_APP, codeMessage.getErrorCode()))
+                .message(messageSource.getMessage(errorMessageKey, appEx.getArgs(), locale))
+                .errors(errorMessageList)
+                .build());
+    }
 }

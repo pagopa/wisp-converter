@@ -1,7 +1,7 @@
 package it.gov.pagopa.wispconverter.util.aspect;
 
-import it.gov.pagopa.wispconverter.controller.advice.model.ProblemJsonResponse;
-import it.gov.pagopa.wispconverter.exception.AppError;
+import it.gov.pagopa.wispconverter.controller.advice.model.ApiErrorResponse;
+import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -43,7 +43,7 @@ public class LoggingAspect {
     public static final String ARGS = "args";
 
     @Autowired
-    HttpServletRequest httRequest;
+    HttpServletRequest httpRequest;
 
     @Autowired
     HttpServletResponse httpResponse;
@@ -57,16 +57,16 @@ public class LoggingAspect {
     @Value("${info.properties.environment}")
     private String environment;
 
-    private static String getDetail(ResponseEntity<ProblemJsonResponse> result) {
-        if (result != null && result.getBody() != null && result.getBody().getDetail() != null) {
-            return result.getBody().getDetail();
-        } else return AppError.UNKNOWN.getDetails();
+    private static String getDetail(ResponseEntity<ApiErrorResponse> result) {
+        if (result != null && result.getBody() != null && result.getBody().getMessage() != null) {
+            return result.getBody().getMessage();
+        } else return AppErrorCodeMessageEnum.UNKNOWN.getErrorCode();
     }
 
-    private static String getTitle(ResponseEntity<ProblemJsonResponse> result) {
-        if (result != null && result.getBody() != null && result.getBody().getTitle() != null) {
-            return result.getBody().getTitle();
-        } else return AppError.UNKNOWN.getTitle();
+    private static String getTitle(ResponseEntity<ApiErrorResponse> result) {
+        if (result != null && result.getBody() != null && result.getBody().getAppErrorCode() != null) {
+            return result.getBody().getAppErrorCode();
+        } else return AppErrorCodeMessageEnum.UNKNOWN.getErrorCode();
     }
 
     public static String getExecutionTime() {
@@ -140,7 +140,7 @@ public class LoggingAspect {
     }
 
     @AfterReturning(value = "execution(* *..exception.ErrorHandler.*(..))", returning = "result")
-    public void trowingApiInvocation(JoinPoint joinPoint, ResponseEntity<ProblemJsonResponse> result) {
+    public void trowingApiInvocation(JoinPoint joinPoint, ResponseEntity<ApiErrorResponse> result) {
         MDC.put(STATUS, "KO");
         MDC.put(CODE, String.valueOf(result.getStatusCode().value()));
         MDC.put(RESPONSE_TIME, getExecutionTime());
