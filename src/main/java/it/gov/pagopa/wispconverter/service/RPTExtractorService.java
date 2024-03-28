@@ -9,7 +9,7 @@ import it.gov.digitpa.schemas._2011.pagamenti.CtRichiestaPagamentoTelematico;
 import it.gov.pagopa.wispconverter.client.iuvgenerator.IUVGeneratorClient;
 import it.gov.pagopa.wispconverter.client.iuvgenerator.model.IUVGeneratorRequest;
 import it.gov.pagopa.wispconverter.client.iuvgenerator.model.IUVGeneratorResponse;
-import it.gov.pagopa.wispconverter.exception.AppError;
+import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.service.mapper.RPTMapper;
 import it.gov.pagopa.wispconverter.service.model.RPTContentDTO;
@@ -54,7 +54,7 @@ public class RPTExtractorService {
         switch (primitive) {
             case "nodoInviaRPT" -> rptContentDTOs = extractRPTContentDTOsFromNodoInviaRPT(envelope);
             case "nodoInviaCarrelloRPT" -> rptContentDTOs = extractRPTContentDTOsFromNodoInviaCarrelloRPT(envelope);
-            default -> throw new AppException(AppError.UNKNOWN);
+            default -> throw new AppException(AppErrorCodeMessageEnum.PARSING_);
         }
         return rptContentDTOs;
     }
@@ -109,11 +109,11 @@ public class RPTExtractorService {
         try {
             IUVGeneratorResponse response = this.iuvGeneratorClient.generate(creditorInstitutionCode, request);
             if (response == null) {
-                throw new AppException(AppError.UNKNOWN);
+                throw new AppException(AppErrorCodeMessageEnum.CLIENT_);
             }
             navCode = response.getIuv();
         } catch (FeignException e) {
-            throw new AppException(AppError.UNKNOWN);
+            throw new AppException(AppErrorCodeMessageEnum.CLIENT_);
         }
         return navCode;
     }
