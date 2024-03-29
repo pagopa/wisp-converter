@@ -10,7 +10,6 @@ import javax.xml.parsers.ParserConfigurationException;
 
 @Configuration
 public class UnmarshallerConfig {
-
     @Bean
     @Scope("prototype")
     public DocumentBuilderFactory documentBuilderFactory() throws ParserConfigurationException {

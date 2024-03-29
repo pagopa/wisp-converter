@@ -1,18 +1,23 @@
 package it.gov.pagopa.wispconverter.controller.advice;
 
+import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
+import it.gov.pagopa.wispconverter.util.Constants;
+import it.gov.pagopa.wispconverter.util.aspect.LoggingAspect;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
-import org.springframework.http.*;
+import org.springframework.http.ProblemDetail;
+import org.springframework.util.Assert;
 import org.springframework.web.ErrorResponse;
-import org.springframework.web.ErrorResponseException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
-import java.util.*;
+import java.net.URI;
+import java.time.Instant;
 
 /**
  * All Exceptions are handled by this class
@@ -24,13 +29,45 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     private final MessageSource messageSource;
 
-    @ExceptionHandler(ErrorResponseException.class)
-    ProblemDetail handleAppException(ErrorResponseException e) {
-        Locale locale = LocaleContextHolder.getLocale();
-        String ff = messageSource.getMessage("error-code.PERSISTENCE_.title", Arrays.asList("ddd").toArray(), locale);
-//        return e.getBody();
-        return e.getBody();
+    @ExceptionHandler(AppException.class)
+    public ErrorResponse handleAppException(AppException appEx) {
+        return ErrorResponse.builder(appEx, forAppErrorCodeMessageEnum(appEx.getError(), appEx.getReason()))
+                .typeMessageCode("https://pagopa.it/errors/"+getAppCode(appEx.getError()))
+                .titleMessageCode("error-code."+appEx.getError().name()+".title")
+                .detailMessageCode("error-code."+appEx.getError().name()+".detail")
+                .detailMessageArguments(appEx.getArgs())
+                .build(messageSource, LocaleContextHolder.getLocale());
     }
+
+    private static ProblemDetail forAppErrorCodeMessageEnum(AppErrorCodeMessageEnum error, String reason) {
+        Assert.notNull(error, "AppErrorCodeMessageEnum is required");
+
+        ProblemDetail problemDetail = ProblemDetail.forStatus(error.getStatus());
+        problemDetail.setType(URI.create("https://pagopa.it/errors/"+getAppCode(error)));
+        problemDetail.setTitle(error.getTitle());
+        problemDetail.setDetail(reason);
+
+        problemDetail.setProperty("timestamp", Instant.now());
+        problemDetail.setProperty("error-code", getAppCode(error));
+        String operationId = MDC.get(LoggingAspect.OPERATION_ID);
+        if(operationId!=null){
+            problemDetail.setProperty("operation-id", operationId);
+        }
+        return problemDetail;
+    }
+
+    private static String getAppCode(AppErrorCodeMessageEnum error){
+        return String.format("%s-%s", Constants.SERVICE_CODE_APP, error.getCode());
+    }
+
+
+//    @ExceptionHandler(AppException.class)
+//    ProblemDetail handleAppException(AppException e) {
+//        Locale locale = LocaleContextHolder.getLocale();
+//        String ff = messageSource.getMessage("error-code.PERSISTENCE_.title", Arrays.asList("ddd").toArray(), locale);
+////        return e.getBody();
+//        return e.getBody();
+//    }
 //
 //    private static ProblemDetail forAppException(AppException e) {
 //        Assert.notNull(e, "AppException is required");
