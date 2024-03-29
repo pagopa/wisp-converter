@@ -9,7 +9,7 @@ public class AppClientException extends AppException {
 
     private final int httpStatusCode;
 
-    public AppClientException(int httpStatusCode, AppErrorCodeMessageEnum codeMessage, Serializable... args) {
+    public AppClientException(int httpStatusCode, AppErrorCodeMessageEnum codeMessage, Object... args) {
         super(codeMessage, args);
         this.httpStatusCode = httpStatusCode;
     }
