@@ -1,46 +1,36 @@
 package it.gov.pagopa.wispconverter.controller.advice;
 
-import it.gov.pagopa.wispconverter.exception.AppClientException;
-import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
-import it.gov.pagopa.wispconverter.util.Constants;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.MDC;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.*;
-import org.springframework.util.Assert;
 import org.springframework.web.ErrorResponse;
-import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.ErrorResponseException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
-import java.net.URI;
-import java.time.Instant;
-import java.util.Optional;
-import java.util.UUID;
-
-import static it.gov.pagopa.wispconverter.util.Constants.HEADER_REQUEST_ID;
-import static it.gov.pagopa.wispconverter.util.aspect.LoggingAspect.OPERATION_ID;
+import java.util.*;
 
 /**
  * All Exceptions are handled by this class
  */
-//@RestControllerAdvice
+@RestControllerAdvice
 @Slf4j
 @RequiredArgsConstructor
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
-    //    private final MessageSource messageSource;
+    private final MessageSource messageSource;
 
-//    @ExceptionHandler(AppException.class)
-//    ProblemDetail handleAppException(AppException e) {
-//        return forAppException(e);
-//    }
+    @ExceptionHandler(ErrorResponseException.class)
+    ProblemDetail handleAppException(ErrorResponseException e) {
+        Locale locale = LocaleContextHolder.getLocale();
+        String ff = messageSource.getMessage("error-code.PERSISTENCE_.title", Arrays.asList("ddd").toArray(), locale);
+//        return e.getBody();
+        return e.getBody();
+    }
 //
 //    private static ProblemDetail forAppException(AppException e) {
 //        Assert.notNull(e, "AppException is required");

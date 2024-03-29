@@ -26,12 +26,12 @@ public class RedisConfig {
     @Value("${spring.redis.password}")
     private String password;
 
-    @Bean
-    public ObjectMapper registerObjectMapper() {
-        ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
-        objectMapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
-        return objectMapper;
-    }
+//    @Bean
+//    public ObjectMapper registerObjectMapper() {
+//        ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
+//        objectMapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
+//        return objectMapper;
+//    }
 
     @Bean
     public LettuceConnectionFactory registerRedisConnectionFactory() {

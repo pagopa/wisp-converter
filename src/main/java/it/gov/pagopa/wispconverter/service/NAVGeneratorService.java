@@ -36,11 +36,11 @@ public class NAVGeneratorService {
         try {
             IUVGeneratorResponse response = this.iuvGeneratorClient.generate(creditorInstitutionCode, request);
             if (response == null) {
-                throw new AppException(AppErrorCodeMessageEnum.CLIENT_);
+                throw new AppException(AppErrorCodeMessageEnum.CLIENT_, "IUVGeneratorResponse is null");
             }
             navCode = response.getIuv();
         } catch (FeignException e) {
-            throw new AppClientException(e.status(), AppErrorCodeMessageEnum.CLIENT_);
+            throw new AppClientException(e, e.status(), AppErrorCodeMessageEnum.CLIENT_, e.getMessage());
         }
         return navCode;
     }

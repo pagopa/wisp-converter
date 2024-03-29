@@ -45,7 +45,7 @@ public class JaxbElementUtil {
             Document doc = db.parse(is);
             NodeList nodeList = doc.getElementsByTagNameNS(nameSpaceUri, localName);
             if (nodeList.getLength() == 0) {
-                throw new AppException(AppErrorCodeMessageEnum.PARSING_JAXB_EMPTY_NODE_ELEMENT, 0);
+                throw new AppException(AppErrorCodeMessageEnum.PARSING_JAXB_EMPTY_NODE_ELEMENT, "NodeList must be > 0");
             }
             return (Element) nodeList.item(0);
         } catch (ParserConfigurationException | IOException | SAXException e) {
@@ -62,7 +62,7 @@ public class JaxbElementUtil {
             return jaxbElement.getValue();
         } catch (JAXBException e) {
             log.error("Errore durante unmarshal", e);
-            throw new AppException(AppErrorCodeMessageEnum.PARSING_, e, e.getMessage());
+            throw new AppException(e, AppErrorCodeMessageEnum.PARSING_, e.getMessage());
         }
     }
 

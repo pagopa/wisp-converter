@@ -92,9 +92,9 @@ public class ConverterService {
     private RPTRequestEntity getRPTRequestEntity(String sessionId) {
         try {
             Optional<RPTRequestEntity> optRPTReqEntity = this.rptRequestRepository.findById(sessionId);
-            return optRPTReqEntity.orElseThrow(() -> new AppException(AppErrorCodeMessageEnum.PERSISTENCE_));
+            return optRPTReqEntity.orElseThrow(() -> new AppException(AppErrorCodeMessageEnum.PERSISTENCE_, String.format("User with sessionId=[%s] not found", sessionId), sessionId));
         } catch (CosmosException | CosmosAccessException e) {
-            throw new AppException(AppErrorCodeMessageEnum.PERSISTENCE_);
+            throw new AppException(e, AppErrorCodeMessageEnum.PERSISTENCE_, e.getMessage());
         }
         // TODO RE
     }
@@ -135,7 +135,7 @@ public class ConverterService {
                             .build();
                 }).toList();
             }
-            default -> throw new AppException(AppErrorCodeMessageEnum.PARSING_);
+            default -> throw new AppException(AppErrorCodeMessageEnum.PARSING_, String.format("Primitive [%S] not valid", primitive));
         }
     }
 

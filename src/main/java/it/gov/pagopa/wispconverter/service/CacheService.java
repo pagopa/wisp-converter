@@ -49,9 +49,9 @@ public class CacheService {
 
 
         } catch (FeignException e) {
-            throw new AppClientException(e.status(), AppErrorCodeMessageEnum.CLIENT_);
+            throw new AppClientException(e, e.status(), AppErrorCodeMessageEnum.CLIENT_, e.getMessage());
         } catch (RedisException e) {
-            throw new AppException(AppErrorCodeMessageEnum.PERSISTENCE_);
+            throw new AppException(e, AppErrorCodeMessageEnum.PERSISTENCE_, e.getMessage());
         }
     }
 }
