@@ -7,14 +7,21 @@ import it.gov.pagopa.wispconverter.util.aspect.LoggingAspect;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
+import org.springframework.http.ResponseEntity;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
+import org.springframework.web.util.DefaultUriBuilderFactory;
 
 import java.net.URI;
 import java.time.Instant;
@@ -27,92 +34,76 @@ import java.time.Instant;
 @RequiredArgsConstructor
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
+    @Value("${error.code.uri}")
+    private String errorCodeUri;
+    private static final String ERROR_CODE_TITLE = "error-code.%s.title";
+    private static final String ERROR_CODE_DETAIL = "error-code.%s.detail";
+
     private final MessageSource messageSource;
 
     @ExceptionHandler(AppException.class)
     public ErrorResponse handleAppException(AppException appEx) {
-        return ErrorResponse.builder(appEx, forAppErrorCodeMessageEnum(appEx.getError(), appEx.getReason()))
-                .typeMessageCode("https://pagopa.it/errors/"+getAppCode(appEx.getError()))
-                .titleMessageCode("error-code."+appEx.getError().name()+".title")
-                .detailMessageCode("error-code."+appEx.getError().name()+".detail")
+        return forAppException(appEx);
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ErrorResponse handleGenericException(Exception ex) {
+        String operationId = MDC.get(LoggingAspect.OPERATION_ID);
+        log.error(String.format("GenericException: operation-id=[%s]", operationId!=null?operationId:"n/a"), ex);
+        return forAppException(new AppException(ex, AppErrorCodeMessageEnum.ERROR, ex.getMessage()));
+    }
+
+    @Override
+    protected ResponseEntity<Object> handleExceptionInternal(Exception ex, Object body, HttpHeaders headers, HttpStatusCode statusCode, WebRequest request) {
+        if (body == null && ex instanceof ErrorResponse errorResponse) {
+            ProblemDetail problemDetail = errorResponse.updateAndGetBody(this.messageSource, LocaleContextHolder.getLocale());
+            setExtraProperties(problemDetail);
+            body = problemDetail;
+        }
+        return super.handleExceptionInternal(ex, body, headers, statusCode, request);
+    }
+
+    private ErrorResponse forAppException(AppException appEx){
+        return ErrorResponse.builder(appEx, forAppErrorCodeMessageEnum(appEx.getError(), appEx.getMessage()))
+                .titleMessageCode(String.format(ERROR_CODE_TITLE, appEx.getError().name()))
+                .detailMessageCode(String.format(ERROR_CODE_DETAIL, appEx.getError().name()))
                 .detailMessageArguments(appEx.getArgs())
                 .build(messageSource, LocaleContextHolder.getLocale());
     }
 
-    private static ProblemDetail forAppErrorCodeMessageEnum(AppErrorCodeMessageEnum error, String reason) {
+    private ProblemDetail forAppErrorCodeMessageEnum(AppErrorCodeMessageEnum error, @Nullable String detail) {
         Assert.notNull(error, "AppErrorCodeMessageEnum is required");
 
         ProblemDetail problemDetail = ProblemDetail.forStatus(error.getStatus());
-        problemDetail.setType(URI.create("https://pagopa.it/errors/"+getAppCode(error)));
+        problemDetail.setType(getTypeFromErrorCode(getAppCode(error)));
         problemDetail.setTitle(error.getTitle());
-        problemDetail.setDetail(reason);
+        problemDetail.setDetail(detail);
 
-        problemDetail.setProperty("timestamp", Instant.now());
         problemDetail.setProperty("error-code", getAppCode(error));
+        setExtraProperties(problemDetail);
+
+        return problemDetail;
+    }
+
+    private void setExtraProperties(ProblemDetail problemDetail){
+        problemDetail.setProperty("timestamp", Instant.now());
         String operationId = MDC.get(LoggingAspect.OPERATION_ID);
         if(operationId!=null){
             problemDetail.setProperty("operation-id", operationId);
         }
-        return problemDetail;
+    }
+    private URI getTypeFromErrorCode(String errorCode) {
+        return new DefaultUriBuilderFactory()
+                .uriString(errorCodeUri)
+                .pathSegment(errorCode)
+                .build();
     }
 
-    private static String getAppCode(AppErrorCodeMessageEnum error){
+    private String getAppCode(AppErrorCodeMessageEnum error){
         return String.format("%s-%s", Constants.SERVICE_CODE_APP, error.getCode());
     }
 
 
-//    @ExceptionHandler(AppException.class)
-//    ProblemDetail handleAppException(AppException e) {
-//        Locale locale = LocaleContextHolder.getLocale();
-//        String ff = messageSource.getMessage("error-code.PERSISTENCE_.title", Arrays.asList("ddd").toArray(), locale);
-////        return e.getBody();
-//        return e.getBody();
-//    }
-//
-//    private static ProblemDetail forAppException(AppException e) {
-//        Assert.notNull(e, "AppException is required");
-//        AppErrorCodeMessageEnum error = e.getError();
-//
-//        ProblemDetail problemDetail = e.getBody();
-//        problemDetail.setType(URI.create("https://pagopa.it/errors/"+getAppCode(error)));
-//        problemDetail.setTitle("error-code."+error.name()+".title");
-//        problemDetail.setDetail("error-code."+error.name()+".detail");
-//        problemDetail.setProperty("timestamp", Instant.now());
-//        problemDetail.setProperty("error-code", getAppCode(error));
-//        String operationId = MDC.get(OPERATION_ID);
-//        if(operationId!=null){
-//            problemDetail.setProperty("operation-id", operationId);
-//        }
-//        return problemDetail;
-//    }
-//
-//    private static String getAppCode(AppErrorCodeMessageEnum error){
-//        return String.format("%s-%s", Constants.SERVICE_CODE_APP, error.getCode());
-//    }
-
-//    private ErrorResponse forAppClientException(AppClientException e) {
-//        Assert.notNull(e, "AppClientException is required");
-//        AppErrorCodeMessageEnum codeMessage = e.getError();
-//
-//        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(codeMessage.getStatus(), codeMessage.getReason());
-//        problemDetail.setProperty("timestamp", Instant.now());
-//        problemDetail.setProperty("client-error-code", String.format("%s-%s", Constants.SERVICE_CODE_APP, codeMessage.getCode()));
-//
-//        Optional<String> requestIdOpt = Optional.ofNullable(MDC.get(HEADER_REQUEST_ID));
-//        requestIdOpt.ifPresent(requestId -> problemDetail.setProperty(HEADER_REQUEST_ID.toLowerCase(), requestId));
-//
-//        String errorId = UUID.randomUUID().toString();
-//        problemDetail.setProperty("error-id", errorId);
-//
-//        return ErrorResponse.builder(e, problemDetail)
-//                .detailMessageCode(codeMessage.getMessageDetailCode())
-//                .detailMessageArguments(e.getArgs())
-//                .build(messageSource, LocaleContextHolder.getLocale());
-//    }
-
-
-    //    private final AppErrorUtil appErrorUtil;
-//    private final MessageSource messageSource;
 //
 //    @ApiResponses(value = {
 //            @ApiResponse(responseCode = "500", description = "Internal Server Error", content = {

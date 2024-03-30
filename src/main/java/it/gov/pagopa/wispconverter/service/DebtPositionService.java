@@ -4,8 +4,8 @@ import feign.FeignException;
 import it.gov.pagopa.wispconverter.client.gpd.GPDClient;
 import it.gov.pagopa.wispconverter.client.gpd.model.MultiplePaymentPosition;
 import it.gov.pagopa.wispconverter.client.gpd.model.PaymentPosition;
-import it.gov.pagopa.wispconverter.exception.AppClientException;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
+import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.service.mapper.DebtPositionMapper;
 import it.gov.pagopa.wispconverter.service.model.RPTContentDTO;
 import lombok.RequiredArgsConstructor;
@@ -43,7 +43,7 @@ public class DebtPositionService {
             });
 
         } catch (FeignException e) {
-            throw new AppClientException(e, e.status(), AppErrorCodeMessageEnum.CLIENT_, e.getMessage());
+            throw new AppException(e, AppErrorCodeMessageEnum.CLIENT_GPD, e.status(), e.getMessage());
         }
     }
 

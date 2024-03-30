@@ -1,23 +1,19 @@
 package it.gov.pagopa.wispconverter.util.aspect;
 
-//import it.gov.pagopa.wispconverter.controller.advice.model.ApiErrorResponse;
-import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
-import org.aspectj.lang.annotation.AfterReturning;
-import org.aspectj.lang.annotation.Around;
-import org.aspectj.lang.annotation.Aspect;
-import org.aspectj.lang.annotation.Pointcut;
+import org.aspectj.lang.annotation.*;
 import org.aspectj.lang.reflect.CodeSignature;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.web.ErrorResponse;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -57,17 +53,21 @@ public class LoggingAspect {
     @Value("${info.properties.environment}")
     private String environment;
 
-//    private static String getDetail(ResponseEntity<ApiErrorResponse> result) {
-//        if (result != null && result.getBody() != null && result.getBody().getMessage() != null) {
-//            return result.getBody().getMessage();
-//        } else return AppErrorCodeMessageEnum.UNKNOWN.getMessageDetail();
-//    }
-//
-//    private static String getTitle(ResponseEntity<ApiErrorResponse> result) {
-//        if (result != null && result.getBody() != null && result.getBody().getAppErrorCode() != null) {
-//            return result.getBody().getAppErrorCode();
-//        } else return AppErrorCodeMessageEnum.UNKNOWN.getMessageDetail();
-//    }
+    private static String getDetail(ResponseEntity<ErrorResponse> result) {
+        String detail;
+        if (result != null && result.getBody() != null && result.getBody().getBody().getDetail() != null) {
+            return result.getBody().getBody().getDetail();
+        }
+        return null;
+    }
+
+    private static String getTitle(ResponseEntity<ErrorResponse> result) {
+        String title;
+        if (result != null && result.getBody() != null && result.getBody().getBody().getTitle() != null) {
+            return result.getBody().getBody().getTitle();
+        }
+        return null;
+    }
 
     public static String getExecutionTime() {
         String startTime = MDC.get(START_TIME);
@@ -139,16 +139,16 @@ public class LoggingAspect {
         return result;
     }
 
-//    @AfterReturning(value = "execution(* *..exception.ErrorHandler.*(..))", returning = "result")
-//    public void trowingApiInvocation(JoinPoint joinPoint, ResponseEntity<ApiErrorResponse> result) {
-//        MDC.put(STATUS, "KO");
-//        MDC.put(CODE, String.valueOf(result.getStatusCode().value()));
-//        MDC.put(RESPONSE_TIME, getExecutionTime());
-//        MDC.put(FAULT_CODE, getTitle(result));
-//        MDC.put(FAULT_DETAIL, getDetail(result));
-//        log.info("Failed API operation {} - error: {}", MDC.get(METHOD), result);
-//        MDC.clear();
-//    }
+    @AfterReturning(value = "execution(* *..exception.ErrorHandler.*(..))", returning = "result")
+    public void trowingApiInvocation(JoinPoint joinPoint, ResponseEntity<ErrorResponse> result) {
+        MDC.put(STATUS, "KO");
+        MDC.put(CODE, String.valueOf(result.getStatusCode().value()));
+        MDC.put(RESPONSE_TIME, getExecutionTime());
+        MDC.put(FAULT_CODE, getTitle(result));
+        MDC.put(FAULT_DETAIL, getDetail(result));
+        log.info("Failed API operation {} - error: {}", MDC.get(METHOD), result);
+        MDC.clear();
+    }
 
     @Around(value = "repository() || service()")
     public Object logTrace(ProceedingJoinPoint joinPoint) throws Throwable {

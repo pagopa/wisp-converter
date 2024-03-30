@@ -37,7 +37,8 @@ public class RedirectController {
     })
     @GetMapping
     public void redirect(@Parameter(description = "", example = "identificativoIntermediarioPA_sessionId")
-                         @NotBlank(message = "{redirect.session-id.not-blank}") @RequestParam("sessionId") String sessionId,
+                         @NotBlank(message = "{redirect.session-id.not-blank}")
+                             @RequestParam("sessionId") String sessionId,
                          HttpServletResponse response) throws IOException {
         ConversionResultDTO conversionResultDTO = converterService.convert(sessionId);
         response.sendRedirect(conversionResultDTO.getUri());

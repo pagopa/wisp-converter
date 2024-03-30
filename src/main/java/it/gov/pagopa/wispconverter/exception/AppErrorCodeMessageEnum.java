@@ -6,23 +6,24 @@ import org.springframework.http.HttpStatusCode;
 
 @Getter
 public enum AppErrorCodeMessageEnum {
-    UNKNOWN("0000", "Unknown error", HttpStatus.INTERNAL_SERVER_ERROR),
-    ERROR("0500", "System error",  HttpStatus.INTERNAL_SERVER_ERROR),
-    BAD_REQUEST("0400", "Bad Request",  HttpStatus.BAD_REQUEST),
-    PARSING_("1000", "a", HttpStatus.BAD_REQUEST),
-    PARSING_JAXB_EMPTY_NODE_ELEMENT("1001", "JAXB node element is empty", HttpStatus.BAD_REQUEST),
-    PARSING_JAXB_PARSE_ERROR("1002", "JAXB error during parse", HttpStatus.BAD_REQUEST),
-    PERSISTENCE_("2000", "Persistence error", HttpStatus.BAD_REQUEST),
-    CLIENT_("3000", "cvv", HttpStatus.BAD_REQUEST),
+    ERROR                   ( 500, "System error",                  "{0}",                                      HttpStatus.INTERNAL_SERVER_ERROR),
+    PARSE_ERROR             (1000, "Parse error",                   "Error while parsing: {0}",                 HttpStatus.BAD_REQUEST),
+    PRIMITIVE_NOT_VALID     (1001, "Primitive not valid",           "Primitive [{0}] not valid",                HttpStatus.NOT_ACCEPTABLE),
+    RPT_NOT_FOUND           (1002, "RPT not found",                 "RPT with sessionId [{0}] not found",       HttpStatus.NOT_FOUND),
+    CLIENT_IUV_GENERATOR    (1003, "IUVGeneratorClient error",      "IUVGeneratorClient status [{0}] - {1}",    HttpStatus.EXPECTATION_FAILED),
+    CLIENT_GPD              (1004, "GPDClient error",               "GPDClient status [{0}] - {1}",             HttpStatus.EXPECTATION_FAILED),
+    CLIENT_DECOUPLER_CACHING(1005, "DecouplerCachingClient error",  "DecouplerCachingClient status [{0}] - {1}",HttpStatus.EXPECTATION_FAILED),
     ;
 
-    private final String code;
+    private final Integer code;
     private final String title;
+    private final String detail;
     private final HttpStatusCode status;
 
-    AppErrorCodeMessageEnum(String code, String title, HttpStatus status) {
+    AppErrorCodeMessageEnum(Integer code, String title, String detail, HttpStatus status) {
         this.code = code;
         this.title = title;
+        this.detail = detail;
         this.status = status;
     }
 }

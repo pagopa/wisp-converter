@@ -55,7 +55,6 @@ public class WebMvcConfig implements WebMvcConfigurer {
         var resourceBundleMessageSource=new ResourceBundleMessageSource();
         resourceBundleMessageSource.setBasename("i18n/messages"); // directory with messages_XX.properties
         resourceBundleMessageSource.setDefaultLocale(Locale.ENGLISH);
-        resourceBundleMessageSource.setUseCodeAsDefaultMessage(true);
         resourceBundleMessageSource.setDefaultEncoding(StandardCharsets.UTF_8.name());
         resourceBundleMessageSource.setAlwaysUseMessageFormat(true);
         return resourceBundleMessageSource;

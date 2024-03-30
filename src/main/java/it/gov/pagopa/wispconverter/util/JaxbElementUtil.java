@@ -45,12 +45,11 @@ public class JaxbElementUtil {
             Document doc = db.parse(is);
             NodeList nodeList = doc.getElementsByTagNameNS(nameSpaceUri, localName);
             if (nodeList.getLength() == 0) {
-                throw new AppException(AppErrorCodeMessageEnum.PARSING_JAXB_EMPTY_NODE_ELEMENT, "NodeList must be > 0");
+                throw new AppException(AppErrorCodeMessageEnum.PARSE_ERROR, "NodeList must be > 0");
             }
             return (Element) nodeList.item(0);
         } catch (ParserConfigurationException | IOException | SAXException e) {
-            log.error("Errore durante il parsing", e);
-            throw new AppException(e, AppErrorCodeMessageEnum.PARSING_JAXB_PARSE_ERROR, e.getMessage());
+            throw new AppException(e, AppErrorCodeMessageEnum.PARSE_ERROR, e.getMessage());
         }
     }
 
@@ -61,8 +60,7 @@ public class JaxbElementUtil {
             JAXBElement<T> jaxbElement = unmarshaller.unmarshal(element, targetType);
             return jaxbElement.getValue();
         } catch (JAXBException e) {
-            log.error("Errore durante unmarshal", e);
-            throw new AppException(e, AppErrorCodeMessageEnum.PARSING_, e.getMessage());
+            throw new AppException(e, AppErrorCodeMessageEnum.PARSE_ERROR, e.getMessage());
         }
     }
 
@@ -79,12 +77,12 @@ public class JaxbElementUtil {
     public <T> T getSoapHeader(Envelope envelope, Class<T> targetType) {
         Header header = envelope.getHeader();
         if (header == null) {
-            throw new AppException(AppErrorCodeMessageEnum.PARSING_, "header is null");
+            throw new AppException(AppErrorCodeMessageEnum.PARSE_ERROR, "header is null");
         }
 
         List<Object> list = header.getAny();
         if (list == null || list.isEmpty()) {
-            throw new AppException(AppErrorCodeMessageEnum.PARSING_, "headerValue is null or is empty");
+            throw new AppException(AppErrorCodeMessageEnum.PARSE_ERROR, "headerValue is null or is empty");
         }
         Element element = (Element) list.get(0);
         return convertToBean(element, targetType);
@@ -93,12 +91,12 @@ public class JaxbElementUtil {
     public <T> T getSoapBody(Envelope envelope, Class<T> targetType) {
         Body body = envelope.getBody();
         if (body == null) {
-            throw new AppException(AppErrorCodeMessageEnum.PARSING_, "body is null");
+            throw new AppException(AppErrorCodeMessageEnum.PARSE_ERROR, "body is null");
         }
 
         List<Object> list = body.getAny();
         if (list == null || list.isEmpty()) {
-            throw new AppException(AppErrorCodeMessageEnum.PARSING_, "bodyValue is null or is empty");
+            throw new AppException(AppErrorCodeMessageEnum.PARSE_ERROR, "bodyValue is null or is empty");
         }
         Element element = (Element) list.get(0);
         return convertToBean(element, targetType);

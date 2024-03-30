@@ -4,7 +4,6 @@ import feign.FeignException;
 import it.gov.pagopa.wispconverter.client.iuvgenerator.IUVGeneratorClient;
 import it.gov.pagopa.wispconverter.client.iuvgenerator.model.IUVGeneratorRequest;
 import it.gov.pagopa.wispconverter.client.iuvgenerator.model.IUVGeneratorResponse;
-import it.gov.pagopa.wispconverter.exception.AppClientException;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import lombok.RequiredArgsConstructor;
@@ -35,13 +34,9 @@ public class NAVGeneratorService {
         String navCode;
         try {
             IUVGeneratorResponse response = this.iuvGeneratorClient.generate(creditorInstitutionCode, request);
-            if (response == null) {
-                throw new AppException(AppErrorCodeMessageEnum.CLIENT_, "IUVGeneratorResponse is null");
-            }
-            navCode = response.getIuv();
+            return response.getIuv();
         } catch (FeignException e) {
-            throw new AppClientException(e, e.status(), AppErrorCodeMessageEnum.CLIENT_, e.getMessage());
+            throw new AppException(e, AppErrorCodeMessageEnum.CLIENT_IUV_GENERATOR, e.status(), e.getMessage());
         }
-        return navCode;
     }
 }
