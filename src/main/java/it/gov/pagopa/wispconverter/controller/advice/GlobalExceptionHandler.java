@@ -2,8 +2,8 @@ package it.gov.pagopa.wispconverter.controller.advice;
 
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
+import it.gov.pagopa.wispconverter.util.CommonUtility;
 import it.gov.pagopa.wispconverter.util.Constants;
-import it.gov.pagopa.wispconverter.util.aspect.LoggingAspect;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
@@ -25,6 +25,7 @@ import org.springframework.web.util.DefaultUriBuilderFactory;
 
 import java.net.URI;
 import java.time.Instant;
+import java.util.Map;
 
 /**
  * All Exceptions are handled by this class
@@ -39,6 +40,10 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     private static final String ERROR_CODE_TITLE = "error-code.%s.title";
     private static final String ERROR_CODE_DETAIL = "error-code.%s.detail";
 
+    private static final String EXTRA_FIELD_OPERATION_ID = "operation-id";
+    private static final String EXTRA_FIELD_ERROR_TIMESTAMP = "timestamp";
+    private static final String EXTRA_FIELD_ERROR_CODE = "error-code";
+
     private final MessageSource messageSource;
 
     @ExceptionHandler(AppException.class)
@@ -48,7 +53,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ErrorResponse handleGenericException(Exception ex) {
-        String operationId = MDC.get(LoggingAspect.OPERATION_ID);
+        String operationId = MDC.get(Constants.MDC_OPERATION_ID);
         log.error(String.format("GenericException: operation-id=[%s]", operationId!=null?operationId:"n/a"), ex);
         return forAppException(new AppException(ex, AppErrorCodeMessageEnum.ERROR, ex.getMessage()));
     }
@@ -58,9 +63,29 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         if (body == null && ex instanceof ErrorResponse errorResponse) {
             ProblemDetail problemDetail = errorResponse.updateAndGetBody(this.messageSource, LocaleContextHolder.getLocale());
             setExtraProperties(problemDetail);
+            setMDCError(statusCode, problemDetail);
             body = problemDetail;
         }
         return super.handleExceptionInternal(ex, body, headers, statusCode, request);
+    }
+
+    private void setMDCError(HttpStatusCode statusCode, ProblemDetail problemDetail){
+        setMDCCloseOperation("KO", statusCode);
+
+        MDC.put(Constants.MDC_ERROR_TITLE, problemDetail.getTitle());
+        MDC.put(Constants.MDC_ERROR_DETAIL, problemDetail.getDetail());
+
+        Map<String, Object> properties = problemDetail.getProperties();
+        if (properties != null) {
+            String errorCode = (String)properties.get(EXTRA_FIELD_ERROR_CODE);
+            MDC.put(Constants.MDC_ERROR_CODE, errorCode);
+        }
+    }
+    private void setMDCCloseOperation(String status, HttpStatusCode statusCode){
+        MDC.put(Constants.MDC_STATUS, status);
+        MDC.put(Constants.MDC_STATUS_CODE, String.valueOf(statusCode.value()));
+        String executionTime = CommonUtility.getExecutionTime(MDC.get(Constants.MDC_START_TIME));
+        MDC.put(Constants.MDC_EXECUTION_TIME, executionTime);
     }
 
     private ErrorResponse forAppException(AppException appEx){
@@ -79,17 +104,18 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         problemDetail.setTitle(error.getTitle());
         problemDetail.setDetail(detail);
 
-        problemDetail.setProperty("error-code", getAppCode(error));
+        problemDetail.setProperty(EXTRA_FIELD_ERROR_CODE, getAppCode(error));
         setExtraProperties(problemDetail);
+        setMDCError(error.getStatus(), problemDetail);
 
         return problemDetail;
     }
 
     private void setExtraProperties(ProblemDetail problemDetail){
-        problemDetail.setProperty("timestamp", Instant.now());
-        String operationId = MDC.get(LoggingAspect.OPERATION_ID);
+        problemDetail.setProperty(EXTRA_FIELD_ERROR_TIMESTAMP, Instant.now());
+        String operationId = MDC.get(Constants.MDC_OPERATION_ID);
         if(operationId!=null){
-            problemDetail.setProperty("operation-id", operationId);
+            problemDetail.setProperty(EXTRA_FIELD_OPERATION_ID, operationId);
         }
     }
     private URI getTypeFromErrorCode(String errorCode) {
