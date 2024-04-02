@@ -1,5 +1,6 @@
-package it.gov.pagopa.wispconverter.scheduler;
+package it.gov.pagopa.wispconverter.config;
 
+import it.gov.pagopa.wispconverter.service.ConfigCacheService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
@@ -11,7 +12,7 @@ import java.time.ZonedDateTime;
 @Configuration
 @Slf4j
 @EnableScheduling
-public class ScheduledJobs {
+public class ScheduledJobsConfig {
 
     @Autowired
     private ConfigCacheService configCacheService;

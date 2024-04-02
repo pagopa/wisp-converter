@@ -1,4 +1,4 @@
-package it.gov.pagopa.wispconverter.scheduler;
+package it.gov.pagopa.wispconverter.service;
 
 import it.gov.pagopa.wispconverter.client.cache.ApiClient;
 import it.gov.pagopa.wispconverter.client.cache.model.ConfigDataV1;
