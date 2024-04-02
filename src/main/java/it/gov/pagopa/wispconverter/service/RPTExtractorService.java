@@ -186,7 +186,7 @@ public class RPTExtractorService {
             IUVGeneratorResponse response = this.iuvGeneratorClient.generate(creditorInstitutionCode, request);
             navCode = response.getIuv();
         } catch (FeignException e) {
-            throw new AppException(AppErrorCodeMessageEnum.CLIENT_);
+            throw new AppException(AppErrorCodeMessageEnum.CLIENT_IUVGENERATOR_INVALID_RESPONSE, e.status(), e.getMessage());
         }
         return navCode;
     }

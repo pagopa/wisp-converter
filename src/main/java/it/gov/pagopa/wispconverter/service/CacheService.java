@@ -1,6 +1,7 @@
 package it.gov.pagopa.wispconverter.service;
 
 import feign.FeignException;
+import io.lettuce.core.RedisException;
 import it.gov.pagopa.wispconverter.client.decoupler.DecouplerCachingClient;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
@@ -43,6 +44,8 @@ public class CacheService {
 
         } catch (FeignException e) {
             throw new AppException(e, AppErrorCodeMessageEnum.CLIENT_DECOUPLER_CACHING, e.status(), e.getMessage());
+        } catch (RedisException e) {
+            throw new AppException(e, AppErrorCodeMessageEnum.PERSISTENCE_REQUESTID_CACHING_ERROR, e.getMessage());
         }
     }
 }

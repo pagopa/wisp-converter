@@ -49,7 +49,7 @@ public class RedirectController {
         } catch (AppException e) {
             errorCode = String.valueOf(e.getError().getCode());
         } catch (Exception e) {
-            errorCode = String.valueOf(AppErrorCodeMessageEnum.ERROR.getCode());
+            errorCode = String.valueOf(AppErrorCodeMessageEnum.GENERIC_ERROR.getCode());
         }
         ModelAndView modelAndView = new ModelAndView();
         modelAndView.setViewName("error.html");

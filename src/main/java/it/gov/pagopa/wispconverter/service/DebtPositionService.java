@@ -117,7 +117,9 @@ public class DebtPositionService {
                 needs the explicit setting of the organization fiscal code.
                 */
                 else {
-                    checkIBANValidity(iban, postalIban);
+                    if (iban == null) {
+                        throw new AppException(AppErrorCodeMessageEnum.VALIDATION_INVALID_IBANS);
+                    }
                     transfer.setIban(iban);
                     transfer.setPostalIban(postalIban);
                     transfer.setOrganizationFiscalCode(organizationFiscalCode);
@@ -141,12 +143,6 @@ public class DebtPositionService {
 
     private boolean isPostalIBAN(String iban) {
         return iban != null && iban.substring(5, 10).equals(posteItalianeABICode);
-    }
-
-    private void checkIBANValidity(String iban, String postalIban) throws AppException {
-        if (iban == null && postalIban == null) {
-            throw new AppException(AppErrorCodeMessageEnum.LOGIC_);
-        }
     }
 
     private String getOrganizationFiscalCode(CommonRPTFieldsDTO commonRPTFieldsDTO, PaymentRequestDTO rpt) {

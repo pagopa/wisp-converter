@@ -52,9 +52,9 @@ public class CheckoutService {
             }
             Collection<String> locationHeader = response.headers().get("location");
             if (locationHeader == null) {
-                throw new AppException(AppErrorCodeMessageEnum.CLIENT_CHECKOUT, status);
+                throw new AppException(AppErrorCodeMessageEnum.CLIENT_CHECKOUT_NO_REDIRECT_LOCATION);
             }
-            location = locationHeader.stream().findFirst().orElseThrow(() -> new AppException(AppErrorCodeMessageEnum.CLIENT_CHECKOUT, status));
+            location = locationHeader.stream().findFirst().orElseThrow(() -> new AppException(AppErrorCodeMessageEnum.CLIENT_CHECKOUT_INVALID_REDIRECT_LOCATION));
         }
 
         return location;
@@ -66,7 +66,7 @@ public class CheckoutService {
         Station station = stations.entrySet().stream()
                 .filter(entry -> entry.getValue().getStationCode().equals(stationId))
                 .findFirst()
-                .orElseThrow(() -> new AppException(AppErrorCodeMessageEnum.CLIENT_CHECKOUT))
+                .orElseThrow(() -> new AppException(AppErrorCodeMessageEnum.CONFIGURATION_INVALID_STATION, stationId))
                 .getValue();
         Redirect redirect = station.getRedirect();
 
