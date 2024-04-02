@@ -7,9 +7,10 @@ import org.springframework.http.HttpStatusCode;
 @Getter
 public enum AppErrorCodeMessageEnum {
     ERROR(500, "System error", "{0}", HttpStatus.INTERNAL_SERVER_ERROR),
-    PARSING_GENERIC_ERROR(1000, "Parse error", "Error while parsing payload. Generic error: {0}", HttpStatus.BAD_REQUEST),
-    PARSING_INVALID_HEADER(1001, "Parse error", "Error while parsing payload. Generic error: {0}", HttpStatus.BAD_REQUEST),
-    PARSING_INVALID_BODY(1002, "Parse error", "Error while parsing payload. Generic error: {0}", HttpStatus.BAD_REQUEST),
+    PARSING_GENERIC_ERROR(1000, "Generic parsing error", "Error while parsing payload. Generic error: {0}", HttpStatus.BAD_REQUEST),
+    PARSING_INVALID_HEADER(1001, "SOAP Header parsing error", "Error while parsing payload. The SOAP header in payload is invalid: {0}", HttpStatus.BAD_REQUEST),
+    PARSING_INVALID_BODY(1002, "SOAP Body parsing error", "Error while parsing payload. The SOAP body in payload is invalid: {0}", HttpStatus.BAD_REQUEST),
+    PARSING_INVALID_XML_NODES(1003, "XML parsing error", "Error while parsing payload. The list of nodes extracted from document must be greater than zero, but they are zero.", HttpStatus.BAD_REQUEST),
 
 
     PARSING_INVALID_ZIPPED_PAYLOAD(1001, "Parse error", "Error while parsing payload. Cannot unzip payload correctly.", HttpStatus.BAD_REQUEST),
