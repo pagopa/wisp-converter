@@ -5,8 +5,6 @@ import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
 import it.gov.pagopa.wispconverter.service.model.CommonRPTFieldsDTO;
-import it.gov.pagopa.wispconverter.service.model.ConversionResultDTO;
-import it.gov.pagopa.wispconverter.util.FileReader;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -29,51 +27,29 @@ public class ConverterService {
 
     private final RPTRequestRepository rptRequestRepository;
 
-    private final FileReader fileReader;
 
+    public String convert(String sessionId) throws IOException {
 
-    public ConversionResultDTO convert(String sessionId) {
+        // get RPT request entity from database
+        RPTRequestEntity rptRequestEntity = getRPTRequestEntity(sessionId);
 
-        ConversionResultDTO conversionResultDTO = null;
-        try {
-            // get RPT request entity from database
-            RPTRequestEntity rptRequestEntity = getRPTRequestEntity(sessionId);
+        // unmarshalling and mapping RPT content from request entity
+        CommonRPTFieldsDTO commonRPTFieldsDTO = this.rptExtractorService.extractRPTContentDTOs(rptRequestEntity.getPrimitive(), rptRequestEntity.getPayload());
 
-            // unmarshalling and mapping RPT content from request entity
-            CommonRPTFieldsDTO commonRPTFieldsDTO = this.rptExtractorService.extractRPTContentDTOs(rptRequestEntity.getPrimitive(), rptRequestEntity.getPayload());
+        // calling GPD creation API in order to generate the debt position associated to RPTs
+        this.debtPositionService.createDebtPositions(commonRPTFieldsDTO);
 
-            // calling GPD creation API in order to generate the debt position associated to RPTs
-            this.debtPositionService.createDebtPositions(commonRPTFieldsDTO);
+        // call APIM policy for save key for decoupler and save in Redis cache the mapping of the request identifier needed for RT generation in next steps
+        this.cacheService.storeRequestMappingInCache(commonRPTFieldsDTO, sessionId);
 
-            // call APIM policy for save key for decoupler and save in Redis cache the mapping of the request identifier needed for RT generation in next steps
-            this.cacheService.storeRequestMappingInCache(commonRPTFieldsDTO, sessionId);
-
-            // execute communication with Checkout service and set the redirection URI as response
-            String redirectURI = this.checkoutService.executeCall(commonRPTFieldsDTO);
-            conversionResultDTO.setUri(redirectURI);
-
-        } catch (IOException e) {
-            log.error("Error while executing RPT conversion. ", e);
-            conversionResultDTO = getHTMLErrorPage();
-        }
-
-        return conversionResultDTO;
+        // execute communication with Checkout service and set the redirection URI as response
+        return this.checkoutService.executeCall(commonRPTFieldsDTO);
     }
 
     private RPTRequestEntity getRPTRequestEntity(String sessionId) {
         Optional<RPTRequestEntity> optRPTReqEntity = this.rptRequestRepository.findById(sessionId);
-        return optRPTReqEntity.orElseThrow(() -> new AppException(AppErrorCodeMessageEnum.RPT_NOT_FOUND, sessionId));
+        return optRPTReqEntity.orElseThrow(() -> new AppException(AppErrorCodeMessageEnum.PERSISTENCE_RPT_NOT_FOUND, sessionId));
 
         // TODO RE
-    }
-
-    private ConversionResultDTO getHTMLErrorPage() {
-        ConversionResultDTO conversionResultDTO = ConversionResultDTO.builder().build();
-        try {
-            conversionResultDTO.setErrorPage(this.fileReader.readFileFromResources("static/error.html"));
-        } catch (IOException e) {
-            conversionResultDTO.setErrorPage("<!DOCTYPE html><html lang=\"en\"><head></head><body>No content found</body></html>");
-        }
-        return conversionResultDTO;
     }
 }

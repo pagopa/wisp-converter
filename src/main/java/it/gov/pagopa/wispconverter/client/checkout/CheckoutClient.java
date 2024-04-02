@@ -1,6 +1,7 @@
 package it.gov.pagopa.wispconverter.client.checkout;
 
 import feign.FeignException;
+import feign.Response;
 import it.gov.pagopa.wispconverter.client.checkout.model.Cart;
 import it.gov.pagopa.wispconverter.config.client.CheckoutFeignConfig;
 import org.springframework.cloud.openfeign.FeignClient;
@@ -20,5 +21,5 @@ public interface CheckoutClient {
     @PostMapping(
             value = "${client.checkout.api.carts.path}",
             consumes = MediaType.APPLICATION_JSON_VALUE)
-    void executeCreation(@RequestBody Cart body);
+    Response executeCreation(@RequestBody Cart body);
 }

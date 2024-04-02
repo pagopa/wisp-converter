@@ -23,6 +23,6 @@ echo "\n------------------------------------------------------------------------
 echo "Downloaded all files!"
 echo "\n------------------------------------------------------------------------"
 echo "Compiling class from new WSDL and XSD files..."
-mvn clean package -Dmaven.test.skip=true
+mvn clean compile
 echo "\n\nEnded compilation!"
 echo "\n------------------------------------------------------------------------"

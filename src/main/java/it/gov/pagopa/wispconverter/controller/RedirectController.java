@@ -8,21 +8,22 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
+import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.service.ConverterService;
-import it.gov.pagopa.wispconverter.service.model.ConversionResultDTO;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.MediaType;
+import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.ModelAndView;
 
 import java.io.IOException;
 
-@RestController
+@Controller
 @RequestMapping("/redirect")
 @Validated
 @RequiredArgsConstructor
@@ -36,11 +37,23 @@ public class RedirectController {
             @ApiResponse(responseCode = "302", description = "Redirect to Checkout service.", content = @Content(schema = @Schema()))
     })
     @GetMapping
-    public void redirect(@Parameter(description = "", example = "identificativoIntermediarioPA_sessionId")
-                         @NotBlank(message = "{redirect.session-id.not-blank}")
-                             @RequestParam("sessionId") String sessionId,
-                         HttpServletResponse response) throws IOException {
-        ConversionResultDTO conversionResultDTO = converterService.convert(sessionId);
-        response.sendRedirect(conversionResultDTO.getUri());
+    public ModelAndView redirect(@Parameter(description = "", example = "identificativoIntermediarioPA_sessionId")
+                                 @NotBlank(message = "{redirect.session-id.not-blank}")
+                                 @RequestParam("sessionId") String sessionId,
+                                 HttpServletResponse response) throws IOException {
+
+        String errorCode;
+        try {
+            response.sendRedirect(converterService.convert(sessionId));
+            return null;
+        } catch (AppException e) {
+            errorCode = String.valueOf(e.getError().getCode());
+        } catch (Exception e) {
+            errorCode = String.valueOf(AppErrorCodeMessageEnum.ERROR.getCode());
+        }
+        ModelAndView modelAndView = new ModelAndView();
+        modelAndView.setViewName("error.html");
+        modelAndView.addObject("error", "WIC-" + errorCode);
+        return modelAndView;
     }
 }

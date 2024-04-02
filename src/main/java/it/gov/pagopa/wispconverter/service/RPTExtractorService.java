@@ -47,24 +47,29 @@ public class RPTExtractorService {
     @Value("${wisp-converter.segregation-code}")
     private String segregationCode;
 
-    public CommonRPTFieldsDTO extractRPTContentDTOs(String primitive, String payload) throws IOException {
+    public CommonRPTFieldsDTO extractRPTContentDTOs(String primitive, String payload) {
 
-        byte[] payloadUnzipped = ZipUtil.unzip(ZipUtil.base64Decode(payload));
-        Element envelopeElement = jaxbElementUtil.convertToEnvelopeElement(payloadUnzipped);
-        Envelope envelope = jaxbElementUtil.convertToBean(envelopeElement, Envelope.class);
+        Envelope envelope;
+        try {
+            byte[] payloadUnzipped = ZipUtil.unzip(ZipUtil.base64Decode(payload));
+            Element envelopeElement = this.jaxbElementUtil.convertToEnvelopeElement(payloadUnzipped);
+            envelope = this.jaxbElementUtil.convertToBean(envelopeElement, Envelope.class);
+        } catch (IOException e) {
+            throw new AppException(AppErrorCodeMessageEnum.PARSING_INVALID_ZIPPED_PAYLOAD);
+        }
 
         CommonRPTFieldsDTO commonRPTFieldsDTO;
         switch (primitive) {
             case "nodoInviaRPT" -> commonRPTFieldsDTO = extractRPTContentDTOsFromNodoInviaRPT(envelope);
             case "nodoInviaCarrelloRPT" -> commonRPTFieldsDTO = extractRPTContentDTOsFromNodoInviaCarrelloRPT(envelope);
-            default -> throw new AppException(AppErrorCodeMessageEnum.PARSING_);
+            default -> throw new AppException(AppErrorCodeMessageEnum.PARSING_PRIMITIVE_NOT_VALID);
         }
         return commonRPTFieldsDTO;
     }
 
     private CommonRPTFieldsDTO extractRPTContentDTOsFromNodoInviaRPT(Envelope envelope) {
-        IntestazionePPT soapHeader = jaxbElementUtil.getSoapHeader(envelope, IntestazionePPT.class);
-        NodoInviaRPT soapBody = jaxbElementUtil.getSoapBody(envelope, NodoInviaRPT.class);
+        IntestazionePPT soapHeader = this.jaxbElementUtil.getSoapHeader(envelope, IntestazionePPT.class);
+        NodoInviaRPT soapBody = this.jaxbElementUtil.getSoapBody(envelope, NodoInviaRPT.class);
 
         String creditorInstitutionId = soapHeader.getIdentificativoDominio();
         PaymentRequestDTO rpt = extractRPT(soapBody.getRpt());
@@ -89,8 +94,8 @@ public class RPTExtractorService {
     }
 
     private CommonRPTFieldsDTO extractRPTContentDTOsFromNodoInviaCarrelloRPT(Envelope envelope) {
-        IntestazioneCarrelloPPT soapHeader = jaxbElementUtil.getSoapHeader(envelope, IntestazioneCarrelloPPT.class);
-        NodoInviaCarrelloRPT soapBody = jaxbElementUtil.getSoapBody(envelope, NodoInviaCarrelloRPT.class);
+        IntestazioneCarrelloPPT soapHeader = this.jaxbElementUtil.getSoapHeader(envelope, IntestazioneCarrelloPPT.class);
+        NodoInviaCarrelloRPT soapBody = this.jaxbElementUtil.getSoapBody(envelope, NodoInviaCarrelloRPT.class);
 
         // initializing common fields
         boolean isMultibeneficiary = soapBody.isMultiBeneficiario();
@@ -165,8 +170,8 @@ public class RPTExtractorService {
     }
 
     private PaymentRequestDTO extractRPT(byte[] rptBytes) {
-        Element rptElement = jaxbElementUtil.convertToRPTElement(rptBytes);
-        return mapper.toPaymentRequestDTO(jaxbElementUtil.convertToBean(rptElement, CtRichiestaPagamentoTelematico.class));
+        Element rptElement = this.jaxbElementUtil.convertToRPTElement(rptBytes);
+        return mapper.toPaymentRequestDTO(this.jaxbElementUtil.convertToBean(rptElement, CtRichiestaPagamentoTelematico.class));
     }
 
     private String getNAVCodeFromIUVGenerator(String creditorInstitutionCode) {
