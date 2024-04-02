@@ -8,9 +8,9 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.MediaType;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
 
 @FeignClient(value = "iuv-generator", url = "${client.iuv-generator.host}", configuration = IUVGeneratorFeignConfig.class)
 public interface IUVGeneratorClient {
@@ -22,6 +22,6 @@ public interface IUVGeneratorClient {
     @PostMapping(
             value = "${client.iuv-generator.api.generate.path}",
             consumes = MediaType.APPLICATION_JSON_VALUE)
-    IUVGeneratorResponse generate(@RequestParam("organization-fiscal-code") String organizationFiscalCode,
+    IUVGeneratorResponse generate(@PathVariable("organization-fiscal-code") String organizationFiscalCode,
                                   @RequestBody IUVGeneratorRequest body);
 }

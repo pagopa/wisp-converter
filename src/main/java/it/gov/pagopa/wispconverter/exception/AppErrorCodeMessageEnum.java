@@ -17,6 +17,8 @@ public enum AppErrorCodeMessageEnum {
 
     CLIENT_("3000", "", HttpStatus.BAD_REQUEST),
 
+    LOGIC_("4000", "", HttpStatus.BAD_REQUEST),
+
     ;
 
     private final String errorCode;

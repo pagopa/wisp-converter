@@ -7,13 +7,11 @@ import it.gov.pagopa.wispconverter.exception.AppClientException;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.CacheRepository;
-import it.gov.pagopa.wispconverter.service.model.RPTContentDTO;
+import it.gov.pagopa.wispconverter.service.model.CommonRPTFieldsDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @Service
 @Slf4j
@@ -32,21 +30,18 @@ public class CacheService {
     private Long requestIDMappingTTL;
 
 
-    public void storeRequestMappingInCache(List<RPTContentDTO> rptContentDTOs, String sessionId) {
+    public void storeRequestMappingInCache(CommonRPTFieldsDTO commonRPTFieldsDTO, String sessionId) {
         try {
 
-            rptContentDTOs.forEach(e -> {
-                String idIntermediarioPA = e.getCreditorInstitutionBrokerId();
-                String noticeNumber = e.getNoticeNumber();
+            String idIntermediarioPA = commonRPTFieldsDTO.getCreditorInstitutionBrokerId();
+            String noticeNumber = commonRPTFieldsDTO.getNav();
 
-                String requestIDForDecoupler = String.format(COMPOSITE_TWOVALUES_KEY_TEMPLATE, idIntermediarioPA, noticeNumber); // TODO can be optimized in a single request???
-                this.decouplerCachingClient.storeKeyInCacheByAPIM(requestIDForDecoupler);
+            String requestIDForDecoupler = String.format(COMPOSITE_TWOVALUES_KEY_TEMPLATE, idIntermediarioPA, noticeNumber);
+            this.decouplerCachingClient.storeKeyInCacheByAPIM(requestIDForDecoupler);
 
-                // save in Redis cache the mapping of the request identifier needed for RT generation in next steps
-                String requestIDForRTHandling = String.format(CACHING_KEY_TEMPLATE, idIntermediarioPA, noticeNumber);
-                this.cacheRepository.insert(requestIDForRTHandling, sessionId, this.requestIDMappingTTL);
-            });
-
+            // save in Redis cache the mapping of the request identifier needed for RT generation in next steps
+            String requestIDForRTHandling = String.format(CACHING_KEY_TEMPLATE, idIntermediarioPA, noticeNumber);
+            this.cacheRepository.insert(requestIDForRTHandling, sessionId, this.requestIDMappingTTL);
 
         } catch (FeignException e) {
             throw new AppClientException(e.status(), AppErrorCodeMessageEnum.CLIENT_);

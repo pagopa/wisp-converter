@@ -12,9 +12,6 @@ import lombok.*;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class RPTContentDTO {
 
-    private String creditorInstitutionId;
-    private String creditorInstitutionBrokerId;
-    private Boolean multibeneficiary;
-    private String noticeNumber;
+    private Boolean containsDigitalStamp;
     private PaymentRequestDTO rpt;
 }

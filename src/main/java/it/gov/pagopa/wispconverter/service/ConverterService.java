@@ -6,15 +6,14 @@ import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
+import it.gov.pagopa.wispconverter.service.model.CommonRPTFieldsDTO;
 import it.gov.pagopa.wispconverter.service.model.ConversionResultDTO;
-import it.gov.pagopa.wispconverter.service.model.RPTContentDTO;
 import it.gov.pagopa.wispconverter.util.FileReader;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -43,16 +42,16 @@ public class ConverterService {
             RPTRequestEntity rptRequestEntity = getRPTRequestEntity(sessionId);
 
             // unmarshalling and mapping RPT content from request entity
-            List<RPTContentDTO> rptContentDTOs = this.rptExtractorService.extractRPTContentDTOs(rptRequestEntity.getPrimitive(), rptRequestEntity.getPayload());
+            CommonRPTFieldsDTO commonRPTFieldsDTO = this.rptExtractorService.extractRPTContentDTOs(rptRequestEntity.getPrimitive(), rptRequestEntity.getPayload());
 
             // calling GPD creation API in order to generate the debt position associated to RPTs
-            this.debtPositionService.createDebtPositions(rptContentDTOs);
+            this.debtPositionService.createDebtPositions(commonRPTFieldsDTO);
 
             // call APIM policy for save key for decoupler and save in Redis cache the mapping of the request identifier needed for RT generation in next steps
-            this.cacheService.storeRequestMappingInCache(rptContentDTOs, sessionId);
+            this.cacheService.storeRequestMappingInCache(commonRPTFieldsDTO, sessionId);
 
             // execute communication with Checkout service and set the redirection URI as response
-            String redirectURI = this.checkoutService.executeCall();
+            String redirectURI = this.checkoutService.executeCall(commonRPTFieldsDTO);
             conversionResultDTO.setUri(redirectURI);
 
         } catch (IOException e) {
