@@ -34,12 +34,14 @@ import java.time.Instant;
 @RequiredArgsConstructor
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
-    @Value("${error.code.uri}")
-    private String errorCodeUri;
     private static final String ERROR_CODE_TITLE = "error-code.%s.title";
+
     private static final String ERROR_CODE_DETAIL = "error-code.%s.detail";
 
     private final MessageSource messageSource;
+
+    @Value("${wisp-converter.error-code.uri}")
+    private String errorCodeUri;
 
     @ExceptionHandler(AppException.class)
     public ErrorResponse handleAppException(AppException appEx) {
@@ -49,7 +51,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ErrorResponse handleGenericException(Exception ex) {
         String operationId = MDC.get(LoggingAspect.OPERATION_ID);
-        log.error(String.format("GenericException: operation-id=[%s]", operationId!=null?operationId:"n/a"), ex);
+        log.error(String.format("GenericException: operation-id=[%s]", operationId != null ? operationId : "n/a"), ex);
         return forAppException(new AppException(ex, AppErrorCodeMessageEnum.ERROR, ex.getMessage()));
     }
 
@@ -63,7 +65,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return super.handleExceptionInternal(ex, body, headers, statusCode, request);
     }
 
-    private ErrorResponse forAppException(AppException appEx){
+    private ErrorResponse forAppException(AppException appEx) {
         return ErrorResponse.builder(appEx, forAppErrorCodeMessageEnum(appEx.getError(), appEx.getMessage()))
                 .titleMessageCode(String.format(ERROR_CODE_TITLE, appEx.getError().name()))
                 .detailMessageCode(String.format(ERROR_CODE_DETAIL, appEx.getError().name()))
@@ -85,13 +87,14 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return problemDetail;
     }
 
-    private void setExtraProperties(ProblemDetail problemDetail){
+    private void setExtraProperties(ProblemDetail problemDetail) {
         problemDetail.setProperty("timestamp", Instant.now());
         String operationId = MDC.get(LoggingAspect.OPERATION_ID);
-        if(operationId!=null){
+        if (operationId != null) {
             problemDetail.setProperty("operation-id", operationId);
         }
     }
+
     private URI getTypeFromErrorCode(String errorCode) {
         return new DefaultUriBuilderFactory()
                 .uriString(errorCodeUri)
@@ -99,7 +102,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 .build();
     }
 
-    private String getAppCode(AppErrorCodeMessageEnum error){
+    private String getAppCode(AppErrorCodeMessageEnum error) {
         return String.format("%s-%s", Constants.SERVICE_CODE_APP, error.getCode());
     }
 

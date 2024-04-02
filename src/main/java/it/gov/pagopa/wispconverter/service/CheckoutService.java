@@ -9,7 +9,6 @@ import it.gov.pagopa.wispconverter.client.checkout.model.Cart;
 import it.gov.pagopa.wispconverter.client.checkout.model.ReturnURLs;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
-import it.gov.pagopa.wispconverter.scheduler.ConfigCacheService;
 import it.gov.pagopa.wispconverter.service.mapper.CartMapper;
 import it.gov.pagopa.wispconverter.service.model.CommonRPTFieldsDTO;
 import lombok.RequiredArgsConstructor;
