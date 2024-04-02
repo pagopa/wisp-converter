@@ -2,25 +2,27 @@ package it.gov.pagopa.wispconverter.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.wispconverter.config.model.AppCors;
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
-import org.springframework.context.support.ReloadableResourceBundleMessageSource;
+import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 import org.springframework.web.servlet.LocaleResolver;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.i18n.AcceptHeaderLocaleResolver;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
 
 @Configuration
+@RequiredArgsConstructor
 public class WebMvcConfig implements WebMvcConfigurer {
 
     List<Locale> locales = Arrays.asList(Locale.ENGLISH, Locale.ITALIAN);
@@ -32,12 +34,12 @@ public class WebMvcConfig implements WebMvcConfigurer {
     @SneakyThrows
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        AppCors appCors = new ObjectMapper().readValue(corsConfiguration,
-                AppCors.class);
+        AppCors appCors = new ObjectMapper().readValue(corsConfiguration, AppCors.class);
         registry.addMapping("/**")
                 .allowedOrigins(appCors.getOrigins())
                 .allowedMethods(appCors.getMethods());
     }
+
 
     @Bean
     public LocaleResolver localeResolver() {
@@ -47,14 +49,15 @@ public class WebMvcConfig implements WebMvcConfigurer {
         return acceptHeaderLocaleResolver;
     }
 
+
     @Bean
-    public MessageSource messageSource() {
-        ReloadableResourceBundleMessageSource messageSource =
-                new ReloadableResourceBundleMessageSource();
-        messageSource.setBasename("classpath:messages");
-        messageSource.setDefaultEncoding("UTF-8");
-        messageSource.setUseCodeAsDefaultMessage(true);
-        return messageSource;
+    public ResourceBundleMessageSource messageSource() {
+        var resourceBundleMessageSource=new ResourceBundleMessageSource();
+        resourceBundleMessageSource.setBasename("i18n/messages"); // directory with messages_XX.properties
+        resourceBundleMessageSource.setDefaultLocale(Locale.ENGLISH);
+        resourceBundleMessageSource.setDefaultEncoding(StandardCharsets.UTF_8.name());
+        resourceBundleMessageSource.setAlwaysUseMessageFormat(true);
+        return resourceBundleMessageSource;
     }
 
     @Primary

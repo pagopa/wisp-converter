@@ -3,7 +3,6 @@ package it.gov.pagopa.wispconverter.service;
 import feign.FeignException;
 import io.lettuce.core.RedisException;
 import it.gov.pagopa.wispconverter.client.decoupler.DecouplerCachingClient;
-import it.gov.pagopa.wispconverter.exception.AppClientException;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.CacheRepository;
@@ -34,7 +33,6 @@ public class CacheService {
 
     public void storeRequestMappingInCache(List<RPTContentDTO> rptContentDTOs, String sessionId) {
         try {
-
             rptContentDTOs.forEach(e -> {
                 String idIntermediarioPA = e.getIdIntermediarioPA();
                 String noticeNumber = e.getNoticeNumber();
@@ -46,12 +44,8 @@ public class CacheService {
                 String requestIDForRTHandling = String.format(CACHING_KEY_TEMPLATE, idIntermediarioPA, noticeNumber);
                 this.cacheRepository.insert(requestIDForRTHandling, sessionId, this.requestIDMappingTTL);
             });
-
-
         } catch (FeignException e) {
-            throw new AppClientException(e.status(), AppErrorCodeMessageEnum.CLIENT_);
-        } catch (RedisException e) {
-            throw new AppException(AppErrorCodeMessageEnum.PERSISTENCE_);
+            throw new AppException(e, AppErrorCodeMessageEnum.CLIENT_DECOUPLER_CACHING, e.status(), e.getMessage());
         }
     }
 }

@@ -45,7 +45,7 @@ public class ResponseValidator {
                     sb.append(error.getPropertyPath()).append(" ").append(error.getMessage()).append(". ");
                 }
                 var msg = StringUtils.chop(sb.toString());
-                throw new AppException(AppErrorCodeMessageEnum.ERROR, "Invalid response", msg);
+                throw new AppException(AppErrorCodeMessageEnum.ERROR, msg);
             }
         }
     }

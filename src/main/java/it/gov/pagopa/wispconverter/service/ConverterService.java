@@ -1,7 +1,5 @@
 package it.gov.pagopa.wispconverter.service;
 
-import com.azure.cosmos.CosmosException;
-import com.azure.spring.data.cosmos.exception.CosmosAccessException;
 import gov.telematici.pagamenti.ws.NodoInviaCarrelloRPT;
 import gov.telematici.pagamenti.ws.NodoInviaRPT;
 import gov.telematici.pagamenti.ws.ppthead.IntestazioneCarrelloPPT;
@@ -90,12 +88,9 @@ public class ConverterService {
     }
 
     private RPTRequestEntity getRPTRequestEntity(String sessionId) {
-        try {
-            Optional<RPTRequestEntity> optRPTReqEntity = this.rptRequestRepository.findById(sessionId);
-            return optRPTReqEntity.orElseThrow(() -> new AppException(AppErrorCodeMessageEnum.PERSISTENCE_));
-        } catch (CosmosException | CosmosAccessException e) {
-            throw new AppException(AppErrorCodeMessageEnum.PERSISTENCE_);
-        }
+        Optional<RPTRequestEntity> optRPTReqEntity = this.rptRequestRepository.findById(sessionId);
+        return optRPTReqEntity.orElseThrow(() -> new AppException(AppErrorCodeMessageEnum.RPT_NOT_FOUND, sessionId));
+
         // TODO RE
     }
 
@@ -135,7 +130,7 @@ public class ConverterService {
                             .build();
                 }).toList();
             }
-            default -> throw new AppException(AppErrorCodeMessageEnum.PARSING_);
+            default -> throw new AppException(AppErrorCodeMessageEnum.PRIMITIVE_NOT_VALID, primitive);
         }
     }
 
