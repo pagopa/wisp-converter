@@ -164,7 +164,7 @@ public class RPTExtractorService {
 
     private <T> T checkUniqueness(T existingValue, T newValue) {
         if (existingValue != null && !existingValue.equals(newValue)) {
-            throw new AppException(AppErrorCodeMessageEnum.LOGIC_);
+            throw new AppException(AppErrorCodeMessageEnum.GENERIC_ERROR); // TODO to be changed on mapping disambiguation
         }
         return newValue;
     }
