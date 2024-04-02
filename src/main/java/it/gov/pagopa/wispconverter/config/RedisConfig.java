@@ -1,7 +1,5 @@
 package it.gov.pagopa.wispconverter.config;
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,13 +23,6 @@ public class RedisConfig {
 
     @Value("${spring.redis.password}")
     private String password;
-
-    @Bean
-    public ObjectMapper registerObjectMapper() {
-        ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
-        objectMapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
-        return objectMapper;
-    }
 
     @Bean
     public LettuceConnectionFactory registerRedisConnectionFactory() {

@@ -1,7 +1,5 @@
 package it.gov.pagopa.wispconverter.service;
 
-import com.azure.cosmos.CosmosException;
-import com.azure.spring.data.cosmos.exception.CosmosAccessException;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
@@ -63,12 +61,9 @@ public class ConverterService {
     }
 
     private RPTRequestEntity getRPTRequestEntity(String sessionId) {
-        try {
-            Optional<RPTRequestEntity> optRPTReqEntity = this.rptRequestRepository.findById(sessionId);
-            return optRPTReqEntity.orElseThrow(() -> new AppException(AppErrorCodeMessageEnum.PERSISTENCE_));
-        } catch (CosmosException | CosmosAccessException e) {
-            throw new AppException(AppErrorCodeMessageEnum.PERSISTENCE_);
-        }
+        Optional<RPTRequestEntity> optRPTReqEntity = this.rptRequestRepository.findById(sessionId);
+        return optRPTReqEntity.orElseThrow(() -> new AppException(AppErrorCodeMessageEnum.RPT_NOT_FOUND, sessionId));
+
         // TODO RE
     }
 

@@ -6,7 +6,6 @@ import it.gov.pagopa.wispconverter.client.gpd.model.PaymentOption;
 import it.gov.pagopa.wispconverter.client.gpd.model.PaymentPosition;
 import it.gov.pagopa.wispconverter.client.gpd.model.Transfer;
 import it.gov.pagopa.wispconverter.client.gpd.model.TransferMetadata;
-import it.gov.pagopa.wispconverter.exception.AppClientException;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.service.mapper.DebtPositionMapper;
@@ -51,7 +50,7 @@ public class DebtPositionService {
             this.gpdClient.executeCreation(rptContentDTOs.getCreditorInstitutionId(), paymentPosition);
 
         } catch (FeignException e) {
-            throw new AppClientException(e.status(), AppErrorCodeMessageEnum.CLIENT_);
+            throw new AppException(e, AppErrorCodeMessageEnum.CLIENT_GPD, e.status(), e.getMessage());
         }
     }
 

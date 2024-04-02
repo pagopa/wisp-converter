@@ -2,32 +2,31 @@ package it.gov.pagopa.wispconverter.exception;
 
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 
 @Getter
 public enum AppErrorCodeMessageEnum {
-    UNKNOWN("0000", "UNKNOWN.error", HttpStatus.INTERNAL_SERVER_ERROR),
-    ERROR("0500", "system.error", HttpStatus.INTERNAL_SERVER_ERROR),
-    BAD_REQUEST("0400", "bad.request", HttpStatus.BAD_REQUEST),
-
-    PARSING_("1000", "", HttpStatus.BAD_REQUEST),
-    PARSING_JAXB_EMPTY_NODE_ELEMENT("1001", "jaxb.node-element.empty", HttpStatus.BAD_REQUEST),
-    PARSING_JAXB_PARSE_ERROR("1002", "jaxb.parse", HttpStatus.BAD_REQUEST),
-
-    PERSISTENCE_("2000", "", HttpStatus.BAD_REQUEST),
-
-    CLIENT_("3000", "", HttpStatus.BAD_REQUEST),
-
-    LOGIC_("4000", "", HttpStatus.BAD_REQUEST),
-
+    ERROR                   ( 500, "System error",                  "{0}",                                      HttpStatus.INTERNAL_SERVER_ERROR),
+    PARSE_ERROR             (1000, "Parse error",                   "Error while parsing: {0}",                 HttpStatus.BAD_REQUEST),
+    PRIMITIVE_NOT_VALID     (1001, "Primitive not valid",           "Primitive [{0}] not valid",                HttpStatus.NOT_ACCEPTABLE),
+    RPT_NOT_FOUND           (1002, "RPT not found",                 "RPT with sessionId [{0}] not found",       HttpStatus.NOT_FOUND),
+    CLIENT_IUV_GENERATOR    (1003, "IUVGeneratorClient error",      "IUVGeneratorClient status [{0}] - {1}",    HttpStatus.EXPECTATION_FAILED),
+    CLIENT_GPD              (1004, "GPDClient error",               "GPDClient status [{0}] - {1}",             HttpStatus.EXPECTATION_FAILED),
+    CLIENT_DECOUPLER_CACHING(1005, "DecouplerCachingClient error",  "DecouplerCachingClient status [{0}] - {1}",HttpStatus.EXPECTATION_FAILED),
+    PERSISTENCE_            (2000, "",                              "",                                         HttpStatus.BAD_REQUEST),
+    CLIENT_                 (3000, "",                              "",                                         HttpStatus.BAD_REQUEST),
+    LOGIC_                  (4000, "",                              "",                                         HttpStatus.BAD_REQUEST),
     ;
 
-    private final String errorCode;
-    private final String errorMessageKey;
-    private final HttpStatus httpStatus;
+    private final Integer code;
+    private final String title;
+    private final String detail;
+    private final HttpStatusCode status;
 
-    AppErrorCodeMessageEnum(String errorCode, String errorMessageKey, HttpStatus httpStatus) {
-        this.errorCode = errorCode;
-        this.errorMessageKey = errorMessageKey;
-        this.httpStatus = httpStatus;
+    AppErrorCodeMessageEnum(Integer code, String title, String detail, HttpStatus status) {
+        this.code = code;
+        this.title = title;
+        this.detail = detail;
+        this.status = status;
     }
 }
