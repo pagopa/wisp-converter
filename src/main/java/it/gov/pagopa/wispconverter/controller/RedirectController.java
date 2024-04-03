@@ -1,7 +1,5 @@
 package it.gov.pagopa.wispconverter.controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -17,17 +15,16 @@ import it.gov.pagopa.wispconverter.service.ConverterService;
 import it.gov.pagopa.wispconverter.service.model.ConversionResultDTO;
 import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.ErrorUtil;
-import it.gov.pagopa.wispconverter.util.MDCUtil;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
-import org.springframework.boot.web.servlet.error.ErrorController;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
-import org.springframework.http.*;
+import org.springframework.http.MediaType;
+import org.springframework.http.ProblemDetail;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.annotation.Validated;
@@ -35,13 +32,8 @@ import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.servlet.View;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.io.IOException;
 import java.time.Instant;
-import java.util.Enumeration;
 import java.util.Map;
 
 @Controller
@@ -131,11 +123,4 @@ public class RedirectController {
         }
     }
 
-
-
-//    @RequestMapping("/redirect-error")
-//    public String redirectError(Model model, HttpServletRequest request) throws IOException {
-//        model.addAttribute("summary","1 2 3");
-//        return "error";
-//    }
 }
