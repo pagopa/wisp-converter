@@ -21,8 +21,8 @@ public class OpenAPIDescriptionCustomizer implements OpenApiCustomizer {
         for (AppErrorCodeMessageEnum errorCode : AppErrorCodeMessageEnum.values()) {
 
             String detail = errorCode.getDetail();
-            detail = detail.replaceAll("(\\s\\{\\d+\\})", " *...error msg...*");
-            detail = detail.replaceAll("(\\s\\[\\{\\d+\\}\\])", " [*...content...*]");
+            detail = detail.replaceAll("(\\[\\{\\d+\\}\\])", " [*...content...*]");
+            detail = detail.replaceAll("(\\{\\d+\\})", " *...error description...*");
 
             builder.append("**").append(CommonUtility.getAppCode(errorCode)).append("**").append(SEPARATOR)
                     .append("*").append(errorCode.name()).append("*").append(SEPARATOR)
