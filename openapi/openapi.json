@@ -58,9 +58,10 @@
     },
     "/redirect" : {
       "get" : {
-        "description" : "**Description:**  \n  \n\n**API properties:**\nProperty | Value\n- | -\nInternal | Y\nExternal | Y\nSynchronous | SYNC\nAuthorization | NONE\nAuthentication | NONE\nTPS | 1.0/sec\nIdempotency | Y\nStateless | Y\nRead/Write Intense | Read\nCacheable | N\n",
+        "description" : "**Description:**  \nRedirecting the payment flow from WISP to Checkout. In order to do so, the NodoInviaRPT and NodoInviaCarrelloRPT requests will be converted in NMU payments and handled by GPD system.  \n\n**API properties:**\nProperty | Value\n- | -\nInternal | Y\nExternal | N\nSynchronous | SYNC\nAuthorization | NONE\nAuthentication | APIKEY\nTPS | 1.0/sec\nIdempotency | Y\nStateless | Y\nRead/Write Intense | Read and Write\nCacheable | N\n",
         "operationId" : "redirect",
         "parameters" : [ {
+          "description" : "The identifier of the payment, referenced by session and creditor institution broker.",
           "example" : "identificativoIntermediarioPA_sessionId",
           "in" : "query",
           "name" : "sessionId",
@@ -96,6 +97,7 @@
         "security" : [ {
           "ApiKey" : [ ]
         } ],
+        "summary" : "Redirect payment from WISP to Checkout",
         "tags" : [ "Redirect" ]
       },
       "parameters" : [ {
