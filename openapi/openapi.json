@@ -1,138 +1,157 @@
 {
-  "openapi" : "3.0.1",
-  "info" : {
-    "description" : "A service that permits to handle nodoInviaRPT and nodoInviaCarrelloRPT request from WISP, converting them in NMU payments.\n\n**STANDARD ERRORS:**\nNAME | CODE | DESCRIPTION\n- | - | -\n**WIC-500** | *ERROR* |  *...error description...*\n**WIC-1000** | *GENERIC_ERROR* | Error while executing conversion flow.  *...error description...*\n**WIC-1001** | *PARSING_GENERIC_ERROR* | Error while parsing payload.  *...error description...*\n**WIC-1002** | *PARSING_INVALID_HEADER* | Error while parsing payload. The SOAP header in payload is invalid:  *...error description...*\n**WIC-1003** | *PARSING_INVALID_BODY* | Error while parsing payload. The SOAP body in payload is invalid:  *...error description...*\n**WIC-1004** | *PARSING_INVALID_XML_NODES* | Error while parsing payload. The list of nodes extracted from document must be greater than zero, but currently it is zero.\n**WIC-1005** | *PARSING_INVALID_ZIPPED_PAYLOAD* | Error while parsing payload. Cannot unzip payload correctly.\n**WIC-1006** | *PARSING_PRIMITIVE_NOT_VALID* | Error while checking primitive. Primitive  [*...content...*] not valid.\n**WIC-1100** | *VALIDATION_INVALID_IBANS* | Error while generating debt position for GPD service. The IBAN field must be set if digital stamp is not defined for the transfer.\n**WIC-1200** | *CONFIGURATION_INVALID_STATION* | Error while generating cart for Checkout service. No valid station found with code  [*...content...*].\n**WIC-2000** | *PERSISTENCE_RPT_NOT_FOUND* | Error while retrieving RPT. RPT with sessionId  [*...content...*] not found.\n**WIC-2001** | *PERSISTENCE_REQUESTID_CACHING_ERROR* | Error while caching RequestID.  *...error description...*\n**WIC-3000** | *CLIENT_GPD* | Error while communicating with GPD service. Status  [*...content...*] -  *...error description...*\n**WIC-3001** | *CLIENT_IUVGENERATOR_INVALID_RESPONSE* | Error while communicating with IUV Generator service. Status  [*...content...*] -  *...error description...*\n**WIC-3002** | *CLIENT_DECOUPLER_CACHING* | Error while communicating with decoupler caching API. Status  [*...content...*] -  *...error description...*\n**WIC-3003** | *CLIENT_CHECKOUT* | Error while communicating with Checkout service. status  [*...content...*] -  *...error description...*\n**WIC-3004** | *CLIENT_CHECKOUT_NO_REDIRECT_LOCATION* | Error while communicating with Checkout service. No valid 'Location' header was found,\n**WIC-3005** | *CLIENT_CHECKOUT_INVALID_REDIRECT_LOCATION* | Error while communicating with Checkout service. An empty 'Location' header was found.\n",
-    "termsOfService" : "https://www.pagopa.gov.it/",
-    "title" : "wisp-converter",
-    "version" : "0.0.4"
+  "openapi": "3.0.1",
+  "info": {
+    "description": "A service that permits to handle nodoInviaRPT and nodoInviaCarrelloRPT request from WISP, converting them in NMU payments.\n\n**STANDARD ERRORS:**\nNAME | CODE | DESCRIPTION\n- | - | -\n**WIC-500** | *ERROR* |  *...error description...*\n**WIC-1000** | *GENERIC_ERROR* | Error while executing conversion flow.  *...error description...*\n**WIC-1001** | *PARSING_GENERIC_ERROR* | Error while parsing payload.  *...error description...*\n**WIC-1002** | *PARSING_INVALID_HEADER* | Error while parsing payload. The SOAP header in payload is invalid:  *...error description...*\n**WIC-1003** | *PARSING_INVALID_BODY* | Error while parsing payload. The SOAP body in payload is invalid:  *...error description...*\n**WIC-1004** | *PARSING_INVALID_XML_NODES* | Error while parsing payload. The list of nodes extracted from document must be greater than zero, but currently it is zero.\n**WIC-1005** | *PARSING_INVALID_ZIPPED_PAYLOAD* | Error while parsing payload. Cannot unzip payload correctly.\n**WIC-1006** | *PARSING_PRIMITIVE_NOT_VALID* | Error while checking primitive. Primitive  [*...content...*] not valid.\n**WIC-1100** | *VALIDATION_INVALID_IBANS* | Error while generating debt position for GPD service. The IBAN field must be set if digital stamp is not defined for the transfer.\n**WIC-1200** | *CONFIGURATION_INVALID_STATION* | Error while generating cart for Checkout service. No valid station found with code  [*...content...*].\n**WIC-2000** | *PERSISTENCE_RPT_NOT_FOUND* | Error while retrieving RPT. RPT with sessionId  [*...content...*] not found.\n**WIC-2001** | *PERSISTENCE_REQUESTID_CACHING_ERROR* | Error while caching RequestID.  *...error description...*\n**WIC-3000** | *CLIENT_GPD* | Error while communicating with GPD service. Status  [*...content...*] -  *...error description...*\n**WIC-3001** | *CLIENT_IUVGENERATOR_INVALID_RESPONSE* | Error while communicating with IUV Generator service. Status  [*...content...*] -  *...error description...*\n**WIC-3002** | *CLIENT_DECOUPLER_CACHING* | Error while communicating with decoupler caching API. Status  [*...content...*] -  *...error description...*\n**WIC-3003** | *CLIENT_CHECKOUT* | Error while communicating with Checkout service. status  [*...content...*] -  *...error description...*\n**WIC-3004** | *CLIENT_CHECKOUT_NO_REDIRECT_LOCATION* | Error while communicating with Checkout service. No valid 'Location' header was found,\n**WIC-3005** | *CLIENT_CHECKOUT_INVALID_REDIRECT_LOCATION* | Error while communicating with Checkout service. An empty 'Location' header was found.\n",
+    "termsOfService": "https://www.pagopa.gov.it/",
+    "title": "WISP Converter",
+    "version": "0.0.4"
   },
-  "servers" : [ {
-    "url" : "http://localhost",
-    "description" : "Generated server url"
-  } ],
-  "tags" : [ {
-    "description" : "Application info APIs",
-    "name" : "Home"
-  }, {
-    "description" : "Conversion and redirection APIs",
-    "name" : "Redirect"
-  } ],
-  "paths" : {
-    "/info" : {
-      "get" : {
-        "operationId" : "healthCheck",
-        "responses" : {
-          "200" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/AppInfoResponse"
+  "servers": [
+    {
+      "url": "https://{host}{basePath}",
+      "description": "Generated server url"
+    }
+  ],
+  "tags": [
+    {
+      "description": "Application info APIs",
+      "name": "Home"
+    },
+    {
+      "description": "Conversion and redirection APIs",
+      "name": "Redirect"
+    }
+  ],
+  "paths": {
+    "/info": {
+      "get": {
+        "operationId": "healthCheck",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppInfoResponse"
                 }
               }
             },
-            "description" : "OK.",
-            "headers" : {
-              "X-Request-Id" : {
-                "description" : "This header identifies the call",
-                "schema" : {
-                  "type" : "string"
+            "description": "OK.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "This header identifies the call",
+                "schema": {
+                  "type": "string"
                 }
               }
             }
           }
         },
-        "security" : [ {
-          "ApiKey" : [ ]
-        } ],
-        "summary" : "Return OK if application is started",
-        "tags" : [ "Home" ]
-      },
-      "parameters" : [ {
-        "description" : "This header identifies the call, if not passed it is self-generated. This ID is returned in the response.",
-        "in" : "header",
-        "name" : "X-Request-Id",
-        "schema" : {
-          "type" : "string"
-        }
-      } ]
-    },
-    "/redirect" : {
-      "get" : {
-        "description" : "**Description:**  \nRedirecting the payment flow from WISP to Checkout. In order to do so, the NodoInviaRPT and NodoInviaCarrelloRPT requests will be converted in NMU payments and handled by GPD system.  \n\n**API properties:**\nProperty | Value\n- | -\nInternal | Y\nExternal | N\nSynchronous | SYNC\nAuthorization | NONE\nAuthentication | APIKEY\nTPS | 1.0/sec\nIdempotency | Y\nStateless | Y\nRead/Write Intense | Read and Write\nCacheable | N\n",
-        "operationId" : "redirect",
-        "parameters" : [ {
-          "description" : "The identifier of the payment, referenced by session and creditor institution broker.",
-          "example" : "identificativoIntermediarioPA_sessionId",
-          "in" : "query",
-          "name" : "sessionId",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+        "security": [
+          {
+            "ApiKey": []
           }
-        } ],
-        "responses" : {
-          "302" : {
-            "description" : "Redirect to Checkout service.",
-            "headers" : {
-              "X-Request-Id" : {
-                "description" : "This header identifies the call",
-                "schema" : {
-                  "type" : "string"
+        ],
+        "summary": "Return OK if application is started",
+        "tags": [
+          "Home"
+        ]
+      },
+      "parameters": [
+        {
+          "description": "This header identifies the call, if not passed it is self-generated. This ID is returned in the response.",
+          "in": "header",
+          "name": "X-Request-Id",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    "/redirect": {
+      "get": {
+        "description": "**Description:**  \nRedirecting the payment flow from WISP to Checkout. In order to do so, the NodoInviaRPT and NodoInviaCarrelloRPT requests will be converted in NMU payments and handled by GPD system.  \n\n**API properties:**\nProperty | Value\n- | -\nInternal | Y\nExternal | N\nSynchronous | SYNC\nAuthorization | NONE\nAuthentication | APIKEY\nTPS | 1.0/sec\nIdempotency | Y\nStateless | Y\nRead/Write Intense | Read and Write\nCacheable | N\n",
+        "operationId": "redirect",
+        "parameters": [
+          {
+            "description": "The identifier of the payment, referenced by session and creditor institution broker.",
+            "example": "identificativoIntermediarioPA_sessionId",
+            "in": "query",
+            "name": "sessionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirect to Checkout service.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "This header identifies the call",
+                "schema": {
+                  "type": "string"
                 }
               }
             }
           },
-          "422" : {
-            "description" : "Unprocessable request. Returns a static page with the error code.",
-            "headers" : {
-              "X-Request-Id" : {
-                "description" : "This header identifies the call",
-                "schema" : {
-                  "type" : "string"
+          "422": {
+            "description": "Unprocessable request. Returns a static page with the error code.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "This header identifies the call",
+                "schema": {
+                  "type": "string"
                 }
               }
             }
           }
         },
-        "security" : [ {
-          "ApiKey" : [ ]
-        } ],
-        "summary" : "Redirect payment from WISP to Checkout",
-        "tags" : [ "Redirect" ]
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "summary": "Redirect payment from WISP to Checkout",
+        "tags": [
+          "Redirect"
+        ]
       },
-      "parameters" : [ {
-        "description" : "This header identifies the call, if not passed it is self-generated. This ID is returned in the response.",
-        "in" : "header",
-        "name" : "X-Request-Id",
-        "schema" : {
-          "type" : "string"
+      "parameters": [
+        {
+          "description": "This header identifies the call, if not passed it is self-generated. This ID is returned in the response.",
+          "in": "header",
+          "name": "X-Request-Id",
+          "schema": {
+            "type": "string"
+          }
         }
-      } ]
+      ]
     }
   },
-  "components" : {
-    "schemas" : {
-      "AppInfoResponse" : {
-        "type" : "object",
-        "properties" : {
-          "environment" : {
-            "type" : "string"
+  "components": {
+    "schemas": {
+      "AppInfoResponse": {
+        "type": "object",
+        "properties": {
+          "environment": {
+            "type": "string"
           },
-          "name" : {
-            "type" : "string"
+          "name": {
+            "type": "string"
           },
-          "version" : {
-            "type" : "string"
+          "version": {
+            "type": "string"
           }
         }
       }
     },
-    "securitySchemes" : {
-      "ApiKey" : {
-        "description" : "The API key to access this function app.",
-        "in" : "header",
-        "name" : "Ocp-Apim-Subscription-Key",
-        "type" : "apiKey"
+    "securitySchemes": {
+      "ApiKey": {
+        "description": "The API key to access this function app.",
+        "in": "header",
+        "name": "Ocp-Apim-Subscription-Key",
+        "type": "apiKey"
       }
     }
   }

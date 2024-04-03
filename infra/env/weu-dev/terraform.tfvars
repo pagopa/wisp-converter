@@ -2,6 +2,9 @@ prefix    = "pagopa"
 env       = "dev"
 env_short = "d"
 
+domain         = "nodo"
+location_short = "weu"
+
 tags = {
   CreatedBy   = "Terraform"
   Environment = "Dev"
