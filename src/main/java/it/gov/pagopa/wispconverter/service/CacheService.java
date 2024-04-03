@@ -3,6 +3,7 @@ package it.gov.pagopa.wispconverter.service;
 import feign.FeignException;
 import io.lettuce.core.RedisException;
 import it.gov.pagopa.wispconverter.client.decoupler.DecouplerCachingClient;
+import it.gov.pagopa.wispconverter.client.decoupler.model.DecouplerCachingKeys;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.CacheRepository;
@@ -11,6 +12,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 @Slf4j
@@ -35,8 +38,10 @@ public class CacheService {
             String idIntermediarioPA = commonRPTFieldsDTO.getCreditorInstitutionBrokerId();
             String noticeNumber = commonRPTFieldsDTO.getNav();
 
-            String requestIDForDecoupler = String.format(COMPOSITE_TWOVALUES_KEY_TEMPLATE, idIntermediarioPA, noticeNumber);
-            this.decouplerCachingClient.storeKeyInCacheByAPIM(requestIDForDecoupler);
+            DecouplerCachingKeys decouplerCachingKeys = DecouplerCachingKeys.builder()
+                    .keys(List.of(String.format(COMPOSITE_TWOVALUES_KEY_TEMPLATE, idIntermediarioPA, noticeNumber)))
+                    .build();
+            this.decouplerCachingClient.storeKeyInCacheByAPIM(decouplerCachingKeys);
 
             // save in Redis cache the mapping of the request identifier needed for RT generation in next steps
             String requestIDForRTHandling = String.format(CACHING_KEY_TEMPLATE, idIntermediarioPA, noticeNumber);

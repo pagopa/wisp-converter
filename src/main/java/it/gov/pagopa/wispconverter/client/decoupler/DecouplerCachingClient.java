@@ -1,6 +1,7 @@
 package it.gov.pagopa.wispconverter.client.decoupler;
 
 import feign.FeignException;
+import it.gov.pagopa.wispconverter.client.decoupler.model.DecouplerCachingKeys;
 import it.gov.pagopa.wispconverter.config.client.DecouplerCachingFeignConfig;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.MediaType;
@@ -19,5 +20,5 @@ public interface DecouplerCachingClient {
     @PostMapping(
             value = "${client.decoupler-caching.api.store-key.path}",
             consumes = MediaType.APPLICATION_JSON_VALUE)
-    void storeKeyInCacheByAPIM(@PathVariable String key);
+    void storeKeyInCacheByAPIM(@PathVariable DecouplerCachingKeys body);
 }
