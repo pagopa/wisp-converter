@@ -2,7 +2,7 @@ package it.gov.pagopa.wispconverter.controller.advice;
 
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
-import it.gov.pagopa.wispconverter.util.Constants;
+import it.gov.pagopa.wispconverter.util.CommonUtility;
 import it.gov.pagopa.wispconverter.util.aspect.LoggingAspect;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -77,11 +77,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         Assert.notNull(error, "AppErrorCodeMessageEnum is required");
 
         ProblemDetail problemDetail = ProblemDetail.forStatus(error.getStatus());
-        problemDetail.setType(getTypeFromErrorCode(getAppCode(error)));
+        problemDetail.setType(getTypeFromErrorCode(CommonUtility.getAppCode(error)));
         problemDetail.setTitle(error.getTitle());
         problemDetail.setDetail(detail);
 
-        problemDetail.setProperty("error-code", getAppCode(error));
+        problemDetail.setProperty("error-code", CommonUtility.getAppCode(error));
         setExtraProperties(problemDetail);
 
         return problemDetail;
@@ -100,10 +100,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 .uriString(errorCodeUri)
                 .pathSegment(errorCode)
                 .build();
-    }
-
-    private String getAppCode(AppErrorCodeMessageEnum error) {
-        return String.format("%s-%s", Constants.SERVICE_CODE_APP, error.getCode());
     }
 
 

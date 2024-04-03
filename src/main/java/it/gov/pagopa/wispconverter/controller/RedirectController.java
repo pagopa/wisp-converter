@@ -11,9 +11,11 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.service.ConverterService;
+import it.gov.pagopa.wispconverter.util.openapi.OpenAPITableMetadata;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -34,12 +36,13 @@ public class RedirectController {
 
     @Operation(summary = "", description = "", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"Redirect"})
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "302", description = "Redirect to Checkout service.", content = @Content(schema = @Schema()))
+            @ApiResponse(responseCode = "302", description = "Redirect to Checkout service.", content = @Content(schema = @Schema())),
+            @ApiResponse(responseCode = "422", description = "Unprocessable request. Returns a static page with the error code.", content = @Content(schema = @Schema()))
     })
+    @OpenAPITableMetadata
     @GetMapping
     public ModelAndView redirect(@Parameter(description = "", example = "identificativoIntermediarioPA_sessionId")
-                                 @NotBlank(message = "{redirect.session-id.not-blank}")
-                                 @RequestParam("sessionId") String sessionId,
+                                 @NotBlank @RequestParam("sessionId") String sessionId,
                                  HttpServletResponse response) throws IOException {
 
         String errorCode;
@@ -52,6 +55,7 @@ public class RedirectController {
             errorCode = String.valueOf(AppErrorCodeMessageEnum.GENERIC_ERROR.getCode());
         }
         ModelAndView modelAndView = new ModelAndView();
+        modelAndView.setStatus(HttpStatusCode.valueOf(422));
         modelAndView.setViewName("error.html");
         modelAndView.addObject("error", "WIC-" + errorCode);
         return modelAndView;
