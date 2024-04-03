@@ -71,25 +71,22 @@ public class RedirectController {
         } catch (AppException appException){
             ErrorResponse errorResponse = errorUtil.forAppException(appException);
             ProblemDetail problemDetail = errorResponse.updateAndGetBody(this.messageSource, LocaleContextHolder.getLocale());
-            MDCUtil.setMDCError(problemDetail);
-            MDCUtil.setMDCCloseFailedOperation(errorResponse.getStatusCode().value());
+            errorUtil.finalizeError(problemDetail, errorResponse.getStatusCode().value());
+
             response.setStatus(errorResponse.getStatusCode().value());
-
             model.addAttribute("sessionId",sessionId);
-
             enrichModelWithError(model, problemDetail, errorResponse.getStatusCode().value());
             return "error";
         } catch (Exception ex) {
-            AppException appException = new AppException(ex, AppErrorCodeMessageEnum.ERROR, ex.getMessage());
-            ErrorResponse errorResponse = errorUtil.forAppException(appException);
-            ProblemDetail problemDetail = errorResponse.updateAndGetBody(this.messageSource, LocaleContextHolder.getLocale());
-            MDCUtil.setMDCError(problemDetail);
-            MDCUtil.setMDCCloseFailedOperation(errorResponse.getStatusCode().value());
-            response.setStatus(errorResponse.getStatusCode().value());
-
             String operationId = MDC.get(Constants.MDC_OPERATION_ID);
             log.error(String.format("GenericException: operation-id=[%s]", operationId!=null?operationId:"n/a"), ex);
 
+            AppException appException = new AppException(ex, AppErrorCodeMessageEnum.ERROR, ex.getMessage());
+            ErrorResponse errorResponse = errorUtil.forAppException(appException);
+            ProblemDetail problemDetail = errorResponse.updateAndGetBody(this.messageSource, LocaleContextHolder.getLocale());
+            errorUtil.finalizeError(problemDetail, errorResponse.getStatusCode().value());
+
+            response.setStatus(errorResponse.getStatusCode().value());
             model.addAttribute("sessionId",sessionId);
             enrichModelWithError(model, problemDetail, errorResponse.getStatusCode().value());
             return "error";

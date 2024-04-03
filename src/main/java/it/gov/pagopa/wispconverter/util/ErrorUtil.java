@@ -30,7 +30,7 @@ public class ErrorUtil {
     public static final String EXTRA_FIELD_ERROR_TIMESTAMP = "timestamp";
     public static final String EXTRA_FIELD_ERROR_CODE = "error-code";
 
-//    private final MessageSource messageSource;
+    private final MessageSource messageSource;
 
     public ErrorResponse forAppException(AppException appEx){
         return ErrorResponse.builder(appEx, forAppErrorCodeMessageEnum(appEx.getError(), appEx.getMessage()))
@@ -49,18 +49,24 @@ public class ErrorUtil {
         problemDetail.setDetail(detail);
 
         problemDetail.setProperty(EXTRA_FIELD_ERROR_CODE, getAppCode(error));
-        setExtraProperties(problemDetail);
 
         return problemDetail;
     }
 
-    public void setExtraProperties(ProblemDetail problemDetail){
+    private void setExtraProperties(ProblemDetail problemDetail){
         problemDetail.setProperty(EXTRA_FIELD_ERROR_TIMESTAMP, Instant.now());
         String operationId = MDC.get(Constants.MDC_OPERATION_ID);
         if(operationId!=null){
             problemDetail.setProperty(EXTRA_FIELD_OPERATION_ID, operationId);
         }
     }
+
+    public void finalizeError(ProblemDetail problemDetail, int statusCode){
+        setExtraProperties(problemDetail);
+        MDCUtil.setMDCError(problemDetail);
+        MDCUtil.setMDCCloseFailedOperation(statusCode);
+    }
+
     public URI getTypeFromErrorCode(String errorCode) {
         return new DefaultUriBuilderFactory()
                 .uriString(errorCodeUri)

@@ -44,19 +44,21 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     public ErrorResponse handleAppException(AppException appEx) {
         ErrorResponse errorResponse = errorUtil.forAppException(appEx);
         ProblemDetail problemDetail = errorResponse.updateAndGetBody(this.messageSource, LocaleContextHolder.getLocale());
-        MDCUtil.setMDCError(problemDetail);
-        MDCUtil.setMDCCloseFailedOperation(errorResponse.getStatusCode().value());
+        errorUtil.finalizeError(problemDetail, errorResponse.getStatusCode().value());
+
         return errorResponse;
     }
 
     @ExceptionHandler(Exception.class)
-    public ErrorResponse handleGenericException(Exception ex, WebRequest request) {
+    public ErrorResponse handleGenericException(Exception ex) {
         String operationId = MDC.get(Constants.MDC_OPERATION_ID);
         log.error(String.format("GenericException: operation-id=[%s]", operationId!=null?operationId:"n/a"), ex);
-        ErrorResponse errorResponse = errorUtil.forAppException(new AppException(ex, AppErrorCodeMessageEnum.ERROR, ex.getMessage()));
+
+        AppException appEx = new AppException(ex, AppErrorCodeMessageEnum.ERROR, ex.getMessage());
+        ErrorResponse errorResponse = errorUtil.forAppException(appEx);
         ProblemDetail problemDetail = errorResponse.updateAndGetBody(this.messageSource, LocaleContextHolder.getLocale());
-        MDCUtil.setMDCError(problemDetail);
-        MDCUtil.setMDCCloseFailedOperation(errorResponse.getStatusCode().value());
+        errorUtil.finalizeError(problemDetail, errorResponse.getStatusCode().value());
+
         return errorResponse;
     }
 
@@ -64,9 +66,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     protected ResponseEntity<Object> handleExceptionInternal(Exception ex, Object body, HttpHeaders headers, HttpStatusCode statusCode, WebRequest request) {
         if (body == null && ex instanceof ErrorResponse errorResponse) {
             ProblemDetail problemDetail = errorResponse.updateAndGetBody(this.messageSource, LocaleContextHolder.getLocale());
-            errorUtil.setExtraProperties(problemDetail);
-            MDCUtil.setMDCError(problemDetail);
-            MDCUtil.setMDCCloseFailedOperation(errorResponse.getStatusCode().value());
+            errorUtil.finalizeError(problemDetail, errorResponse.getStatusCode().value());
+
             body = problemDetail;
         } else {
             MDCUtil.setMDCCloseFailedOperation(statusCode.value());
