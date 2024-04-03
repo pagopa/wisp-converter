@@ -9,7 +9,17 @@
     <body>
         <h1>Something went wrong! </h1>
         <h2>Our Engineers are on it</h2>
-        <div th:text="${summary}"></div>
+
+        <div th:text="${sessionId}"></div>
+        <div th:text="${type}"></div>
+        <div th:text="${title}"></div>
+        <div th:text="${status}"></div>
+        <div th:text="${detail}"></div>
+        <div th:text="${timestamp}"></div>
+        <div th:text="${operationId}"></div>
+        <div th:text="${errorCode}"></div>
+
+
         <a href="/">Go Home</a>
     </body>
 </html>

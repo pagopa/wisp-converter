@@ -4,6 +4,8 @@ import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.util.CommonUtility;
 import it.gov.pagopa.wispconverter.util.Constants;
+import it.gov.pagopa.wispconverter.util.ErrorUtil;
+import it.gov.pagopa.wispconverter.util.MDCUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
@@ -35,98 +37,41 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
-    @Value("${error.code.uri}")
-    private String errorCodeUri;
-    private static final String ERROR_CODE_TITLE = "error-code.%s.title";
-    private static final String ERROR_CODE_DETAIL = "error-code.%s.detail";
-
-    private static final String EXTRA_FIELD_OPERATION_ID = "operation-id";
-    private static final String EXTRA_FIELD_ERROR_TIMESTAMP = "timestamp";
-    private static final String EXTRA_FIELD_ERROR_CODE = "error-code";
-
+    private final ErrorUtil errorUtil;
     private final MessageSource messageSource;
 
     @ExceptionHandler(AppException.class)
     public ErrorResponse handleAppException(AppException appEx) {
-        return forAppException(appEx);
+        ErrorResponse errorResponse = errorUtil.forAppException(appEx);
+        ProblemDetail problemDetail = errorResponse.updateAndGetBody(this.messageSource, LocaleContextHolder.getLocale());
+        MDCUtil.setMDCError(problemDetail);
+        MDCUtil.setMDCCloseFailedOperation(errorResponse.getStatusCode().value());
+        return errorResponse;
     }
 
     @ExceptionHandler(Exception.class)
-    public ErrorResponse handleGenericException(Exception ex) {
+    public ErrorResponse handleGenericException(Exception ex, WebRequest request) {
         String operationId = MDC.get(Constants.MDC_OPERATION_ID);
         log.error(String.format("GenericException: operation-id=[%s]", operationId!=null?operationId:"n/a"), ex);
-        return forAppException(new AppException(ex, AppErrorCodeMessageEnum.ERROR, ex.getMessage()));
+        ErrorResponse errorResponse = errorUtil.forAppException(new AppException(ex, AppErrorCodeMessageEnum.ERROR, ex.getMessage()));
+        ProblemDetail problemDetail = errorResponse.updateAndGetBody(this.messageSource, LocaleContextHolder.getLocale());
+        MDCUtil.setMDCError(problemDetail);
+        MDCUtil.setMDCCloseFailedOperation(errorResponse.getStatusCode().value());
+        return errorResponse;
     }
 
     @Override
     protected ResponseEntity<Object> handleExceptionInternal(Exception ex, Object body, HttpHeaders headers, HttpStatusCode statusCode, WebRequest request) {
         if (body == null && ex instanceof ErrorResponse errorResponse) {
             ProblemDetail problemDetail = errorResponse.updateAndGetBody(this.messageSource, LocaleContextHolder.getLocale());
-            setExtraProperties(problemDetail);
-            setMDCError(statusCode, problemDetail);
+            errorUtil.setExtraProperties(problemDetail);
+            MDCUtil.setMDCError(problemDetail);
+            MDCUtil.setMDCCloseFailedOperation(errorResponse.getStatusCode().value());
             body = problemDetail;
+        } else {
+            MDCUtil.setMDCCloseFailedOperation(statusCode.value());
         }
         return super.handleExceptionInternal(ex, body, headers, statusCode, request);
-    }
-
-    private void setMDCError(HttpStatusCode statusCode, ProblemDetail problemDetail){
-        setMDCCloseOperation("KO", statusCode);
-
-        MDC.put(Constants.MDC_ERROR_TITLE, problemDetail.getTitle());
-        MDC.put(Constants.MDC_ERROR_DETAIL, problemDetail.getDetail());
-
-        Map<String, Object> properties = problemDetail.getProperties();
-        if (properties != null) {
-            String errorCode = (String)properties.get(EXTRA_FIELD_ERROR_CODE);
-            MDC.put(Constants.MDC_ERROR_CODE, errorCode);
-        }
-    }
-    private void setMDCCloseOperation(String status, HttpStatusCode statusCode){
-        MDC.put(Constants.MDC_STATUS, status);
-        MDC.put(Constants.MDC_STATUS_CODE, String.valueOf(statusCode.value()));
-        String executionTime = CommonUtility.getExecutionTime(MDC.get(Constants.MDC_START_TIME));
-        MDC.put(Constants.MDC_EXECUTION_TIME, executionTime);
-    }
-
-    private ErrorResponse forAppException(AppException appEx){
-        return ErrorResponse.builder(appEx, forAppErrorCodeMessageEnum(appEx.getError(), appEx.getMessage()))
-                .titleMessageCode(String.format(ERROR_CODE_TITLE, appEx.getError().name()))
-                .detailMessageCode(String.format(ERROR_CODE_DETAIL, appEx.getError().name()))
-                .detailMessageArguments(appEx.getArgs())
-                .build(messageSource, LocaleContextHolder.getLocale());
-    }
-
-    private ProblemDetail forAppErrorCodeMessageEnum(AppErrorCodeMessageEnum error, @Nullable String detail) {
-        Assert.notNull(error, "AppErrorCodeMessageEnum is required");
-
-        ProblemDetail problemDetail = ProblemDetail.forStatus(error.getStatus());
-        problemDetail.setType(getTypeFromErrorCode(getAppCode(error)));
-        problemDetail.setTitle(error.getTitle());
-        problemDetail.setDetail(detail);
-
-        problemDetail.setProperty(EXTRA_FIELD_ERROR_CODE, getAppCode(error));
-        setExtraProperties(problemDetail);
-        setMDCError(error.getStatus(), problemDetail);
-
-        return problemDetail;
-    }
-
-    private void setExtraProperties(ProblemDetail problemDetail){
-        problemDetail.setProperty(EXTRA_FIELD_ERROR_TIMESTAMP, Instant.now());
-        String operationId = MDC.get(Constants.MDC_OPERATION_ID);
-        if(operationId!=null){
-            problemDetail.setProperty(EXTRA_FIELD_OPERATION_ID, operationId);
-        }
-    }
-    private URI getTypeFromErrorCode(String errorCode) {
-        return new DefaultUriBuilderFactory()
-                .uriString(errorCodeUri)
-                .pathSegment(errorCode)
-                .build();
-    }
-
-    private String getAppCode(AppErrorCodeMessageEnum error){
-        return String.format("%s-%s", Constants.SERVICE_CODE_APP, error.getCode());
     }
 
 

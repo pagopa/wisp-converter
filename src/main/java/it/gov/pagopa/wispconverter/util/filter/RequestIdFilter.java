@@ -5,11 +5,16 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.UUID;
 
 import static it.gov.pagopa.wispconverter.util.Constants.HEADER_REQUEST_ID;
@@ -17,7 +22,11 @@ import static it.gov.pagopa.wispconverter.util.Constants.HEADER_REQUEST_ID;
 
 
 @Slf4j
+@Getter
+@Setter
 public class RequestIdFilter extends OncePerRequestFilter {
+
+    private List<String> excludeUrlPatterns;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
@@ -37,6 +46,14 @@ public class RequestIdFilter extends OncePerRequestFilter {
         ((HttpServletResponse) response).setHeader(HEADER_REQUEST_ID, requestId);
 
         filterChain.doFilter(request, response);
+    }
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        AntPathMatcher pathMatcher = new AntPathMatcher();
+        return excludeUrlPatterns
+                .stream()
+                .anyMatch(p -> pathMatcher.match(p, request.getServletPath()));
     }
 
 }

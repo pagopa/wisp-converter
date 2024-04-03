@@ -66,7 +66,6 @@ public abstract class AbstractAppServerLoggingFilter extends OncePerRequestFilte
 
   private boolean responsePretty = false;
 
-  @Value("${log.server.exclude-url-patterns}")
   private List<String> excludeUrlPatterns;
 
   @Override
@@ -334,10 +333,10 @@ public abstract class AbstractAppServerLoggingFilter extends OncePerRequestFilte
             .map((entry) -> {
               if(isResponsePretty()){
                 String values = entry.getValue().stream().collect(Collectors.joining("\", \"","\"","\""));
-                return PRETTY_OUT +"*\t"+entry.getKey() + ": [" + values + "]";
+                return PRETTY_OUT +"*\t"+entry.getKey().toLowerCase() + ": [" + values + "]";
               } else {
                 String values = entry.getValue().stream().collect(Collectors.joining("\", \"","\"","\""));
-                return entry.getKey() + ": [" + values + "]";
+                return entry.getKey().toLowerCase() + ": [" + values + "]";
               }
             });
     if(isRequestPretty()){

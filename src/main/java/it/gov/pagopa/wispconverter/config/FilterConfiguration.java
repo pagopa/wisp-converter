@@ -1,17 +1,24 @@
 package it.gov.pagopa.wispconverter.config;
 
+import it.gov.pagopa.wispconverter.service.ReService;
 import it.gov.pagopa.wispconverter.util.filter.ReFilter;
 import it.gov.pagopa.wispconverter.util.filter.RequestIdFilter;
 import it.gov.pagopa.wispconverter.util.filter.RequestResponseWrapperFilter;
 import it.gov.pagopa.wispconverter.util.filter.AppServerLoggingFilterFilter;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 
+import java.util.List;
+
 @Configuration
+@RequiredArgsConstructor
 public class FilterConfiguration {
+
+    private final ReService reService;
 
     @Value("${log.server.request.include-headers}")
     private boolean serverRequestIncludeHeaders;
@@ -34,40 +41,51 @@ public class FilterConfiguration {
     @Value("${log.server.response.pretty}")
     private boolean serverResponsePretty;
 
+    @Value("${filter.exclude-url-patterns}")
+    private List<String> excludeUrlPatterns;
+
     @Bean
     @Order(Ordered.HIGHEST_PRECEDENCE)
     public RequestIdFilter requestIdFilter() {
-        return new RequestIdFilter();
+        RequestIdFilter filter = new RequestIdFilter();
+        filter.setExcludeUrlPatterns(excludeUrlPatterns);
+        return filter;
     }
 
     @Bean
     @Order(Ordered.HIGHEST_PRECEDENCE+1)
     public RequestResponseWrapperFilter requestResponseWrapperFilter() {
-        return new RequestResponseWrapperFilter();
+        RequestResponseWrapperFilter filter = new RequestResponseWrapperFilter();
+        filter.setExcludeUrlPatterns(excludeUrlPatterns);
+        return filter;
     }
 
     @Bean
     @Order(Ordered.HIGHEST_PRECEDENCE+2)
     public AppServerLoggingFilterFilter appServerLogging() {
-        AppServerLoggingFilterFilter appServerLoggingFilterFilter = new AppServerLoggingFilterFilter();
+        AppServerLoggingFilterFilter filter = new AppServerLoggingFilterFilter();
 
-        appServerLoggingFilterFilter.setRequestIncludeHeaders(serverRequestIncludeHeaders);
-        appServerLoggingFilterFilter.setRequestIncludeClientInfo(serverRequestIncludeClientInfo);
-        appServerLoggingFilterFilter.setRequestIncludePayload(serverRequestIncludePayload);
-        appServerLoggingFilterFilter.setRequestMaxPayloadLength(serverRequestMaxLength);
-        appServerLoggingFilterFilter.setRequestPretty(serverRequestPretty);
+        filter.setRequestIncludeHeaders(serverRequestIncludeHeaders);
+        filter.setRequestIncludeClientInfo(serverRequestIncludeClientInfo);
+        filter.setRequestIncludePayload(serverRequestIncludePayload);
+        filter.setRequestMaxPayloadLength(serverRequestMaxLength);
+        filter.setRequestPretty(serverRequestPretty);
 
-        appServerLoggingFilterFilter.setResponseIncludeHeaders(serverResponseIncludeHeaders);
-        appServerLoggingFilterFilter.setResponseIncludePayload(serverResponseIncludePayload);
-        appServerLoggingFilterFilter.setResponseMaxPayloadLength(serverResponseMaxLength);
-        appServerLoggingFilterFilter.setResponsePretty(serverResponsePretty);
-        return appServerLoggingFilterFilter;
+        filter.setResponseIncludeHeaders(serverResponseIncludeHeaders);
+        filter.setResponseIncludePayload(serverResponseIncludePayload);
+        filter.setResponseMaxPayloadLength(serverResponseMaxLength);
+        filter.setResponsePretty(serverResponsePretty);
+
+        filter.setExcludeUrlPatterns(excludeUrlPatterns);
+        return filter;
     }
 
     @Bean
     @Order(Ordered.HIGHEST_PRECEDENCE+3)
     public ReFilter reFilter() {
-        return new ReFilter();
+        ReFilter filter = new ReFilter(reService);
+        filter.setExcludeUrlPatterns(excludeUrlPatterns);
+        return filter;
     }
 
 
