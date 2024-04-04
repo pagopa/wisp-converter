@@ -3,9 +3,7 @@ package it.gov.pagopa.wispconverter.service;
 import gov.telematici.pagamenti.ws.ObjectFactory;
 import gov.telematici.pagamenti.ws.PaaInviaRT;
 import gov.telematici.pagamenti.ws.ppthead.IntestazionePPT;
-import it.gov.digitpa.schemas._2011.pagamenti.CtDominio;
-import it.gov.digitpa.schemas._2011.pagamenti.CtIstitutoAttestante;
-import it.gov.digitpa.schemas._2011.pagamenti.CtRicevutaTelematica;
+import it.gov.digitpa.schemas._2011.pagamenti.*;
 import it.gov.pagopa.pagopa_api.pa.pafornode.CtReceiptV2;
 import it.gov.pagopa.pagopa_api.pa.pafornode.PaSendRTV2Request;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
@@ -21,6 +19,7 @@ import org.w3c.dom.Element;
 import org.xmlsoap.schemas.soap.envelope.Envelope;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -93,6 +92,20 @@ public class ReceiptService {
 
         it.gov.digitpa.schemas._2011.pagamenti.ObjectFactory objectFactory = new it.gov.digitpa.schemas._2011.pagamenti.ObjectFactory();
         CtIstitutoAttestante ctIstitutoAttestante = objectFactory.createCtIstitutoAttestante();
+        ctIstitutoAttestante.setDenominazioneAttestante("");
+        ctIstitutoAttestante.setCodiceUnitOperAttestante("");
+        ctIstitutoAttestante.setDenomUnitOperAttestante("");
+        ctIstitutoAttestante.setIndirizzoAttestante("");
+
+        CtDominio ctDominio = objectFactory.createCtDominio();
+        ctDominio.setIdentificativoDominio("");//TODO
+        ctDominio.setIdentificativoStazioneRichiedente("");//TODO
+
+        CtEnteBeneficiario ctEnteBeneficiario = objectFactory.createCtEnteBeneficiario();//TODO recuperare valori da RPT
+
+        CtSoggettoVersante ctSoggettoVersante = objectFactory.createCtSoggettoVersante();//TODO recuperare valori da RPT
+        CtSoggettoPagatore ctSoggettoPagatore = objectFactory.createCtSoggettoPagatore();//TODO recuperare valori da RPT
+
         //TODO: recuperare da cache i valori dalla tabella CONFIGURATION_KEYS
 //        val tipoIdentificativoUnivoco = DDataChecks.getConfigurationKeys(ddataMap, "istitutoAttestante.identificativoUnivocoAttestante.tipoIdentificativoUnivoco")
 //        val codiceIdentificativoUnivoco = DDataChecks.getConfigurationKeys(ddataMap, "istitutoAttestante.identificativoUnivocoAttestante.codiceIdentificativoUnivoco")
@@ -111,17 +124,33 @@ public class ReceiptService {
         CtRicevutaTelematica ctRicevutaTelematica = objectFactory.createCtRicevutaTelematica();
 
         ctRicevutaTelematica.setVersioneOggetto("6.2.0");
-
-        CtDominio ctDominio = objectFactory.createCtDominio();
-        ctDominio.setIdentificativoDominio("");//TODO
-        ctDominio.setIdentificativoStazioneRichiedente("");//TODO
         ctRicevutaTelematica.setDominio(ctDominio);
-
         ctRicevutaTelematica.setIdentificativoMessaggioRicevuta(UUID.randomUUID().toString().replaceAll("-", ""));
 
         Instant now = Instant.now();
         ctRicevutaTelematica.setDataOraMessaggioRicevuta(XmlUtil.toXMLGregoirianCalendar(now));
-        ctRicevutaTelematica.setIdentificativoMessaggioRicevuta("");
+        ctRicevutaTelematica.setIdentificativoMessaggioRicevuta("");//TODO
+        ctRicevutaTelematica.setRiferimentoDataRichiesta(null);//TODO
+        ctRicevutaTelematica.setIstitutoAttestante(ctIstitutoAttestante);
+
+        ctRicevutaTelematica.setEnteBeneficiario(ctEnteBeneficiario);
+        ctRicevutaTelematica.setSoggettoVersante(ctSoggettoVersante);
+        ctRicevutaTelematica.setSoggettoPagatore(ctSoggettoPagatore);
+
+        CtDatiVersamentoRT ctDatiVersamentoRT = objectFactory.createCtDatiVersamentoRT();
+        ctDatiVersamentoRT.setCodiceEsitoPagamento("1");//TODO capire che valore mettere
+        ctDatiVersamentoRT.setImportoTotalePagato(BigDecimal.ZERO);
+        ctDatiVersamentoRT.setIdentificativoUnivocoVersamento("");//TODO recuperare valori da RPT
+        ctDatiVersamentoRT.setCodiceContestoPagamento("");//TODO recuperare valori da RPT
+
+        CtDatiSingoloPagamentoRT ctDatiSingoloPagamentoRT = objectFactory.createCtDatiSingoloPagamentoRT();
+        ctDatiSingoloPagamentoRT.setSingoloImportoPagato(BigDecimal.ZERO);
+        ctDatiSingoloPagamentoRT.setEsitoSingoloPagamento("");//TODO cosa mettere?
+        ctDatiSingoloPagamentoRT.setDataEsitoSingoloPagamento(XmlUtil.toXMLGregoirianCalendar(now));
+        ctDatiSingoloPagamentoRT.setIdentificativoUnivocoRiscossione("0");
+        ctDatiSingoloPagamentoRT.setCausaleVersamento("");//TODO recuperare dal versamento di RPT
+        ctDatiSingoloPagamentoRT.setDatiSpecificiRiscossione("");//TODO recuperare dal versamento di RPT
+        ctDatiVersamentoRT.getDatiSingoloPagamento().add(ctDatiSingoloPagamentoRT);
 
 //                                        val body = CtRicevutaTelematica(
 //                                        "6.2.0",
