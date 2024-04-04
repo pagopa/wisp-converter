@@ -42,48 +42,26 @@ public class ConverterService {
 
     private final JaxbElementUtil jaxbElementUtil;
 
-    private final FileReader fileReader;
+    public String convert(String sessionId) {
 
+        // get request entity from CosmosDB
+        RPTRequestEntity rptRequestEntity = getRPTRequestEntity(sessionId);
 
-    public ConversionResultDTO convert(String sessionId) {
+        // unmarshalling header and body from request entity
+        List<RPTContentDTO> rptContentDTOs = getRPTContentDTO(rptRequestEntity.getPrimitive(), rptRequestEntity.getPayload());
 
-        ConversionResultDTO conversionResultDTO = null;
-        try {
-            // get request entity from CosmosDB
-            RPTRequestEntity rptRequestEntity = getRPTRequestEntity(sessionId);
+        // extracting creditor institution code from header and call GPD bulk creation API
+        this.debtPositionService.executeBulkCreation(rptContentDTOs);
 
-            // unmarshalling header and body from request entity
-            List<RPTContentDTO> rptContentDTOs = getRPTContentDTO(rptRequestEntity.getPrimitive(), rptRequestEntity.getPayload());
+        // call APIM policy for save key for decoupler and save in Redis cache the mapping of the request identifier needed for RT generation in next steps
+        this.cacheService.storeRequestMappingInCache(rptContentDTOs, sessionId);
 
-            // extracting creditor institution code from header and call GPD bulk creation API
-            this.debtPositionService.executeBulkCreation(rptContentDTOs);
-
-            // call APIM policy for save key for decoupler and save in Redis cache the mapping of the request identifier needed for RT generation in next steps
-            this.cacheService.storeRequestMappingInCache(rptContentDTOs, sessionId);
-
-            // execute communication with Checkout service and set the redirection URI as response
-            String redirectURI = this.checkoutService.executeCall();
-            conversionResultDTO.setUri(redirectURI);
-
-        } catch (IOException e) {
-            log.error("Error while executing RPT conversion. ", e);
-            conversionResultDTO = getHTMLErrorPage();
-        }
-
-        return conversionResultDTO;
+        // execute communication with Checkout service and set the redirection URI as response
+        String redirectURI = this.checkoutService.executeCall();
+        return redirectURI;
     }
 
 
-    @SuppressWarnings({"rawtypes"})
-//    private PaymentPosition mapRPTToDebtPosition(RPTRequestDTO rptRequestDTO, RPTContentDTO rptContentDTO) {
-//
-//        // call IUV Generator API for generate NAV
-//        String creditorInstitutionCode = rptContentDTO.getIdDominio();
-//        String navCode = this.navGeneratorService.getNAVCodeFromIUVGenerator(creditorInstitutionCode);
-//
-//        // TODO mapping
-//        return null;
-//    }
 
     private RPTRequestEntity getRPTRequestEntity(String sessionId) {
         Optional<RPTRequestEntity> optRPTReqEntity = this.rptRequestRepository.findById(sessionId);
@@ -92,9 +70,14 @@ public class ConverterService {
         // TODO RE
     }
 
-    private List<RPTContentDTO> getRPTContentDTO(String primitive, String payload) throws IOException {
+    private List<RPTContentDTO> getRPTContentDTO(String primitive, String payload) {
 
-        byte[] payloadUnzipped = ZipUtil.unzip(ZipUtil.base64Decode(payload));
+        byte[] payloadUnzipped = new byte[0];
+        try {
+            payloadUnzipped = ZipUtil.unzip(ZipUtil.base64Decode(payload));
+        } catch (IOException e) {
+            throw new AppException(e, AppErrorCodeMessageEnum.UNZIP, e.getMessage());
+        }
         Element envelopeElement = jaxbElementUtil.convertToEnvelopeElement(payloadUnzipped);
         Envelope envelope = jaxbElementUtil.convertToBean(envelopeElement, Envelope.class);
 
@@ -137,13 +120,5 @@ public class ConverterService {
         return jaxbElementUtil.convertToBean(rptElement, CtRichiestaPagamentoTelematico.class);
     }
 
-    private ConversionResultDTO getHTMLErrorPage() {
-        ConversionResultDTO conversionResultDTO = ConversionResultDTO.builder().build();
-        try {
-            conversionResultDTO.setErrorPage(this.fileReader.readFileFromResources("static/error.html"));
-        } catch (IOException e) {
-            conversionResultDTO.setErrorPage("<!DOCTYPE html><html lang=\"en\"><head></head><body>No content found</body></html>");
-        }
-        return conversionResultDTO;
-    }
+
 }

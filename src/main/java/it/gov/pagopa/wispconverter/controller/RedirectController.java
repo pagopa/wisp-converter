@@ -58,8 +58,8 @@ public class RedirectController {
                            @RequestParam("sessionId") String sessionId,
                            Model model, HttpServletResponse response) {
         try{
-            ConversionResultDTO conversionResultDTO = converterService.convert(sessionId);
-            return "redirect:" + conversionResultDTO.getUri();
+            String redirectURI = converterService.convert(sessionId);
+            return "redirect:" + redirectURI;
         } catch (AppException appException){
             ErrorResponse errorResponse = errorUtil.forAppException(appException);
             ProblemDetail problemDetail = errorResponse.updateAndGetBody(this.messageSource, LocaleContextHolder.getLocale());
@@ -94,8 +94,8 @@ public class RedirectController {
     public ResponseEntity<RedirectResponse> redirectInfo(@Parameter(description = "", example = "identificativoIntermediarioPA_sessionId")
                                          @NotBlank(message = "{redirect.session-id.not-blank}")
                                          @RequestParam("sessionId") String sessionId) {
-        ConversionResultDTO conversionResultDTO = converterService.convert(sessionId);
-        return ResponseEntity.ok(RedirectResponse.builder().redirectUrl(conversionResultDTO.getUri()).build());
+        String redirectURI = converterService.convert(sessionId);
+        return ResponseEntity.ok(RedirectResponse.builder().redirectUrl(redirectURI).build());
     }
 
     private void enrichModelWithError(Model model, ProblemDetail problemDetail, int statusCode){

@@ -1,10 +1,12 @@
 package it.gov.pagopa.wispconverter.config.client;
 
 import it.gov.pagopa.wispconverter.service.ReService;
+import it.gov.pagopa.wispconverter.util.client.checkout.CheckoutClient;
+import it.gov.pagopa.wispconverter.util.client.checkout.CheckoutClientLogging;
+import it.gov.pagopa.wispconverter.util.client.checkout.CheckoutClientResponseErrorHandler;
+import it.gov.pagopa.wispconverter.util.client.gpd.GpdClient;
 import it.gov.pagopa.wispconverter.util.client.gpd.GpdClientLogging;
-import it.gov.pagopa.wispconverter.util.client.iuvgenerator.IuvGeneratorClient;
-import it.gov.pagopa.wispconverter.util.client.iuvgenerator.IuvGeneratorClientLogging;
-import it.gov.pagopa.wispconverter.util.client.iuvgenerator.IuvGeneratorClientResponseErrorHandler;
+import it.gov.pagopa.wispconverter.util.client.gpd.GpdClientResponseErrorHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -12,46 +14,45 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @Slf4j
-public class IuvGeneratorClientConfig {
+public class CheckoutClientConfig {
 
-    @Value("${client.iuvgenerator.read-timeout}")
+    @Value("${client.checkout.read-timeout}")
     private Integer readTimeout;
 
-    @Value("${client.iuvgenerator.connect-timeout}")
+    @Value("${client.checkout.connect-timeout}")
     private Integer connectTimeout;
 
-    @Value("${client.iuvgenerator.base-path}")
+    @Value("${client.checkout.base-path}")
     private String basePath;
 
-    @Value("${client.iuvgenerator.api-key}")
+    @Value("${client.checkout.api-key}")
     private String apiKey;
 
-    @Value("${log.client.iuvgenerator.request.include-headers}")
+    @Value("${log.client.checkout.request.include-headers}")
     private boolean clientRequestIncludeHeaders;
-    @Value("${log.client.iuvgenerator.request.include-payload}")
+    @Value("${log.client.checkout.request.include-payload}")
     private boolean clientRequestIncludePayload;
-    @Value("${log.client.iuvgenerator.request.max-payload-length}")
+    @Value("${log.client.checkout.request.max-payload-length}")
     private int clientRequestMaxLength;
-    @Value("${log.client.iuvgenerator.response.include-headers}")
+    @Value("${log.client.checkout.response.include-headers}")
     private boolean clientResponseIncludeHeaders;
-    @Value("${log.client.iuvgenerator.response.include-payload}")
+    @Value("${log.client.checkout.response.include-payload}")
     private boolean clientResponseIncludePayload;
-    @Value("${log.client.iuvgenerator.response.max-payload-length}")
+    @Value("${log.client.checkout.response.max-payload-length}")
     private int clientResponseMaxLength;
 
-    @Value("${log.client.iuvgenerator.mask.header.name}")
+    @Value("${log.client.checkout.mask.header.name}")
     private String maskHeaderName;
 
-    @Value("${log.client.iuvgenerator.request.pretty}")
+    @Value("${log.client.checkout.request.pretty}")
     private boolean clientRequestPretty;
 
-    @Value("${log.client.iuvgenerator.response.pretty}")
+    @Value("${log.client.checkout.response.pretty}")
     private boolean clientResponsePretty;
 
-
     @Bean
-    public IuvGeneratorClient iuvGeneratorClient(ReService reService) {
-        IuvGeneratorClientLogging clientLogging = new IuvGeneratorClientLogging();
+    public CheckoutClient checkoutClient(ReService reService) {
+        CheckoutClientLogging clientLogging = new CheckoutClientLogging();
         clientLogging.setRequestIncludeHeaders(clientRequestIncludeHeaders);
         clientLogging.setRequestIncludePayload(clientRequestIncludePayload);
         clientLogging.setRequestMaxPayloadLength(clientRequestMaxLength);
@@ -63,9 +64,10 @@ public class IuvGeneratorClientConfig {
         clientLogging.setResponseMaxPayloadLength(clientResponseMaxLength);
         clientLogging.setResponsePretty(clientResponsePretty);
 
-        IuvGeneratorClient client = new IuvGeneratorClient(readTimeout, connectTimeout);
+
+        CheckoutClient client = new CheckoutClient(readTimeout, connectTimeout);
         client.addCustomLoggingInterceptor(clientLogging);
-        client.addCustomErrorHandler(new IuvGeneratorClientResponseErrorHandler());
+        client.addCustomErrorHandler(new CheckoutClientResponseErrorHandler());
 
         client.setBasePath(basePath);
         client.setBasePath(apiKey);
