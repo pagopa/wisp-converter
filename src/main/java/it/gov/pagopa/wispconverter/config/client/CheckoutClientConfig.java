@@ -1,8 +1,11 @@
 package it.gov.pagopa.wispconverter.config.client;
 
 import it.gov.pagopa.wispconverter.service.ReService;
-import it.gov.pagopa.wispconverter.util.client.checkout.CheckoutClientLogging;
+import it.gov.pagopa.wispconverter.util.client.MDCInterceptor;
+import it.gov.pagopa.wispconverter.util.client.ReInterceptor;
+import it.gov.pagopa.wispconverter.util.client.checkout.CheckoutClientLoggingInterceptor;
 import it.gov.pagopa.wispconverter.util.client.checkout.CheckoutClientResponseErrorHandler;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -18,7 +21,10 @@ import java.util.List;
 
 @Configuration
 @Slf4j
+@RequiredArgsConstructor
 public class CheckoutClientConfig {
+
+    private final ReService reService;
 
     @Value("${client.checkout.read-timeout}")
     private Integer readTimeout;
@@ -56,7 +62,7 @@ public class CheckoutClientConfig {
 
     @Bean
     public it.gov.pagopa.checkoutclient.client.ApiClient checkoutClient() {
-        CheckoutClientLogging clientLogging = new CheckoutClientLogging();
+        CheckoutClientLoggingInterceptor clientLogging = new CheckoutClientLoggingInterceptor();
         clientLogging.setRequestIncludeHeaders(clientRequestIncludeHeaders);
         clientLogging.setRequestIncludePayload(clientRequestIncludePayload);
         clientLogging.setRequestMaxPayloadLength(clientRequestMaxLength);
@@ -71,6 +77,8 @@ public class CheckoutClientConfig {
         RestTemplate restTemplate = restTemplate();
 
         List<ClientHttpRequestInterceptor> currentInterceptors = restTemplate.getInterceptors();
+        currentInterceptors.add(new MDCInterceptor());
+        currentInterceptors.add(new ReInterceptor(reService));
         currentInterceptors.add(clientLogging);
         restTemplate.setInterceptors(currentInterceptors);
 
@@ -78,7 +86,7 @@ public class CheckoutClientConfig {
 
         it.gov.pagopa.checkoutclient.client.ApiClient client = new it.gov.pagopa.checkoutclient.client.ApiClient(restTemplate);
         client.setBasePath(basePath);
-        client.setBasePath(apiKey);
+//        client.setApiKey(apiKey);
 
         return client;
     }

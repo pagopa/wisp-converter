@@ -1,6 +1,6 @@
-package it.gov.pagopa.wispconverter.util.client.gpd;
+package it.gov.pagopa.wispconverter.util.client.decouplercaching;
 
-import it.gov.pagopa.wispconverter.util.client.AbstractAppClientLogging;
+import it.gov.pagopa.wispconverter.util.client.AbstractAppClientLoggingInterceptor;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -9,7 +9,7 @@ import org.springframework.http.client.ClientHttpResponse;
 
 @Slf4j
 @RequiredArgsConstructor
-public class GpdClientLogging extends AbstractAppClientLogging {
+public class DecouplerCachingClientLoggingInterceptor extends AbstractAppClientLoggingInterceptor {
 
 
   @Override

@@ -1,8 +1,11 @@
 package it.gov.pagopa.wispconverter.config.client;
 
 import it.gov.pagopa.wispconverter.service.ReService;
-import it.gov.pagopa.wispconverter.util.client.gpd.GpdClientLogging;
+import it.gov.pagopa.wispconverter.util.client.MDCInterceptor;
+import it.gov.pagopa.wispconverter.util.client.ReInterceptor;
+import it.gov.pagopa.wispconverter.util.client.gpd.GpdClientLoggingInterceptor;
 import it.gov.pagopa.wispconverter.util.client.gpd.GpdClientResponseErrorHandler;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -18,7 +21,9 @@ import java.util.List;
 
 @Configuration
 @Slf4j
+@RequiredArgsConstructor
 public class GpdClientConfig {
+    private final ReService reService;
 
     @Value("${client.gpd.read-timeout}")
     private Integer readTimeout;
@@ -56,7 +61,7 @@ public class GpdClientConfig {
 
     @Bean
     public it.gov.pagopa.gpdclient.client.ApiClient gpdClient() {
-        GpdClientLogging clientLogging = new GpdClientLogging();
+        GpdClientLoggingInterceptor clientLogging = new GpdClientLoggingInterceptor();
         clientLogging.setRequestIncludeHeaders(clientRequestIncludeHeaders);
         clientLogging.setRequestIncludePayload(clientRequestIncludePayload);
         clientLogging.setRequestMaxPayloadLength(clientRequestMaxLength);
@@ -71,6 +76,8 @@ public class GpdClientConfig {
         RestTemplate restTemplate = restTemplate();
 
         List<ClientHttpRequestInterceptor> currentInterceptors = restTemplate.getInterceptors();
+        currentInterceptors.add(new MDCInterceptor());
+        currentInterceptors.add(new ReInterceptor(reService));
         currentInterceptors.add(clientLogging);
         restTemplate.setInterceptors(currentInterceptors);
 
@@ -79,7 +86,7 @@ public class GpdClientConfig {
         it.gov.pagopa.gpdclient.client.ApiClient client = new it.gov.pagopa.gpdclient.client.ApiClient(restTemplate);
 
         client.setBasePath(basePath);
-        client.setBasePath(apiKey);
+        client.setApiKey(apiKey);
 
         return client;
     }

@@ -1,6 +1,6 @@
-package it.gov.pagopa.wispconverter.util.client.decouplercaching;
+package it.gov.pagopa.wispconverter.util.client.iuvgenerator;
 
-import it.gov.pagopa.wispconverter.util.client.AbstractAppClientLogging;
+import it.gov.pagopa.wispconverter.util.client.AbstractAppClientLoggingInterceptor;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -9,7 +9,7 @@ import org.springframework.http.client.ClientHttpResponse;
 
 @Slf4j
 @RequiredArgsConstructor
-public class DecouplerCachingClientLogging extends AbstractAppClientLogging {
+public class IuvGeneratorClientLoggingInterceptor extends AbstractAppClientLoggingInterceptor {
 
 
   @Override

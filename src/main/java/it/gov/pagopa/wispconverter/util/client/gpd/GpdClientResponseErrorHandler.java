@@ -42,7 +42,7 @@ public class GpdClientResponseErrorHandler extends AbstractResponseErrorHandler 
       ex = new UnknownHttpStatusCodeException(message, statusCode.value(), statusText, headers, body, charset);
     }
 
-    throw new AppException(ex, AppErrorCodeMessageEnum.CLIENT_GPD, statusCode.value(), message) ;
+    throw new AppException(ex, AppErrorCodeMessageEnum.CLIENT_GPD, message) ;
   }
 
 

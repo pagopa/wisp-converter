@@ -25,10 +25,10 @@ import java.util.stream.Stream;
 
 @Getter
 @Setter
-public abstract class AbstractAppClientLogging implements ClientHttpRequestInterceptor {
+public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpRequestInterceptor {
 
-  public static final String REQUEST_DEFAULT_MESSAGE_PREFIX = "===> CLIENT Request CLIENT_OPERATION_ID=%s of OPERATION_ID=%s - ";
-  public static final String RESPONSE_DEFAULT_MESSAGE_PREFIX = "<=== CLIENT Response CLIENT_OPERATION_ID=%s of OPERATION_ID=%s -";
+  public static final String REQUEST_DEFAULT_MESSAGE_PREFIX = "===> CLIENT Request OPERATION_ID=%s, CLIENT_OPERATION_ID=%s - ";
+  public static final String RESPONSE_DEFAULT_MESSAGE_PREFIX = "<=== CLIENT Response OPERATION_ID=%s, CLIENT_OPERATION_ID=%s -";
   private static final int REQUEST_DEFAULT_MAX_PAYLOAD_LENGTH = 50;
   private static final int RESPONSE_DEFAULT_MAX_PAYLOAD_LENGTH = 50;
 
@@ -57,26 +57,27 @@ public abstract class AbstractAppClientLogging implements ClientHttpRequestInter
   private boolean responsePretty = false;
 
   @Override
-  public ClientHttpResponse intercept(HttpRequest req, byte[] reqBody, ClientHttpRequestExecution ex) throws IOException {
+  public ClientHttpResponse intercept(HttpRequest request, byte[] body, ClientHttpRequestExecution execution) throws IOException {
 
     String startClient = String.valueOf(System.currentTimeMillis());
     String clientOperationId = UUID.randomUUID().toString();
     MDC.put(Constants.MDC_CLIENT_OPERATION_ID, clientOperationId);
     String operationId = MDC.get(Constants.MDC_OPERATION_ID);
 
-    request(clientOperationId, operationId, req, reqBody);
-    ClientHttpResponse response = ex.execute(req, reqBody);
+    request(clientOperationId, operationId, request, body);
+    ClientHttpResponse response = execution.execute(request, body);
 
     String executionClientTime = CommonUtility.getExecutionTime(startClient);
-    response(clientOperationId, operationId, executionClientTime, req, response);
+    MDC.put(Constants.MDC_CLIENT_EXECUTION_TIME, executionClientTime);
 
+    response(clientOperationId, operationId, executionClientTime, request, response);
     return response;
   }
 
 
   public String createRequestMessage(String clientOperationId, String operationId, HttpRequest request, byte[] reqBody) {
     StringBuilder msg = new StringBuilder();
-    msg.append(String.format(REQUEST_DEFAULT_MESSAGE_PREFIX, clientOperationId, operationId));
+    msg.append(String.format(REQUEST_DEFAULT_MESSAGE_PREFIX, operationId, clientOperationId));
     if(isRequestPretty()){
       msg.append(PRETTY_OUT).append(SPACE);
     }
@@ -125,7 +126,7 @@ public abstract class AbstractAppClientLogging implements ClientHttpRequestInter
   public String createResponseMessage(String clientOperationId, String operationId, String clientExecutionTime, HttpRequest request, ClientHttpResponse response)
       throws IOException {
     StringBuilder msg = new StringBuilder();
-    msg.append(String.format(RESPONSE_DEFAULT_MESSAGE_PREFIX, clientOperationId, operationId));
+    msg.append(String.format(RESPONSE_DEFAULT_MESSAGE_PREFIX, operationId, clientOperationId));
     if(isResponsePretty()){
       msg.append(PRETTY_IN).append(SPACE);
     }

@@ -42,7 +42,7 @@ public class CheckoutClientResponseErrorHandler extends AbstractResponseErrorHan
       ex = new UnknownHttpStatusCodeException(message, statusCode.value(), statusText, headers, body, charset);
     }
 
-    throw new AppException(ex, AppErrorCodeMessageEnum.CLIENT_CHECKOUT, statusCode.value(), message) ;
+    throw new AppException(ex, AppErrorCodeMessageEnum.CLIENT_CHECKOUT, message) ;
   }
 
 

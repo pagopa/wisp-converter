@@ -1,8 +1,11 @@
 package it.gov.pagopa.wispconverter.config.client;
 
 import it.gov.pagopa.wispconverter.service.ReService;
-import it.gov.pagopa.wispconverter.util.client.iuvgenerator.IuvGeneratorClientLogging;
+import it.gov.pagopa.wispconverter.util.client.MDCInterceptor;
+import it.gov.pagopa.wispconverter.util.client.iuvgenerator.IuvGeneratorClientLoggingInterceptor;
 import it.gov.pagopa.wispconverter.util.client.iuvgenerator.IuvGeneratorClientResponseErrorHandler;
+import it.gov.pagopa.wispconverter.util.client.ReInterceptor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -18,7 +21,9 @@ import java.util.List;
 
 @Configuration
 @Slf4j
+@RequiredArgsConstructor
 public class IuvGeneratorClientConfig {
+    private final ReService reService;
 
     @Value("${client.iuvgenerator.read-timeout}")
     private Integer readTimeout;
@@ -57,7 +62,7 @@ public class IuvGeneratorClientConfig {
 
     @Bean
     public it.gov.pagopa.iuvgeneratorclient.client.ApiClient iuvGeneratorClient() {
-        IuvGeneratorClientLogging clientLogging = new IuvGeneratorClientLogging();
+        IuvGeneratorClientLoggingInterceptor clientLogging = new IuvGeneratorClientLoggingInterceptor();
         clientLogging.setRequestIncludeHeaders(clientRequestIncludeHeaders);
         clientLogging.setRequestIncludePayload(clientRequestIncludePayload);
         clientLogging.setRequestMaxPayloadLength(clientRequestMaxLength);
@@ -72,6 +77,8 @@ public class IuvGeneratorClientConfig {
         RestTemplate restTemplate = restTemplate();
 
         List<ClientHttpRequestInterceptor> currentInterceptors = restTemplate.getInterceptors();
+        currentInterceptors.add(new MDCInterceptor());
+        currentInterceptors.add(new ReInterceptor(reService));
         currentInterceptors.add(clientLogging);
         restTemplate.setInterceptors(currentInterceptors);
 
@@ -79,7 +86,7 @@ public class IuvGeneratorClientConfig {
 
         it.gov.pagopa.iuvgeneratorclient.client.ApiClient client = new it.gov.pagopa.iuvgeneratorclient.client.ApiClient(restTemplate);
         client.setBasePath(basePath);
-        client.setBasePath(apiKey);
+//        client.setApiKey(apiKey);
 
         return client;
     }

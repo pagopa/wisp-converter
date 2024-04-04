@@ -42,7 +42,7 @@ public class IuvGeneratorClientResponseErrorHandler extends AbstractResponseErro
       ex = new UnknownHttpStatusCodeException(message, statusCode.value(), statusText, headers, body, charset);
     }
 
-    throw new AppException(ex, AppErrorCodeMessageEnum.CLIENT_IUV_GENERATOR, statusCode.value(), message) ;
+    throw new AppException(ex, AppErrorCodeMessageEnum.CLIENT_IUV_GENERATOR, message) ;
   }
 
 

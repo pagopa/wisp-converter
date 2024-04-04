@@ -42,7 +42,7 @@ public class DecouplerCachingClientResponseErrorHandler extends AbstractResponse
       ex = new UnknownHttpStatusCodeException(message, statusCode.value(), statusText, headers, body, charset);
     }
 
-    throw new AppException(ex, AppErrorCodeMessageEnum.CLIENT_DECOUPLER_CACHING, statusCode.value(), message) ;
+    throw new AppException(ex, AppErrorCodeMessageEnum.CLIENT_DECOUPLER_CACHING, message) ;
   }
 
 

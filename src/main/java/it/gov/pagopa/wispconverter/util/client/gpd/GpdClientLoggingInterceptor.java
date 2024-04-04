@@ -1,6 +1,6 @@
-package it.gov.pagopa.wispconverter.util.client.checkout;
+package it.gov.pagopa.wispconverter.util.client.gpd;
 
-import it.gov.pagopa.wispconverter.util.client.AbstractAppClientLogging;
+import it.gov.pagopa.wispconverter.util.client.AbstractAppClientLoggingInterceptor;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -9,7 +9,7 @@ import org.springframework.http.client.ClientHttpResponse;
 
 @Slf4j
 @RequiredArgsConstructor
-public class CheckoutClientLogging extends AbstractAppClientLogging {
+public class GpdClientLoggingInterceptor extends AbstractAppClientLoggingInterceptor {
 
 
   @Override
