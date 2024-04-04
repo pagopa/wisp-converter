@@ -28,9 +28,12 @@ import java.util.zip.GZIPOutputStream;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
@@ -58,7 +61,8 @@ class ApiTest {
     @MockBean private GPDClient gpdClient;
     @MockBean private CheckoutClient checkoutClient;
     @MockBean private DecouplerCachingClient decouplerCachingClient;
-    @MockBean private CacheRepository cacheRepository;
+    @Qualifier("redisSimpleTemplate")
+    @MockBean private RedisTemplate<String, Object> redisSimpleTemplate;
 
     public String loadFileContent(String fileName) {
         String content = null;
@@ -135,6 +139,10 @@ class ApiTest {
                                 ).build()
                 )
         );
+        when(redisSimpleTemplate.opsForValue()).thenReturn(mock(ValueOperations.class));
+
+
+
         mvc.perform(MockMvcRequestBuilders.get("/redirect?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.status().is3xxRedirection())
                 .andDo(
