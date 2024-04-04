@@ -96,6 +96,8 @@ class RptTest {
         configDataV1.getStations().put(station.getStationCode(), station);
         when(cacheClient.cache()).thenReturn(configDataV1);
 
+        org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "cacheClient",cacheClient);
+
         HashMap<String, Collection<String>> headers = new HashMap<>();
         headers.put("location", Arrays.asList("locationheader"));
     Response executeCreationResponse =
