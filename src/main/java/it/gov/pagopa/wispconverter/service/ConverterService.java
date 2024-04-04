@@ -5,14 +5,12 @@ import gov.telematici.pagamenti.ws.NodoInviaRPT;
 import gov.telematici.pagamenti.ws.ppthead.IntestazioneCarrelloPPT;
 import gov.telematici.pagamenti.ws.ppthead.IntestazionePPT;
 import it.gov.digitpa.schemas._2011.pagamenti.CtRichiestaPagamentoTelematico;
-import it.gov.pagopa.wispconverter.client.gpd.model.PaymentPosition;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
 import it.gov.pagopa.wispconverter.service.model.ConversionResultDTO;
 import it.gov.pagopa.wispconverter.service.model.RPTContentDTO;
-import it.gov.pagopa.wispconverter.service.model.RPTRequestDTO;
 import it.gov.pagopa.wispconverter.util.FileReader;
 import it.gov.pagopa.wispconverter.util.JaxbElementUtil;
 import it.gov.pagopa.wispconverter.util.ZipUtil;
@@ -77,15 +75,15 @@ public class ConverterService {
 
 
     @SuppressWarnings({"rawtypes"})
-    private PaymentPosition mapRPTToDebtPosition(RPTRequestDTO rptRequestDTO, RPTContentDTO rptContentDTO) {
-
-        // call IUV Generator API for generate NAV
-        String creditorInstitutionCode = rptContentDTO.getIdDominio();
-        String navCode = this.navGeneratorService.getNAVCodeFromIUVGenerator(creditorInstitutionCode);
-
-        // TODO mapping
-        return null;
-    }
+//    private PaymentPosition mapRPTToDebtPosition(RPTRequestDTO rptRequestDTO, RPTContentDTO rptContentDTO) {
+//
+//        // call IUV Generator API for generate NAV
+//        String creditorInstitutionCode = rptContentDTO.getIdDominio();
+//        String navCode = this.navGeneratorService.getNAVCodeFromIUVGenerator(creditorInstitutionCode);
+//
+//        // TODO mapping
+//        return null;
+//    }
 
     private RPTRequestEntity getRPTRequestEntity(String sessionId) {
         Optional<RPTRequestEntity> optRPTReqEntity = this.rptRequestRepository.findById(sessionId);

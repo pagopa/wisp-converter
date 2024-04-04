@@ -62,10 +62,10 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-aop</artifactId>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.springframework.boot</groupId>-->
+<!--            <artifactId>spring-boot-starter-aop</artifactId>-->
+<!--        </dependency>-->
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -101,15 +101,15 @@
             <version>${cosmos-data-version}</version>
         </dependency>
 
-        <!-- Feign client -->
-        <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-openfeign</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.retry</groupId>
-            <artifactId>spring-retry</artifactId>
-        </dependency>
+<!--        &lt;!&ndash; Feign client &ndash;&gt;-->
+<!--        <dependency>-->
+<!--            <groupId>org.springframework.cloud</groupId>-->
+<!--            <artifactId>spring-cloud-starter-openfeign</artifactId>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>org.springframework.retry</groupId>-->
+<!--            <artifactId>spring-retry</artifactId>-->
+<!--        </dependency>-->
 
         <!-- Swagger/OpenAPI -->
         <dependency>
@@ -144,6 +144,12 @@
             <groupId>co.elastic.logging</groupId>
             <artifactId>logback-ecs-encoder</artifactId>
             <version>${java-ecs-logging.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.openapitools</groupId>
+            <artifactId>jackson-databind-nullable</artifactId>
+            <version>0.2.6</version>
         </dependency>
     </dependencies>
 
@@ -297,6 +303,65 @@
                         <goals>
                             <goal>sonar</goal>
                         </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.openapitools</groupId>
+                <artifactId>openapi-generator-maven-plugin</artifactId>
+                <!-- RELEASE_VERSION -->
+                <version>7.4.0</version>
+                <!-- /RELEASE_VERSION -->
+                <executions>
+                    <execution>
+                        <id>gpd</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <inputSpec>${project.basedir}/openapi-client/gpd/openapi_internal.json</inputSpec>
+
+                            <generatorName>java</generatorName>
+                            <modelNameSuffix>Dto</modelNameSuffix>
+
+                            <generateApiTests>false</generateApiTests>
+                            <generateModelTests>false</generateModelTests>
+
+                            <library>resttemplate</library>
+
+                            <configOptions>
+                                <basePackage>it.gov.pagopa.gpdclient</basePackage>
+                                <modelPackage>it.gov.pagopa.gpdclient.model</modelPackage>
+                                <apiPackage>it.gov.pagopa.gpdclient.api</apiPackage>
+                                <invokerPackage>it.gov.pagopa.gpdclient.client</invokerPackage>
+                                <dateLibrary>java8</dateLibrary>
+                            </configOptions>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>iuv-generator</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <inputSpec>${project.basedir}/openapi-client/iuv-generator/openapi.json</inputSpec>
+
+                            <generatorName>java</generatorName>
+                            <modelNameSuffix>Dto</modelNameSuffix>
+
+                            <generateApiTests>false</generateApiTests>
+                            <generateModelTests>false</generateModelTests>
+
+                            <library>resttemplate</library>
+
+                            <configOptions>
+                                <basePackage>it.gov.pagopa.iuvgeneratorclient</basePackage>
+                                <modelPackage>it.gov.pagopa.iuvgeneratorclient.model</modelPackage>
+                                <apiPackage>it.gov.pagopa.iuvgeneratorclient.api</apiPackage>
+                                <invokerPackage>it.gov.pagopa.iuvgeneratorclient.client</invokerPackage>
+                                <dateLibrary>java8</dateLibrary>
+                            </configOptions>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>

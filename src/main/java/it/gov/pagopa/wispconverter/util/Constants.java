@@ -19,4 +19,6 @@ public class Constants {
     public static final String MDC_REQUEST_ID = "requestId";
     public static final String MDC_OPERATION_ID = "operationId";
 
+    public static final String MDC_CLIENT_OPERATION_ID = "clientOperationId";
+
 }

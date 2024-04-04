@@ -1,10 +1,5 @@
 package it.gov.pagopa.wispconverter.service;
 
-import feign.FeignException;
-import io.lettuce.core.RedisException;
-import it.gov.pagopa.wispconverter.client.decoupler.DecouplerCachingClient;
-import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
-import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.CacheRepository;
 import it.gov.pagopa.wispconverter.service.model.RPTContentDTO;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +18,7 @@ public class CacheService {
 
     private static final String CACHING_KEY_TEMPLATE = "wisp_" + COMPOSITE_TWOVALUES_KEY_TEMPLATE;
 
-    private final DecouplerCachingClient decouplerCachingClient;
+//    private final DecouplerCachingClient decouplerCachingClient;
 
     private final CacheRepository cacheRepository;
 
@@ -32,20 +27,20 @@ public class CacheService {
 
 
     public void storeRequestMappingInCache(List<RPTContentDTO> rptContentDTOs, String sessionId) {
-        try {
-            rptContentDTOs.forEach(e -> {
-                String idIntermediarioPA = e.getIdIntermediarioPA();
-                String noticeNumber = e.getNoticeNumber();
-
-                String requestIDForDecoupler = String.format(COMPOSITE_TWOVALUES_KEY_TEMPLATE, idIntermediarioPA, noticeNumber); // TODO can be optimized in a single request???
-                this.decouplerCachingClient.storeKeyInCacheByAPIM(requestIDForDecoupler);
-
-                // save in Redis cache the mapping of the request identifier needed for RT generation in next steps
-                String requestIDForRTHandling = String.format(CACHING_KEY_TEMPLATE, idIntermediarioPA, noticeNumber);
-                this.cacheRepository.insert(requestIDForRTHandling, sessionId, this.requestIDMappingTTL);
-            });
-        } catch (FeignException e) {
-            throw new AppException(e, AppErrorCodeMessageEnum.CLIENT_DECOUPLER_CACHING, e.status(), e.getMessage());
-        }
+//        try {
+//            rptContentDTOs.forEach(e -> {
+//                String idIntermediarioPA = e.getIdIntermediarioPA();
+//                String noticeNumber = e.getNoticeNumber();
+//
+//                String requestIDForDecoupler = String.format(COMPOSITE_TWOVALUES_KEY_TEMPLATE, idIntermediarioPA, noticeNumber); // TODO can be optimized in a single request???
+//                this.decouplerCachingClient.storeKeyInCacheByAPIM(requestIDForDecoupler);
+//
+//                // save in Redis cache the mapping of the request identifier needed for RT generation in next steps
+//                String requestIDForRTHandling = String.format(CACHING_KEY_TEMPLATE, idIntermediarioPA, noticeNumber);
+//                this.cacheRepository.insert(requestIDForRTHandling, sessionId, this.requestIDMappingTTL);
+//            });
+//        } catch (FeignException e) {
+//            throw new AppException(e, AppErrorCodeMessageEnum.CLIENT_DECOUPLER_CACHING, e.status(), e.getMessage());
+//        }
     }
 }
