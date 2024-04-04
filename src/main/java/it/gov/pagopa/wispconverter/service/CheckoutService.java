@@ -11,12 +11,11 @@ import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.service.mapper.CartMapper;
 import it.gov.pagopa.wispconverter.service.model.CommonRPTFieldsDTO;
+import java.util.Collection;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-
-import java.util.Collection;
-import java.util.Map;
 
 @Service
 @Slf4j
@@ -62,13 +61,9 @@ public class CheckoutService {
     private String getRedirectURL(String stationId) {
         ConfigDataV1 cache = configCacheService.getCache();
         Map<String, Station> stations = cache.getStations();
-        Station station = stations.entrySet().stream()
-                .filter(entry -> entry.getValue().getStationCode().equals(stationId))
-                .findFirst()
-                .orElseThrow(() -> new AppException(AppErrorCodeMessageEnum.CONFIGURATION_INVALID_STATION, stationId))
-                .getValue();
+        Station station = stations.get(stationId);
+        if(station==null){throw new AppException(AppErrorCodeMessageEnum.CONFIGURATION_INVALID_STATION, stationId);}
         Redirect redirect = station.getRedirect();
-
         String protocol = redirect.getProtocol() == null ? "http" : redirect.getProtocol().getValue().toLowerCase();
         String url = redirect.getIp() + "/" + redirect.getPath();
         url = url.replace("//", "/");

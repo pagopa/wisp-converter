@@ -81,6 +81,7 @@ public class RPTExtractorService {
                 .nav(getNAVCodeFromIUVGenerator(creditorInstitutionId))
                 .creditorInstitutionId(creditorInstitutionId)
                 .creditorInstitutionBrokerId(soapHeader.getIdentificativoIntermediarioPA())
+                .stationId(soapHeader.getIdentificativoStazioneIntermediarioPA())
                 .payerType(rpt.getPayer().getSubjectUniqueIdentifier().getType())
                 .payerFiscalCode(rpt.getPayer().getSubjectUniqueIdentifier().getCode())
                 .payerFullName(rpt.getPayer().getName())
