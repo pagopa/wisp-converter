@@ -27,6 +27,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import static it.gov.pagopa.wispconverter.util.Constants.NODO_INVIA_CARRELLO_RPT;
+import static it.gov.pagopa.wispconverter.util.Constants.NODO_INVIA_RPT;
+
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -101,7 +104,7 @@ public class ConverterService {
         Envelope envelope = jaxbElementUtil.convertToBean(envelopeElement, Envelope.class);
 
         switch (primitive) {
-            case "nodoInviaRPT" -> {
+            case NODO_INVIA_RPT -> {
                 IntestazionePPT soapHeader = jaxbElementUtil.getSoapHeader(envelope, IntestazionePPT.class);
                 NodoInviaRPT soapBody = jaxbElementUtil.getSoapBody(envelope, NodoInviaRPT.class);
                 String idDominio = soapHeader.getIdentificativoDominio();
@@ -111,7 +114,7 @@ public class ConverterService {
                         .rpt(getRPT(soapBody.getRpt()))
                         .build());
             }
-            case "nodoInviaCarrelloRPT" -> {
+            case NODO_INVIA_CARRELLO_RPT -> {
                 IntestazioneCarrelloPPT soapHeader = jaxbElementUtil.getSoapHeader(envelope, IntestazioneCarrelloPPT.class);
                 NodoInviaCarrelloRPT soapBody = jaxbElementUtil.getSoapBody(envelope, NodoInviaCarrelloRPT.class);
 

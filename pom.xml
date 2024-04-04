@@ -130,6 +130,10 @@
             <artifactId>jsr305</artifactId>
             <version>${jsr305.version}</version>
         </dependency>
+        <dependency>
+            <groupId>wsdl4j</groupId>
+            <artifactId>wsdl4j</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>junit</groupId>
@@ -140,6 +144,18 @@
             <groupId>co.elastic.logging</groupId>
             <artifactId>logback-ecs-encoder</artifactId>
             <version>${java-ecs-logging.version}</version>
+        </dependency>
+
+
+        <dependency>
+            <groupId>org.openapitools</groupId>
+            <artifactId>jackson-databind-nullable</artifactId>
+            <version>0.2.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-ui</artifactId>
+            <version>1.7.0</version>
         </dependency>
     </dependencies>
 
@@ -228,6 +244,14 @@
                                     <wsdl>${basedir}/src/main/resources/wsdl/NodoPerPa.wsdl</wsdl>
                                     <wsdlLocation>classpath:wsdl/NodoPerPa.wsdl</wsdlLocation>
                                 </wsdlOption>
+                                <wsdlOption>
+                                    <wsdl>${basedir}/src/main/resources/wsdl/PaPerNodo.wsdl</wsdl>
+                                    <wsdlLocation>classpath:wsdl/PaPerNodo.wsdl</wsdlLocation>
+                                </wsdlOption>
+                                <wsdlOption>
+                                    <wsdl>${basedir}/src/main/resources/wsdl/paForNode.wsdl</wsdl>
+                                    <wsdlLocation>classpath:wsdl/paForNode.wsdl</wsdlLocation>
+                                </wsdlOption>
                             </wsdlOptions>
                         </configuration>
                         <goals>
@@ -258,7 +282,33 @@
                     </execution>
                 </executions>
             </plugin>
-
+<!--            <plugin>-->
+<!--                <groupId>org.openapitools</groupId>-->
+<!--                <artifactId>openapi-generator-maven-plugin</artifactId>-->
+<!--                &lt;!&ndash; RELEASE_VERSION &ndash;&gt;-->
+<!--                <version>6.1.0</version>-->
+<!--                &lt;!&ndash; /RELEASE_VERSION &ndash;&gt;-->
+<!--                <executions>-->
+<!--                    <execution>-->
+<!--                        <id>external-api</id>-->
+<!--                        <goals>-->
+<!--                            <goal>generate</goal>-->
+<!--                        </goals>-->
+<!--                        <configuration>-->
+<!--                            <inputSpec>${project.basedir}/openapi-external/closePayment/openapi.json</inputSpec>-->
+<!--                            <generatorName>java</generatorName>-->
+<!--                            <generateApiTests>false</generateApiTests>-->
+<!--                            <generateModelTests>false</generateModelTests>-->
+<!--                            <configOptions>-->
+<!--                                <delegatePattern>true</delegatePattern>-->
+<!--                                <supportingFilesToGenerate>-->
+<!--                                    ApiCallback.java,ApiClient.java,ApiException.java,ApiResponse.java,Configuration.java,Pair.java,ProgressRequestBody.java,ProgressResponseBody.java,StringUtil.java,ApiKeyAuth.java,Authentication.java,HttpBasicAuth.java,JSON.java,OAuth.java,EncodingUtils.java-->
+<!--                                </supportingFilesToGenerate>-->
+<!--                            </configOptions>-->
+<!--                        </configuration>-->
+<!--                    </execution>-->
+<!--                </executions>-->
+<!--            </plugin>-->
 
             <plugin>
                 <groupId>org.jacoco</groupId>
