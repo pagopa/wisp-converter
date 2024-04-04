@@ -1,4 +1,4 @@
-package it.gov.pagopa.standinmanager;
+package it.gov.pagopa.wispconverter;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -7,7 +7,6 @@ import static org.mockito.Mockito.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import feign.Request;
 import feign.Response;
-import it.gov.pagopa.wispconverter.Application;
 import it.gov.pagopa.wispconverter.client.cache.model.ConfigDataV1;
 import it.gov.pagopa.wispconverter.client.cache.model.Redirect;
 import it.gov.pagopa.wispconverter.client.cache.model.Station;

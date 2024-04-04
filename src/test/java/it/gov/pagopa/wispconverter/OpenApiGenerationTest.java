@@ -2,6 +2,7 @@ package it.gov.pagopa.wispconverter;
 
 import com.azure.cosmos.CosmosAsyncClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import it.gov.pagopa.wispconverter.client.gpd.GPDClient;
 import it.gov.pagopa.wispconverter.controller.RedirectController;
 import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
 import org.junit.jupiter.api.Test;
@@ -39,7 +40,7 @@ class OpenApiGenerationTest {
 
     @MockBean
     private CosmosAsyncClient cosmosAsyncClient;
-
+    @MockBean private GPDClient gpdClient;
     @Test
     void swaggerSpringPlugin() throws Exception {
         mvc.perform(MockMvcRequestBuilders.get("/v3/api-docs").accept(MediaType.APPLICATION_JSON))
