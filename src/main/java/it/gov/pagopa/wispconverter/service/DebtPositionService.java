@@ -3,7 +3,6 @@ package it.gov.pagopa.wispconverter.service;
 import it.gov.pagopa.wispconverter.service.mapper.DebtPositionMapper;
 import it.gov.pagopa.wispconverter.service.model.RPTContentDTO;
 import it.gov.pagopa.wispconverter.util.Constants;
-import it.gov.pagopa.wispconverter.util.client.gpd.GpdClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
@@ -18,7 +17,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class DebtPositionService {
 
-    private final GpdClient gpdClient;
+    private final it.gov.pagopa.gpdclient.client.ApiClient gpdClient;
 
     private final DebtPositionMapper mapper;
 

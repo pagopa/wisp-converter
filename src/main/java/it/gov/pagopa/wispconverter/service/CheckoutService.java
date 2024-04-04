@@ -1,7 +1,5 @@
 package it.gov.pagopa.wispconverter.service;
 
-import it.gov.pagopa.wispconverter.util.client.checkout.CheckoutClient;
-import it.gov.pagopa.wispconverter.util.client.gpd.GpdClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -11,7 +9,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class CheckoutService {
 
-    private final CheckoutClient checkoutClient;
+    private final it.gov.pagopa.checkoutclient.client.ApiClient checkoutClient;
 
     public String executeCall() {
 

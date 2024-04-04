@@ -1,14 +1,20 @@
 package it.gov.pagopa.wispconverter.config.client;
 
 import it.gov.pagopa.wispconverter.service.ReService;
-import it.gov.pagopa.wispconverter.util.client.gpd.GpdClientLogging;
-import it.gov.pagopa.wispconverter.util.client.iuvgenerator.IuvGeneratorClient;
 import it.gov.pagopa.wispconverter.util.client.iuvgenerator.IuvGeneratorClientLogging;
 import it.gov.pagopa.wispconverter.util.client.iuvgenerator.IuvGeneratorClientResponseErrorHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.client.BufferingClientHttpRequestFactory;
+import org.springframework.http.client.ClientHttpRequestFactory;
+import org.springframework.http.client.ClientHttpRequestInterceptor;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.DefaultUriBuilderFactory;
+
+import java.util.List;
 
 @Configuration
 @Slf4j
@@ -50,7 +56,7 @@ public class IuvGeneratorClientConfig {
 
 
     @Bean
-    public IuvGeneratorClient iuvGeneratorClient(ReService reService) {
+    public it.gov.pagopa.iuvgeneratorclient.client.ApiClient iuvGeneratorClient() {
         IuvGeneratorClientLogging clientLogging = new IuvGeneratorClientLogging();
         clientLogging.setRequestIncludeHeaders(clientRequestIncludeHeaders);
         clientLogging.setRequestIncludePayload(clientRequestIncludePayload);
@@ -63,13 +69,37 @@ public class IuvGeneratorClientConfig {
         clientLogging.setResponseMaxPayloadLength(clientResponseMaxLength);
         clientLogging.setResponsePretty(clientResponsePretty);
 
-        IuvGeneratorClient client = new IuvGeneratorClient(readTimeout, connectTimeout);
-        client.addCustomLoggingInterceptor(clientLogging);
-        client.addCustomErrorHandler(new IuvGeneratorClientResponseErrorHandler());
+        RestTemplate restTemplate = restTemplate();
 
+        List<ClientHttpRequestInterceptor> currentInterceptors = restTemplate.getInterceptors();
+        currentInterceptors.add(clientLogging);
+        restTemplate.setInterceptors(currentInterceptors);
+
+        restTemplate.setErrorHandler(new IuvGeneratorClientResponseErrorHandler());
+
+        it.gov.pagopa.iuvgeneratorclient.client.ApiClient client = new it.gov.pagopa.iuvgeneratorclient.client.ApiClient(restTemplate);
         client.setBasePath(basePath);
         client.setBasePath(apiKey);
 
         return client;
+    }
+
+    private RestTemplate restTemplate() {
+        RestTemplate restTemplate = new RestTemplate();
+        // This allows us to read the response more than once - Necessary for debugging.
+        restTemplate.setRequestFactory(new BufferingClientHttpRequestFactory(getSimpleClientHttpRequestFactory(restTemplate.getRequestFactory())));
+
+        // disable default URL encoding
+        DefaultUriBuilderFactory uriBuilderFactory = new DefaultUriBuilderFactory();
+        uriBuilderFactory.setEncodingMode(DefaultUriBuilderFactory.EncodingMode.VALUES_ONLY);
+        restTemplate.setUriTemplateHandler(uriBuilderFactory);
+        return restTemplate;
+    }
+
+    private SimpleClientHttpRequestFactory getSimpleClientHttpRequestFactory(ClientHttpRequestFactory requestFactory) {
+        SimpleClientHttpRequestFactory simpleClientHttpRequestFactory = (SimpleClientHttpRequestFactory) requestFactory;
+        simpleClientHttpRequestFactory.setConnectTimeout(this.connectTimeout);
+        simpleClientHttpRequestFactory.setReadTimeout(this.readTimeout);
+        return simpleClientHttpRequestFactory;
     }
 }

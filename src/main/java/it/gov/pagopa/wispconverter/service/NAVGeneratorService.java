@@ -1,6 +1,5 @@
 package it.gov.pagopa.wispconverter.service;
 
-import it.gov.pagopa.wispconverter.util.client.iuvgenerator.IuvGeneratorClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,7 +10,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class NAVGeneratorService {
 
-    private final IuvGeneratorClient iuvGeneratorClient;
+    private final it.gov.pagopa.iuvgeneratorclient.client.ApiClient iuvGeneratorClient;
 
     @Value("${wisp-converter.aux-digit}")
     private String auxDigit;

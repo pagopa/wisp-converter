@@ -3,15 +3,12 @@ package it.gov.pagopa.wispconverter.service;
 import it.gov.pagopa.wispconverter.repository.CacheRepository;
 import it.gov.pagopa.wispconverter.service.model.RPTContentDTO;
 import it.gov.pagopa.wispconverter.util.Constants;
-import it.gov.pagopa.wispconverter.util.client.decouplercaching.DecouplerCachingClient;
-import it.gov.pagopa.wispconverter.util.client.gpd.GpdClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -24,7 +21,7 @@ public class CacheService {
 
     private static final String CACHING_KEY_TEMPLATE = "wisp_" + COMPOSITE_TWOVALUES_KEY_TEMPLATE;
 
-    private final DecouplerCachingClient decouplerCachingClient;
+    private final it.gov.pagopa.decouplercachingclient.client.ApiClient decouplerCachingClient;
 
     private final CacheRepository cacheRepository;
 

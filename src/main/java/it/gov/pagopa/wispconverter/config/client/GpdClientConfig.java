@@ -1,14 +1,20 @@
 package it.gov.pagopa.wispconverter.config.client;
 
 import it.gov.pagopa.wispconverter.service.ReService;
-import it.gov.pagopa.wispconverter.util.client.decouplercaching.DecouplerCachingClientLogging;
-import it.gov.pagopa.wispconverter.util.client.gpd.GpdClient;
 import it.gov.pagopa.wispconverter.util.client.gpd.GpdClientLogging;
 import it.gov.pagopa.wispconverter.util.client.gpd.GpdClientResponseErrorHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.client.BufferingClientHttpRequestFactory;
+import org.springframework.http.client.ClientHttpRequestFactory;
+import org.springframework.http.client.ClientHttpRequestInterceptor;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.DefaultUriBuilderFactory;
+
+import java.util.List;
 
 @Configuration
 @Slf4j
@@ -49,7 +55,7 @@ public class GpdClientConfig {
     private boolean clientResponsePretty;
 
     @Bean
-    public GpdClient gpdClient(ReService reService) {
+    public it.gov.pagopa.gpdclient.client.ApiClient gpdClient() {
         GpdClientLogging clientLogging = new GpdClientLogging();
         clientLogging.setRequestIncludeHeaders(clientRequestIncludeHeaders);
         clientLogging.setRequestIncludePayload(clientRequestIncludePayload);
@@ -62,13 +68,38 @@ public class GpdClientConfig {
         clientLogging.setResponseMaxPayloadLength(clientResponseMaxLength);
         clientLogging.setResponsePretty(clientResponsePretty);
 
-        GpdClient client = new GpdClient(readTimeout, connectTimeout);
-        client.addCustomLoggingInterceptor(clientLogging);
-        client.addCustomErrorHandler(new GpdClientResponseErrorHandler());
+        RestTemplate restTemplate = restTemplate();
+
+        List<ClientHttpRequestInterceptor> currentInterceptors = restTemplate.getInterceptors();
+        currentInterceptors.add(clientLogging);
+        restTemplate.setInterceptors(currentInterceptors);
+
+        restTemplate.setErrorHandler(new GpdClientResponseErrorHandler());
+
+        it.gov.pagopa.gpdclient.client.ApiClient client = new it.gov.pagopa.gpdclient.client.ApiClient(restTemplate);
 
         client.setBasePath(basePath);
         client.setBasePath(apiKey);
 
         return client;
+    }
+
+    private RestTemplate restTemplate() {
+        RestTemplate restTemplate = new RestTemplate();
+        // This allows us to read the response more than once - Necessary for debugging.
+        restTemplate.setRequestFactory(new BufferingClientHttpRequestFactory(getSimpleClientHttpRequestFactory(restTemplate.getRequestFactory())));
+
+        // disable default URL encoding
+        DefaultUriBuilderFactory uriBuilderFactory = new DefaultUriBuilderFactory();
+        uriBuilderFactory.setEncodingMode(DefaultUriBuilderFactory.EncodingMode.VALUES_ONLY);
+        restTemplate.setUriTemplateHandler(uriBuilderFactory);
+        return restTemplate;
+    }
+
+    private SimpleClientHttpRequestFactory getSimpleClientHttpRequestFactory(ClientHttpRequestFactory requestFactory) {
+        SimpleClientHttpRequestFactory simpleClientHttpRequestFactory = (SimpleClientHttpRequestFactory) requestFactory;
+        simpleClientHttpRequestFactory.setConnectTimeout(this.connectTimeout);
+        simpleClientHttpRequestFactory.setReadTimeout(this.readTimeout);
+        return simpleClientHttpRequestFactory;
     }
 }
