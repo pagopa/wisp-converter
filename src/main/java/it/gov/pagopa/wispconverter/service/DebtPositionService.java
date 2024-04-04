@@ -35,7 +35,7 @@ public class DebtPositionService {
 
     private final DebtPositionMapper mapper;
 
-    private final Pattern taxonomyPattern = Pattern.compile("([^/]+/[^/]+)/?");
+    private final Pattern taxonomyPattern = Pattern.compile("([^/]++/[^/]++)/?");
 
     @Value("${wisp-converter.poste-italiane.abi-code}")
     private String posteItalianeABICode;

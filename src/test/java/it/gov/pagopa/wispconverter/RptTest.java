@@ -61,6 +61,7 @@ class RptTest {
     @MockBean private DecouplerCachingClient decouplerCachingClient;
     @Qualifier("redisSimpleTemplate")
     @MockBean private RedisTemplate<String, Object> redisSimpleTemplate;
+    @MockBean private org.openapitools.client.api.CacheApi cacheClient;
 
     private String getRptPayload(String station,String amount){
         String rpt = TestUtils.loadFileContent("/requests/rpt.xml");
@@ -93,7 +94,7 @@ class RptTest {
         station.getRedirect().setProtocol(Redirect.ProtocolEnum.HTTPS);
         station.getRedirect().setQueryString("param=1");
         configDataV1.getStations().put(station.getStationCode(), station);
-        org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configData",configDataV1);
+        when(cacheClient.cache()).thenReturn(configDataV1);
 
         HashMap<String, Collection<String>> headers = new HashMap<>();
         headers.put("location", Arrays.asList("locationheader"));

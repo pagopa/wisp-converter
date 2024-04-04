@@ -14,8 +14,10 @@ import java.time.ZonedDateTime;
 @EnableScheduling
 public class ScheduledJobsConfig {
 
-    @Autowired
-    private ConfigCacheService configCacheService;
+    private final ConfigCacheService configCacheService;
+    public ScheduledJobsConfig(ConfigCacheService configCacheService){
+        this.configCacheService = configCacheService;
+    }
 
     @Scheduled(cron = "${wisp-converter-cache.refresh.cron:-}")
     public void refreshCache() {
