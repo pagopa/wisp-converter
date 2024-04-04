@@ -15,17 +15,15 @@ import it.gov.pagopa.wispconverter.client.decoupler.DecouplerCachingClient;
 import it.gov.pagopa.wispconverter.client.gpd.GPDClient;
 import it.gov.pagopa.wispconverter.client.iuvgenerator.IUVGeneratorClient;
 import it.gov.pagopa.wispconverter.client.iuvgenerator.model.IUVGeneratorResponse;
-import it.gov.pagopa.wispconverter.repository.CacheRepository;
 import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
 import it.gov.pagopa.wispconverter.service.ConfigCacheService;
+import it.gov.pagopa.wispconverter.utils.TestUtils;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.zip.GZIPOutputStream;
-import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -41,7 +39,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 @SpringBootTest(classes = Application.class)
 @AutoConfigureMockMvc
-class ApiTest {
+class CarrelloTest {
 
     @Autowired
     ObjectMapper objectMapper;
@@ -64,30 +62,26 @@ class ApiTest {
     @Qualifier("redisSimpleTemplate")
     @MockBean private RedisTemplate<String, Object> redisSimpleTemplate;
 
-    public String loadFileContent(String fileName) {
-        String content = null;
-        try {
-            // Get the InputStream of the resource
-            InputStream inputStream = this.getClass().getResourceAsStream(fileName);
-            if (inputStream != null) {
-                // Use Apache Commons IO to read the content from the InputStream
-                content = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
-            } else {
-                System.err.println("File not found: " + fileName);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return content;
-    }
-
-    private String getRptPayload(String station,String amount){
-        String rpt = loadFileContent("/requests/rpt.xml");
+    private String getCarrelloPayload(int numofrpt,String station,String amount){
+        String rpt = TestUtils.loadFileContent("/requests/rpt.xml");
         String rptreplace = rpt.replace("{amount}", amount);
-        String nodoInviaRPT = loadFileContent("/requests/nodoInviaRPT.xml");
-        return nodoInviaRPT
+        StringBuilder listaRpt = new StringBuilder("");
+        for(int i=0;i<numofrpt;i++){
+            listaRpt.append(
+                    ("<elementoListaRPT>"+
+                    "<identificativoDominio></identificativoDominio>"+
+                    "<identificativoUnivocoVersamento></identificativoUnivocoVersamento>"+
+                    "<codiceContestoPagamento></codiceContestoPagamento>"+
+                    "<tipoFirma></tipoFirma>"+
+                    "<rpt>{rpt}</rpt>" +
+                    "</elementoListaRPT>").replace("{rpt}",Base64.getEncoder().encodeToString(rptreplace.getBytes(StandardCharsets.UTF_8)))
+            );
+        }
+
+        String carrello = TestUtils.loadFileContent("/requests/nodoInviaCarrelloRPT.xml");
+        return carrello
                 .replace("{station}",station)
-                .replace("{rpt}", Base64.getEncoder().encodeToString(rptreplace.getBytes(StandardCharsets.UTF_8)));
+                .replace("{elementiRpt}", listaRpt.toString());
     }
 
     private byte[] zip(byte[] uncompressed) throws IOException {
@@ -130,10 +124,10 @@ class ApiTest {
         );
         when(rptRequestRepository.findById(any())).thenReturn(
                 Optional.of(
-                        RPTRequestEntity.builder().primitive("nodoInviaRPT")
+                        RPTRequestEntity.builder().primitive("nodoInviaCarrelloRPT")
                                 .payload(
                                         new String(Base64.getEncoder().encode(zip(
-                                                getRptPayload(station.getStationCode(),
+                                                getCarrelloPayload(1,station.getStationCode(),
                                                         "100.00"
                                                 ).getBytes(StandardCharsets.UTF_8))),StandardCharsets.UTF_8)
                                 ).build()

@@ -87,7 +87,7 @@ public class RPTExtractorService {
         NodoInviaCarrelloRPT soapBody = this.jaxbElementUtil.getSoapBody(envelope, NodoInviaCarrelloRPT.class);
 
         // initializing common fields
-        boolean isMultibeneficiary = soapBody.isMultiBeneficiario();
+        boolean isMultibeneficiary = soapBody.isMultiBeneficiario() !=null && soapBody.isMultiBeneficiario();
         String creditorInstitutionId = null;
         String payerType = null;
         String payerFiscalCode = null;
@@ -132,6 +132,7 @@ public class RPTExtractorService {
                 .cartId(soapHeader.getIdentificativoCarrello())
                 .creditorInstitutionId(creditorInstitutionId)
                 .creditorInstitutionBrokerId(soapHeader.getIdentificativoIntermediarioPA())
+                .stationId(soapHeader.getIdentificativoStazioneIntermediarioPA())
                 .payerType(payerType)
                 .payerFiscalCode(payerFiscalCode)
                 .payerFullName(fullName)
