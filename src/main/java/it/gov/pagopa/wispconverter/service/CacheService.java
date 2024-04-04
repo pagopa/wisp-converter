@@ -8,6 +8,7 @@ import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.CacheRepository;
 import it.gov.pagopa.wispconverter.service.model.CommonRPTFieldsDTO;
+import it.gov.pagopa.wispconverter.service.model.PaymentNoticeContentDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -36,16 +37,23 @@ public class CacheService {
         try {
 
             String idIntermediarioPA = commonRPTFieldsDTO.getCreditorInstitutionBrokerId();
-            String noticeNumber = commonRPTFieldsDTO.getNav();
+            List<String> noticeNumbers = commonRPTFieldsDTO.getPaymentNotices().stream()
+                    .map(PaymentNoticeContentDTO::getNoticeNumber)
+                    .toList();
 
+            // communicating with APIM policy for caching data for decoupler
             DecouplerCachingKeys decouplerCachingKeys = DecouplerCachingKeys.builder()
-                    .keys(List.of(String.format(COMPOSITE_TWOVALUES_KEY_TEMPLATE, idIntermediarioPA, noticeNumber)))
+                    .keys(noticeNumbers.stream()
+                            .map(noticeNumber -> String.format(COMPOSITE_TWOVALUES_KEY_TEMPLATE, idIntermediarioPA, noticeNumber))
+                            .toList())
                     .build();
             this.decouplerCachingClient.storeKeyInCacheByAPIM(decouplerCachingKeys);
 
             // save in Redis cache the mapping of the request identifier needed for RT generation in next steps
-            String requestIDForRTHandling = String.format(CACHING_KEY_TEMPLATE, idIntermediarioPA, noticeNumber);
-            this.cacheRepository.insert(requestIDForRTHandling, sessionId, this.requestIDMappingTTL);
+            for (String noticeNumber : noticeNumbers) {
+                String requestIDForRTHandling = String.format(CACHING_KEY_TEMPLATE, idIntermediarioPA, noticeNumber);
+                this.cacheRepository.insert(requestIDForRTHandling, sessionId, this.requestIDMappingTTL);
+            }
 
         } catch (FeignException e) {
             throw new AppException(e, AppErrorCodeMessageEnum.CLIENT_DECOUPLER_CACHING, e.status(), e.getMessage());

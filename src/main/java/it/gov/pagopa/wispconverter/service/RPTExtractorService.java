@@ -1,15 +1,11 @@
 package it.gov.pagopa.wispconverter.service;
 
-import feign.FeignException;
 import gov.telematici.pagamenti.ws.NodoInviaCarrelloRPT;
 import gov.telematici.pagamenti.ws.NodoInviaRPT;
 import gov.telematici.pagamenti.ws.TipoElementoListaRPT;
 import gov.telematici.pagamenti.ws.ppthead.IntestazioneCarrelloPPT;
 import gov.telematici.pagamenti.ws.ppthead.IntestazionePPT;
 import it.gov.digitpa.schemas._2011.pagamenti.CtRichiestaPagamentoTelematico;
-import it.gov.pagopa.wispconverter.client.iuvgenerator.IUVGeneratorClient;
-import it.gov.pagopa.wispconverter.client.iuvgenerator.model.IUVGeneratorRequest;
-import it.gov.pagopa.wispconverter.client.iuvgenerator.model.IUVGeneratorResponse;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.service.mapper.RPTMapper;
@@ -20,12 +16,12 @@ import it.gov.pagopa.wispconverter.util.JaxbElementUtil;
 import it.gov.pagopa.wispconverter.util.ZipUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.w3c.dom.Element;
 import org.xmlsoap.schemas.soap.envelope.Envelope;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -37,15 +33,7 @@ public class RPTExtractorService {
 
     private final JaxbElementUtil jaxbElementUtil;
 
-    private final IUVGeneratorClient iuvGeneratorClient;
-
     private final RPTMapper mapper;
-
-    @Value("${wisp-converter.aux-digit}")
-    private String auxDigit;
-
-    @Value("${wisp-converter.segregation-code}")
-    private String segregationCode;
 
     public CommonRPTFieldsDTO extractRPTContentDTOs(String primitive, String payload) {
 
@@ -76,9 +64,6 @@ public class RPTExtractorService {
         boolean containsDigitalStamp = rpt.getTransferData().getTransfer().stream().anyMatch(transfer -> transfer.getDigitalStamp() != null);
 
         return CommonRPTFieldsDTO.builder()
-                .iupd(soapHeader.getIdentificativoIntermediarioPA() + soapHeader.getIdentificativoUnivocoVersamento())
-                .iuv(rpt.getTransferData().getIuv())
-                .nav(getNAVCodeFromIUVGenerator(creditorInstitutionId))
                 .creditorInstitutionId(creditorInstitutionId)
                 .creditorInstitutionBrokerId(soapHeader.getIdentificativoIntermediarioPA())
                 .stationId(soapHeader.getIdentificativoStazioneIntermediarioPA())
@@ -87,7 +72,10 @@ public class RPTExtractorService {
                 .payerFullName(rpt.getPayer().getName())
                 .isMultibeneficiary(false)
                 .containsDigitalStamp(containsDigitalStamp)
+                .paymentNotices(new ArrayList<>())
                 .rpts(Collections.singletonList(RPTContentDTO.builder()
+                        .iupd(soapHeader.getIdentificativoIntermediarioPA() + soapHeader.getIdentificativoUnivocoVersamento())
+                        .iuv(rpt.getTransferData().getIuv())
                         .rpt(rpt)
                         .containsDigitalStamp(containsDigitalStamp)
                         .build()))
@@ -104,7 +92,6 @@ public class RPTExtractorService {
         String payerType = null;
         String payerFiscalCode = null;
         String fullName = null;
-        String iuv = null;
         String streetName = null;
         String streetNumber = null;
         String postalCode = null;
@@ -119,22 +106,23 @@ public class RPTExtractorService {
             // generating RPT
             PaymentRequestDTO rpt = extractRPT(elementoListaRPT.getRpt());
             // validating common fields
-            creditorInstitutionId = checkUniqueness(creditorInstitutionId, isMultibeneficiary ?
+            creditorInstitutionId = isMultibeneficiary ?
                     soapHeader.getIdentificativoCarrello().substring(0, 11) :
-                    rpt.getDomain().getDomainId());
-            payerType = checkUniqueness(payerType, rpt.getPayer().getSubjectUniqueIdentifier().getType());
-            payerFiscalCode = checkUniqueness(payerFiscalCode, rpt.getPayer().getSubjectUniqueIdentifier().getCode());
-            fullName = checkUniqueness(fullName, rpt.getPayer().getName());
-            iuv = checkUniqueness(iuv, rpt.getTransferData().getIuv());
-            streetName = checkUniqueness(streetName, rpt.getPayer().getAddress());
-            streetNumber = checkUniqueness(streetNumber, rpt.getPayer().getStreetNumber());
-            postalCode = checkUniqueness(postalCode, rpt.getPayer().getPostalCode());
-            city = checkUniqueness(city, rpt.getPayer().getCity());
-            province = checkUniqueness(province, rpt.getPayer().getProvince());
-            nation = checkUniqueness(nation, rpt.getPayer().getNation());
-            email = checkUniqueness(email, rpt.getPayer().getEmail());
+                    checkUniqueness(creditorInstitutionId, rpt.getDomain().getDomainId(), AppErrorCodeMessageEnum.VALIDATION_INVALID_CREDITOR_INSTITUTION);
+            payerType = checkUniqueness(payerType, rpt.getPayer().getSubjectUniqueIdentifier().getType(), AppErrorCodeMessageEnum.VALIDATION_INVALID_DEBTOR);
+            payerFiscalCode = checkUniqueness(payerFiscalCode, rpt.getPayer().getSubjectUniqueIdentifier().getCode(), AppErrorCodeMessageEnum.VALIDATION_INVALID_DEBTOR);
+            fullName = checkUniqueness(fullName, rpt.getPayer().getName(), AppErrorCodeMessageEnum.VALIDATION_INVALID_DEBTOR);
+            streetName = checkUniqueness(streetName, rpt.getPayer().getAddress(), AppErrorCodeMessageEnum.VALIDATION_INVALID_DEBTOR);
+            streetNumber = checkUniqueness(streetNumber, rpt.getPayer().getStreetNumber(), AppErrorCodeMessageEnum.VALIDATION_INVALID_DEBTOR);
+            postalCode = checkUniqueness(postalCode, rpt.getPayer().getPostalCode(), AppErrorCodeMessageEnum.VALIDATION_INVALID_DEBTOR);
+            city = checkUniqueness(city, rpt.getPayer().getCity(), AppErrorCodeMessageEnum.VALIDATION_INVALID_DEBTOR);
+            province = checkUniqueness(province, rpt.getPayer().getProvince(), AppErrorCodeMessageEnum.VALIDATION_INVALID_DEBTOR);
+            nation = checkUniqueness(nation, rpt.getPayer().getNation(), AppErrorCodeMessageEnum.VALIDATION_INVALID_DEBTOR);
+            email = checkUniqueness(email, rpt.getPayer().getEmail(), AppErrorCodeMessageEnum.VALIDATION_INVALID_DEBTOR);
             // generating RPT content DTO
             rptContentDTOs.add(RPTContentDTO.builder()
+                    .iupd(soapHeader.getIdentificativoIntermediarioPA() + soapHeader.getIdentificativoCarrello())
+                    .iuv(rpt.getTransferData().getIuv())
                     .containsDigitalStamp(rpt.getTransferData().getTransfer().stream().anyMatch(transfer -> transfer.getDigitalStamp() != null))
                     .rpt(rpt)
                     .build());
@@ -142,9 +130,6 @@ public class RPTExtractorService {
 
         return CommonRPTFieldsDTO.builder()
                 .cartId(soapHeader.getIdentificativoCarrello())
-                .iupd(soapHeader.getIdentificativoIntermediarioPA() + soapHeader.getIdentificativoCarrello())
-                .iuv(iuv)
-                .nav(getNAVCodeFromIUVGenerator(creditorInstitutionId))
                 .creditorInstitutionId(creditorInstitutionId)
                 .creditorInstitutionBrokerId(soapHeader.getIdentificativoIntermediarioPA())
                 .payerType(payerType)
@@ -159,13 +144,14 @@ public class RPTExtractorService {
                 .payerEmail(email)
                 .isMultibeneficiary(isMultibeneficiary)
                 .containsDigitalStamp(rptContentDTOs.stream().anyMatch(RPTContentDTO::getContainsDigitalStamp))
+                .paymentNotices(new ArrayList<>())
                 .rpts(rptContentDTOs)
                 .build();
     }
 
-    private <T> T checkUniqueness(T existingValue, T newValue) {
+    private <T> T checkUniqueness(T existingValue, T newValue, AppErrorCodeMessageEnum error) {
         if (existingValue != null && !existingValue.equals(newValue)) {
-            throw new AppException(AppErrorCodeMessageEnum.GENERIC_ERROR); // TODO to be changed on mapping disambiguation
+            throw new AppException(error);
         }
         return newValue;
     }
@@ -173,22 +159,5 @@ public class RPTExtractorService {
     private PaymentRequestDTO extractRPT(byte[] rptBytes) {
         Element rptElement = this.jaxbElementUtil.convertToRPTElement(rptBytes);
         return mapper.toPaymentRequestDTO(this.jaxbElementUtil.convertToBean(rptElement, CtRichiestaPagamentoTelematico.class));
-    }
-
-    private String getNAVCodeFromIUVGenerator(String creditorInstitutionCode) {
-        // generating request body
-        IUVGeneratorRequest request = IUVGeneratorRequest.builder()
-                .auxDigit(this.auxDigit)
-                .segregationCode(this.segregationCode)
-                .build();
-        // communicating with IUV Generator service in order to retrieve response
-        String navCode;
-        try {
-            IUVGeneratorResponse response = this.iuvGeneratorClient.generate(creditorInstitutionCode, request);
-            navCode = response.getIuv();
-        } catch (FeignException e) {
-            throw new AppException(AppErrorCodeMessageEnum.CLIENT_IUVGENERATOR_INVALID_RESPONSE, e.status(), e.getMessage());
-        }
-        return navCode;
     }
 }

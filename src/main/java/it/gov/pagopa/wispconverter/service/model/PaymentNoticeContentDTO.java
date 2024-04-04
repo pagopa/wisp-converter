@@ -1,7 +1,6 @@
 package it.gov.pagopa.wispconverter.service.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import it.gov.pagopa.wispconverter.service.model.paymentrequest.PaymentRequestDTO;
 import lombok.*;
 
 @Data
@@ -10,10 +9,9 @@ import lombok.*;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @ToString
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class RPTContentDTO {
+public class PaymentNoticeContentDTO {
 
-    private String iupd;
-    private String iuv;
-    private Boolean containsDigitalStamp;
-    private PaymentRequestDTO rpt;
+    private String noticeNumber;
+    private String fiscalCode;
+    private Long amount;
 }

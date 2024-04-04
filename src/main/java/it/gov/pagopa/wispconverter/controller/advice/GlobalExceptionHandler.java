@@ -40,7 +40,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     private final MessageSource messageSource;
 
-    @Value("${wisp-converter.error-code.uri}")
+    @Value("${exception.error-code.uri}")
     private String errorCodeUri;
 
     @ExceptionHandler(AppException.class)

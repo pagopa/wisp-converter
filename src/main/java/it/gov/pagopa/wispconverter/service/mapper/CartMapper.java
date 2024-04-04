@@ -1,7 +1,9 @@
 package it.gov.pagopa.wispconverter.service.mapper;
 
 import it.gov.pagopa.wispconverter.client.checkout.model.Cart;
+import it.gov.pagopa.wispconverter.client.checkout.model.PaymentNotice;
 import it.gov.pagopa.wispconverter.service.model.CommonRPTFieldsDTO;
+import it.gov.pagopa.wispconverter.service.model.PaymentNoticeContentDTO;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
@@ -14,4 +16,11 @@ public interface CartMapper {
     @Mapping(target = "allCCP", constant = "false")
     @Mapping(source = "stationId", target = "stationId")
     Cart toCart(CommonRPTFieldsDTO commonRPTFieldsDTO);
+
+    @Mapping(source = "noticeNumber", target = "noticeNumber")
+    @Mapping(source = "fiscalCode", target = "fiscalCode")
+    @Mapping(source = "amount", target = "amount")
+    @Mapping(target = "companyName", constant = "null")
+    @Mapping(target = "description", constant = "null")
+    PaymentNotice toPaymentNotice(PaymentNoticeContentDTO paymentNoticeContentDTO);
 }

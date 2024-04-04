@@ -1,7 +1,7 @@
 package it.gov.pagopa.wispconverter.client.gpd;
 
 import feign.FeignException;
-import it.gov.pagopa.wispconverter.client.gpd.model.PaymentPosition;
+import it.gov.pagopa.wispconverter.client.gpd.model.MultiplePaymentPosition;
 import it.gov.pagopa.wispconverter.config.client.GPDFeignConfig;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.MediaType;
@@ -19,8 +19,8 @@ public interface GPDClient {
             maxAttemptsExpression = "${client.retry.max-attempts}",
             backoff = @Backoff(delayExpression = "${client.retry.max-delay}"))
     @PostMapping(
-            value = "${client.gpd.api.insert.path}",
+            value = "${client.gpd.api.bulk-insert.path}",
             consumes = MediaType.APPLICATION_JSON_VALUE)
-    void executeCreation(@PathVariable("organization-fiscal-code") String organizationFiscalCode,
-                         @RequestBody PaymentPosition body);
+    void executeBulkCreation(@PathVariable("organization-fiscal-code") String organizationFiscalCode,
+                             @RequestBody MultiplePaymentPosition body);
 }

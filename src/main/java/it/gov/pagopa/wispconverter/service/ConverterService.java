@@ -9,7 +9,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
 import java.util.Optional;
 
 @Service
@@ -28,7 +27,7 @@ public class ConverterService {
     private final RPTRequestRepository rptRequestRepository;
 
 
-    public String convert(String sessionId) throws IOException {
+    public String convert(String sessionId) {
 
         // get RPT request entity from database
         RPTRequestEntity rptRequestEntity = getRPTRequestEntity(sessionId);

@@ -14,9 +14,6 @@ import java.util.List;
 public class CommonRPTFieldsDTO {
 
     private String cartId;
-    private String iupd;
-    private String iuv;
-    private String nav;
     private String creditorInstitutionId;
     private String creditorInstitutionBrokerId;
     private String stationId;
@@ -32,5 +29,6 @@ public class CommonRPTFieldsDTO {
     private String payerEmail;
     private Boolean isMultibeneficiary;
     private Boolean containsDigitalStamp;
+    private List<PaymentNoticeContentDTO> paymentNotices;
     private List<RPTContentDTO> rpts;
 }

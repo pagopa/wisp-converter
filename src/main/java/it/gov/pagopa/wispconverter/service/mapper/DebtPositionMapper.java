@@ -5,6 +5,7 @@ import it.gov.pagopa.wispconverter.client.gpd.model.PaymentPosition;
 import it.gov.pagopa.wispconverter.client.gpd.model.Stamp;
 import it.gov.pagopa.wispconverter.service.model.CommonRPTFieldsDTO;
 import it.gov.pagopa.wispconverter.service.model.DigitalStampDTO;
+import it.gov.pagopa.wispconverter.service.model.RPTContentDTO;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
@@ -12,7 +13,6 @@ import org.mapstruct.ReportingPolicy;
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface DebtPositionMapper {
 
-    @Mapping(source = "iupd", target = "iupd")
     @Mapping(source = "payerType", target = "type")
     @Mapping(source = "payerFiscalCode", target = "fiscalCode")
     @Mapping(source = "payerFullName", target = "fullName")
@@ -29,14 +29,13 @@ public interface DebtPositionMapper {
     PaymentPosition toPaymentPosition(CommonRPTFieldsDTO commonRPTFieldsDTO);
 
     @Mapping(source = "iuv", target = "iuv")
-    @Mapping(source = "nav", target = "nav")
-    @Mapping(target = "description", expression = "java(null)")
+    @Mapping(target = "description", constant = "-")
     @Mapping(target = "isPartialPayment", constant = "false")
     @Mapping(target = "retentionDate", expression = "java(null)")
     @Mapping(target = "fee", constant = "0L")
     @Mapping(target = "notificationFee", constant = "0L")
     @Mapping(target = "dueDate", expression = "java(java.time.LocalDateTime.now().plusDays(1))")
-    PaymentOption toPaymentOption(CommonRPTFieldsDTO commonRPTFieldsDTO);
+    PaymentOption toPaymentOption(RPTContentDTO rptContentDTO);
 
     @Mapping(target = "hashDocument", expression = "java(new String(digitalStampDTO.getDocumentHash()))")
     @Mapping(source = "type", target = "stampType")

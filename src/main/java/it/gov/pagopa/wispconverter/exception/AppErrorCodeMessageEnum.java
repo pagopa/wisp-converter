@@ -15,7 +15,10 @@ public enum AppErrorCodeMessageEnum {
     PARSING_INVALID_XML_NODES(1004, "XML parsing error", "Error while parsing payload. The list of nodes extracted from document must be greater than zero, but currently it is zero.", HttpStatus.BAD_REQUEST),
     PARSING_INVALID_ZIPPED_PAYLOAD(1005, "ZIP extraction error", "Error while parsing payload. Cannot unzip payload correctly.", HttpStatus.BAD_REQUEST),
     PARSING_PRIMITIVE_NOT_VALID(1006, "Primitive not valid", "Error while checking primitive. Primitive [{0}] not valid.", HttpStatus.NOT_ACCEPTABLE),
-    VALIDATION_INVALID_IBANS(1100, "IBANs not valid", "Error while generating debt position for GPD service. The IBAN field must be set if digital stamp is not defined for the transfer.", HttpStatus.BAD_REQUEST),
+    VALIDATION_INVALID_MULTIBENEFICIARY_CART(1100, "RPTs not valid", "Error while generating debt position for GPD service. The cart is defined as multi-beneficiary but there are a number of RPTs lower than 2.", HttpStatus.BAD_REQUEST),
+    VALIDATION_INVALID_IBANS(1101, "IBANs not valid", "Error while generating debt position for GPD service. The IBAN field must be set if digital stamp is not defined for the transfer.", HttpStatus.BAD_REQUEST),
+    VALIDATION_INVALID_DEBTOR(1102, "Debtor subject not valid", "Error while generating debt position for GPD service. The debtor subject information is different between the various RPT of the cart.", HttpStatus.BAD_REQUEST),
+    VALIDATION_INVALID_CREDITOR_INSTITUTION(1103, "Creditor institution not valid", "Error while generating debt position for GPD service. The creditor institution information is different between the various RPT of the cart.", HttpStatus.BAD_REQUEST),
     CONFIGURATION_INVALID_STATION(1200, "Station not valid", "Error while generating cart for Checkout service. No valid station found with code [{0}].", HttpStatus.NOT_FOUND),
     // --- DB and storage interaction errors ---
     PERSISTENCE_RPT_NOT_FOUND(2000, "RPT not found", "Error while retrieving RPT. RPT with sessionId [{0}] not found.", HttpStatus.NOT_FOUND),
