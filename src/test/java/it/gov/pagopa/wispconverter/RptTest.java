@@ -65,7 +65,7 @@ class RptTest {
 
     private String getRptPayload(String station,String amount){
         String rpt = TestUtils.loadFileContent("/requests/rpt.xml");
-        String rptreplace = rpt.replace("{amount}", amount);
+        String rptreplace = rpt.replaceAll("\\{amount\\}", amount);
         String nodoInviaRPT = TestUtils.loadFileContent("/requests/nodoInviaRPT.xml");
         return nodoInviaRPT
                 .replace("{station}",station)

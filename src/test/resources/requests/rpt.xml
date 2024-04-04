@@ -27,6 +27,11 @@
         <identificativoUnivocoVersamento>{iuv}</identificativoUnivocoVersamento>
         <codiceContestoPagamento>{ccp}</codiceContestoPagamento>
         <firmaRicevuta>0</firmaRicevuta>
-        {versamenti}
+        <datiSingoloVersamento>
+            <importoSingoloVersamento>{amount}</importoSingoloVersamento>
+            <ibanAccredito>IT96R0123454321000000012345</ibanAccredito>
+            <causaleVersamento>Pagamento di prova</causaleVersamento>
+            <datiSpecificiRiscossione>9/tipodovuto_7</datiSpecificiRiscossione>
+        </datiSingoloVersamento>
     </datiVersamento>
 </RPT>

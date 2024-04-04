@@ -64,7 +64,7 @@ class CarrelloTest {
 
     private String getCarrelloPayload(int numofrpt,String station,String amount,boolean multibeneficiario){
         String rpt = TestUtils.loadFileContent("/requests/rpt.xml");
-        String rptreplace = rpt.replace("{amount}", amount);
+        String rptreplace = rpt.replaceAll("\\{amount\\}", amount);
         StringBuilder listaRpt = new StringBuilder("");
         for(int i=0;i<numofrpt;i++){
             listaRpt.append(
