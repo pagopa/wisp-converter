@@ -1,8 +1,7 @@
 package it.gov.pagopa.wispconverter.config.client;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.wispconverter.service.ReService;
-import it.gov.pagopa.wispconverter.util.client.MDCInterceptor;
-import it.gov.pagopa.wispconverter.util.client.ReInterceptor;
 import it.gov.pagopa.wispconverter.util.client.decouplercaching.DecouplerCachingClientLoggingInterceptor;
 import it.gov.pagopa.wispconverter.util.client.decouplercaching.DecouplerCachingClientResponseErrorHandler;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +22,7 @@ import java.util.List;
 @Slf4j
 @RequiredArgsConstructor
 public class DecouplerCachingClientConfig {
+
     private final ReService reService;
 
     @Value("${client.decoupler-caching.read-timeout}")
@@ -61,7 +61,7 @@ public class DecouplerCachingClientConfig {
 
     @Bean
     public it.gov.pagopa.gen.wispconverter.client.decouplercaching.invoker.ApiClient decouplerCachingClient() {
-        DecouplerCachingClientLoggingInterceptor clientLogging = new DecouplerCachingClientLoggingInterceptor();
+        DecouplerCachingClientLoggingInterceptor clientLogging = new DecouplerCachingClientLoggingInterceptor(reService);
         clientLogging.setRequestIncludeHeaders(clientRequestIncludeHeaders);
         clientLogging.setRequestIncludePayload(clientRequestIncludePayload);
         clientLogging.setRequestMaxPayloadLength(clientRequestMaxLength);
@@ -76,8 +76,6 @@ public class DecouplerCachingClientConfig {
         RestTemplate restTemplate = restTemplate();
 
         List<ClientHttpRequestInterceptor> currentInterceptors = restTemplate.getInterceptors();
-        currentInterceptors.add(new MDCInterceptor());
-        currentInterceptors.add(new ReInterceptor(reService));
         currentInterceptors.add(clientLogging);
         restTemplate.setInterceptors(currentInterceptors);
 

@@ -1,6 +1,7 @@
 package it.gov.pagopa.wispconverter.util.filter;
 
 import it.gov.pagopa.wispconverter.service.ReService;
+import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -31,18 +32,21 @@ public class ReFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+        ReEventDto reEventDtoServerIN = ReService.createReServerInterfaceRequest(request);
         try{
-            MDC.getCopyOfContextMap().forEach((k,v) -> {
-                log.debug(String.format("BEFORE MDC %s=%s",k, v));
-            });
-            reService.addRe("IN");
+//            MDC.getCopyOfContextMap().forEach((k,v) -> {
+//                log.debug(String.format("SERVER BEFORE MDC %s=%s",k, v));
+//            });
+            reService.addRe(reEventDtoServerIN);
             filterChain.doFilter(request, response);
         } finally {
-            MDC.getCopyOfContextMap().forEach((k,v) -> {
-                log.debug(String.format("AFTER MDC %s=%s",k, v));
-            });
-            reService.addRe("OUT");
+//            MDC.getCopyOfContextMap().forEach((k,v) -> {
+//                log.debug(String.format("SERVER AFTER MDC %s=%s",k, v));
+//            });
+            ReEventDto reEventDtoServerOUT = ReService.createReServerInterfaceResponse(response, reEventDtoServerIN);
+            reService.addRe(reEventDtoServerOUT);
         }
+
     }
 
     @Override

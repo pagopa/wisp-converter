@@ -1,5 +1,6 @@
 package it.gov.pagopa.wispconverter.util.client.apiconfigcache;
 
+import it.gov.pagopa.wispconverter.service.ReService;
 import it.gov.pagopa.wispconverter.util.client.AbstractAppClientLoggingInterceptor;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -11,6 +12,12 @@ import org.springframework.http.client.ClientHttpResponse;
 @RequiredArgsConstructor
 public class ApiConfigCacheClientLoggingInterceptor extends AbstractAppClientLoggingInterceptor {
 
+    private final ReService reService;
+
+    @Override
+    protected ReService getReService() {
+        return reService;
+    }
 
     @Override
     protected void request(String clientOperationId, String operationId, HttpRequest request, byte[] reqBody) {

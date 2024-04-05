@@ -1,8 +1,7 @@
 package it.gov.pagopa.wispconverter.config.client;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.wispconverter.service.ReService;
-import it.gov.pagopa.wispconverter.util.client.MDCInterceptor;
-import it.gov.pagopa.wispconverter.util.client.ReInterceptor;
 import it.gov.pagopa.wispconverter.util.client.iuvgenerator.IuvGeneratorClientLoggingInterceptor;
 import it.gov.pagopa.wispconverter.util.client.iuvgenerator.IuvGeneratorClientResponseErrorHandler;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +22,7 @@ import java.util.List;
 @Slf4j
 @RequiredArgsConstructor
 public class IuvGeneratorClientConfig {
+
     private final ReService reService;
 
     @Value("${client.iuvgenerator.read-timeout}")
@@ -62,7 +62,7 @@ public class IuvGeneratorClientConfig {
 
     @Bean
     public it.gov.pagopa.gen.wispconverter.client.iuvgenerator.invoker.ApiClient iuvGeneratorClient() {
-        IuvGeneratorClientLoggingInterceptor clientLogging = new IuvGeneratorClientLoggingInterceptor();
+        IuvGeneratorClientLoggingInterceptor clientLogging = new IuvGeneratorClientLoggingInterceptor(reService);
         clientLogging.setRequestIncludeHeaders(clientRequestIncludeHeaders);
         clientLogging.setRequestIncludePayload(clientRequestIncludePayload);
         clientLogging.setRequestMaxPayloadLength(clientRequestMaxLength);
@@ -77,8 +77,6 @@ public class IuvGeneratorClientConfig {
         RestTemplate restTemplate = restTemplate();
 
         List<ClientHttpRequestInterceptor> currentInterceptors = restTemplate.getInterceptors();
-        currentInterceptors.add(new MDCInterceptor());
-        currentInterceptors.add(new ReInterceptor(reService));
         currentInterceptors.add(clientLogging);
         restTemplate.setInterceptors(currentInterceptors);
 

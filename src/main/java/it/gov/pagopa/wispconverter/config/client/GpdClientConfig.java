@@ -1,8 +1,7 @@
 package it.gov.pagopa.wispconverter.config.client;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.wispconverter.service.ReService;
-import it.gov.pagopa.wispconverter.util.client.MDCInterceptor;
-import it.gov.pagopa.wispconverter.util.client.ReInterceptor;
 import it.gov.pagopa.wispconverter.util.client.gpd.GpdClientLoggingInterceptor;
 import it.gov.pagopa.wispconverter.util.client.gpd.GpdClientResponseErrorHandler;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +22,7 @@ import java.util.List;
 @Slf4j
 @RequiredArgsConstructor
 public class GpdClientConfig {
+
     private final ReService reService;
 
     @Value("${client.gpd.read-timeout}")
@@ -61,7 +61,7 @@ public class GpdClientConfig {
 
     @Bean
     public it.gov.pagopa.gen.wispconverter.client.gpd.invoker.ApiClient gpdClient() {
-        GpdClientLoggingInterceptor clientLogging = new GpdClientLoggingInterceptor();
+        GpdClientLoggingInterceptor clientLogging = new GpdClientLoggingInterceptor(reService);
         clientLogging.setRequestIncludeHeaders(clientRequestIncludeHeaders);
         clientLogging.setRequestIncludePayload(clientRequestIncludePayload);
         clientLogging.setRequestMaxPayloadLength(clientRequestMaxLength);
@@ -76,8 +76,6 @@ public class GpdClientConfig {
         RestTemplate restTemplate = restTemplate();
 
         List<ClientHttpRequestInterceptor> currentInterceptors = restTemplate.getInterceptors();
-        currentInterceptors.add(new MDCInterceptor());
-        currentInterceptors.add(new ReInterceptor(reService));
         currentInterceptors.add(clientLogging);
         restTemplate.setInterceptors(currentInterceptors);
 

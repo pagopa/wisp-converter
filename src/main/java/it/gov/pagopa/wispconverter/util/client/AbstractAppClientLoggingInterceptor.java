@@ -1,9 +1,12 @@
 package it.gov.pagopa.wispconverter.util.client;
 
+import it.gov.pagopa.wispconverter.service.ReService;
+import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import it.gov.pagopa.wispconverter.util.CommonUtility;
 import it.gov.pagopa.wispconverter.util.Constants;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.MDC;
 import org.springframework.http.HttpHeaders;
@@ -25,7 +28,10 @@ import java.util.stream.Stream;
 
 @Getter
 @Setter
+@Slf4j
 public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpRequestInterceptor {
+
+  protected abstract ReService getReService();
 
   public static final String REQUEST_DEFAULT_MESSAGE_PREFIX = "===> CLIENT Request OPERATION_ID=%s, CLIENT_OPERATION_ID=%s - ";
   public static final String RESPONSE_DEFAULT_MESSAGE_PREFIX = "<=== CLIENT Response OPERATION_ID=%s, CLIENT_OPERATION_ID=%s -";
@@ -63,14 +69,33 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
     String clientOperationId = UUID.randomUUID().toString();
     MDC.put(Constants.MDC_CLIENT_OPERATION_ID, clientOperationId);
     String operationId = MDC.get(Constants.MDC_OPERATION_ID);
-
     request(clientOperationId, operationId, request, body);
+
+//    MDC.getCopyOfContextMap().forEach((k,v) -> {
+//      log.debug(String.format("CLIENT AFTER MDC %s=%s",k, v));
+//    });
+    ReEventDto reEventDtoClientIN = ReService.createReClientInterfaceRequest(request, body);
+    getReService().addRe(reEventDtoClientIN);
+
+
     ClientHttpResponse response = execution.execute(request, body);
 
     String executionClientTime = CommonUtility.getExecutionTime(startClient);
     MDC.put(Constants.MDC_CLIENT_EXECUTION_TIME, executionClientTime);
 
     response(clientOperationId, operationId, executionClientTime, request, response);
+
+//    MDC.getCopyOfContextMap().forEach((k,v) -> {
+//      log.debug(String.format("CLIENT BEFORE MDC %s=%s",k, v));
+//    });
+
+    ReEventDto reEventDtoClientOUT = ReService.createReClientInterfaceResponse(response, reEventDtoClientIN);
+    getReService().addRe(reEventDtoClientOUT);
+
+
+    MDC.remove(Constants.MDC_CLIENT_OPERATION_ID);
+    MDC.remove(Constants.MDC_CLIENT_EXECUTION_TIME);
+
     return response;
   }
 

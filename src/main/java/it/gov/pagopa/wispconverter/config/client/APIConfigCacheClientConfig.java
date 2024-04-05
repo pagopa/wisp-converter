@@ -1,8 +1,7 @@
 package it.gov.pagopa.wispconverter.config.client;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.wispconverter.service.ReService;
-import it.gov.pagopa.wispconverter.util.client.MDCInterceptor;
-import it.gov.pagopa.wispconverter.util.client.ReInterceptor;
 import it.gov.pagopa.wispconverter.util.client.apiconfigcache.ApiConfigCacheClientLoggingInterceptor;
 import it.gov.pagopa.wispconverter.util.client.apiconfigcache.ApiConfigCacheClientResponseErrorHandler;
 import lombok.RequiredArgsConstructor;
@@ -62,7 +61,7 @@ public class APIConfigCacheClientConfig {
 
     @Bean
     public it.gov.pagopa.gen.wispconverter.client.cache.invoker.ApiClient configCacheClient() {
-        ApiConfigCacheClientLoggingInterceptor clientLogging = new ApiConfigCacheClientLoggingInterceptor();
+        ApiConfigCacheClientLoggingInterceptor clientLogging = new ApiConfigCacheClientLoggingInterceptor(reService);
         clientLogging.setRequestIncludeHeaders(clientRequestIncludeHeaders);
         clientLogging.setRequestIncludePayload(clientRequestIncludePayload);
         clientLogging.setRequestMaxPayloadLength(clientRequestMaxLength);
@@ -77,8 +76,6 @@ public class APIConfigCacheClientConfig {
         RestTemplate restTemplate = restTemplate();
 
         List<ClientHttpRequestInterceptor> currentInterceptors = restTemplate.getInterceptors();
-        currentInterceptors.add(new MDCInterceptor());
-        currentInterceptors.add(new ReInterceptor(reService));
         currentInterceptors.add(clientLogging);
         restTemplate.setInterceptors(currentInterceptors);
 
