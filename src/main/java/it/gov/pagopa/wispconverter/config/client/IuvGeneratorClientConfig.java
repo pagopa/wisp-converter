@@ -1,10 +1,11 @@
 package it.gov.pagopa.wispconverter.config.client;
 
+import it.gov.pagopa.wispconverter.client.iuvgenerator.invoker.ApiClient;
 import it.gov.pagopa.wispconverter.service.ReService;
 import it.gov.pagopa.wispconverter.util.client.MDCInterceptor;
+import it.gov.pagopa.wispconverter.util.client.ReInterceptor;
 import it.gov.pagopa.wispconverter.util.client.iuvgenerator.IuvGeneratorClientLoggingInterceptor;
 import it.gov.pagopa.wispconverter.util.client.iuvgenerator.IuvGeneratorClientResponseErrorHandler;
-import it.gov.pagopa.wispconverter.util.client.ReInterceptor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -61,7 +62,7 @@ public class IuvGeneratorClientConfig {
 
 
     @Bean
-    public it.gov.pagopa.iuvgeneratorclient.client.ApiClient iuvGeneratorClient() {
+    public ApiClient iuvGeneratorClient() {
         IuvGeneratorClientLoggingInterceptor clientLogging = new IuvGeneratorClientLoggingInterceptor();
         clientLogging.setRequestIncludeHeaders(clientRequestIncludeHeaders);
         clientLogging.setRequestIncludePayload(clientRequestIncludePayload);
@@ -84,7 +85,7 @@ public class IuvGeneratorClientConfig {
 
         restTemplate.setErrorHandler(new IuvGeneratorClientResponseErrorHandler());
 
-        it.gov.pagopa.iuvgeneratorclient.client.ApiClient client = new it.gov.pagopa.iuvgeneratorclient.client.ApiClient(restTemplate);
+        ApiClient client = new ApiClient(restTemplate);
         client.setBasePath(basePath);
 //        client.setApiKey(apiKey);
 

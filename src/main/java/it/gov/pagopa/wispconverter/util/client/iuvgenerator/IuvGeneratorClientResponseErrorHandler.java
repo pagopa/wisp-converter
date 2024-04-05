@@ -16,34 +16,32 @@ import java.nio.charset.Charset;
 @Component
 @Slf4j
 public class IuvGeneratorClientResponseErrorHandler extends AbstractResponseErrorHandler implements ResponseErrorHandler {
-  @Override
-  public boolean hasError(ClientHttpResponse response) throws IOException {
-    return response.getStatusCode().is5xxServerError() ||
-            response.getStatusCode().is4xxClientError();
-  }
-
-  @Override
-  public void handleError(ClientHttpResponse response) throws IOException {
-    HttpStatusCode statusCode = response.getStatusCode();
-    String statusText = response.getStatusText();
-    HttpHeaders headers = response.getHeaders();
-    byte[] body = getResponseBody(response);
-    Charset charset = getCharset(response);
-    String message = getErrorMessage(statusCode.value(), statusText, body, charset);
-
-    RestClientResponseException ex;
-    if (statusCode.is4xxClientError()) {
-      ex = HttpClientErrorException.create(message, statusCode, statusText, headers, body, charset);
-    }
-    else if (statusCode.is5xxServerError()) {
-      ex = HttpServerErrorException.create(message, statusCode, statusText, headers, body, charset);
-    }
-    else {
-      ex = new UnknownHttpStatusCodeException(message, statusCode.value(), statusText, headers, body, charset);
+    @Override
+    public boolean hasError(ClientHttpResponse response) throws IOException {
+        return response.getStatusCode().is5xxServerError() ||
+                response.getStatusCode().is4xxClientError();
     }
 
-    throw new AppException(ex, AppErrorCodeMessageEnum.CLIENT_IUV_GENERATOR, message) ;
-  }
+    @Override
+    public void handleError(ClientHttpResponse response) throws IOException {
+        HttpStatusCode statusCode = response.getStatusCode();
+        String statusText = response.getStatusText();
+        HttpHeaders headers = response.getHeaders();
+        byte[] body = getResponseBody(response);
+        Charset charset = getCharset(response);
+        String message = getErrorMessage(statusCode.value(), statusText, body, charset);
+
+        RestClientResponseException ex;
+        if (statusCode.is4xxClientError()) {
+            ex = HttpClientErrorException.create(message, statusCode, statusText, headers, body, charset);
+        } else if (statusCode.is5xxServerError()) {
+            ex = HttpServerErrorException.create(message, statusCode, statusText, headers, body, charset);
+        } else {
+            ex = new UnknownHttpStatusCodeException(message, statusCode.value(), statusText, headers, body, charset);
+        }
+
+        throw new AppException(ex, AppErrorCodeMessageEnum.CLIENT_IUVGENERATOR, message);
+    }
 
 
 }

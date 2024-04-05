@@ -12,7 +12,6 @@ import it.gov.pagopa.wispconverter.controller.model.RedirectResponse;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.service.ConverterService;
-import it.gov.pagopa.wispconverter.service.model.ConversionResultDTO;
 import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.ErrorUtil;
 import jakarta.servlet.http.HttpServletResponse;
@@ -57,21 +56,21 @@ public class RedirectController {
                            @NotBlank(message = "{redirect.session-id.not-blank}")
                            @RequestParam("sessionId") String sessionId,
                            Model model, HttpServletResponse response) {
-        try{
+        try {
             String redirectURI = converterService.convert(sessionId);
             return "redirect:" + redirectURI;
-        } catch (AppException appException){
+        } catch (AppException appException) {
             ErrorResponse errorResponse = errorUtil.forAppException(appException);
             ProblemDetail problemDetail = errorResponse.updateAndGetBody(this.messageSource, LocaleContextHolder.getLocale());
             errorUtil.finalizeError(problemDetail, errorResponse.getStatusCode().value());
 
             response.setStatus(errorResponse.getStatusCode().value());
-            model.addAttribute("sessionId",sessionId);
+            model.addAttribute("sessionId", sessionId);
             enrichModelWithError(model, problemDetail, errorResponse.getStatusCode().value());
             return "error";
         } catch (Exception ex) {
             String operationId = MDC.get(Constants.MDC_OPERATION_ID);
-            log.error(String.format("GenericException: operation-id=[%s]", operationId!=null?operationId:"n/a"), ex);
+            log.error(String.format("GenericException: operation-id=[%s]", operationId != null ? operationId : "n/a"), ex);
 
             AppException appException = new AppException(ex, AppErrorCodeMessageEnum.ERROR, ex.getMessage());
             ErrorResponse errorResponse = errorUtil.forAppException(appException);
@@ -79,7 +78,7 @@ public class RedirectController {
             errorUtil.finalizeError(problemDetail, errorResponse.getStatusCode().value());
 
             response.setStatus(errorResponse.getStatusCode().value());
-            model.addAttribute("sessionId",sessionId);
+            model.addAttribute("sessionId", sessionId);
             enrichModelWithError(model, problemDetail, errorResponse.getStatusCode().value());
             return "error";
         }
@@ -92,33 +91,33 @@ public class RedirectController {
     })
     @GetMapping(value = "/redirect", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<RedirectResponse> redirectInfo(@Parameter(description = "", example = "identificativoIntermediarioPA_sessionId")
-                                         @NotBlank(message = "{redirect.session-id.not-blank}")
-                                         @RequestParam("sessionId") String sessionId) {
+                                                         @NotBlank(message = "{redirect.session-id.not-blank}")
+                                                         @RequestParam("sessionId") String sessionId) {
         String redirectURI = converterService.convert(sessionId);
         return ResponseEntity.ok(RedirectResponse.builder().redirectUrl(redirectURI).build());
     }
 
-    private void enrichModelWithError(Model model, ProblemDetail problemDetail, int statusCode){
-        model.addAttribute("type",problemDetail.getType());
-        model.addAttribute("title",problemDetail.getTitle());
-        model.addAttribute("status",statusCode);
-        model.addAttribute("detail",problemDetail.getDetail());
+    private void enrichModelWithError(Model model, ProblemDetail problemDetail, int statusCode) {
+        model.addAttribute("type", problemDetail.getType());
+        model.addAttribute("title", problemDetail.getTitle());
+        model.addAttribute("status", statusCode);
+        model.addAttribute("detail", problemDetail.getDetail());
 
         Map<String, Object> properties = problemDetail.getProperties();
-        if(properties!=null){
+        if (properties != null) {
             Instant timestamp = (Instant) properties.get(ErrorUtil.EXTRA_FIELD_ERROR_TIMESTAMP);
-            if(timestamp!=null){
-                model.addAttribute("timestamp",timestamp.toString());
+            if (timestamp != null) {
+                model.addAttribute("timestamp", timestamp.toString());
             }
 
             String errrCode = (String) properties.get(ErrorUtil.EXTRA_FIELD_ERROR_CODE);
-            if(errrCode!=null){
-                model.addAttribute("errorCode",errrCode);
+            if (errrCode != null) {
+                model.addAttribute("errorCode", errrCode);
             }
 
             String operationId = (String) properties.get(ErrorUtil.EXTRA_FIELD_OPERATION_ID);
-            if(operationId!=null){
-                model.addAttribute("operationId",operationId);
+            if (operationId != null) {
+                model.addAttribute("operationId", operationId);
             }
         }
     }

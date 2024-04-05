@@ -1,5 +1,6 @@
 package it.gov.pagopa.wispconverter.config.client;
 
+import it.gov.pagopa.wispconverter.client.checkout.invoker.ApiClient;
 import it.gov.pagopa.wispconverter.service.ReService;
 import it.gov.pagopa.wispconverter.util.client.MDCInterceptor;
 import it.gov.pagopa.wispconverter.util.client.ReInterceptor;
@@ -61,7 +62,7 @@ public class CheckoutClientConfig {
     private boolean clientResponsePretty;
 
     @Bean
-    public it.gov.pagopa.checkoutclient.client.ApiClient checkoutClient() {
+    public ApiClient checkoutClient() {
         CheckoutClientLoggingInterceptor clientLogging = new CheckoutClientLoggingInterceptor();
         clientLogging.setRequestIncludeHeaders(clientRequestIncludeHeaders);
         clientLogging.setRequestIncludePayload(clientRequestIncludePayload);
@@ -84,7 +85,7 @@ public class CheckoutClientConfig {
 
         restTemplate.setErrorHandler(new CheckoutClientResponseErrorHandler());
 
-        it.gov.pagopa.checkoutclient.client.ApiClient client = new it.gov.pagopa.checkoutclient.client.ApiClient(restTemplate);
+        ApiClient client = new ApiClient(restTemplate);
         client.setBasePath(basePath);
 //        client.setApiKey(apiKey);
 

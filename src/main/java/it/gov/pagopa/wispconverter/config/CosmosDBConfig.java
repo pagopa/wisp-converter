@@ -22,7 +22,7 @@ import org.springframework.lang.Nullable;
 @EnableCosmosRepositories("it.gov.pagopa.wispconverter.repository")
 @EnableConfigurationProperties
 @EnableCosmosAuditing
-@ConditionalOnExpression("'${properties.environment}'!='test'")
+@ConditionalOnExpression("'${info.properties.environment}'!='test'")
 @Slf4j
 public class CosmosDBConfig extends AbstractCosmosConfiguration {
 

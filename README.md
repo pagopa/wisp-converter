@@ -40,7 +40,7 @@ execute the following command:
 
 `sh update-specs.sh`
 
-After the execution, in `target/generated-sources/jaxb` folder there will be the newly generated classes.
+After the execution, the newly generated classes are added in `target/generated-sources/jaxb` folder.
 The application now can be run and all the class references are correctly resolved.
 
 ### Run the project

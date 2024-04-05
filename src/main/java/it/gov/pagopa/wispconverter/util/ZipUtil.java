@@ -8,6 +8,8 @@ import java.util.zip.GZIPInputStream;
 
 public class ZipUtil {
 
+    private ZipUtil(){}
+
     public static byte[] unzip(byte[] compressed) throws IOException {
         ByteArrayInputStream bais = new ByteArrayInputStream(compressed);
         GZIPInputStream gzipInputStream = new GZIPInputStream(bais);

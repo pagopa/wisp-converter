@@ -6,7 +6,6 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
-import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.ProblemDetail;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
@@ -21,18 +20,16 @@ import java.time.Instant;
 @RequiredArgsConstructor
 public class ErrorUtil {
 
-    @Value("${error.code.uri}")
-    private String errorCodeUri;
-    private static final String ERROR_CODE_TITLE = "error-code.%s.title";
-    private static final String ERROR_CODE_DETAIL = "error-code.%s.detail";
-
     public static final String EXTRA_FIELD_OPERATION_ID = "operation-id";
     public static final String EXTRA_FIELD_ERROR_TIMESTAMP = "timestamp";
     public static final String EXTRA_FIELD_ERROR_CODE = "error-code";
-
+    private static final String ERROR_CODE_TITLE = "error-code.%s.title";
+    private static final String ERROR_CODE_DETAIL = "error-code.%s.detail";
     private final MessageSource messageSource;
+    @Value("${exception.error-code.uri}")
+    private String errorCodeUri;
 
-    public ErrorResponse forAppException(AppException appEx){
+    public ErrorResponse forAppException(AppException appEx) {
         return ErrorResponse.builder(appEx, forAppErrorCodeMessageEnum(appEx.getError(), appEx.getMessage()))
                 .titleMessageCode(String.format(ERROR_CODE_TITLE, appEx.getError().name()))
                 .detailMessageCode(String.format(ERROR_CODE_DETAIL, appEx.getError().name()))
@@ -53,15 +50,15 @@ public class ErrorUtil {
         return problemDetail;
     }
 
-    private void setExtraProperties(ProblemDetail problemDetail){
+    private void setExtraProperties(ProblemDetail problemDetail) {
         problemDetail.setProperty(EXTRA_FIELD_ERROR_TIMESTAMP, Instant.now());
         String operationId = MDC.get(Constants.MDC_OPERATION_ID);
-        if(operationId!=null){
+        if (operationId != null) {
             problemDetail.setProperty(EXTRA_FIELD_OPERATION_ID, operationId);
         }
     }
 
-    public void finalizeError(ProblemDetail problemDetail, int statusCode){
+    public void finalizeError(ProblemDetail problemDetail, int statusCode) {
         setExtraProperties(problemDetail);
         MDCUtil.setMDCError(problemDetail);
         MDCUtil.setMDCCloseFailedOperation(statusCode);
@@ -74,7 +71,7 @@ public class ErrorUtil {
                 .build();
     }
 
-    public String getAppCode(AppErrorCodeMessageEnum error){
+    public String getAppCode(AppErrorCodeMessageEnum error) {
         return String.format("%s-%s", Constants.SERVICE_CODE_APP, error.getCode());
     }
 }

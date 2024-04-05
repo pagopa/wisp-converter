@@ -12,18 +12,18 @@ import org.springframework.http.client.ClientHttpResponse;
 public class IuvGeneratorClientLoggingInterceptor extends AbstractAppClientLoggingInterceptor {
 
 
-  @Override
-  protected void request(String clientOperationId, String operationId, HttpRequest request, byte[] reqBody) {
-    if(log.isDebugEnabled()){
-      log.debug(createRequestMessage(clientOperationId, operationId, request, reqBody));
+    @Override
+    protected void request(String clientOperationId, String operationId, HttpRequest request, byte[] reqBody) {
+        if (log.isDebugEnabled()) {
+            log.debug(createRequestMessage(clientOperationId, operationId, request, reqBody));
+        }
     }
-  }
 
-  @SneakyThrows
-  @Override
-  protected void response(String clientOperationId, String operationId, String clientExecutionTime, HttpRequest request, ClientHttpResponse response) {
-    if(log.isDebugEnabled()){
-      log.debug(createResponseMessage(clientOperationId, operationId, clientExecutionTime, request, response));
+    @SneakyThrows
+    @Override
+    protected void response(String clientOperationId, String operationId, String clientExecutionTime, HttpRequest request, ClientHttpResponse response) {
+        if (log.isDebugEnabled()) {
+            log.debug(createResponseMessage(clientOperationId, operationId, clientExecutionTime, request, response));
+        }
     }
-  }
 }

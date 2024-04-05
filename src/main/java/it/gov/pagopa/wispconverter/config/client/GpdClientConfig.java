@@ -1,5 +1,6 @@
 package it.gov.pagopa.wispconverter.config.client;
 
+import it.gov.pagopa.wispconverter.client.gpd.invoker.ApiClient;
 import it.gov.pagopa.wispconverter.service.ReService;
 import it.gov.pagopa.wispconverter.util.client.MDCInterceptor;
 import it.gov.pagopa.wispconverter.util.client.ReInterceptor;
@@ -60,7 +61,7 @@ public class GpdClientConfig {
     private boolean clientResponsePretty;
 
     @Bean
-    public it.gov.pagopa.gpdclient.client.ApiClient gpdClient() {
+    public ApiClient gpdClient() {
         GpdClientLoggingInterceptor clientLogging = new GpdClientLoggingInterceptor();
         clientLogging.setRequestIncludeHeaders(clientRequestIncludeHeaders);
         clientLogging.setRequestIncludePayload(clientRequestIncludePayload);
@@ -83,7 +84,7 @@ public class GpdClientConfig {
 
         restTemplate.setErrorHandler(new GpdClientResponseErrorHandler());
 
-        it.gov.pagopa.gpdclient.client.ApiClient client = new it.gov.pagopa.gpdclient.client.ApiClient(restTemplate);
+        ApiClient client = new ApiClient(restTemplate);
 
         client.setBasePath(basePath);
         client.setApiKey(apiKey);

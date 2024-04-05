@@ -1,6 +1,5 @@
 package it.gov.pagopa.wispconverter.service;
 
-import it.gov.pagopa.wispconverter.service.model.ConversionResultDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -10,6 +9,6 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class ReService {
     public void addRe(String dir) {
-        log.info("\n#################\n# RE INTERFACE "+dir+"\n#################");
+        log.info("\n#################\n# RE INTERFACE " + dir + "\n#################");
     }
 }

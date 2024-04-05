@@ -1,12 +1,11 @@
 package it.gov.pagopa.wispconverter.util;
 
+import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import org.springframework.util.MultiValueMap;
 
-import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
+
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class CommonUtility {
@@ -45,4 +44,8 @@ public class CommonUtility {
         return "-";
     }
 
+
+    public static String getAppCode(AppErrorCodeMessageEnum error) {
+        return String.format("%s-%s", Constants.SERVICE_CODE_APP, error.getCode());
+    }
 }
