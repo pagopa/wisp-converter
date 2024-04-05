@@ -2,6 +2,7 @@ package it.gov.pagopa.wispconverter.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.wispconverter.config.model.AppCors;
+import it.gov.pagopa.wispconverter.util.MDCEnrichInterceptor;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,6 +13,7 @@ import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 import org.springframework.web.servlet.LocaleResolver;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.i18n.AcceptHeaderLocaleResolver;
 
@@ -29,6 +31,9 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     @Value("${cors.configuration}")
     private String corsConfiguration;
+
+    @Value("${filter.exclude-url-patterns}")
+    private List<String> excludeUrlPatterns;
 
 
     @SneakyThrows
@@ -67,6 +72,11 @@ public class WebMvcConfig implements WebMvcConfigurer {
         LocalValidatorFactoryBean bean = new LocalValidatorFactoryBean();
         bean.setValidationMessageSource(messageSource());
         return bean;
+    }
+
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(new MDCEnrichInterceptor()).excludePathPatterns(excludeUrlPatterns);
     }
 }
 

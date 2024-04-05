@@ -1,32 +1,44 @@
 package it.gov.pagopa.wispconverter;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
+import com.azure.cosmos.CosmosAsyncClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import it.gov.pagopa.wispconverter.controller.RedirectController;
+import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @SpringBootTest(classes = Application.class)
 @AutoConfigureMockMvc
 class OpenApiGenerationTest {
 
     @Autowired
-    ObjectMapper objectMapper;
+    private MockMvc mvc;
 
     @Autowired
-    private MockMvc mvc;
+    private ObjectMapper objectMapper;
+
+    @MockBean
+    private RedirectController redirectController;
+
+    @MockBean
+    private RPTRequestRepository rptRequestRepository;
+
+    @MockBean
+    private CosmosAsyncClient cosmosAsyncClient;
 
     @Test
     void swaggerSpringPlugin() throws Exception {

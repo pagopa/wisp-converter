@@ -14,4 +14,17 @@ public class Constants {
     public static final String NODO_INVIA_CARRELLO_RPT = "nodoInviaCarrelloRPT";
     public static final String CLOSE_PAYMENT_V2 = "closePaymentV2";
 
+    public static final String MDC_START_TIME = "startTime";
+    public static final String MDC_STATUS = "status";
+    public static final String MDC_STATUS_CODE = "httpCode";
+    public static final String MDC_EXECUTION_TIME = "executionTime";
+    public static final String MDC_ERROR_CODE = "errorCode";
+    public static final String MDC_ERROR_TITLE = "errorTitle";
+    public static final String MDC_ERROR_DETAIL = "errorDetail";
+    public static final String MDC_REQUEST_ID = "requestId";
+    public static final String MDC_OPERATION_ID = "operationId";
+
+    public static final String MDC_CLIENT_OPERATION_ID = "clientOperationId";
+    public static final String MDC_CLIENT_EXECUTION_TIME = "clientExecutionTime";
+
 }

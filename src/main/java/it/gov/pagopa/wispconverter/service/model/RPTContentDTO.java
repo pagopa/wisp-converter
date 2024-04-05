@@ -1,7 +1,7 @@
 package it.gov.pagopa.wispconverter.service.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import it.gov.digitpa.schemas._2011.pagamenti.CtRichiestaPagamentoTelematico;
+import it.gov.pagopa.wispconverter.service.model.paymentrequest.PaymentRequestDTO;
 import lombok.*;
 
 @Data
@@ -11,10 +11,9 @@ import lombok.*;
 @ToString
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class RPTContentDTO {
-    private String idDominio;
-    private String idIntermediarioPA;
-    private Boolean multibeneficiario;
-    private String noticeNumber;
-    // TODO disaccoppia CtRichiestaPagamentoTelematico, estraendo TUTTI i campi
-    private CtRichiestaPagamentoTelematico rpt;
+
+    private String iupd;
+    private String iuv;
+    private Boolean containsDigitalStamp;
+    private PaymentRequestDTO rpt;
 }

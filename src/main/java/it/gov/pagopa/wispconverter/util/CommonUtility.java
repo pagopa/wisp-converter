@@ -1,9 +1,11 @@
 package it.gov.pagopa.wispconverter.util;
 
+import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
 import java.util.Optional;
+
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class CommonUtility {
@@ -33,4 +35,17 @@ public class CommonUtility {
         return Optional.ofNullable(value).orElse(false);
     }
 
+    public static String getExecutionTime(String startTime) {
+        if (startTime != null) {
+            long endTime = System.currentTimeMillis();
+            long executionTime = endTime - Long.parseLong(startTime);
+            return String.valueOf(executionTime);
+        }
+        return "-";
+    }
+
+
+    public static String getAppCode(AppErrorCodeMessageEnum error) {
+        return String.format("%s-%s", Constants.SERVICE_CODE_APP, error.getCode());
+    }
 }
