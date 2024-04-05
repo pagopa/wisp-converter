@@ -1,8 +1,6 @@
 package it.gov.pagopa.wispconverter.service;
 
 import io.lettuce.core.RedisException;
-import it.gov.pagopa.wispconverter.client.decouplercaching.api.DefaultApi;
-import it.gov.pagopa.wispconverter.client.decouplercaching.model.DecouplerCachingKeysDto;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.CacheRepository;
@@ -27,7 +25,7 @@ public class CacheService {
 
     private static final String CACHING_KEY_TEMPLATE = "wisp_" + COMPOSITE_TWOVALUES_KEY_TEMPLATE;
 
-    private final it.gov.pagopa.wispconverter.client.decouplercaching.invoker.ApiClient decouplerCachingClient;
+    private final it.gov.pagopa.gen.wispconverter.client.decouplercaching.invoker.ApiClient decouplerCachingClient;
 
     private final CacheRepository cacheRepository;
 
@@ -42,9 +40,9 @@ public class CacheService {
                     .toList();
 
             // communicating with APIM policy for caching data for decoupler
-            DecouplerCachingKeysDto decouplerCachingKeys = new DecouplerCachingKeysDto();
+            it.gov.pagopa.gen.wispconverter.client.decouplercaching.model.DecouplerCachingKeysDto decouplerCachingKeys = new it.gov.pagopa.gen.wispconverter.client.decouplercaching.model.DecouplerCachingKeysDto();
             noticeNumbers.forEach(noticeNumber -> decouplerCachingKeys.addKeysItem(String.format(COMPOSITE_TWOVALUES_KEY_TEMPLATE, idIntermediarioPA, noticeNumber)));
-            DefaultApi apiInstance = new DefaultApi(decouplerCachingClient);
+            it.gov.pagopa.gen.wispconverter.client.decouplercaching.api.DefaultApi apiInstance = new it.gov.pagopa.gen.wispconverter.client.decouplercaching.api.DefaultApi(decouplerCachingClient);
             apiInstance.saveMapping(decouplerCachingKeys, MDC.get(Constants.MDC_REQUEST_ID));
 
             // save in Redis cache the mapping of the request identifier needed for RT generation in next steps

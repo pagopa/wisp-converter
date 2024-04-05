@@ -1,6 +1,5 @@
 package it.gov.pagopa.wispconverter.config.client;
 
-import it.gov.pagopa.wispconverter.client.iuvgenerator.invoker.ApiClient;
 import it.gov.pagopa.wispconverter.service.ReService;
 import it.gov.pagopa.wispconverter.util.client.MDCInterceptor;
 import it.gov.pagopa.wispconverter.util.client.ReInterceptor;
@@ -62,7 +61,7 @@ public class IuvGeneratorClientConfig {
 
 
     @Bean
-    public ApiClient iuvGeneratorClient() {
+    public it.gov.pagopa.gen.wispconverter.client.iuvgenerator.invoker.ApiClient iuvGeneratorClient() {
         IuvGeneratorClientLoggingInterceptor clientLogging = new IuvGeneratorClientLoggingInterceptor();
         clientLogging.setRequestIncludeHeaders(clientRequestIncludeHeaders);
         clientLogging.setRequestIncludePayload(clientRequestIncludePayload);
@@ -85,7 +84,7 @@ public class IuvGeneratorClientConfig {
 
         restTemplate.setErrorHandler(new IuvGeneratorClientResponseErrorHandler());
 
-        ApiClient client = new ApiClient(restTemplate);
+        it.gov.pagopa.gen.wispconverter.client.iuvgenerator.invoker.ApiClient client = new it.gov.pagopa.gen.wispconverter.client.iuvgenerator.invoker.ApiClient(restTemplate);
         client.setBasePath(basePath);
 //        client.setApiKey(apiKey);
 

@@ -1,6 +1,5 @@
 package it.gov.pagopa.wispconverter.config.client;
 
-import it.gov.pagopa.wispconverter.client.decouplercaching.invoker.ApiClient;
 import it.gov.pagopa.wispconverter.service.ReService;
 import it.gov.pagopa.wispconverter.util.client.MDCInterceptor;
 import it.gov.pagopa.wispconverter.util.client.ReInterceptor;
@@ -61,7 +60,7 @@ public class DecouplerCachingClientConfig {
     private boolean clientResponsePretty;
 
     @Bean
-    public ApiClient decouplerCachingClient() {
+    public it.gov.pagopa.gen.wispconverter.client.decouplercaching.invoker.ApiClient decouplerCachingClient() {
         DecouplerCachingClientLoggingInterceptor clientLogging = new DecouplerCachingClientLoggingInterceptor();
         clientLogging.setRequestIncludeHeaders(clientRequestIncludeHeaders);
         clientLogging.setRequestIncludePayload(clientRequestIncludePayload);
@@ -84,7 +83,7 @@ public class DecouplerCachingClientConfig {
 
         restTemplate.setErrorHandler(new DecouplerCachingClientResponseErrorHandler());
 
-        ApiClient client = new ApiClient(restTemplate);
+        it.gov.pagopa.gen.wispconverter.client.decouplercaching.invoker.ApiClient client = new it.gov.pagopa.gen.wispconverter.client.decouplercaching.invoker.ApiClient(restTemplate);
 
         client.setBasePath(basePath);
         client.setApiKey(apiKey);
