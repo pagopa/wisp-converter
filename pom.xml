@@ -15,9 +15,7 @@
     <artifactId>wisp-converter</artifactId>
     <version>0.0.4</version>
     <name>pagoPA WISP Converter</name>
-    <description>A service that permits to handle nodoInviaRPT and nodoInviaCarrelloRPT request from WISP, converting
-        them in NMU payments.
-    </description>
+    <description>A service that permits to handle nodoInviaRPT and nodoInviaCarrelloRPT request from WISP, converting them in NMU payments.</description>
 
     <properties>
         <java.version>17</java.version>
@@ -52,16 +50,17 @@
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-thymeleaf</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-aop</artifactId>
-        </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web-services</artifactId>
@@ -101,16 +100,6 @@
             <version>${cosmos-data-version}</version>
         </dependency>
 
-        <!-- Feign client -->
-        <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-openfeign</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.retry</groupId>
-            <artifactId>spring-retry</artifactId>
-        </dependency>
-
         <!-- Swagger/OpenAPI -->
         <dependency>
             <groupId>org.springdoc</groupId>
@@ -133,6 +122,12 @@
             <groupId>com.google.code.findbugs</groupId>
             <artifactId>jsr305</artifactId>
             <version>${jsr305.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.openapitools</groupId>
+            <artifactId>jackson-databind-nullable</artifactId>
+            <version>0.2.6</version>
         </dependency>
 
         <dependency>
@@ -217,36 +212,6 @@
                 </configuration>
             </plugin>
 
-
-            <plugin>
-                <groupId>org.openapitools</groupId>
-                <artifactId>openapi-generator-maven-plugin</artifactId>
-                <version>7.0.1</version>
-                <executions>
-                    <execution>
-                        <id>cache-config-from-openapi</id>
-                        <goals>
-                            <goal>generate</goal>
-                        </goals>
-                        <configuration>
-                            <inputSpec>${project.basedir}/src/main/resources/openapi/cache_v1.json</inputSpec>
-                            <generatorName>java</generatorName>
-                            <generateApiTests>false</generateApiTests>
-                            <generateModelTests>false</generateModelTests>
-                            <configOptions>
-                                <packageName>it.gov.pagopa.wispconverter.client.cache</packageName>
-                                <modelPackage>it.gov.pagopa.wispconverter.client.cache.model</modelPackage>
-                                <dateLibrary>java8</dateLibrary>
-                                <openApiNullable>false</openApiNullable>
-                                <hideGenerationTimestamp>true</hideGenerationTimestamp>
-                                <useJakartaEe>true</useJakartaEe>
-                                <library>resttemplate</library>
-                            </configOptions>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
             <!-- Plugin required to build java classes from XSD using CXF -->
             <plugin>
                 <groupId>org.apache.cxf</groupId>
@@ -294,7 +259,7 @@
                 </executions>
             </plugin>
 
-
+            <!-- JaCoCo plugin -->
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
@@ -318,6 +283,8 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <!-- Sonar scanner plugin -->
             <plugin>
                 <groupId>org.sonarsource.scanner.maven</groupId>
                 <artifactId>sonar-maven-plugin</artifactId>
@@ -328,6 +295,121 @@
                         <goals>
                             <goal>sonar</goal>
                         </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Client generation with OpenAPI Generator -->
+            <plugin>
+                <groupId>org.openapitools</groupId>
+                <artifactId>openapi-generator-maven-plugin</artifactId>
+                <version>7.4.0</version>
+                <executions>
+                    <execution>
+                        <id>apiconfig-cache</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <inputSpec>${project.basedir}/openapi-client/apiconfig-cache/openapi.json</inputSpec>
+                            <generatorName>java</generatorName>
+                            <modelNameSuffix>Dto</modelNameSuffix>
+                            <generateApiTests>false</generateApiTests>
+                            <generateModelTests>false</generateModelTests>
+                            <library>resttemplate</library>
+                            <configOptions>
+                                <basePackage>it.gov.pagopa.wispconverter.client.cache</basePackage>
+                                <modelPackage>it.gov.pagopa.wispconverter.client.cache.model</modelPackage>
+                                <apiPackage>it.gov.pagopa.wispconverter.client.cache.api</apiPackage>
+                                <invokerPackage>it.gov.pagopa.wispconverter.client.cache.invoker</invokerPackage>
+                                <dateLibrary>java8</dateLibrary>
+                            </configOptions>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>gpd</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <inputSpec>${project.basedir}/openapi-client/gpd/openapi.json</inputSpec>
+                            <generatorName>java</generatorName>
+                            <modelNameSuffix>Dto</modelNameSuffix>
+                            <generateApiTests>false</generateApiTests>
+                            <generateModelTests>false</generateModelTests>
+                            <library>resttemplate</library>
+                            <configOptions>
+                                <basePackage>it.gov.pagopa.wispconverter.client.gpd</basePackage>
+                                <modelPackage>it.gov.pagopa.wispconverter.client.gpd.model</modelPackage>
+                                <apiPackage>it.gov.pagopa.wispconverter.client.gpd.api</apiPackage>
+                                <invokerPackage>it.gov.pagopa.wispconverter.client.gpd.invoker</invokerPackage>
+                                <dateLibrary>java8</dateLibrary>
+                            </configOptions>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>iuv-generator</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <inputSpec>${project.basedir}/openapi-client/iuv-generator/openapi.json</inputSpec>
+                            <generatorName>java</generatorName>
+                            <modelNameSuffix>Dto</modelNameSuffix>
+                            <generateApiTests>false</generateApiTests>
+                            <generateModelTests>false</generateModelTests>
+                            <library>resttemplate</library>
+                            <configOptions>
+                                <basePackage>it.gov.pagopa.wispconverter.client.iuvgenerator</basePackage>
+                                <modelPackage>it.gov.pagopa.wispconverter.client.iuvgenerator.model</modelPackage>
+                                <apiPackage>it.gov.pagopa.wispconverter.client.iuvgenerator.api</apiPackage>
+                                <invokerPackage>it.gov.pagopa.wispconverter.client.iuvgenerator.invoker</invokerPackage>
+                                <dateLibrary>java8</dateLibrary>
+                            </configOptions>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>checkout</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <inputSpec>${project.basedir}/openapi-client/checkout/openapi.yaml</inputSpec>
+                            <generatorName>java</generatorName>
+                            <modelNameSuffix>Dto</modelNameSuffix>
+                            <generateApiTests>false</generateApiTests>
+                            <generateModelTests>false</generateModelTests>
+                            <library>resttemplate</library>
+                            <configOptions>
+                                <basePackage>it.gov.pagopa.wispconverter.client.checkout</basePackage>
+                                <modelPackage>it.gov.pagopa.wispconverter.client.checkout.model</modelPackage>
+                                <apiPackage>it.gov.pagopa.wispconverter.client.checkout.api</apiPackage>
+                                <invokerPackage>it.gov.pagopa.wispconverter.client.checkout.invoker</invokerPackage>
+                                <dateLibrary>java8</dateLibrary>
+                            </configOptions>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>decoupler-caching</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <inputSpec>${project.basedir}/openapi-client/decoupler-caching/openapi.json</inputSpec>
+                            <generatorName>java</generatorName>
+                            <modelNameSuffix>Dto</modelNameSuffix>
+                            <generateApiTests>false</generateApiTests>
+                            <generateModelTests>false</generateModelTests>
+                            <library>resttemplate</library>
+                            <configOptions>
+                                <basePackage>it.gov.pagopa.wispconverter.client.decouplercaching</basePackage>
+                                <modelPackage>it.gov.pagopa.wispconverter.client.decouplercaching.model</modelPackage>
+                                <apiPackage>it.gov.pagopa.wispconverter.client.decouplercaching.api</apiPackage>
+                                <invokerPackage>it.gov.pagopa.wispconverter.client.decouplercaching.invoker
+                                </invokerPackage>
+                                <dateLibrary>java8</dateLibrary>
+                            </configOptions>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>

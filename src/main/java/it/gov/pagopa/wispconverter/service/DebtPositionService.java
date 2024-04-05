@@ -1,20 +1,22 @@
 package it.gov.pagopa.wispconverter.service;
 
-import feign.FeignException;
-import it.gov.pagopa.wispconverter.client.gpd.GPDClient;
+import it.gov.pagopa.wispconverter.client.gpd.api.DebtPositionsApiApi;
 import it.gov.pagopa.wispconverter.client.gpd.model.*;
-import it.gov.pagopa.wispconverter.client.iuvgenerator.IUVGeneratorClient;
-import it.gov.pagopa.wispconverter.client.iuvgenerator.model.IUVGeneratorRequest;
-import it.gov.pagopa.wispconverter.client.iuvgenerator.model.IUVGeneratorResponse;
+import it.gov.pagopa.wispconverter.client.iuvgenerator.api.IuvGeneratorApiApi;
+import it.gov.pagopa.wispconverter.client.iuvgenerator.model.IuvGenerationModelDto;
+import it.gov.pagopa.wispconverter.client.iuvgenerator.model.IuvGenerationModelResponseDto;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.service.mapper.DebtPositionMapper;
 import it.gov.pagopa.wispconverter.service.model.*;
 import it.gov.pagopa.wispconverter.service.model.paymentrequest.PaymentRequestDTO;
+import it.gov.pagopa.wispconverter.util.Constants;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -29,9 +31,9 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 public class DebtPositionService {
 
-    private final GPDClient gpdClient;
+    private final it.gov.pagopa.wispconverter.client.gpd.invoker.ApiClient gpdClient;
 
-    private final IUVGeneratorClient iuvGeneratorClient;
+    private final it.gov.pagopa.wispconverter.client.iuvgenerator.invoker.ApiClient iuvGeneratorClient;
 
     private final DebtPositionMapper mapper;
 
@@ -41,41 +43,43 @@ public class DebtPositionService {
     private String posteItalianeABICode;
 
     @Value("${wisp-converter.aux-digit}")
-    private String auxDigit;
+    private Long auxDigit;
 
     @Value("${wisp-converter.segregation-code}")
-    private String segregationCode;
+    private Long segregationCode;
 
     public void createDebtPositions(CommonRPTFieldsDTO rptContentDTOs) {
 
         try {
-
             // converting RPTs in single payment position
-            MultiplePaymentPosition paymentPosition = extractPaymentPositions(rptContentDTOs);
+            MultiplePaymentPositionModelDto multiplePaymentPositions = extractPaymentPositions(rptContentDTOs);
 
             // communicating with GPD-core service in order to execute the operation
-            this.gpdClient.executeBulkCreation(rptContentDTOs.getCreditorInstitutionId(), paymentPosition);
+            DebtPositionsApiApi apiInstance = new DebtPositionsApiApi(gpdClient);
+            apiInstance.createMultiplePositions1(rptContentDTOs.getCreditorInstitutionId(), multiplePaymentPositions, MDC.get(Constants.MDC_REQUEST_ID), true);
 
-        } catch (FeignException e) {
-            throw new AppException(e, AppErrorCodeMessageEnum.CLIENT_GPD, e.status(), e.getMessage());
+            //FIXME gestire errori di connessione
+            //FIXME cosa succede se si spacca al secondo giro?
+        } catch (RestClientException e) {
+            throw new AppException(AppErrorCodeMessageEnum.CLIENT_GPD, e.getMessage());
         }
     }
 
-    private MultiplePaymentPosition extractPaymentPositions(CommonRPTFieldsDTO commonRPTFieldsDTO) {
+    private MultiplePaymentPositionModelDto extractPaymentPositions(CommonRPTFieldsDTO commonRPTFieldsDTO) {
 
-        List<PaymentPosition> paymentPositions;
+        List<PaymentPositionModelDto> paymentPositions;
         if (Boolean.TRUE.equals(commonRPTFieldsDTO.getIsMultibeneficiary())) {
             paymentPositions = extractPaymentPositionsForMultibeneficiary(commonRPTFieldsDTO);
         } else {
             paymentPositions = extractPaymentPositionsForNonMultibeneficiary(commonRPTFieldsDTO);
         }
 
-        MultiplePaymentPosition multiplePaymentPosition = new MultiplePaymentPosition();
+        MultiplePaymentPositionModelDto multiplePaymentPosition = new MultiplePaymentPositionModelDto();
         multiplePaymentPosition.setPaymentPositions(paymentPositions);
         return multiplePaymentPosition;
     }
 
-    private List<PaymentPosition> extractPaymentPositionsForMultibeneficiary(CommonRPTFieldsDTO commonRPTFieldsDTO) {
+    private List<PaymentPositionModelDto> extractPaymentPositionsForMultibeneficiary(CommonRPTFieldsDTO commonRPTFieldsDTO) {
 
         if (commonRPTFieldsDTO.getRpts().size() < 2) {
             throw new AppException(AppErrorCodeMessageEnum.VALIDATION_INVALID_MULTIBENEFICIARY_CART);
@@ -83,7 +87,7 @@ public class DebtPositionService {
         RPTContentDTO firstRPTContentDTO = commonRPTFieldsDTO.getRpts().get(0);
 
         // mapping of transfers
-        List<Transfer> transfers = new ArrayList<>();
+        List<TransferModelDto> transfers = new ArrayList<>();
         for (RPTContentDTO rptContentDTO : commonRPTFieldsDTO.getRpts()) {
 
             PaymentRequestDTO paymentRequestDTO = rptContentDTO.getRpt();
@@ -104,13 +108,13 @@ public class DebtPositionService {
                 .map(rptContentDTO -> rptContentDTO.getRpt().getTransferData().getTotalAmount())
                 .reduce(BigDecimal.valueOf(0L), BigDecimal::add)
                 .longValue() * 100;
-        PaymentOption paymentOption = mapper.toPaymentOption(firstRPTContentDTO);
+        PaymentOptionModelDto paymentOption = mapper.toPaymentOption(firstRPTContentDTO);
         paymentOption.setNav(noticeNumber);
         paymentOption.setAmount(amount);
         paymentOption.setTransfer(transfers);
 
         // mapping of payment position
-        PaymentPosition paymentPosition = mapper.toPaymentPosition(commonRPTFieldsDTO);
+        PaymentPositionModelDto paymentPosition = mapper.toPaymentPosition(commonRPTFieldsDTO);
         paymentPosition.setIupd(calculateIUPD(commonRPTFieldsDTO.getCreditorInstitutionId()));
         paymentPosition.setPaymentOption(List.of(paymentOption));
 
@@ -124,8 +128,8 @@ public class DebtPositionService {
         return List.of(paymentPosition);
     }
 
-    private List<PaymentPosition> extractPaymentPositionsForNonMultibeneficiary(CommonRPTFieldsDTO commonRPTFieldsDTO) {
-        List<PaymentPosition> paymentPositions = new LinkedList<>();
+    private List<PaymentPositionModelDto> extractPaymentPositionsForNonMultibeneficiary(CommonRPTFieldsDTO commonRPTFieldsDTO) {
+        List<PaymentPositionModelDto> paymentPositions = new LinkedList<>();
 
         List<PaymentNoticeContentDTO> paymentNotices = commonRPTFieldsDTO.getPaymentNotices();
 
@@ -135,7 +139,7 @@ public class DebtPositionService {
 
             // mapping of transfers
             int transferIdCounter = 1;
-            List<Transfer> transfers = new ArrayList<>();
+            List<TransferModelDto> transfers = new ArrayList<>();
             for (TransferDTO transferDTO : paymentRequestDTO.getTransferData().getTransfer()) {
 
                 transfers.add(extractPaymentOptionTransfer(transferDTO, null, transferIdCounter));
@@ -147,13 +151,13 @@ public class DebtPositionService {
 
             // mapping of payment option
             Long amount = paymentRequestDTO.getTransferData().getTotalAmount().longValue() * 100;
-            PaymentOption paymentOption = mapper.toPaymentOption(rptContentDTO);
+            PaymentOptionModelDto paymentOption = mapper.toPaymentOption(rptContentDTO);
             paymentOption.setAmount(amount);
             paymentOption.setNav(noticeNumber);
             paymentOption.setTransfer(transfers);
 
             // mapping of payment position
-            PaymentPosition paymentPosition = mapper.toPaymentPosition(commonRPTFieldsDTO);
+            PaymentPositionModelDto paymentPosition = mapper.toPaymentPosition(commonRPTFieldsDTO);
             paymentPosition.setIupd(calculateIUPD(commonRPTFieldsDTO.getCreditorInstitutionId()));
             paymentPosition.setPaymentOption(List.of(paymentOption));
             paymentPositions.add(paymentPosition);
@@ -169,38 +173,38 @@ public class DebtPositionService {
     }
 
     private String getNAVCodeFromIUVGenerator(String creditorInstitutionCode) {
-        // generating request body
-        IUVGeneratorRequest request = IUVGeneratorRequest.builder()
-                .auxDigit(this.auxDigit)
-                .segregationCode(this.segregationCode)
-                .build();
-        // communicating with IUV Generator service in order to retrieve response
+
         String navCode;
         try {
-            IUVGeneratorResponse response = this.iuvGeneratorClient.generate(creditorInstitutionCode, request);
+            IuvGenerationModelDto request = new IuvGenerationModelDto();
+            request.setAuxDigit(this.auxDigit);
+            request.setSegregationCode(this.segregationCode);
+
+            // communicating with IUV Generator service in order to retrieve response
+            IuvGeneratorApiApi apiInstance = new IuvGeneratorApiApi(iuvGeneratorClient);
+            IuvGenerationModelResponseDto response = apiInstance.generateIUV(creditorInstitutionCode, request);
+
             navCode = response.getIuv();
-        } catch (FeignException e) {
-            throw new AppException(AppErrorCodeMessageEnum.CLIENT_IUVGENERATOR_INVALID_RESPONSE, e.status(), e.getMessage());
+        } catch (RestClientException e) {
+            throw new AppException(AppErrorCodeMessageEnum.CLIENT_IUVGENERATOR, e.getMessage());
         }
         return navCode;
     }
 
+    private TransferModelDto extractPaymentOptionTransfer(TransferDTO transferDTO, String organizationFiscalCode, int transferIdCounter) {
 
-    private Transfer extractPaymentOptionTransfer(TransferDTO transferDTO, String organizationFiscalCode, int transferIdCounter) {
+        // definition of standard transfer metadata
+        TransferMetadataModelDto transferMetadata = new TransferMetadataModelDto();
+        transferMetadata.setKey("DatiSpecificiRiscossione");
+        transferMetadata.setValue(transferDTO.getCategory());
 
         // common definition for the transfer
-        Transfer transfer = Transfer.builder()
-                .idTransfer(String.valueOf(transferIdCounter))
-                .amount(transferDTO.getAmount().longValue() * 100)
-                .remittanceInformation(transferDTO.getRemittanceInformation())
-                .category(getTaxonomy(transferDTO))
-                .transferMetadata(List.of(
-                        TransferMetadata.builder()
-                                .key("DatiSpecificiRiscossione")
-                                .value(transferDTO.getCategory())
-                                .build()
-                ))
-                .build();
+        TransferModelDto transfer = new TransferModelDto();
+        transfer.setIdTransfer(TransferModelDto.IdTransferEnum.fromValue(String.valueOf(transferIdCounter)));
+        transfer.setAmount(transferDTO.getAmount().longValue() * 100);
+        transfer.setRemittanceInformation(transferDTO.getRemittanceInformation());
+        transfer.setCategory(getTaxonomy(transferDTO));
+        transfer.setTransferMetadata(List.of(transferMetadata));
 
         /*
         If digital stamp exists, it is a special transfer that does not require IBANs.

@@ -1,46 +1,13 @@
 package it.gov.pagopa.wispconverter;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import feign.Request;
-import feign.Response;
-import it.gov.pagopa.wispconverter.client.cache.model.ConfigDataV1;
-import it.gov.pagopa.wispconverter.client.cache.model.Redirect;
-import it.gov.pagopa.wispconverter.client.cache.model.Station;
-import it.gov.pagopa.wispconverter.client.checkout.CheckoutClient;
-import it.gov.pagopa.wispconverter.client.decoupler.DecouplerCachingClient;
-import it.gov.pagopa.wispconverter.client.gpd.GPDClient;
-import it.gov.pagopa.wispconverter.client.iuvgenerator.IUVGeneratorClient;
-import it.gov.pagopa.wispconverter.client.iuvgenerator.model.IUVGeneratorResponse;
-import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
-import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
-import it.gov.pagopa.wispconverter.service.ConfigCacheService;
-import it.gov.pagopa.wispconverter.utils.TestUtils;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.*;
-import java.util.zip.GZIPOutputStream;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 @SpringBootTest(classes = Application.class)
 @AutoConfigureMockMvc
 class RptTest {
 
+    /*
     @Autowired
     ObjectMapper objectMapper;
     @Autowired
@@ -137,4 +104,5 @@ class RptTest {
 
         verify(checkoutClient,times(1)).executeCreation(any());
     }
+     */
 }

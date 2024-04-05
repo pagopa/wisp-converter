@@ -26,7 +26,6 @@ public class ConverterService {
 
     private final RPTRequestRepository rptRequestRepository;
 
-
     public String convert(String sessionId) {
 
         // get RPT request entity from database

@@ -1,35 +1,25 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta content="width=device-width, initial-scale=1.0" name="viewport">
-    <title>Error</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f4f4f4;
-            color: #333;
-        }
-        .container {
-            width: 80%;
-            margin: 50px auto;
-            text-align: center;
-        }
-        h1 {
-            color: #d9534f;
-        }
-        p {
-            font-size: 18px;
-        }
-    </style>
-</head>
-<body>
-<div class="container">
-    <h1>Oops!</h1>
-    <p>An error has occurred during request examination. Please contact support.</p>
-    <p>Error code: <b th:text="${error}">WIC-0000</b></p>
-</div>
-</body>
+<html xmlns:th="http://www.thymeleaf.org">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <title>Error</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+    </head>
+    <body>
+        <h1>Something went wrong! </h1>
+        <h2>Our Engineers are on it</h2>
+
+        <div th:text="${sessionId}"></div>
+        <div th:text="${type}"></div>
+        <div th:text="${title}"></div>
+        <div th:text="${status}"></div>
+        <div th:text="${detail}"></div>
+        <div th:text="${timestamp}"></div>
+        <div th:text="${operationId}"></div>
+        <div th:text="${errorCode}"></div>
+
+
+        <a href="/">Go Home</a>
+    </body>
 </html>

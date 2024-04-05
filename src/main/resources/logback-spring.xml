@@ -1,20 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
-    <springProfile name="!default">
-        <conversionRule conversionWord="clr" converterClass="org.springframework.boot.logging.logback.ColorConverter" />
-        <conversionRule conversionWord="wex" converterClass="org.springframework.boot.logging.logback.WhitespaceThrowableProxyConverter" />
-        <conversionRule conversionWord="wEx" converterClass="org.springframework.boot.logging.logback.ExtendedWhitespaceThrowableProxyConverter" />
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
 
-        <appender name="stdout" class="ch.qos.logback.core.ConsoleAppender">
-            <layout class="ch.qos.logback.classic.PatternLayout">
-                <Pattern>
-                    %clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(%5p) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m %clr(%mdc){magenta}%n%wEx
-                </Pattern>
-            </layout>
-        </appender>
+    <springProfile name="!default">
+        <include resource="org/springframework/boot/logging/logback/console-appender.xml" />
 
         <root level="INFO">
-            <appender-ref ref="stdout"/>
+            <appender-ref ref="CONSOLE"/>
         </root>
     </springProfile>
 
@@ -22,6 +14,7 @@
         <springProperty name="OTEL_SERVICE_NAME" source="otel.service.name"/>
         <springProperty name="SERVICE_VERSION" source="info.application.version"/>
         <springProperty name="ENV" source="info.properties.environment"/>
+
         <appender name="ECS_JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
             <encoder class="co.elastic.logging.logback.EcsEncoder">
                 <serviceName>${OTEL_SERVICE_NAME}</serviceName>

@@ -20,16 +20,18 @@ public enum AppErrorCodeMessageEnum {
     VALIDATION_INVALID_DEBTOR(1102, "Debtor subject not valid", "Error while generating debt position for GPD service. The debtor subject information is different between the various RPT of the cart.", HttpStatus.BAD_REQUEST),
     VALIDATION_INVALID_CREDITOR_INSTITUTION(1103, "Creditor institution not valid", "Error while generating debt position for GPD service. The creditor institution information is different between the various RPT of the cart.", HttpStatus.BAD_REQUEST),
     CONFIGURATION_INVALID_STATION(1200, "Station not valid", "Error while generating cart for Checkout service. No valid station found with code [{0}].", HttpStatus.NOT_FOUND),
+    CONFIGURATION_INVALID_STATION_REDIRECT_URL(1201, "Station not valid", "Error while generating cart for Checkout service. The station with code [{0}] contains wrong redirect URL and it is not possible to generate valid URI.", HttpStatus.NOT_FOUND),
     // --- DB and storage interaction errors ---
     PERSISTENCE_RPT_NOT_FOUND(2000, "RPT not found", "Error while retrieving RPT. RPT with sessionId [{0}] not found.", HttpStatus.NOT_FOUND),
     PERSISTENCE_REQUESTID_CACHING_ERROR(2001, "RequestID caching error", "Error while caching RequestID. {0}", HttpStatus.UNPROCESSABLE_ENTITY),
     // --- Client errors ---
-    CLIENT_GPD(3000, "GPD client error", "Error while communicating with GPD service. Status [{0}] - {1}", HttpStatus.EXPECTATION_FAILED),
-    CLIENT_IUVGENERATOR_INVALID_RESPONSE(3001, "IUV Generator client error", "Error while communicating with IUV Generator service. Status [{0}] - {1}", HttpStatus.EXPECTATION_FAILED),
-    CLIENT_DECOUPLER_CACHING(3002, "Decoupler caching client error", "Error while communicating with decoupler caching API. Status [{0}] - {1}", HttpStatus.EXPECTATION_FAILED),
-    CLIENT_CHECKOUT(3003, "Checkout error", "Error while communicating with Checkout service. status [{0}] - {1}", HttpStatus.EXPECTATION_FAILED),
-    CLIENT_CHECKOUT_NO_REDIRECT_LOCATION(3004, "Checkout redirect error", "Error while communicating with Checkout service. No valid 'Location' header was found,", HttpStatus.EXPECTATION_FAILED),
-    CLIENT_CHECKOUT_INVALID_REDIRECT_LOCATION(3005, "Checkout redirect error", "Error while communicating with Checkout service. An empty 'Location' header was found.", HttpStatus.EXPECTATION_FAILED),
+    CLIENT_APICONFIGCACHE(3000, "APIConfig cache client error", "Error while communicating with APIConfig cache service. {0}", HttpStatus.EXPECTATION_FAILED),
+    CLIENT_GPD(3001, "GPD client error", "Error while communicating with GPD service. {0}", HttpStatus.EXPECTATION_FAILED),
+    CLIENT_IUVGENERATOR(3002, "IUV Generator client error", "Error while communicating with IUV Generator service. {0}", HttpStatus.EXPECTATION_FAILED),
+    CLIENT_DECOUPLER_CACHING(3003, "Decoupler caching client error", "Error while communicating with decoupler caching API. {0}", HttpStatus.EXPECTATION_FAILED),
+    CLIENT_CHECKOUT(3004, "Checkout error", "Error while communicating with Checkout service. {0}", HttpStatus.EXPECTATION_FAILED),
+    CLIENT_CHECKOUT_NO_REDIRECT_LOCATION(3005, "Checkout redirect error", "Error while communicating with Checkout service. No valid 'Location' header was found,", HttpStatus.EXPECTATION_FAILED),
+    CLIENT_CHECKOUT_INVALID_REDIRECT_LOCATION(3006, "Checkout redirect error", "Error while communicating with Checkout service. An empty 'Location' header was found.", HttpStatus.EXPECTATION_FAILED),
 
     ;
 

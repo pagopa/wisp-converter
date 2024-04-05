@@ -8,57 +8,118 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import it.gov.pagopa.wispconverter.controller.model.RedirectResponse;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.service.ConverterService;
-import it.gov.pagopa.wispconverter.util.CommonUtility;
-import it.gov.pagopa.wispconverter.util.openapi.OpenAPITableMetadata;
+import it.gov.pagopa.wispconverter.util.Constants;
+import it.gov.pagopa.wispconverter.util.ErrorUtil;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatusCode;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.http.MediaType;
+import org.springframework.http.ProblemDetail;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.servlet.ModelAndView;
 
-import java.io.IOException;
+import java.time.Instant;
+import java.util.Map;
 
 @Controller
-@RequestMapping("/redirect")
+@RequestMapping
 @Validated
 @RequiredArgsConstructor
 @Tag(name = "Redirect", description = "Conversion and redirection APIs")
+@Slf4j
 public class RedirectController {
 
     private final ConverterService converterService;
+    private final ErrorUtil errorUtil;
+    private final MessageSource messageSource;
 
-    @Operation(summary = "Redirect payment from WISP to Checkout", description = "Redirecting the payment flow from WISP to Checkout. In order to do so, the NodoInviaRPT and NodoInviaCarrelloRPT requests will be converted in NMU payments and handled by GPD system.", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"Redirect"})
+    @Operation(summary = "", description = "", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"Redirect"})
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "302", description = "Redirect to Checkout service.", content = @Content(schema = @Schema())),
-            @ApiResponse(responseCode = "422", description = "Unprocessable request. Returns a static page with the error code.", content = @Content(schema = @Schema()))
+            @ApiResponse(responseCode = "302", description = "Redirect to Checkout service.", content = @Content(schema = @Schema()))
     })
-    @OpenAPITableMetadata(external = false, authentication = OpenAPITableMetadata.APISecurityMode.APIKEY, readWriteIntense = OpenAPITableMetadata.ReadWrite.BOTH)
-    @GetMapping
-    public ModelAndView redirect(@Parameter(description = "The identifier of the payment, referenced by session and creditor institution broker.", example = "identificativoIntermediarioPA_sessionId")
-                                 @NotBlank @RequestParam("sessionId") String sessionId,
-                                 HttpServletResponse response) throws IOException {
-
-        AppErrorCodeMessageEnum errorCode;
+    @GetMapping(value = "/redirect")
+    public String redirect(@Parameter(description = "", example = "identificativoIntermediarioPA_sessionId")
+                           @NotBlank(message = "{redirect.session-id.not-blank}")
+                           @RequestParam("sessionId") String sessionId,
+                           Model model, HttpServletResponse response) {
         try {
-            response.sendRedirect(converterService.convert(sessionId));
-            return null;
-        } catch (AppException e) {
-            errorCode = e.getError();
-        } catch (Exception e) {
-            errorCode = AppErrorCodeMessageEnum.GENERIC_ERROR;
+            String redirectURI = converterService.convert(sessionId);
+            return "redirect:" + redirectURI;
+        } catch (AppException appException) {
+            ErrorResponse errorResponse = errorUtil.forAppException(appException);
+            ProblemDetail problemDetail = errorResponse.updateAndGetBody(this.messageSource, LocaleContextHolder.getLocale());
+            errorUtil.finalizeError(problemDetail, errorResponse.getStatusCode().value());
+
+            response.setStatus(errorResponse.getStatusCode().value());
+            model.addAttribute("sessionId", sessionId);
+            enrichModelWithError(model, problemDetail, errorResponse.getStatusCode().value());
+            return "error";
+        } catch (Exception ex) {
+            String operationId = MDC.get(Constants.MDC_OPERATION_ID);
+            log.error(String.format("GenericException: operation-id=[%s]", operationId != null ? operationId : "n/a"), ex);
+
+            AppException appException = new AppException(ex, AppErrorCodeMessageEnum.ERROR, ex.getMessage());
+            ErrorResponse errorResponse = errorUtil.forAppException(appException);
+            ProblemDetail problemDetail = errorResponse.updateAndGetBody(this.messageSource, LocaleContextHolder.getLocale());
+            errorUtil.finalizeError(problemDetail, errorResponse.getStatusCode().value());
+
+            response.setStatus(errorResponse.getStatusCode().value());
+            model.addAttribute("sessionId", sessionId);
+            enrichModelWithError(model, problemDetail, errorResponse.getStatusCode().value());
+            return "error";
         }
-        ModelAndView modelAndView = new ModelAndView();
-        modelAndView.setStatus(HttpStatusCode.valueOf(422));
-        modelAndView.setViewName("error.html");
-        modelAndView.addObject("error", CommonUtility.getAppCode(errorCode));
-        return modelAndView;
+
     }
+
+    @Operation(summary = "", description = "", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"Redirect"})
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Redirect info to Checkout service.", content = @Content(schema = @Schema(implementation = RedirectResponse.class)))
+    })
+    @GetMapping(value = "/redirect", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<RedirectResponse> redirectInfo(@Parameter(description = "", example = "identificativoIntermediarioPA_sessionId")
+                                                         @NotBlank(message = "{redirect.session-id.not-blank}")
+                                                         @RequestParam("sessionId") String sessionId) {
+        String redirectURI = converterService.convert(sessionId);
+        return ResponseEntity.ok(RedirectResponse.builder().redirectUrl(redirectURI).build());
+    }
+
+    private void enrichModelWithError(Model model, ProblemDetail problemDetail, int statusCode) {
+        model.addAttribute("type", problemDetail.getType());
+        model.addAttribute("title", problemDetail.getTitle());
+        model.addAttribute("status", statusCode);
+        model.addAttribute("detail", problemDetail.getDetail());
+
+        Map<String, Object> properties = problemDetail.getProperties();
+        if (properties != null) {
+            Instant timestamp = (Instant) properties.get(ErrorUtil.EXTRA_FIELD_ERROR_TIMESTAMP);
+            if (timestamp != null) {
+                model.addAttribute("timestamp", timestamp.toString());
+            }
+
+            String errrCode = (String) properties.get(ErrorUtil.EXTRA_FIELD_ERROR_CODE);
+            if (errrCode != null) {
+                model.addAttribute("errorCode", errrCode);
+            }
+
+            String operationId = (String) properties.get(ErrorUtil.EXTRA_FIELD_OPERATION_ID);
+            if (operationId != null) {
+                model.addAttribute("operationId", operationId);
+            }
+        }
+    }
+
 }

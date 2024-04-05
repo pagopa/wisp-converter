@@ -1,8 +1,8 @@
 package it.gov.pagopa.wispconverter.service.mapper;
 
-import it.gov.pagopa.wispconverter.client.gpd.model.PaymentOption;
-import it.gov.pagopa.wispconverter.client.gpd.model.PaymentPosition;
-import it.gov.pagopa.wispconverter.client.gpd.model.Stamp;
+import it.gov.pagopa.wispconverter.client.gpd.model.PaymentOptionModelDto;
+import it.gov.pagopa.wispconverter.client.gpd.model.PaymentPositionModelDto;
+import it.gov.pagopa.wispconverter.client.gpd.model.StampDto;
 import it.gov.pagopa.wispconverter.service.model.CommonRPTFieldsDTO;
 import it.gov.pagopa.wispconverter.service.model.DigitalStampDTO;
 import it.gov.pagopa.wispconverter.service.model.RPTContentDTO;
@@ -12,6 +12,8 @@ import org.mapstruct.ReportingPolicy;
 
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface DebtPositionMapper {
+
+    PaymentPositionModelDto toPaymentPosition(RPTContentDTO rptContentDTO);
 
     @Mapping(source = "payerType", target = "type")
     @Mapping(source = "payerFiscalCode", target = "fiscalCode")
@@ -26,19 +28,18 @@ public interface DebtPositionMapper {
     @Mapping(source = "payerFullName", target = "companyName")
     @Mapping(target = "validityDate", expression = "java(null)")
     @Mapping(target = "switchToExpired", constant = "true")
-    PaymentPosition toPaymentPosition(CommonRPTFieldsDTO commonRPTFieldsDTO);
+    PaymentPositionModelDto toPaymentPosition(CommonRPTFieldsDTO commonRPTFieldsDTO);
 
     @Mapping(source = "iuv", target = "iuv")
     @Mapping(target = "description", constant = "-")
     @Mapping(target = "isPartialPayment", constant = "false")
     @Mapping(target = "retentionDate", expression = "java(null)")
     @Mapping(target = "fee", constant = "0L")
-    @Mapping(target = "notificationFee", constant = "0L")
-    @Mapping(target = "dueDate", expression = "java(java.time.LocalDateTime.now().plusDays(1))")
-    PaymentOption toPaymentOption(RPTContentDTO rptContentDTO);
+    @Mapping(target = "dueDate", expression = "java(java.time.OffsetDateTime.now().plusDays(1))")
+    PaymentOptionModelDto toPaymentOption(RPTContentDTO rptContentDTO);
 
     @Mapping(target = "hashDocument", expression = "java(new String(digitalStampDTO.getDocumentHash()))")
     @Mapping(source = "type", target = "stampType")
     @Mapping(source = "province", target = "provincialResidence")
-    Stamp toStamp(DigitalStampDTO digitalStampDTO);
+    StampDto toStamp(DigitalStampDTO digitalStampDTO);
 }
