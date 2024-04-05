@@ -25,7 +25,7 @@ public class ConfigCacheService {
         log.info("loadCache from cache api");
         try {
             it.gov.pagopa.gen.wispconverter.client.cache.api.CacheApi apiInstance = new it.gov.pagopa.gen.wispconverter.client.cache.api.CacheApi(configCacheClient);
-            configData = apiInstance.cache();
+            configData = apiInstance.cache(false);
         } catch (Exception e) {
             log.error("Cannot get cache", e);
         }

@@ -37,7 +37,6 @@ public class ReceiptController {
     public void receiptKo(@RequestBody ReceiptRequest request) throws IOException {
 
         receiptService.paaInviaRTKo(request.getContent());
-
     }
 
     @Operation(summary = "", description = "", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"Receipt"})

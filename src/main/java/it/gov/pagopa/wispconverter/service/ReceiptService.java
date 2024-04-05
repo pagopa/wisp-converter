@@ -8,6 +8,8 @@ import gov.telematici.pagamenti.ws.ObjectFactory;
 import gov.telematici.pagamenti.ws.PaaInviaRT;
 import gov.telematici.pagamenti.ws.ppthead.IntestazionePPT;
 import it.gov.digitpa.schemas._2011.pagamenti.*;
+import it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigDataV1Dto;
+import it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigurationKeyDto;
 import it.gov.pagopa.pagopa_api.pa.pafornode.CtReceiptV2;
 import it.gov.pagopa.pagopa_api.pa.pafornode.PaSendRTV2Request;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
@@ -26,6 +28,8 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -35,15 +39,18 @@ public class ReceiptService {
 
     private final RTMapper rtMapper;
     private final JaxbElementUtil jaxbElementUtil;
-//    private final PagamentiTelematiciRT rtService;
+
+    private final ConfigCacheService configCacheService;
 
     public void paaInviaRTKo(String payload) throws IOException {
         ObjectMapper mapper = JsonMapper.builder()
                 .addModule(new JavaTimeModule())
                 .build();
         try {
-            mapper.readValue(payload, ReceiptDto[].class);
+            List<ReceiptDto> receiptDtos = List.of(mapper.readValue(payload, ReceiptDto[].class));
             //TODO: convert CPV2/SPRV2 to paaInviaRT-
+
+            paaInviaRTNegativa();
             return;
         } catch (JsonProcessingException e) {
             throw new AppException(AppErrorCodeMessageEnum.PARSING_INVALID_BODY);
@@ -64,8 +71,10 @@ public class ReceiptService {
             generatePaaInviaRTPositiva(soapBody);
 
             return;
+        } catch (AppException e) {
+            throw e;
         } catch (Exception e) {
-            throw new AppException(AppErrorCodeMessageEnum.PARSING_INVALID_BODY);
+            throw new AppException(AppErrorCodeMessageEnum.GENERIC_ERROR);
         }
     }
 
@@ -87,6 +96,22 @@ public class ReceiptService {
     }
 
     private void paaInviaRTNegativa() {
+        ConfigDataV1Dto cache = configCacheService.getCache();
+
+        Map<String, ConfigurationKeyDto> configurations = cache.getConfigurations();
+
+        String tipoIdentificativoUnivoco =
+                configurations.get("GLOBAL-istitutoAttestante.identificativoUnivocoAttestante.tipoIdentificativoUnivoco").getValue();
+        String codiceIdentificativoUnivoco = configurations.get("GLOBAL-istitutoAttestante.identificativoUnivocoAttestante.codiceIdentificativoUnivoco").getValue();
+        String denominazioneAttestante = configurations.get("GLOBAL-istitutoAttestante.denominazioneAttestante").getValue();
+        String codiceUnitOperAttestante = configurations.get("GLOBAL-istitutoAttestante.codiceUnitOperAttestante").getValue();
+        String denomUnitOperAttestante = configurations.get("GLOBAL-istitutoAttestante.denomUnitOperAttestante").getValue();
+        String indirizzoAttestante = configurations.get("GLOBAL-istitutoAttestante.indirizzoAttestante").getValue();
+        String civicoAttestante = configurations.get("GLOBAL-istitutoAttestante.civicoAttestante").getValue();
+        String capAttestante = configurations.get("GLOBAL-istitutoAttestante.capAttestante").getValue();
+        String localitaAttestante = configurations.get("GLOBAL-istitutoAttestante.localitaAttestante").getValue();
+        String provinciaAttestante = configurations.get("GLOBAL-istitutoAttestante.provinciaAttestante").getValue();
+        String nazioneAttestante = configurations.get("GLOBAL-istitutoAttestante.nazioneAttestante").getValue();
 
         it.gov.digitpa.schemas._2011.pagamenti.ObjectFactory objectFactory = new it.gov.digitpa.schemas._2011.pagamenti.ObjectFactory();
         CtIstitutoAttestante ctIstitutoAttestante = objectFactory.createCtIstitutoAttestante();

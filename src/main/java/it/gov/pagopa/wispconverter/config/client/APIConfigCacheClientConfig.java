@@ -8,6 +8,9 @@ import it.gov.pagopa.wispconverter.util.client.apiconfigcache.ApiConfigCacheClie
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.EnableCaching;
+import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.BufferingClientHttpRequestFactory;
@@ -86,7 +89,7 @@ public class APIConfigCacheClientConfig {
 
         it.gov.pagopa.gen.wispconverter.client.cache.invoker.ApiClient client = new it.gov.pagopa.gen.wispconverter.client.cache.invoker.ApiClient(restTemplate);
         client.setBasePath(basePath);
-//        client.setApiKey(apiKey);
+        client.setApiKey(apiKey);
 
         return client;
     }
