@@ -1,12 +1,5 @@
 package it.gov.pagopa.wispconverter.service;
 
-import it.gov.pagopa.wispconverter.client.cache.model.ConfigDataV1Dto;
-import it.gov.pagopa.wispconverter.client.cache.model.RedirectDto;
-import it.gov.pagopa.wispconverter.client.cache.model.StationDto;
-import it.gov.pagopa.wispconverter.client.checkout.api.PaymentRequestsApi;
-import it.gov.pagopa.wispconverter.client.checkout.invoker.ApiClient;
-import it.gov.pagopa.wispconverter.client.checkout.model.CartRequestDto;
-import it.gov.pagopa.wispconverter.client.checkout.model.CartRequestReturnUrlsDto;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.service.mapper.CartMapper;
@@ -28,7 +21,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class CheckoutService {
 
-    private final ApiClient checkoutClient;
+    private final it.gov.pagopa.gen.wispconverter.client.checkout.invoker.ApiClient checkoutClient;
 
     private final ConfigCacheService configCacheService;
 
@@ -40,15 +33,15 @@ public class CheckoutService {
 
         try {
             // execute mapping for Checkout carts invocation
-            CartRequestDto cart = mapper.toCart(commonRPTFieldsDTO);
+            it.gov.pagopa.gen.wispconverter.client.checkout.model.CartRequestDto cart = mapper.toCart(commonRPTFieldsDTO);
             String stationRedirectURL = ""; // FIXME on next API version will be added the stationID so -> getRedirectURL(cart.getStationId());
-            CartRequestReturnUrlsDto returnUrls = new CartRequestReturnUrlsDto();
+            it.gov.pagopa.gen.wispconverter.client.checkout.model.CartRequestReturnUrlsDto returnUrls = new it.gov.pagopa.gen.wispconverter.client.checkout.model.CartRequestReturnUrlsDto();
             returnUrls.setReturnOkUrl(new URI(stationRedirectURL + "/success.html"));
             returnUrls.setReturnCancelUrl(new URI(stationRedirectURL + "/cancel.html"));
             returnUrls.setReturnErrorUrl(new URI(stationRedirectURL + "/error.html"));
             cart.setReturnUrls(returnUrls);
 
-            PaymentRequestsApi apiInstance = new PaymentRequestsApi(checkoutClient);
+            it.gov.pagopa.gen.wispconverter.client.checkout.api.PaymentRequestsApi apiInstance = new it.gov.pagopa.gen.wispconverter.client.checkout.api.PaymentRequestsApi(checkoutClient);
             ResponseEntity<Void> response = apiInstance.postCartsWithHttpInfo(cart);
 
             HttpStatusCode status = response.getStatusCode();
@@ -71,13 +64,13 @@ public class CheckoutService {
     }
 
     private String getRedirectURL(String stationId) {
-        ConfigDataV1Dto cache = configCacheService.getCache();
-        Map<String, StationDto> stations = cache.getStations();
-        StationDto station = stations.get(stationId);
+        it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigDataV1Dto cache = configCacheService.getCache();
+        Map<String, it.gov.pagopa.gen.wispconverter.client.cache.model.StationDto> stations = cache.getStations();
+        it.gov.pagopa.gen.wispconverter.client.cache.model.StationDto station = stations.get(stationId);
         if (station == null) {
             throw new AppException(AppErrorCodeMessageEnum.CONFIGURATION_INVALID_STATION, stationId);
         }
-        RedirectDto redirect = station.getRedirect();
+        it.gov.pagopa.gen.wispconverter.client.cache.model.RedirectDto redirect = station.getRedirect();
         String protocol = redirect.getProtocol() == null ? "http" : redirect.getProtocol().getValue().toLowerCase();
         String url = redirect.getIp() + "/" + redirect.getPath();
         url = url.replace("//", "/");

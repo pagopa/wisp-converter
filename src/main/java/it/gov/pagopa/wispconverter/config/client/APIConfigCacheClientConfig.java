@@ -1,6 +1,5 @@
 package it.gov.pagopa.wispconverter.config.client;
 
-import it.gov.pagopa.wispconverter.client.cache.invoker.ApiClient;
 import it.gov.pagopa.wispconverter.service.ReService;
 import it.gov.pagopa.wispconverter.util.client.MDCInterceptor;
 import it.gov.pagopa.wispconverter.util.client.ReInterceptor;
@@ -62,7 +61,7 @@ public class APIConfigCacheClientConfig {
 
 
     @Bean
-    public ApiClient configCacheClient() {
+    public it.gov.pagopa.gen.wispconverter.client.cache.invoker.ApiClient configCacheClient() {
         ApiConfigCacheClientLoggingInterceptor clientLogging = new ApiConfigCacheClientLoggingInterceptor();
         clientLogging.setRequestIncludeHeaders(clientRequestIncludeHeaders);
         clientLogging.setRequestIncludePayload(clientRequestIncludePayload);
@@ -85,7 +84,7 @@ public class APIConfigCacheClientConfig {
 
         restTemplate.setErrorHandler(new ApiConfigCacheClientResponseErrorHandler());
 
-        ApiClient client = new ApiClient(restTemplate);
+        it.gov.pagopa.gen.wispconverter.client.cache.invoker.ApiClient client = new it.gov.pagopa.gen.wispconverter.client.cache.invoker.ApiClient(restTemplate);
         client.setBasePath(basePath);
 //        client.setApiKey(apiKey);
 
