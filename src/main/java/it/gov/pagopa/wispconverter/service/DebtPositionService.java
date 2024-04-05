@@ -32,8 +32,6 @@ public class DebtPositionService {
 
     private final DebtPositionMapper mapper;
 
-    private final Pattern taxonomyPattern = Pattern.compile("([^/]++/[^/]++)/?");
-
     @Value("${wisp-converter.poste-italiane.abi-code}")
     private String posteItalianeABICode;
 
@@ -225,9 +223,10 @@ public class DebtPositionService {
 
     private String getTaxonomy(TransferDTO transferDTO) {
         String taxonomy = transferDTO.getCategory();
-        Matcher matcher = taxonomyPattern.matcher(taxonomy);
-        if (matcher.find()) {
-            taxonomy = matcher.group(1);
+        int firstlash = taxonomy.indexOf('/');
+        int lastslash = taxonomy.lastIndexOf('/');
+        if(firstlash != lastslash && lastslash>=0){
+            taxonomy = taxonomy.substring(0,lastslash);
         }
         return taxonomy;
     }

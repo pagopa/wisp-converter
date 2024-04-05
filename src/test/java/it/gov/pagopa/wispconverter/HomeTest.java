@@ -1,5 +1,7 @@
 package it.gov.pagopa.wispconverter;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.wispconverter.controller.model.AppInfoResponse;
 import it.gov.pagopa.wispconverter.repository.CacheRepository;
@@ -15,8 +17,6 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(classes = Application.class)
 @AutoConfigureMockMvc
@@ -35,13 +35,6 @@ class HomeTest {
     @Autowired
     private ConfigCacheService configCacheService;
 
-    //    @MockBean private CosmosStationRepository cosmosStationRepository;
-//    @MockBean private CosmosEventsRepository cosmosEventsRepository;
-//    @MockBean private DatabaseStationsRepository databaseStationsRepository;
-//    @MockBean private EntityManagerFactory entityManagerFactory;
-//    @MockBean private EntityManager entityManager;
-//    @MockBean private DataSource dataSource;
-//    @MockBean private CosmosClient cosmosClient;
     @MockBean
     private RPTRequestRepository rptRequestRepository;
     @MockBean
