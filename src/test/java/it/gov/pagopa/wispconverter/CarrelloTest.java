@@ -1,11 +1,12 @@
 package it.gov.pagopa.wispconverter;
 
+import static it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum.VALIDATION_INVALID_MULTIBENEFICIARY_CART;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import it.gov.pagopa.gen.wispconverter.client.cache.model.RedirectDto;
 import it.gov.pagopa.gen.wispconverter.client.iuvgenerator.model.IuvGenerationModelResponseDto;
 import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
@@ -43,13 +44,6 @@ class CarrelloTest {
     private MockMvc mvc;
     @Autowired private ConfigCacheService configCacheService;
 
-//    @MockBean private CosmosStationRepository cosmosStationRepository;
-//    @MockBean private CosmosEventsRepository cosmosEventsRepository;
-//    @MockBean private DatabaseStationsRepository databaseStationsRepository;
-//    @MockBean private EntityManagerFactory entityManagerFactory;
-//    @MockBean private EntityManager entityManager;
-//    @MockBean private DataSource dataSource;
-//    @MockBean private CosmosClient cosmosClient;
     @MockBean
     private RPTRequestRepository rptRequestRepository;
     @MockBean private it.gov.pagopa.gen.wispconverter.client.iuvgenerator.invoker.ApiClient iuveneratorClient;
@@ -95,18 +89,8 @@ class CarrelloTest {
 
     @Test
     void success() throws Exception {
-        it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigDataV1Dto configDataV1 = new it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigDataV1Dto();
-        configDataV1.setStations(new HashMap<>());
-        it.gov.pagopa.gen.wispconverter.client.cache.model.StationDto station = new it.gov.pagopa.gen.wispconverter.client.cache.model.StationDto();
-        station.setStationCode("mystation");
-        station.setRedirect(new RedirectDto());
-        station.getRedirect().setIp("127.0.0.1");
-        station.getRedirect().setPath("/redirect");
-        station.getRedirect().setPort(8888l);
-        station.getRedirect().setProtocol(RedirectDto.ProtocolEnum.HTTPS);
-        station.getRedirect().setQueryString("param=1");
-        configDataV1.getStations().put(station.getStationCode(), station);
-        TestUtils.setMock(cacheClient,ResponseEntity.ok().body(configDataV1));
+        String station = "mystation";
+        TestUtils.setMock(cacheClient,ResponseEntity.ok().body(TestUtils.configData(station)));
 
         org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configCacheClient",cacheClient);
         HttpHeaders headers = new HttpHeaders();
@@ -123,7 +107,7 @@ class CarrelloTest {
                         RPTRequestEntity.builder().primitive("nodoInviaCarrelloRPT")
                                 .payload(
                                         new String(Base64.getEncoder().encode(zip(
-                                                getCarrelloPayload(2,station.getStationCode(),
+                                                getCarrelloPayload(2,station,
                                                         "100.00",true
                                                 ).getBytes(StandardCharsets.UTF_8))),StandardCharsets.UTF_8)
                                 ).build()
@@ -146,19 +130,8 @@ class CarrelloTest {
 
     @Test
     void success_multibeneficiario() throws Exception {
-        it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigDataV1Dto configDataV1 = new it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigDataV1Dto();
-        configDataV1.setStations(new HashMap<>());
-        it.gov.pagopa.gen.wispconverter.client.cache.model.StationDto station = new it.gov.pagopa.gen.wispconverter.client.cache.model.StationDto();
-        station.setStationCode("mystation");
-        station.setRedirect(new RedirectDto());
-        station.getRedirect().setIp("127.0.0.1");
-        station.getRedirect().setPath("/redirect");
-        station.getRedirect().setPort(8888l);
-        station.getRedirect().setProtocol(RedirectDto.ProtocolEnum.HTTPS);
-        station.getRedirect().setQueryString("param=1");
-        configDataV1.getStations().put(station.getStationCode(), station);
-        TestUtils.setMock(cacheClient,ResponseEntity.ok().body(configDataV1));
-
+        String station = "mystation";
+        TestUtils.setMock(cacheClient,ResponseEntity.ok().body(TestUtils.configData(station)));
         org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configCacheClient",cacheClient);
         HttpHeaders headers = new HttpHeaders();
         headers.add("location","locationheader");
@@ -174,7 +147,7 @@ class CarrelloTest {
                         RPTRequestEntity.builder().primitive("nodoInviaCarrelloRPT")
                                 .payload(
                                         new String(Base64.getEncoder().encode(zip(
-                                                getCarrelloPayload(2,station.getStationCode(),
+                                                getCarrelloPayload(2,station,
                                                         "100.00",true
                                                 ).getBytes(StandardCharsets.UTF_8))),StandardCharsets.UTF_8)
                                 ).build()
@@ -193,6 +166,50 @@ class CarrelloTest {
                         });
 
         verify(checkoutClient,times(1)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
+    }
+
+    @Test
+    void fail_multibeneficiario_less_rpts() throws Exception {
+        String station = "mystation";
+        TestUtils.setMock(cacheClient,ResponseEntity.ok().body(TestUtils.configData(station)));
+        org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configCacheClient",cacheClient);
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("location","locationheader");
+        TestUtils.setMock(checkoutClient, ResponseEntity.status(HttpStatus.FOUND).headers(headers).build());
+
+        IuvGenerationModelResponseDto iuvGenerationModelResponseDto = new IuvGenerationModelResponseDto();
+        iuvGenerationModelResponseDto.setIuv("00000000");
+        TestUtils.setMock(iuveneratorClient,ResponseEntity.ok().body(iuvGenerationModelResponseDto));
+        TestUtils.setMock(gpdClient,ResponseEntity.ok().build());
+        TestUtils.setMock(decouplerCachingClient,ResponseEntity.ok().build());
+        when(rptRequestRepository.findById(any())).thenReturn(
+                Optional.of(
+                        RPTRequestEntity.builder().primitive("nodoInviaCarrelloRPT")
+                                .payload(
+                                        new String(Base64.getEncoder().encode(zip(
+                                                getCarrelloPayload(1,station,
+                                                        "100.00",true
+                                                ).getBytes(StandardCharsets.UTF_8))),StandardCharsets.UTF_8)
+                                ).build()
+                )
+        );
+        when(redisSimpleTemplate.opsForValue()).thenReturn(mock(ValueOperations.class));
+
+
+
+        mvc.perform(MockMvcRequestBuilders.get("/redirect?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
+                .andExpect(MockMvcResultMatchers.status().is4xxClientError())
+                .andDo(
+                        (result) -> {
+                            assertNotNull(result);
+                            assertNotNull(result.getResponse());
+                            assertTrue(result.getResponse().getContentAsString().contains(VALIDATION_INVALID_MULTIBENEFICIARY_CART.getDetail()));
+                        });
+
+        verify(checkoutClient,times(0)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
+        verify(iuveneratorClient,times(0)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
+        verify(gpdClient,times(0)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
+        verify(decouplerCachingClient,times(0)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
     }
 
 }

@@ -4,7 +4,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import it.gov.pagopa.gen.wispconverter.client.cache.model.RedirectDto;
 import it.gov.pagopa.gen.wispconverter.client.iuvgenerator.model.IuvGenerationModelResponseDto;
 import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
@@ -42,13 +41,6 @@ class RptTest {
     private MockMvc mvc;
     @Autowired private ConfigCacheService configCacheService;
 
-//    @MockBean private CosmosStationRepository cosmosStationRepository;
-//    @MockBean private CosmosEventsRepository cosmosEventsRepository;
-//    @MockBean private DatabaseStationsRepository databaseStationsRepository;
-//    @MockBean private EntityManagerFactory entityManagerFactory;
-//    @MockBean private EntityManager entityManager;
-//    @MockBean private DataSource dataSource;
-//    @MockBean private CosmosClient cosmosClient;
     @MockBean
     private RPTRequestRepository rptRequestRepository;
     @MockBean private it.gov.pagopa.gen.wispconverter.client.iuvgenerator.invoker.ApiClient iuveneratorClient;
@@ -79,18 +71,8 @@ class RptTest {
 
     @Test
     void success() throws Exception {
-        it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigDataV1Dto configDataV1 = new it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigDataV1Dto();
-        configDataV1.setStations(new HashMap<>());
-        it.gov.pagopa.gen.wispconverter.client.cache.model.StationDto station = new it.gov.pagopa.gen.wispconverter.client.cache.model.StationDto();
-        station.setStationCode("mystation");
-        station.setRedirect(new RedirectDto());
-        station.getRedirect().setIp("127.0.0.1");
-        station.getRedirect().setPath("/redirect");
-        station.getRedirect().setPort(8888l);
-        station.getRedirect().setProtocol(RedirectDto.ProtocolEnum.HTTPS);
-        station.getRedirect().setQueryString("param=1");
-        configDataV1.getStations().put(station.getStationCode(), station);
-        TestUtils.setMock(cacheClient,ResponseEntity.ok().body(configDataV1));
+        String station = "mystation";
+        TestUtils.setMock(cacheClient,ResponseEntity.ok().body(TestUtils.configData(station)));
 
         org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configCacheClient",cacheClient);
         HttpHeaders headers = new HttpHeaders();
@@ -107,7 +89,7 @@ class RptTest {
                         RPTRequestEntity.builder().primitive("nodoInviaRPT")
                                 .payload(
                                         new String(Base64.getEncoder().encode(zip(
-                                                getRptPayload(station.getStationCode(),
+                                                getRptPayload(station,
                                                         "100.00"
                                                 ).getBytes(StandardCharsets.UTF_8))),StandardCharsets.UTF_8)
                                 ).build()
