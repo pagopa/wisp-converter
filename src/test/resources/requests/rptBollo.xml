@@ -4,7 +4,7 @@
         <identificativoDominio>{pa}</identificativoDominio>
     </dominio>
     <identificativoMessaggioRichiesta>3179612d79fa3366</identificativoMessaggioRichiesta>
-    <dataOraMessaggioRichiesta>2017-09-06T17:13:30</dataOraMessaggioRichiesta>
+    <dataOraMessaggioRichiesta>{dataOraMessaggioRichiesta}T17:13:30</dataOraMessaggioRichiesta>
     <autenticazioneSoggetto>USR</autenticazioneSoggetto>
     <soggettoPagatore>
         <identificativoUnivocoPagatore>
@@ -21,22 +21,22 @@
         <denominazioneBeneficiario>Comune di Nuoro</denominazioneBeneficiario>
     </enteBeneficiario>
     <datiVersamento>
-        <dataEsecuzionePagamento>2017-09-06</dataEsecuzionePagamento>
+        <dataEsecuzionePagamento>{dataEsecuzionePagamento}</dataEsecuzionePagamento>
         <importoTotaleDaVersare>{amount}</importoTotaleDaVersare>
         <tipoVersamento>{tipoVersamento}</tipoVersamento>
         <identificativoUnivocoVersamento>{iuv}</identificativoUnivocoVersamento>
         <codiceContestoPagamento>{ccp}</codiceContestoPagamento>
         <firmaRicevuta>0</firmaRicevuta>
         <datiSingoloVersamento>
-            <importoSingoloVersamento>{amountVersamento1}</importoSingoloVersamento>
-            <ibanAccredito>IT96R0123454321000000012345</ibanAccredito>
+            <importoSingoloVersamento>{amount}</importoSingoloVersamento>
+            <ibanAccredito>IT96R0760154321000000012345</ibanAccredito>
             <causaleVersamento>Pagamento di prova</causaleVersamento>
-            <datiSpecificiRiscossione>9/tipodovuto_6</datiSpecificiRiscossione>
+            <datiSpecificiRiscossione>{datiSpecificiRiscossione}</datiSpecificiRiscossione>
         </datiSingoloVersamento>
         <datiSingoloVersamento>
-            <importoSingoloVersamento>{amountBollo}</importoSingoloVersamento>
+            <importoSingoloVersamento>{amount}</importoSingoloVersamento>
             <causaleVersamento>Pagamento di prova</causaleVersamento>
-            <datiSpecificiRiscossione>9/tipodovuto_7</datiSpecificiRiscossione>
+            <datiSpecificiRiscossione>{datiSpecificiRiscossione}</datiSpecificiRiscossione>
             <datiMarcaBolloDigitale>
                 <tipoBollo>01</tipoBollo>
                 <hashDocumento>YWVvbGlhbQ==</hashDocumento>

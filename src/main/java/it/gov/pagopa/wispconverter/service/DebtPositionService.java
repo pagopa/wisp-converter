@@ -202,10 +202,8 @@ public class DebtPositionService {
         */
         DigitalStampDTO digitalStampDTO = transferDTO.getDigitalStamp();
         if (digitalStampDTO != null) {
-
             transfer.setStamp(mapper.toStamp(digitalStampDTO));
         } else {
-
             String iban = transferDTO.getCreditIban();
             if (iban == null) {
                 throw new AppException(AppErrorCodeMessageEnum.VALIDATION_INVALID_IBANS);
@@ -214,7 +212,6 @@ public class DebtPositionService {
             transfer.setPostalIban(isPostalIBAN(iban) ? iban : null);
             transfer.setOrganizationFiscalCode(organizationFiscalCode);
         }
-
         return transfer;
     }
 
