@@ -14,11 +14,10 @@ public class XmlUtil {
     public static XMLGregorianCalendar toXMLGregoirianCalendar(Instant instant) {
         GregorianCalendar gc = new GregorianCalendar();
         gc.setTimeInMillis(instant.toEpochMilli());
-        XMLGregorianCalendar xmlGc;
         try {
             return DatatypeFactory.newInstance().newXMLGregorianCalendar(gc);
         } catch (DatatypeConfigurationException e) {
-            throw new AppException(e, AppErrorCodeMessageEnum.PARSE_ERROR);
+            throw new AppException(e, AppErrorCodeMessageEnum.PARSING_INVALID_BODY);
         }
     }
 

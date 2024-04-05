@@ -1,6 +1,9 @@
 package it.gov.pagopa.wispconverter.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import gov.telematici.pagamenti.ws.ObjectFactory;
 import gov.telematici.pagamenti.ws.PaaInviaRT;
 import gov.telematici.pagamenti.ws.ppthead.IntestazionePPT;
@@ -10,9 +13,9 @@ import it.gov.pagopa.pagopa_api.pa.pafornode.PaSendRTV2Request;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.service.mapper.RTMapper;
+import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
 import it.gov.pagopa.wispconverter.util.JaxbElementUtil;
 import it.gov.pagopa.wispconverter.util.XmlUtil;
-import it.gov.pagopa.wispconverter.util.ZipUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -21,10 +24,9 @@ import org.xmlsoap.schemas.soap.envelope.Envelope;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.UUID;
-
-import static it.gov.pagopa.wispconverter.util.Constants.*;
 
 @Service
 @Slf4j
@@ -35,40 +37,36 @@ public class ReceiptService {
     private final JaxbElementUtil jaxbElementUtil;
 //    private final PagamentiTelematiciRT rtService;
 
-    public void paaInviaRT(String primitive, String payload) throws IOException {
-
-        ObjectMapper objectMapper = new ObjectMapper();
-
-        switch(primitive) {
-            case SEND_PAYMENT_RESULT_V2 -> {
-               //TODO: convert SPRV2 to paaInviaRT-
-
-            }
-            case CLOSE_PAYMENT_V2 -> {
-                //TODO: convert CPV2 to paaInviaRT-
-                org.openapitools.model.ClosePaymentRequestV2 closePaymentRequestV2 =
-                        objectMapper.readValue(payload, org.openapitools.model.ClosePaymentRequestV2.class);
-
-                return;
-            }
-            case PA_INVIA_RT -> {
-                byte[] payloadUnzipped = ZipUtil.unzip(ZipUtil.base64Decode(payload));
-                Element envelopeElement = jaxbElementUtil.convertToEnvelopeElement(payloadUnzipped);
-                Envelope envelope = jaxbElementUtil.convertToBean(envelopeElement, Envelope.class);
-
-                IntestazionePPT soapHeader = jaxbElementUtil.getSoapHeader(envelope, IntestazionePPT.class);
-                PaSendRTV2Request soapBody = jaxbElementUtil.getSoapBody(envelope, PaSendRTV2Request.class);
-                String idDominio = soapHeader.getIdentificativoDominio();
-
-                generatePaaInviaRTPositiva(soapBody);
-
-                return;
-            }
-            default -> throw new AppException(AppErrorCodeMessageEnum.PRIMITIVE_NOT_VALID, primitive);
+    public void paaInviaRTKo(String payload) throws IOException {
+        ObjectMapper mapper = JsonMapper.builder()
+                .addModule(new JavaTimeModule())
+                .build();
+        try {
+            mapper.readValue(payload, ReceiptDto[].class);
+            //TODO: convert CPV2/SPRV2 to paaInviaRT-
+            return;
+        } catch (JsonProcessingException e) {
+            throw new AppException(AppErrorCodeMessageEnum.PARSING_INVALID_BODY);
         }
+    }
 
+    public void paaInviaRTOk(String payload) throws IOException {
+        try {
+            Element envelopeElement = jaxbElementUtil.convertToEnvelopeElement(payload.getBytes(StandardCharsets.UTF_8));
+            Envelope envelope = jaxbElementUtil.convertToBean(envelopeElement, Envelope.class);
 
+            IntestazionePPT soapHeader = jaxbElementUtil.getSoapHeader(envelope, IntestazionePPT.class);
+            PaSendRTV2Request soapBody = jaxbElementUtil.getSoapBody(envelope, PaSendRTV2Request.class);
+            String idDominio = soapHeader.getIdentificativoDominio();
 
+            //TODO: convert paSendRTV2 to paaInviaRT-
+            IntestazionePPT header = generateIntestazionePPT();
+            generatePaaInviaRTPositiva(soapBody);
+
+            return;
+        } catch (Exception e) {
+            throw new AppException(AppErrorCodeMessageEnum.PARSING_INVALID_BODY);
+        }
     }
 
     private void generatePaaInviaRTPositiva(PaSendRTV2Request paSendRTV2Request) {
@@ -85,14 +83,7 @@ public class ReceiptService {
 
 //        rtMapper.toCtRicevutaTelematica(ctRicevutaTelematica);
 
-        IntestazionePPT header = objectFactoryHead.createIntestazionePPT();
-        header.setIdentificativoStazioneIntermediarioPA(paSendRTV2Request.getIdStation());
-        header.setCodiceContestoPagamento(ctReceiptV2.getCreditorReferenceId());
-        header.setIdentificativoDominio(ctReceiptV2.getFiscalCode());
-        header.setIdentificativoUnivocoVersamento(ctReceiptV2.getNoticeNumber());
-        header.setIdentificativoIntermediarioPA(paSendRTV2Request.getIdBrokerPA());
-
-//        rtService.paaInviaRT(paaInviaRT, header);
+        //        rtService.paaInviaRT(paaInviaRT, header);
     }
 
     private void paaInviaRTNegativa() {
@@ -127,6 +118,7 @@ public class ReceiptService {
 //        val nazioneAttestante = DDataChecks.getConfigurationKeys(ddataMap, "istitutoAttestante.nazioneAttestante")
 
         //                                        val motivoAnnullamentoDesc = MotivoAnnullamentoEnum.description(motivoAnnullamento)
+
 
         CtRicevutaTelematica ctRicevutaTelematica = objectFactory.createCtRicevutaTelematica();
 
@@ -188,6 +180,19 @@ public class ReceiptService {
 //                                                        )
 //                                                })
 //                                )
+    }
+
+    private IntestazionePPT generateIntestazionePPT() {
+        gov.telematici.pagamenti.ws.ppthead.ObjectFactory objectFactoryHead =
+                new gov.telematici.pagamenti.ws.ppthead.ObjectFactory();
+
+        IntestazionePPT header = objectFactoryHead.createIntestazionePPT();
+//        header.setIdentificativoStazioneIntermediarioPA(paSendRTV2Request.getIdStation());
+//        header.setCodiceContestoPagamento(ctReceiptV2.getCreditorReferenceId());
+//        header.setIdentificativoDominio(ctReceiptV2.getFiscalCode());
+//        header.setIdentificativoUnivocoVersamento(ctReceiptV2.getNoticeNumber());
+//        header.setIdentificativoIntermediarioPA(paSendRTV2Request.getIdBrokerPA());
+        return header;
     }
 
 
