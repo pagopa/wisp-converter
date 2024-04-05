@@ -144,4 +144,55 @@ class CarrelloTest {
         verify(checkoutClient,times(1)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
     }
 
+    @Test
+    void success_multibeneficiario() throws Exception {
+        it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigDataV1Dto configDataV1 = new it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigDataV1Dto();
+        configDataV1.setStations(new HashMap<>());
+        it.gov.pagopa.gen.wispconverter.client.cache.model.StationDto station = new it.gov.pagopa.gen.wispconverter.client.cache.model.StationDto();
+        station.setStationCode("mystation");
+        station.setRedirect(new RedirectDto());
+        station.getRedirect().setIp("127.0.0.1");
+        station.getRedirect().setPath("/redirect");
+        station.getRedirect().setPort(8888l);
+        station.getRedirect().setProtocol(RedirectDto.ProtocolEnum.HTTPS);
+        station.getRedirect().setQueryString("param=1");
+        configDataV1.getStations().put(station.getStationCode(), station);
+        TestUtils.setMock(cacheClient,ResponseEntity.ok().body(configDataV1));
+
+        org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configCacheClient",cacheClient);
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("location","locationheader");
+        TestUtils.setMock(checkoutClient, ResponseEntity.status(HttpStatus.FOUND).headers(headers).build());
+
+        IuvGenerationModelResponseDto iuvGenerationModelResponseDto = new IuvGenerationModelResponseDto();
+        iuvGenerationModelResponseDto.setIuv("00000000");
+        TestUtils.setMock(iuveneratorClient,ResponseEntity.ok().body(iuvGenerationModelResponseDto));
+        TestUtils.setMock(gpdClient,ResponseEntity.ok().build());
+        TestUtils.setMock(decouplerCachingClient,ResponseEntity.ok().build());
+        when(rptRequestRepository.findById(any())).thenReturn(
+                Optional.of(
+                        RPTRequestEntity.builder().primitive("nodoInviaCarrelloRPT")
+                                .payload(
+                                        new String(Base64.getEncoder().encode(zip(
+                                                getCarrelloPayload(2,station.getStationCode(),
+                                                        "100.00",true
+                                                ).getBytes(StandardCharsets.UTF_8))),StandardCharsets.UTF_8)
+                                ).build()
+                )
+        );
+        when(redisSimpleTemplate.opsForValue()).thenReturn(mock(ValueOperations.class));
+
+
+
+        mvc.perform(MockMvcRequestBuilders.get("/redirect?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
+                .andExpect(MockMvcResultMatchers.status().is3xxRedirection())
+                .andDo(
+                        (result) -> {
+                            assertNotNull(result);
+                            assertNotNull(result.getResponse());
+                        });
+
+        verify(checkoutClient,times(1)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
+    }
+
 }
