@@ -1,10 +1,5 @@
 package it.gov.pagopa.wispconverter.service;
 
-import it.gov.pagopa.wispconverter.client.gpd.api.DebtPositionsApiApi;
-import it.gov.pagopa.wispconverter.client.gpd.model.*;
-import it.gov.pagopa.wispconverter.client.iuvgenerator.api.IuvGeneratorApiApi;
-import it.gov.pagopa.wispconverter.client.iuvgenerator.model.IuvGenerationModelDto;
-import it.gov.pagopa.wispconverter.client.iuvgenerator.model.IuvGenerationModelResponseDto;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.service.mapper.DebtPositionMapper;
@@ -31,9 +26,9 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 public class DebtPositionService {
 
-    private final it.gov.pagopa.wispconverter.client.gpd.invoker.ApiClient gpdClient;
+    private final it.gov.pagopa.gen.wispconverter.client.gpd.invoker.ApiClient gpdClient;
 
-    private final it.gov.pagopa.wispconverter.client.iuvgenerator.invoker.ApiClient iuvGeneratorClient;
+    private final it.gov.pagopa.gen.wispconverter.client.iuvgenerator.invoker.ApiClient iuvGeneratorClient;
 
     private final DebtPositionMapper mapper;
 
@@ -52,10 +47,10 @@ public class DebtPositionService {
 
         try {
             // converting RPTs in single payment position
-            MultiplePaymentPositionModelDto multiplePaymentPositions = extractPaymentPositions(rptContentDTOs);
+            it.gov.pagopa.gen.wispconverter.client.gpd.model.MultiplePaymentPositionModelDto multiplePaymentPositions = extractPaymentPositions(rptContentDTOs);
 
             // communicating with GPD-core service in order to execute the operation
-            DebtPositionsApiApi apiInstance = new DebtPositionsApiApi(gpdClient);
+            it.gov.pagopa.gen.wispconverter.client.gpd.api.DebtPositionsApiApi apiInstance = new it.gov.pagopa.gen.wispconverter.client.gpd.api.DebtPositionsApiApi(gpdClient);
             apiInstance.createMultiplePositions1(rptContentDTOs.getCreditorInstitutionId(), multiplePaymentPositions, MDC.get(Constants.MDC_REQUEST_ID), true);
 
             //FIXME gestire errori di connessione
@@ -65,21 +60,21 @@ public class DebtPositionService {
         }
     }
 
-    private MultiplePaymentPositionModelDto extractPaymentPositions(CommonRPTFieldsDTO commonRPTFieldsDTO) {
+    private it.gov.pagopa.gen.wispconverter.client.gpd.model.MultiplePaymentPositionModelDto extractPaymentPositions(CommonRPTFieldsDTO commonRPTFieldsDTO) {
 
-        List<PaymentPositionModelDto> paymentPositions;
+        List<it.gov.pagopa.gen.wispconverter.client.gpd.model.PaymentPositionModelDto> paymentPositions;
         if (Boolean.TRUE.equals(commonRPTFieldsDTO.getIsMultibeneficiary())) {
             paymentPositions = extractPaymentPositionsForMultibeneficiary(commonRPTFieldsDTO);
         } else {
             paymentPositions = extractPaymentPositionsForNonMultibeneficiary(commonRPTFieldsDTO);
         }
 
-        MultiplePaymentPositionModelDto multiplePaymentPosition = new MultiplePaymentPositionModelDto();
+        it.gov.pagopa.gen.wispconverter.client.gpd.model.MultiplePaymentPositionModelDto multiplePaymentPosition = new it.gov.pagopa.gen.wispconverter.client.gpd.model.MultiplePaymentPositionModelDto();
         multiplePaymentPosition.setPaymentPositions(paymentPositions);
         return multiplePaymentPosition;
     }
 
-    private List<PaymentPositionModelDto> extractPaymentPositionsForMultibeneficiary(CommonRPTFieldsDTO commonRPTFieldsDTO) {
+    private List<it.gov.pagopa.gen.wispconverter.client.gpd.model.PaymentPositionModelDto> extractPaymentPositionsForMultibeneficiary(CommonRPTFieldsDTO commonRPTFieldsDTO) {
 
         if (commonRPTFieldsDTO.getRpts().size() < 2) {
             throw new AppException(AppErrorCodeMessageEnum.VALIDATION_INVALID_MULTIBENEFICIARY_CART);
@@ -87,7 +82,7 @@ public class DebtPositionService {
         RPTContentDTO firstRPTContentDTO = commonRPTFieldsDTO.getRpts().get(0);
 
         // mapping of transfers
-        List<TransferModelDto> transfers = new ArrayList<>();
+        List<it.gov.pagopa.gen.wispconverter.client.gpd.model.TransferModelDto> transfers = new ArrayList<>();
         for (RPTContentDTO rptContentDTO : commonRPTFieldsDTO.getRpts()) {
 
             PaymentRequestDTO paymentRequestDTO = rptContentDTO.getRpt();
@@ -108,13 +103,13 @@ public class DebtPositionService {
                 .map(rptContentDTO -> rptContentDTO.getRpt().getTransferData().getTotalAmount())
                 .reduce(BigDecimal.valueOf(0L), BigDecimal::add)
                 .longValue() * 100;
-        PaymentOptionModelDto paymentOption = mapper.toPaymentOption(firstRPTContentDTO);
+        it.gov.pagopa.gen.wispconverter.client.gpd.model.PaymentOptionModelDto paymentOption = mapper.toPaymentOption(firstRPTContentDTO);
         paymentOption.setNav(noticeNumber);
         paymentOption.setAmount(amount);
         paymentOption.setTransfer(transfers);
 
         // mapping of payment position
-        PaymentPositionModelDto paymentPosition = mapper.toPaymentPosition(commonRPTFieldsDTO);
+        it.gov.pagopa.gen.wispconverter.client.gpd.model.PaymentPositionModelDto paymentPosition = mapper.toPaymentPosition(commonRPTFieldsDTO);
         paymentPosition.setIupd(calculateIUPD(commonRPTFieldsDTO.getCreditorInstitutionId()));
         paymentPosition.setPaymentOption(List.of(paymentOption));
 
@@ -128,8 +123,8 @@ public class DebtPositionService {
         return List.of(paymentPosition);
     }
 
-    private List<PaymentPositionModelDto> extractPaymentPositionsForNonMultibeneficiary(CommonRPTFieldsDTO commonRPTFieldsDTO) {
-        List<PaymentPositionModelDto> paymentPositions = new LinkedList<>();
+    private List<it.gov.pagopa.gen.wispconverter.client.gpd.model.PaymentPositionModelDto> extractPaymentPositionsForNonMultibeneficiary(CommonRPTFieldsDTO commonRPTFieldsDTO) {
+        List<it.gov.pagopa.gen.wispconverter.client.gpd.model.PaymentPositionModelDto> paymentPositions = new LinkedList<>();
 
         List<PaymentNoticeContentDTO> paymentNotices = commonRPTFieldsDTO.getPaymentNotices();
 
@@ -139,7 +134,7 @@ public class DebtPositionService {
 
             // mapping of transfers
             int transferIdCounter = 1;
-            List<TransferModelDto> transfers = new ArrayList<>();
+            List<it.gov.pagopa.gen.wispconverter.client.gpd.model.TransferModelDto> transfers = new ArrayList<>();
             for (TransferDTO transferDTO : paymentRequestDTO.getTransferData().getTransfer()) {
 
                 transfers.add(extractPaymentOptionTransfer(transferDTO, null, transferIdCounter));
@@ -151,13 +146,13 @@ public class DebtPositionService {
 
             // mapping of payment option
             Long amount = paymentRequestDTO.getTransferData().getTotalAmount().longValue() * 100;
-            PaymentOptionModelDto paymentOption = mapper.toPaymentOption(rptContentDTO);
+            it.gov.pagopa.gen.wispconverter.client.gpd.model.PaymentOptionModelDto paymentOption = mapper.toPaymentOption(rptContentDTO);
             paymentOption.setAmount(amount);
             paymentOption.setNav(noticeNumber);
             paymentOption.setTransfer(transfers);
 
             // mapping of payment position
-            PaymentPositionModelDto paymentPosition = mapper.toPaymentPosition(commonRPTFieldsDTO);
+            it.gov.pagopa.gen.wispconverter.client.gpd.model.PaymentPositionModelDto paymentPosition = mapper.toPaymentPosition(commonRPTFieldsDTO);
             paymentPosition.setIupd(calculateIUPD(commonRPTFieldsDTO.getCreditorInstitutionId()));
             paymentPosition.setPaymentOption(List.of(paymentOption));
             paymentPositions.add(paymentPosition);
@@ -176,13 +171,13 @@ public class DebtPositionService {
 
         String navCode;
         try {
-            IuvGenerationModelDto request = new IuvGenerationModelDto();
+            it.gov.pagopa.gen.wispconverter.client.iuvgenerator.model.IuvGenerationModelDto request = new it.gov.pagopa.gen.wispconverter.client.iuvgenerator.model.IuvGenerationModelDto();
             request.setAuxDigit(this.auxDigit);
             request.setSegregationCode(this.segregationCode);
 
             // communicating with IUV Generator service in order to retrieve response
-            IuvGeneratorApiApi apiInstance = new IuvGeneratorApiApi(iuvGeneratorClient);
-            IuvGenerationModelResponseDto response = apiInstance.generateIUV(creditorInstitutionCode, request);
+            it.gov.pagopa.gen.wispconverter.client.iuvgenerator.api.IuvGeneratorApiApi apiInstance = new it.gov.pagopa.gen.wispconverter.client.iuvgenerator.api.IuvGeneratorApiApi(iuvGeneratorClient);
+            it.gov.pagopa.gen.wispconverter.client.iuvgenerator.model.IuvGenerationModelResponseDto response = apiInstance.generateIUV(creditorInstitutionCode, request);
 
             navCode = response.getIuv();
         } catch (RestClientException e) {
@@ -191,16 +186,16 @@ public class DebtPositionService {
         return navCode;
     }
 
-    private TransferModelDto extractPaymentOptionTransfer(TransferDTO transferDTO, String organizationFiscalCode, int transferIdCounter) {
+    private it.gov.pagopa.gen.wispconverter.client.gpd.model.TransferModelDto extractPaymentOptionTransfer(TransferDTO transferDTO, String organizationFiscalCode, int transferIdCounter) {
 
         // definition of standard transfer metadata
-        TransferMetadataModelDto transferMetadata = new TransferMetadataModelDto();
+        it.gov.pagopa.gen.wispconverter.client.gpd.model.TransferMetadataModelDto transferMetadata = new it.gov.pagopa.gen.wispconverter.client.gpd.model.TransferMetadataModelDto();
         transferMetadata.setKey("DatiSpecificiRiscossione");
         transferMetadata.setValue(transferDTO.getCategory());
 
         // common definition for the transfer
-        TransferModelDto transfer = new TransferModelDto();
-        transfer.setIdTransfer(TransferModelDto.IdTransferEnum.fromValue(String.valueOf(transferIdCounter)));
+        it.gov.pagopa.gen.wispconverter.client.gpd.model.TransferModelDto transfer = new it.gov.pagopa.gen.wispconverter.client.gpd.model.TransferModelDto();
+        transfer.setIdTransfer(it.gov.pagopa.gen.wispconverter.client.gpd.model.TransferModelDto.IdTransferEnum.fromValue(String.valueOf(transferIdCounter)));
         transfer.setAmount(transferDTO.getAmount().longValue() * 100);
         transfer.setRemittanceInformation(transferDTO.getRemittanceInformation());
         transfer.setCategory(getTaxonomy(transferDTO));

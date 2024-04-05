@@ -1,8 +1,5 @@
 package it.gov.pagopa.wispconverter.service;
 
-import it.gov.pagopa.wispconverter.client.cache.api.CacheApi;
-import it.gov.pagopa.wispconverter.client.cache.invoker.ApiClient;
-import it.gov.pagopa.wispconverter.client.cache.model.ConfigDataV1Dto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -12,12 +9,12 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class ConfigCacheService {
 
-    private final ApiClient configCacheClient;
+    private final it.gov.pagopa.gen.wispconverter.client.cache.invoker.ApiClient configCacheClient;
 
-    private ConfigDataV1Dto configData;
+    private it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigDataV1Dto configData;
 
 
-    public ConfigDataV1Dto getCache() {
+    public it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigDataV1Dto getCache() {
         if (configData == null) {
             loadCache();
         }
@@ -27,7 +24,7 @@ public class ConfigCacheService {
     public void loadCache() {
         log.info("loadCache from cache api");
         try {
-            CacheApi apiInstance = new CacheApi(configCacheClient);
+            it.gov.pagopa.gen.wispconverter.client.cache.api.CacheApi apiInstance = new it.gov.pagopa.gen.wispconverter.client.cache.api.CacheApi(configCacheClient);
             configData = apiInstance.cache();
         } catch (Exception e) {
             log.error("Cannot get cache", e);

@@ -65,10 +65,6 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web-services</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-thymeleaf</artifactId>
-        </dependency>
 
 
         <!-- Spring utils-->
@@ -318,10 +314,10 @@
                             <generateModelTests>false</generateModelTests>
                             <library>resttemplate</library>
                             <configOptions>
-                                <basePackage>it.gov.pagopa.wispconverter.client.cache</basePackage>
-                                <modelPackage>it.gov.pagopa.wispconverter.client.cache.model</modelPackage>
-                                <apiPackage>it.gov.pagopa.wispconverter.client.cache.api</apiPackage>
-                                <invokerPackage>it.gov.pagopa.wispconverter.client.cache.invoker</invokerPackage>
+                                <basePackage>it.gov.pagopa.gen.wispconverter.client.cache</basePackage>
+                                <modelPackage>it.gov.pagopa.gen.wispconverter.client.cache.model</modelPackage>
+                                <apiPackage>it.gov.pagopa.gen.wispconverter.client.cache.api</apiPackage>
+                                <invokerPackage>it.gov.pagopa.gen.wispconverter.client.cache.invoker</invokerPackage>
                                 <dateLibrary>java8</dateLibrary>
                             </configOptions>
                         </configuration>
@@ -339,10 +335,10 @@
                             <generateModelTests>false</generateModelTests>
                             <library>resttemplate</library>
                             <configOptions>
-                                <basePackage>it.gov.pagopa.wispconverter.client.gpd</basePackage>
-                                <modelPackage>it.gov.pagopa.wispconverter.client.gpd.model</modelPackage>
-                                <apiPackage>it.gov.pagopa.wispconverter.client.gpd.api</apiPackage>
-                                <invokerPackage>it.gov.pagopa.wispconverter.client.gpd.invoker</invokerPackage>
+                                <basePackage>it.gov.pagopa.gen.wispconverter.client.gpd</basePackage>
+                                <modelPackage>it.gov.pagopa.gen.wispconverter.client.gpd.model</modelPackage>
+                                <apiPackage>it.gov.pagopa.gen.wispconverter.client.gpd.api</apiPackage>
+                                <invokerPackage>it.gov.pagopa.gen.wispconverter.client.gpd.invoker</invokerPackage>
                                 <dateLibrary>java8</dateLibrary>
                             </configOptions>
                         </configuration>
@@ -360,10 +356,10 @@
                             <generateModelTests>false</generateModelTests>
                             <library>resttemplate</library>
                             <configOptions>
-                                <basePackage>it.gov.pagopa.wispconverter.client.iuvgenerator</basePackage>
-                                <modelPackage>it.gov.pagopa.wispconverter.client.iuvgenerator.model</modelPackage>
-                                <apiPackage>it.gov.pagopa.wispconverter.client.iuvgenerator.api</apiPackage>
-                                <invokerPackage>it.gov.pagopa.wispconverter.client.iuvgenerator.invoker</invokerPackage>
+                                <basePackage>it.gov.pagopa.gen.wispconverter.client.iuvgenerator</basePackage>
+                                <modelPackage>it.gov.pagopa.gen.wispconverter.client.iuvgenerator.model</modelPackage>
+                                <apiPackage>it.gov.pagopa.gen.wispconverter.client.iuvgenerator.api</apiPackage>
+                                <invokerPackage>it.gov.pagopa.gen.wispconverter.client.iuvgenerator.invoker</invokerPackage>
                                 <dateLibrary>java8</dateLibrary>
                             </configOptions>
                         </configuration>
@@ -381,10 +377,10 @@
                             <generateModelTests>false</generateModelTests>
                             <library>resttemplate</library>
                             <configOptions>
-                                <basePackage>it.gov.pagopa.wispconverter.client.checkout</basePackage>
-                                <modelPackage>it.gov.pagopa.wispconverter.client.checkout.model</modelPackage>
-                                <apiPackage>it.gov.pagopa.wispconverter.client.checkout.api</apiPackage>
-                                <invokerPackage>it.gov.pagopa.wispconverter.client.checkout.invoker</invokerPackage>
+                                <basePackage>it.gov.pagopa.gen.wispconverter.client.checkout</basePackage>
+                                <modelPackage>it.gov.pagopa.gen.wispconverter.client.checkout.model</modelPackage>
+                                <apiPackage>it.gov.pagopa.gen.wispconverter.client.checkout.api</apiPackage>
+                                <invokerPackage>it.gov.pagopa.gen.wispconverter.client.checkout.invoker</invokerPackage>
                                 <dateLibrary>java8</dateLibrary>
                             </configOptions>
                         </configuration>
@@ -402,10 +398,10 @@
                             <generateModelTests>false</generateModelTests>
                             <library>resttemplate</library>
                             <configOptions>
-                                <basePackage>it.gov.pagopa.wispconverter.client.decouplercaching</basePackage>
-                                <modelPackage>it.gov.pagopa.wispconverter.client.decouplercaching.model</modelPackage>
-                                <apiPackage>it.gov.pagopa.wispconverter.client.decouplercaching.api</apiPackage>
-                                <invokerPackage>it.gov.pagopa.wispconverter.client.decouplercaching.invoker
+                                <basePackage>it.gov.pagopa.gen.wispconverter.client.decouplercaching</basePackage>
+                                <modelPackage>it.gov.pagopa.gen.wispconverter.client.decouplercaching.model</modelPackage>
+                                <apiPackage>it.gov.pagopa.gen.wispconverter.client.decouplercaching.api</apiPackage>
+                                <invokerPackage>it.gov.pagopa.gen.wispconverter.client.decouplercaching.invoker
                                 </invokerPackage>
                                 <dateLibrary>java8</dateLibrary>
                             </configOptions>
