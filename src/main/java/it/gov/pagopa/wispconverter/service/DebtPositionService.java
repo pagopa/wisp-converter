@@ -6,20 +6,17 @@ import it.gov.pagopa.wispconverter.service.mapper.DebtPositionMapper;
 import it.gov.pagopa.wispconverter.service.model.*;
 import it.gov.pagopa.wispconverter.service.model.paymentrequest.PaymentRequestDTO;
 import it.gov.pagopa.wispconverter.util.Constants;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
-
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.UUID;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @Service
 @Slf4j
@@ -232,7 +229,7 @@ public class DebtPositionService {
     }
 
     private boolean isPostalIBAN(String iban) {
-        return iban != null && iban.substring(5, 10).equals(posteItalianeABICode);
+        return iban.substring(5, 10).equals(posteItalianeABICode);
     }
 
     private String calculateIUPD(String creditorInstitutionBroker) {

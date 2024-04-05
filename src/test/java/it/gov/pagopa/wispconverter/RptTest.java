@@ -51,9 +51,14 @@ class RptTest {
     @Qualifier("redisSimpleTemplate")
     @MockBean private RedisTemplate<String, Object> redisSimpleTemplate;
 
-    private String getRptPayload(String station,String amount){
+    private String getRptPayload(String station,String amount,String datiSpecificiRiscossione){
+        if(datiSpecificiRiscossione==null){
+            datiSpecificiRiscossione = "9/tipodovuto_7/datospecifico";
+        }
         String rpt = TestUtils.loadFileContent("/requests/rpt.xml");
-        String rptreplace = rpt.replaceAll("\\{amount\\}", amount);
+        String rptreplace = rpt
+                .replace("{datiSpecificiRiscossione}",datiSpecificiRiscossione)
+                .replaceAll("\\{amount\\}", amount);
         String nodoInviaRPT = TestUtils.loadFileContent("/requests/nodoInviaRPT.xml");
         return nodoInviaRPT
                 .replace("{station}",station)
@@ -89,9 +94,7 @@ class RptTest {
                         RPTRequestEntity.builder().primitive("nodoInviaRPT")
                                 .payload(
                                         new String(Base64.getEncoder().encode(zip(
-                                                getRptPayload(station,
-                                                        "100.00"
-                                                ).getBytes(StandardCharsets.UTF_8))),StandardCharsets.UTF_8)
+                                                getRptPayload(station,"100.00",null).getBytes(StandardCharsets.UTF_8))),StandardCharsets.UTF_8)
                                 ).build()
                 )
         );
@@ -108,6 +111,51 @@ class RptTest {
                         });
 
         verify(checkoutClient,times(1)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
+        verify(iuveneratorClient,times(1)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
+        verify(gpdClient,times(1)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
+        verify(decouplerCachingClient,times(1)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
+    }
+
+    @Test
+    void success_tassonomia() throws Exception {
+        String station = "mystation";
+        TestUtils.setMock(cacheClient,ResponseEntity.ok().body(TestUtils.configData(station)));
+
+        org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configCacheClient",cacheClient);
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("location","locationheader");
+        TestUtils.setMock(checkoutClient, ResponseEntity.status(HttpStatus.FOUND).headers(headers).build());
+
+        IuvGenerationModelResponseDto iuvGenerationModelResponseDto = new IuvGenerationModelResponseDto();
+        iuvGenerationModelResponseDto.setIuv("00000000");
+        TestUtils.setMock(iuveneratorClient,ResponseEntity.ok().body(iuvGenerationModelResponseDto));
+        TestUtils.setMock(gpdClient,ResponseEntity.ok().build());
+        TestUtils.setMock(decouplerCachingClient,ResponseEntity.ok().build());
+        when(rptRequestRepository.findById(any())).thenReturn(
+                Optional.of(
+                        RPTRequestEntity.builder().primitive("nodoInviaRPT")
+                                .payload(
+                                        new String(Base64.getEncoder().encode(zip(
+                                                getRptPayload(station,"100.00","datispec").getBytes(StandardCharsets.UTF_8))),StandardCharsets.UTF_8)
+                                ).build()
+                )
+        );
+        when(redisSimpleTemplate.opsForValue()).thenReturn(mock(ValueOperations.class));
+
+
+
+        mvc.perform(MockMvcRequestBuilders.get("/redirect?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
+                .andExpect(MockMvcResultMatchers.status().is3xxRedirection())
+                .andDo(
+                        (result) -> {
+                            assertNotNull(result);
+                            assertNotNull(result.getResponse());
+                        });
+
+        verify(checkoutClient,times(1)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
+        verify(iuveneratorClient,times(1)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
+        verify(gpdClient,times(1)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
+        verify(decouplerCachingClient,times(1)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
     }
      
 }

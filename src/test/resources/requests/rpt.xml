@@ -31,7 +31,7 @@
             <importoSingoloVersamento>{amount}</importoSingoloVersamento>
             <ibanAccredito>IT96R0760154321000000012345</ibanAccredito>
             <causaleVersamento>Pagamento di prova</causaleVersamento>
-            <datiSpecificiRiscossione>9/tipodovuto_7/datospecifico</datiSpecificiRiscossione>
+            <datiSpecificiRiscossione>{datiSpecificiRiscossione}</datiSpecificiRiscossione>
         </datiSingoloVersamento>
     </datiVersamento>
 </RPT>
