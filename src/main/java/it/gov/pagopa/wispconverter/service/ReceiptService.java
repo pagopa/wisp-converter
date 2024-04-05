@@ -1,5 +1,6 @@
 package it.gov.pagopa.wispconverter.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.telematici.pagamenti.ws.ObjectFactory;
 import gov.telematici.pagamenti.ws.PaaInviaRT;
 import gov.telematici.pagamenti.ws.ppthead.IntestazionePPT;
@@ -36,6 +37,8 @@ public class ReceiptService {
 
     public void paaInviaRT(String primitive, String payload) throws IOException {
 
+        ObjectMapper objectMapper = new ObjectMapper();
+
         switch(primitive) {
             case SEND_PAYMENT_RESULT_V2 -> {
                //TODO: convert SPRV2 to paaInviaRT-
@@ -43,6 +46,10 @@ public class ReceiptService {
             }
             case CLOSE_PAYMENT_V2 -> {
                 //TODO: convert CPV2 to paaInviaRT-
+                org.openapitools.model.ClosePaymentRequestV2 closePaymentRequestV2 =
+                        objectMapper.readValue(payload, org.openapitools.model.ClosePaymentRequestV2.class);
+
+                return;
             }
             case PA_INVIA_RT -> {
                 byte[] payloadUnzipped = ZipUtil.unzip(ZipUtil.base64Decode(payload));
