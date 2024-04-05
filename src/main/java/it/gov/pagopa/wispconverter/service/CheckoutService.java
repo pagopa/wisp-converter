@@ -1,15 +1,15 @@
 package it.gov.pagopa.wispconverter.service;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class CheckoutService {
 
-    public CheckoutService() {
-
-    }
+    private final it.gov.pagopa.checkoutclient.client.ApiClient checkoutClient;
 
     public String executeCall() {
 

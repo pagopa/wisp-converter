@@ -1,15 +1,11 @@
 package it.gov.pagopa.wispconverter.service;
 
-import feign.FeignException;
-import it.gov.pagopa.wispconverter.client.gpd.GPDClient;
-import it.gov.pagopa.wispconverter.client.gpd.model.MultiplePaymentPosition;
-import it.gov.pagopa.wispconverter.client.gpd.model.PaymentPosition;
-import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
-import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.service.mapper.DebtPositionMapper;
 import it.gov.pagopa.wispconverter.service.model.RPTContentDTO;
+import it.gov.pagopa.wispconverter.util.Constants;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -21,30 +17,29 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class DebtPositionService {
 
-    private final GPDClient gpdClient;
+    private final it.gov.pagopa.gpdclient.client.ApiClient gpdClient;
 
     private final DebtPositionMapper mapper;
 
     public void executeBulkCreation(List<RPTContentDTO> rptContentDTOs) {
 
-        try {
-            Map<String, List<RPTContentDTO>> paymentPositionsByDomain = rptContentDTOs.stream().collect(Collectors.groupingBy(RPTContentDTO::getIdDominio));
+        Map<String, List<RPTContentDTO>> paymentPositionsByDomain = rptContentDTOs.stream().collect(Collectors.groupingBy(RPTContentDTO::getIdDominio));
 
-            paymentPositionsByDomain.forEach((key, value) -> {
-                List<PaymentPosition> paymentPositions = value.stream().map(mapper::toPaymentPosition).toList();
+        paymentPositionsByDomain.forEach((idDominio, value) -> {
+            List<it.gov.pagopa.gpdclient.model.PaymentPositionModelDto> paymentPositionModelDtoList = value.stream().map(mapper::toPaymentPosition).toList();
 
-                // generating request
-                MultiplePaymentPosition request = MultiplePaymentPosition.builder()
-                        .paymentPositions(paymentPositions)
-                        .build();
+            // generating request
+            it.gov.pagopa.gpdclient.model.MultiplePaymentPositionModelDto multiplePaymentPositionModelDto = new it.gov.pagopa.gpdclient.model.MultiplePaymentPositionModelDto();
+            multiplePaymentPositionModelDto.setPaymentPositions(paymentPositionModelDtoList);
 
-                // communicating with GPD-core service in order to execute the operation
-                this.gpdClient.executeBulkCreation(key, request);
-            });
+            String xRequestId = MDC.get(Constants.MDC_REQUEST_ID);
+            Boolean toPublish = true;
 
-        } catch (FeignException e) {
-            throw new AppException(e, AppErrorCodeMessageEnum.CLIENT_GPD, e.status(), e.getMessage());
-        }
+            it.gov.pagopa.gpdclient.api.DebtPositionsApiApi apiInstance = new it.gov.pagopa.gpdclient.api.DebtPositionsApiApi(gpdClient);
+            apiInstance.createMultiplePositions1(idDominio, multiplePaymentPositionModelDto, xRequestId, toPublish);
+            //FIXME gestire errori di connessione
+            //FIXME cosa succede se si spacca al secondo giro?
+        });
     }
 
 

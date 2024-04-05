@@ -1,11 +1,5 @@
 package it.gov.pagopa.wispconverter.service;
 
-import feign.FeignException;
-import it.gov.pagopa.wispconverter.client.iuvgenerator.IUVGeneratorClient;
-import it.gov.pagopa.wispconverter.client.iuvgenerator.model.IUVGeneratorRequest;
-import it.gov.pagopa.wispconverter.client.iuvgenerator.model.IUVGeneratorResponse;
-import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
-import it.gov.pagopa.wispconverter.exception.AppException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,7 +10,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class NAVGeneratorService {
 
-    private final IUVGeneratorClient iuvGeneratorClient;
+    private final it.gov.pagopa.iuvgeneratorclient.client.ApiClient iuvGeneratorClient;
 
     @Value("${wisp-converter.aux-digit}")
     private String auxDigit;
@@ -25,18 +19,13 @@ public class NAVGeneratorService {
     private String segregationCode;
 
     public String getNAVCodeFromIUVGenerator(String creditorInstitutionCode) {
-        // generating request body
-        IUVGeneratorRequest request = IUVGeneratorRequest.builder()
-                .auxDigit(this.auxDigit)
-                .segregationCode(this.segregationCode)
-                .build();
-        // communicating with IUV Generator service in order to retrieve response
-        String navCode;
-        try {
-            IUVGeneratorResponse response = this.iuvGeneratorClient.generate(creditorInstitutionCode, request);
-            return response.getIuv();
-        } catch (FeignException e) {
-            throw new AppException(e, AppErrorCodeMessageEnum.CLIENT_IUV_GENERATOR, e.status(), e.getMessage());
-        }
+        it.gov.pagopa.iuvgeneratorclient.api.IuvGeneratorApiApi apiInstance = new it.gov.pagopa.iuvgeneratorclient.api.IuvGeneratorApiApi(iuvGeneratorClient);
+        it.gov.pagopa.iuvgeneratorclient.model.IuvGenerationModelDto iuvGenerationModelDto = new it.gov.pagopa.iuvgeneratorclient.model.IuvGenerationModelDto();
+        iuvGenerationModelDto.setAuxDigit(Long.valueOf(this.auxDigit));
+        iuvGenerationModelDto.setSegregationCode(Long.valueOf(this.segregationCode));
+
+        it.gov.pagopa.iuvgeneratorclient.model.IuvGenerationModelResponseDto result = apiInstance.generateIUV(creditorInstitutionCode, iuvGenerationModelDto);
+        return result.getIuv();
+        //FIXME gestire errori di connessione
     }
 }

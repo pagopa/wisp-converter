@@ -10,20 +10,17 @@ public class AppException extends RuntimeException {
 
     private final AppErrorCodeMessageEnum error;
     private final transient Object[] args;
-//    private final String detail;
 
     public AppException(AppErrorCodeMessageEnum error, Object... args) {
         super(composeMessage(error, getArgsOrNull(args)));
         this.error = error;
         this.args = getArgsOrNull(args);
-//        this.detail = composeMessage(error, getArgsOrNull(args));
     }
 
     public AppException(Throwable cause, AppErrorCodeMessageEnum error, Object... args) {
         super(composeMessage(error, getArgsOrNull(args)), cause);
         this.error = error;
         this.args = getArgsOrNull(args);
-//        this.detail = composeMessage(error, getArgsOrNull(args));
     }
 
     private static Object[] getArgsOrNull(Object... args) {
