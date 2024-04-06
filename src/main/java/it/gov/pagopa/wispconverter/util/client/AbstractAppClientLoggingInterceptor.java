@@ -4,6 +4,7 @@ import it.gov.pagopa.wispconverter.service.ReService;
 import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import it.gov.pagopa.wispconverter.util.CommonUtility;
 import it.gov.pagopa.wispconverter.util.Constants;
+import it.gov.pagopa.wispconverter.util.ReUtil;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -74,7 +75,7 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
 //    MDC.getCopyOfContextMap().forEach((k,v) -> {
 //      log.debug(String.format("CLIENT AFTER MDC %s=%s",k, v));
 //    });
-    ReEventDto reEventDtoClientIN = ReService.createReClientInterfaceRequest(request, body);
+    ReEventDto reEventDtoClientIN = ReUtil.createReClientInterfaceRequest(request, body);
     getReService().addRe(reEventDtoClientIN);
 
 
@@ -89,7 +90,7 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
 //      log.debug(String.format("CLIENT BEFORE MDC %s=%s",k, v));
 //    });
 
-    ReEventDto reEventDtoClientOUT = ReService.createReClientInterfaceResponse(response, reEventDtoClientIN);
+    ReEventDto reEventDtoClientOUT = ReUtil.createReClientInterfaceResponse(request, response);
     getReService().addRe(reEventDtoClientOUT);
 
 

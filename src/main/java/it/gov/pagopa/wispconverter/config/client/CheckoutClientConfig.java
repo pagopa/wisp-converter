@@ -7,6 +7,7 @@ import it.gov.pagopa.wispconverter.util.client.checkout.CheckoutClientResponseEr
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.BufferingClientHttpRequestFactory;
@@ -37,41 +38,28 @@ public class CheckoutClientConfig {
     @Value("${client.checkout.api-key}")
     private String apiKey;
 
-    @Value("${log.client.checkout.request.include-headers}")
-    private boolean clientRequestIncludeHeaders;
-    @Value("${log.client.checkout.request.include-payload}")
-    private boolean clientRequestIncludePayload;
-    @Value("${log.client.checkout.request.max-payload-length}")
-    private int clientRequestMaxLength;
-    @Value("${log.client.checkout.response.include-headers}")
-    private boolean clientResponseIncludeHeaders;
-    @Value("${log.client.checkout.response.include-payload}")
-    private boolean clientResponseIncludePayload;
-    @Value("${log.client.checkout.response.max-payload-length}")
-    private int clientResponseMaxLength;
 
-    @Value("${log.client.checkout.mask.header.name}")
-    private String maskHeaderName;
-
-    @Value("${log.client.checkout.request.pretty}")
-    private boolean clientRequestPretty;
-
-    @Value("${log.client.checkout.response.pretty}")
-    private boolean clientResponsePretty;
+    @Bean
+    @ConfigurationProperties(prefix = "log.client.checkout")
+    public ClientLoggingProperties checkoutClientLoggingProperties() {
+        return new ClientLoggingProperties();
+    }
 
     @Bean
     public it.gov.pagopa.gen.wispconverter.client.checkout.invoker.ApiClient checkoutClient() {
-        CheckoutClientLoggingInterceptor clientLogging = new CheckoutClientLoggingInterceptor(reService);
-        clientLogging.setRequestIncludeHeaders(clientRequestIncludeHeaders);
-        clientLogging.setRequestIncludePayload(clientRequestIncludePayload);
-        clientLogging.setRequestMaxPayloadLength(clientRequestMaxLength);
-        clientLogging.setRequestHeaderPredicate(p -> !p.equals(maskHeaderName));
-        clientLogging.setRequestPretty(clientRequestPretty);
+        ClientLoggingProperties clientLoggingProperties = checkoutClientLoggingProperties();
 
-        clientLogging.setResponseIncludeHeaders(clientResponseIncludeHeaders);
-        clientLogging.setResponseIncludePayload(clientResponseIncludePayload);
-        clientLogging.setResponseMaxPayloadLength(clientResponseMaxLength);
-        clientLogging.setResponsePretty(clientResponsePretty);
+        CheckoutClientLoggingInterceptor clientLogging = new CheckoutClientLoggingInterceptor(reService);
+        clientLogging.setRequestIncludeHeaders(clientLoggingProperties.getRequest().isIncludeHeaders());
+        clientLogging.setRequestIncludePayload(clientLoggingProperties.getRequest().isIncludePayload());
+        clientLogging.setRequestMaxPayloadLength(clientLoggingProperties.getRequest().getMaxPayloadLength());
+        clientLogging.setRequestHeaderPredicate(p -> !p.equals(clientLoggingProperties.getRequest().getMaskHeaderName()));
+        clientLogging.setRequestPretty(clientLoggingProperties.getRequest().isPretty());
+
+        clientLogging.setResponseIncludeHeaders(clientLoggingProperties.getResponse().isIncludeHeaders());
+        clientLogging.setResponseIncludePayload(clientLoggingProperties.getResponse().isIncludePayload());
+        clientLogging.setResponseMaxPayloadLength(clientLoggingProperties.getResponse().getMaxPayloadLength());
+        clientLogging.setResponsePretty(clientLoggingProperties.getResponse().isPretty());
 
         RestTemplate restTemplate = restTemplate();
 

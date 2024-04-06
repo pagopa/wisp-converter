@@ -2,6 +2,7 @@ package it.gov.pagopa.wispconverter.util.filter;
 
 import it.gov.pagopa.wispconverter.service.ReService;
 import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
+import it.gov.pagopa.wispconverter.util.ReUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -32,7 +33,7 @@ public class ReFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        ReEventDto reEventDtoServerIN = ReService.createReServerInterfaceRequest(request);
+        ReEventDto reEventDtoServerIN = ReUtil.createReServerInterfaceRequest(request);
         try{
 //            MDC.getCopyOfContextMap().forEach((k,v) -> {
 //                log.debug(String.format("SERVER BEFORE MDC %s=%s",k, v));
@@ -43,7 +44,7 @@ public class ReFilter extends OncePerRequestFilter {
 //            MDC.getCopyOfContextMap().forEach((k,v) -> {
 //                log.debug(String.format("SERVER AFTER MDC %s=%s",k, v));
 //            });
-            ReEventDto reEventDtoServerOUT = ReService.createReServerInterfaceResponse(response, reEventDtoServerIN);
+            ReEventDto reEventDtoServerOUT = ReUtil.createReServerInterfaceResponse(request, response);
             reService.addRe(reEventDtoServerOUT);
         }
 
