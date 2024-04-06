@@ -130,7 +130,11 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
         } else{
           msg.append(", ");
         }
-        msg.append("headers: ").append(formatRequestHeaders);
+        msg.append("headers: [").append(formatRequestHeaders);
+        if(isRequestPretty()){
+          msg.append(PRETTY_OUT).append(SPACE);
+        }
+        msg.append("]");
       }
     }
 
@@ -191,7 +195,11 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
         } else{
           msg.append(", ");
         }
-        msg.append("headers: ").append(formatResponseHeaders);
+        msg.append("headers: [").append(formatResponseHeaders);
+        if(isRequestPretty()){
+          msg.append(PRETTY_OUT).append(SPACE);
+        }
+        msg.append("]");
       }
     }
 

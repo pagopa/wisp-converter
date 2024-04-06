@@ -19,6 +19,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Enumeration;
 import java.util.Iterator;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -32,6 +33,7 @@ public class ReUtil {
                                               CallTypeEnum callTypeEnum) {
 
         return ReEventDto.builder()
+                .id(UUID.randomUUID().toString())
                 .requestId(MDC.get(Constants.MDC_REQUEST_ID))
                 .operationId(MDC.get(Constants.MDC_OPERATION_ID))
                 .clientOperationId(MDC.get(Constants.MDC_CLIENT_OPERATION_ID))
@@ -111,8 +113,6 @@ public class ReUtil {
         int status = response.getStatus();
         String executionTime = MDC.get(Constants.MDC_EXECUTION_TIME);
 
-//        ReEventDto target = ReMapper.INSTANCE.clone(source);
-
         String httpMethod = request.getMethod();
 
         StringBuilder msg = new StringBuilder(request.getRequestURI());
@@ -161,7 +161,6 @@ public class ReUtil {
         String erogatore = MDC.get(Constants.MDC_EROGATORE);
         String erogatoreDescr = MDC.get(Constants.MDC_EROGATORE_DESCR);
 
-
         return baseReEvent(
                 CategoriaEventoEnum.INTERFACCIA,
                 SottoTipoEventoEnum.REQ,
@@ -173,7 +172,6 @@ public class ReUtil {
     }
 
     public static ReEventDto createReClientInterfaceResponse(HttpRequest request, ClientHttpResponse response){
-
         String httpHeaders = formatClientHeaders(response.getHeaders());
         String compressedPayload = null;
         Integer compressedPayloadPayloadLength = null;
