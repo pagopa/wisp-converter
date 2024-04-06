@@ -28,17 +28,12 @@ public class ReUtil {
 
     private static final String NODO_DEI_PAGAMENTI_SP = "NodoDeiPagamentiSPC";
 
-    private static ReEventDto baseReEvent(CategoriaEventoEnum categoriaEvento, SottoTipoEventoEnum sottoTipoEvento, EsitoEnum esitoEnum, String erogatore, String erogatoreDescr, String fruitore, String fruitoreDescr,
+    private static ReEventDto.ReEventDtoBuilder createBaseReInterface(CategoriaEventoEnum categoriaEvento, SottoTipoEventoEnum sottoTipoEvento, EsitoEnum esitoEnum, String erogatore, String erogatoreDescr, String fruitore, String fruitoreDescr,
                                               String httpMethod, String httpUri, String httpHeaders, String httpCallRemoteAddress, String compressedPayload, Integer compressedPayloadLength,
                                               CallTypeEnum callTypeEnum) {
 
-        return ReEventDto.builder()
-                .id(UUID.randomUUID().toString())
-                .requestId(MDC.get(Constants.MDC_REQUEST_ID))
-                .operationId(MDC.get(Constants.MDC_OPERATION_ID))
-                .clientOperationId(MDC.get(Constants.MDC_CLIENT_OPERATION_ID))
-                .componente(ComponenteEnum.WISP_CONVERTER)
-                .insertedTimestamp(Instant.ofEpochMilli(Long.parseLong(MDC.get(Constants.MDC_START_TIME))))
+
+        return createBaseReBuilder()
 
                 .categoriaEvento(categoriaEvento)
                 .sottoTipoEvento(sottoTipoEvento)
@@ -57,9 +52,25 @@ public class ReUtil {
                 .httpCallRemoteAddress(httpCallRemoteAddress)
 
                 .compressedPayload(compressedPayload)
-                .compressedPayloadLength(compressedPayloadLength)
-                .build();
+                .compressedPayloadLength(compressedPayloadLength);
     }
+
+    private static ReEventDto.ReEventDtoBuilder createBaseReBuilder(){
+        return ReEventDto.builder()
+                .id(UUID.randomUUID().toString())
+                .requestId(MDC.get(Constants.MDC_REQUEST_ID))
+                .operationId(MDC.get(Constants.MDC_OPERATION_ID))
+                .clientOperationId(MDC.get(Constants.MDC_CLIENT_OPERATION_ID))
+                .componente(ComponenteEnum.WISP_CONVERTER)
+                .insertedTimestamp(Instant.ofEpochMilli(Long.parseLong(MDC.get(Constants.MDC_START_TIME))));
+    }
+
+    public static ReEventDto.ReEventDtoBuilder createBaseReInternal(){
+        return createBaseReBuilder()
+                .categoriaEvento(CategoriaEventoEnum.INTERNO)
+                .sottoTipoEvento(SottoTipoEventoEnum.INTERN);
+    }
+
 
     public static ReEventDto createReServerInterfaceRequest(HttpServletRequest request){
         String httpMethod = request.getMethod();
@@ -86,14 +97,15 @@ public class ReUtil {
         }
 
 
-        return baseReEvent(
+        return createBaseReInterface(
                 CategoriaEventoEnum.INTERFACCIA,
                 SottoTipoEventoEnum.REQ,
                 EsitoEnum.RICEVUTA,
                 NODO_DEI_PAGAMENTI_SP, NODO_DEI_PAGAMENTI_SP,
                 null, null,
                 httpMethod, httpUri, httpHeaders, httpCallRemoteAddress, compressedPayload, compressedPayloadLength,
-                CallTypeEnum.SERVER);
+                CallTypeEnum.SERVER)
+                .build();
     }
     public static ReEventDto createReServerInterfaceResponse(HttpServletRequest request, HttpServletResponse response){
 
@@ -122,7 +134,7 @@ public class ReUtil {
         }
         String httpUri = msg.toString();
 
-        ReEventDto target = baseReEvent(
+        ReEventDto.ReEventDtoBuilder target = createBaseReInterface(
                 CategoriaEventoEnum.INTERFACCIA,
                 SottoTipoEventoEnum.RESP,
                 EsitoEnum.INVIATA,
@@ -131,14 +143,14 @@ public class ReUtil {
                 httpMethod, httpUri, httpHeaders, null, compressedPayload, compressedPayloadLength,
                 CallTypeEnum.SERVER);
 
-        target.setHttpStatusCode(status);
-        target.setExecutionTimeMs(Long.parseLong(executionTime));
+        target.httpStatusCode(status);
+        target.executionTimeMs(Long.parseLong(executionTime));
 
-        target.setOperationStatus(MDC.get(Constants.MDC_STATUS));
-        target.setOperationErrorTitle(MDC.get(Constants.MDC_ERROR_TITLE));
-        target.setOperationErrorDetail(MDC.get(Constants.MDC_ERROR_DETAIL));
-        target.setOperationErrorCode(MDC.get(Constants.MDC_ERROR_CODE));
-        return target;
+        target.operationStatus(MDC.get(Constants.MDC_STATUS));
+        target.operationErrorTitle(MDC.get(Constants.MDC_ERROR_TITLE));
+        target.operationErrorDetail(MDC.get(Constants.MDC_ERROR_DETAIL));
+        target.operationErrorCode(MDC.get(Constants.MDC_ERROR_CODE));
+        return target.build();
     }
 
     public static ReEventDto createReClientInterfaceRequest(HttpRequest request, byte[] reqBody){
@@ -161,14 +173,15 @@ public class ReUtil {
         String erogatore = MDC.get(Constants.MDC_EROGATORE);
         String erogatoreDescr = MDC.get(Constants.MDC_EROGATORE_DESCR);
 
-        return baseReEvent(
+        return createBaseReInterface(
                 CategoriaEventoEnum.INTERFACCIA,
                 SottoTipoEventoEnum.REQ,
                 EsitoEnum.INVIATA, //FIXME INVIATA o INVIATA_KO
                 erogatore, erogatoreDescr,
                 NODO_DEI_PAGAMENTI_SP, NODO_DEI_PAGAMENTI_SP,
                 httpMethod, httpUri, httpHeaders, null, compressedPayload, compressedPayloadPayloadLength,
-                CallTypeEnum.CLIENT);
+                CallTypeEnum.CLIENT)
+                .build();
     }
 
     public static ReEventDto createReClientInterfaceResponse(HttpRequest request, ClientHttpResponse response){
@@ -199,7 +212,7 @@ public class ReUtil {
         String httpMethod = request.getMethod().toString();
         String httpUri = request.getURI().toString();
 
-        ReEventDto target = baseReEvent(
+        ReEventDto.ReEventDtoBuilder target = createBaseReInterface(
                 CategoriaEventoEnum.INTERFACCIA,
                 SottoTipoEventoEnum.RESP,
                 EsitoEnum.RICEVUTA, //FIXME RICEVUTA o RICEVUTA_KO
@@ -208,10 +221,10 @@ public class ReUtil {
                 httpMethod, httpUri, httpHeaders, null, compressedPayload, compressedPayloadPayloadLength,
                 CallTypeEnum.CLIENT);
 
-        target.setHttpStatusCode(status);
-        target.setExecutionTimeMs(Long.parseLong(executionTime));
+        target.httpStatusCode(status);
+        target.executionTimeMs(Long.parseLong(executionTime));
 
-        return target;
+        return target.build();
     }
 
 
