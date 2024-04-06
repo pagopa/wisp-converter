@@ -2,21 +2,17 @@ package it.gov.pagopa.wispconverter.util.client.gpd;
 
 import it.gov.pagopa.wispconverter.service.ReService;
 import it.gov.pagopa.wispconverter.util.client.AbstractAppClientLoggingInterceptor;
-import lombok.RequiredArgsConstructor;
+import it.gov.pagopa.wispconverter.util.client.ClientLoggingProperties;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpRequest;
 import org.springframework.http.client.ClientHttpResponse;
 
 @Slf4j
-@RequiredArgsConstructor
 public class GpdClientLoggingInterceptor extends AbstractAppClientLoggingInterceptor {
 
-  private final ReService reService;
-
-  @Override
-  protected ReService getReService() {
-    return reService;
+  public GpdClientLoggingInterceptor(ClientLoggingProperties clientLoggingProperties, ReService reService){
+    super(clientLoggingProperties, reService);
   }
 
   @Override

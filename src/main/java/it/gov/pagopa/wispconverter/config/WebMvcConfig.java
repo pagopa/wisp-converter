@@ -2,7 +2,9 @@ package it.gov.pagopa.wispconverter.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.wispconverter.config.model.AppCors;
+import it.gov.pagopa.wispconverter.service.ReService;
 import it.gov.pagopa.wispconverter.util.MDCEnrichInterceptor;
+import it.gov.pagopa.wispconverter.util.ReInterceptor;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,6 +28,8 @@ import java.util.Locale;
 @Configuration
 @RequiredArgsConstructor
 public class WebMvcConfig implements WebMvcConfigurer {
+
+    private final ReService reService;
 
     List<Locale> locales = Arrays.asList(Locale.ENGLISH, Locale.ITALIAN);
 
@@ -76,6 +80,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(new ReInterceptor(reService)).excludePathPatterns(excludeUrlPatterns);
         registry.addInterceptor(new MDCEnrichInterceptor()).excludePathPatterns(excludeUrlPatterns);
     }
 }

@@ -1,12 +1,12 @@
 package it.gov.pagopa.wispconverter.util.filter;
 
 import it.gov.pagopa.wispconverter.util.Constants;
+import it.gov.pagopa.wispconverter.util.client.ServerLoggingProperties;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
@@ -29,10 +29,31 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-@Getter
-@Setter
 @Slf4j
 public abstract class AbstractAppServerLoggingFilter extends OncePerRequestFilter {
+
+  public AbstractAppServerLoggingFilter(ServerLoggingProperties serverLoggingProperties) {
+    if(serverLoggingProperties!=null){
+      ServerLoggingProperties.Request request = serverLoggingProperties.getRequest();
+      if(request!=null){
+        this.requestIncludeHeaders = request.isIncludeHeaders();
+        this.requestIncludePayload = request.isIncludePayload();
+        this.requestMaxPayloadLength = request.getMaxPayloadLength() != null ? request.getMaxPayloadLength() : REQUEST_DEFAULT_MAX_PAYLOAD_LENGTH;
+        this.requestHeaderPredicate = s -> !s.equals(request.getMaskHeaderName());
+        this.requestPretty = request.isPretty();
+      }
+      ServerLoggingProperties.Response response = serverLoggingProperties.getResponse();
+      if(response!=null){
+        this.responseIncludeHeaders = response.isIncludeHeaders();
+        this.responseIncludePayload = response.isIncludePayload();
+        this.responseMaxPayloadLength = response.getMaxPayloadLength() != null ? response.getMaxPayloadLength() : RESPONSE_DEFAULT_MAX_PAYLOAD_LENGTH;
+        this.responseHeaderPredicate = null;
+        this.responsePretty = response.isPretty();
+      }
+    }
+
+  }
+  
 
   public static final String REQUEST_DEFAULT_MESSAGE_PREFIX = "=> SERVER Request OPERATION_ID=%s - ";
   public static final String RESPONSE_DEFAULT_MESSAGE_PREFIX = "<= SERVER Response OPERATION_ID=%s - ";
@@ -65,6 +86,7 @@ public abstract class AbstractAppServerLoggingFilter extends OncePerRequestFilte
 
   private boolean responsePretty = false;
 
+  @Setter
   private List<String> excludeUrlPatterns;
 
   @Override
@@ -105,7 +127,7 @@ public abstract class AbstractAppServerLoggingFilter extends OncePerRequestFilte
   protected String createRequestMessage(String operationId, HttpServletRequest request) {
     StringBuilder msg = new StringBuilder();
     msg.append(String.format(REQUEST_DEFAULT_MESSAGE_PREFIX, operationId));
-    if(isRequestPretty()){
+    if(this.requestPretty){
       msg.append(PRETTY_IN).append(SPACE);
     }
     msg.append("path: ").append(request.getMethod()).append(' ');
@@ -116,10 +138,10 @@ public abstract class AbstractAppServerLoggingFilter extends OncePerRequestFilte
       msg.append('?').append(queryString);
     }
 
-    if (isRequestIncludeClientInfo()) {
+    if (this.requestIncludeClientInfo) {
       String client = request.getRemoteAddr();
       if (StringUtils.hasLength(client)) {
-        if(isRequestPretty()){
+        if(this.requestPretty){
           msg.append(PRETTY_IN).append(SPACE);
         } else{
           msg.append(", ");
@@ -128,7 +150,7 @@ public abstract class AbstractAppServerLoggingFilter extends OncePerRequestFilte
       }
       HttpSession session = request.getSession(false);
       if (session != null) {
-        if(isRequestPretty()){
+        if(this.requestPretty){
           msg.append(PRETTY_IN).append(SPACE);
         } else{
           msg.append(", ");
@@ -137,7 +159,7 @@ public abstract class AbstractAppServerLoggingFilter extends OncePerRequestFilte
       }
       String user = request.getRemoteUser();
       if (user != null) {
-        if(isRequestPretty()){
+        if(this.requestPretty){
           msg.append(PRETTY_IN).append(SPACE);
         } else{
           msg.append(", ");
@@ -146,13 +168,13 @@ public abstract class AbstractAppServerLoggingFilter extends OncePerRequestFilte
       }
     }
 
-    if (isRequestIncludeHeaders()) {
+    if (this.requestIncludeHeaders) {
       HttpHeaders headers = new HttpHeaders();
       Enumeration<String> headerNamesEnum = request.getHeaderNames();
       while (headerNamesEnum.hasMoreElements()) {
         String headerName = headerNamesEnum.nextElement();
-        if (getRequestHeaderPredicate() != null) {
-          if (!getRequestHeaderPredicate().test(headerName)) {
+        if (this.requestHeaderPredicate != null) {
+          if (!this.requestHeaderPredicate.test(headerName)) {
             headers.add(headerName, "masked");
           } else {
             Iterator<String> iterator = request.getHeaders(headerName).asIterator();
@@ -169,23 +191,23 @@ public abstract class AbstractAppServerLoggingFilter extends OncePerRequestFilte
     }
       String formatRequestHeaders = formatRequestHeaders(headers);
       if(formatRequestHeaders!=null){
-        if(isRequestPretty()){
+        if(this.requestPretty){
           msg.append(PRETTY_IN).append(SPACE);
         } else{
           msg.append(", ");
         }
         msg.append("headers: [").append(formatRequestHeaders);
-        if(isRequestPretty()){
+        if(this.requestPretty){
           msg.append(PRETTY_IN).append(SPACE);
         }
         msg.append("]");
       }
     }
 
-    if (isRequestIncludePayload()) {
+    if (this.requestIncludePayload) {
       String payload = getRequestMessagePayload(request);
       if (payload != null) {
-        if(isRequestPretty()){
+        if(this.requestPretty){
           msg.append(PRETTY_IN).append(SPACE);
         } else{
           msg.append(", ");
@@ -201,7 +223,7 @@ public abstract class AbstractAppServerLoggingFilter extends OncePerRequestFilte
     StringBuilder msg = new StringBuilder();
     msg.append(String.format(RESPONSE_DEFAULT_MESSAGE_PREFIX, id));
 
-    if(isResponsePretty()){
+    if(this.responsePretty){
       msg.append(PRETTY_OUT).append(SPACE);
     }
     msg.append("path: ").append(request.getMethod()).append(' ');
@@ -212,22 +234,22 @@ public abstract class AbstractAppServerLoggingFilter extends OncePerRequestFilte
       msg.append('?').append(queryString);
     }
 
-    if(isResponsePretty()){
+    if(this.responsePretty){
       msg.append(PRETTY_OUT).append(SPACE);
     }
     msg.append("status: ").append(response.getStatus());
-    if(isResponsePretty()){
+    if(this.responsePretty){
       msg.append(PRETTY_OUT).append(SPACE);
     } else{
       msg.append(", ");
     }
     msg.append("execution-time: ").append(executionTime).append("ms");
 
-    if (isResponseIncludeHeaders()) {
+    if (this.responseIncludeHeaders) {
       HttpHeaders headers = new HttpHeaders();
       for(String headerName : response.getHeaderNames()){
-        if (getResponseHeaderPredicate() != null) {
-          if (!getResponseHeaderPredicate().test(headerName)) {
+        if (this.responseHeaderPredicate != null) {
+          if (!this.responseHeaderPredicate.test(headerName)) {
             headers.add(headerName, "masked");
           } else {
             headers.addAll(headerName, response.getHeaders(headerName).stream().toList());
@@ -238,23 +260,23 @@ public abstract class AbstractAppServerLoggingFilter extends OncePerRequestFilte
       }
       String formatResponseHeaders = formatResponseHeaders(headers);
       if(formatResponseHeaders!=null){
-        if(isRequestPretty()){
+        if(this.requestPretty){
           msg.append(PRETTY_OUT).append(SPACE);
         } else{
           msg.append(", ");
         }
         msg.append("headers: [").append(formatResponseHeaders);
-        if(isRequestPretty()){
+        if(this.requestPretty){
           msg.append(PRETTY_IN).append(SPACE);
         }
         msg.append("]");
       }
     }
 
-    if (isResponseIncludePayload()) {
+    if (this.responseIncludePayload) {
       String payload = getResponseMessagePayload(response);
       if (payload != null) {
-        if(isRequestPretty()){
+        if(this.requestPretty){
           msg.append(PRETTY_OUT).append(SPACE);
         } else{
           msg.append(", ");
@@ -286,7 +308,7 @@ public abstract class AbstractAppServerLoggingFilter extends OncePerRequestFilte
   }
 
   private String safelyEncodePayload(byte[] buf, RepeatableContentCachingRequestWrapper wrapper) {
-    int length = Math.min(buf.length, getRequestMaxPayloadLength());
+    int length = Math.min(buf.length, this.requestMaxPayloadLength);
     try {
       return new String(buf, 0, length, wrapper.getCharacterEncoding());
     } catch (UnsupportedEncodingException e) {
@@ -301,7 +323,7 @@ public abstract class AbstractAppServerLoggingFilter extends OncePerRequestFilte
     if (wrapper != null) {
       byte[] buf = wrapper.getContentAsByteArray();
       if (buf.length > 0) {
-        int length = Math.min(buf.length, getResponseMaxPayloadLength());
+        int length = Math.min(buf.length, this.responseMaxPayloadLength);
         try {
           return new String(buf, 0, length, wrapper.getCharacterEncoding());
         } catch (UnsupportedEncodingException ex) {
@@ -320,7 +342,7 @@ public abstract class AbstractAppServerLoggingFilter extends OncePerRequestFilte
   private String formatRequestHeaders(MultiValueMap<String, String> headers) {
     Stream<String> stream = headers.entrySet().stream()
             .map((entry) -> {
-              if(isRequestPretty()){
+              if(this.requestPretty){
                 String values = entry.getValue().stream().collect(Collectors.joining("\", \"","\"","\""));
                 return PRETTY_IN +"*\t"+entry.getKey() + ": [" + values + "]";
               } else {
@@ -328,7 +350,7 @@ public abstract class AbstractAppServerLoggingFilter extends OncePerRequestFilte
                 return entry.getKey() + ": [" + values + "]";
               }
             });
-    if(isRequestPretty()){
+    if(this.requestPretty){
       return stream.collect(Collectors.joining(""));
     } else {
       return stream.collect(Collectors.joining(", "));
@@ -338,7 +360,7 @@ public abstract class AbstractAppServerLoggingFilter extends OncePerRequestFilte
   private String formatResponseHeaders(MultiValueMap<String, String> headers) {
     Stream<String> stream = headers.entrySet().stream()
             .map((entry) -> {
-              if(isResponsePretty()){
+              if(this.responsePretty){
                 String values = entry.getValue().stream().collect(Collectors.joining("\", \"","\"","\""));
                 return PRETTY_OUT +"*\t"+entry.getKey().toLowerCase() + ": [" + values + "]";
               } else {
@@ -346,7 +368,7 @@ public abstract class AbstractAppServerLoggingFilter extends OncePerRequestFilte
                 return entry.getKey().toLowerCase() + ": [" + values + "]";
               }
             });
-    if(isRequestPretty()){
+    if(this.requestPretty){
       return stream.collect(Collectors.joining(""));
     } else {
       return stream.collect(Collectors.joining(", "));

@@ -1,7 +1,6 @@
-package it.gov.pagopa.wispconverter.config.client;
+package it.gov.pagopa.wispconverter.util.client;
 
 import lombok.Data;
-import org.springframework.beans.factory.annotation.Value;
 
 @Data
 public class ClientLoggingProperties {
@@ -15,7 +14,7 @@ public class ClientLoggingProperties {
         private String maskHeaderName;
         private boolean includeHeaders;
         private boolean includePayload;
-        private int maxPayloadLength;
+        private Integer maxPayloadLength;
         private boolean pretty;
     }
 
@@ -23,7 +22,7 @@ public class ClientLoggingProperties {
     public static class Response {
         private boolean includeHeaders;
         private boolean includePayload;
-        private int maxPayloadLength;
+        private Integer maxPayloadLength;
         private boolean pretty;
     }
 

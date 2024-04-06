@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<xsd:schema xmlns:pay_i="http://www.digitpa.gov.it/schemas/2011/Pagamenti/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:sac="http://ws.pagamenti.telematici.gov/" targetNamespace="http://www.digitpa.gov.it/schemas/2011/Pagamenti/" elementFormDefault="qualified" attributeFormDefault="unqualified" version="6.2.0">
+<xsd:schema xmlns:pay_i="http://www.digitpa.gov.it/schemas/2011/Pagamenti/" xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+            targetNamespace="http://www.digitpa.gov.it/schemas/2011/Pagamenti/" elementFormDefault="qualified"
+            attributeFormDefault="unqualified" version="6.2.0">
   <xsd:annotation>
     <xsd:documentation>Richiesta Pagamento Telematico (RPT) e Ricevuta Telematica (RT)</xsd:documentation>
     <xsd:documentation>XSD RPT/RT relativo al documento base "SPECIFICHE ATTUATIVE DEL NODO DEI PAGAMENTI-SPC versione 1.7"</xsd:documentation>

@@ -1,7 +1,7 @@
 package it.gov.pagopa.wispconverter.config.client;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.wispconverter.service.ReService;
+import it.gov.pagopa.wispconverter.util.client.ClientLoggingProperties;
 import it.gov.pagopa.wispconverter.util.client.iuvgenerator.IuvGeneratorClientLoggingInterceptor;
 import it.gov.pagopa.wispconverter.util.client.iuvgenerator.IuvGeneratorClientResponseErrorHandler;
 import lombok.RequiredArgsConstructor;
@@ -50,17 +50,7 @@ public class IuvGeneratorClientConfig {
     public it.gov.pagopa.gen.wispconverter.client.iuvgenerator.invoker.ApiClient iuvGeneratorClient() {
         ClientLoggingProperties clientLoggingProperties = iuvGeneratorClientLoggingProperties();
 
-        IuvGeneratorClientLoggingInterceptor clientLogging = new IuvGeneratorClientLoggingInterceptor(reService);
-        clientLogging.setRequestIncludeHeaders(clientLoggingProperties.getRequest().isIncludeHeaders());
-        clientLogging.setRequestIncludePayload(clientLoggingProperties.getRequest().isIncludePayload());
-        clientLogging.setRequestMaxPayloadLength(clientLoggingProperties.getRequest().getMaxPayloadLength());
-        clientLogging.setRequestHeaderPredicate(p -> !p.equals(clientLoggingProperties.getRequest().getMaskHeaderName()));
-        clientLogging.setRequestPretty(clientLoggingProperties.getRequest().isPretty());
-
-        clientLogging.setResponseIncludeHeaders(clientLoggingProperties.getResponse().isIncludeHeaders());
-        clientLogging.setResponseIncludePayload(clientLoggingProperties.getResponse().isIncludePayload());
-        clientLogging.setResponseMaxPayloadLength(clientLoggingProperties.getResponse().getMaxPayloadLength());
-        clientLogging.setResponsePretty(clientLoggingProperties.getResponse().isPretty());
+        IuvGeneratorClientLoggingInterceptor clientLogging = new IuvGeneratorClientLoggingInterceptor(clientLoggingProperties, reService);
 
         RestTemplate restTemplate = restTemplate();
 

@@ -1,13 +1,16 @@
 package it.gov.pagopa.wispconverter.util.filter;
 
+import it.gov.pagopa.wispconverter.util.client.ServerLoggingProperties;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-@RequiredArgsConstructor
 @Slf4j
 public class AppServerLoggingFilterFilter extends AbstractAppServerLoggingFilter {
+
+  public AppServerLoggingFilterFilter(ServerLoggingProperties serverLoggingProperties){
+    super(serverLoggingProperties);
+  }
 
   @Override
   protected void request(String operationId, HttpServletRequest request) {

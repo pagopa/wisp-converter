@@ -1,7 +1,7 @@
 package it.gov.pagopa.wispconverter.config.client;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.wispconverter.service.ReService;
+import it.gov.pagopa.wispconverter.util.client.ClientLoggingProperties;
 import it.gov.pagopa.wispconverter.util.client.gpd.GpdClientLoggingInterceptor;
 import it.gov.pagopa.wispconverter.util.client.gpd.GpdClientResponseErrorHandler;
 import lombok.RequiredArgsConstructor;
@@ -49,17 +49,7 @@ public class GpdClientConfig {
     public it.gov.pagopa.gen.wispconverter.client.gpd.invoker.ApiClient gpdClient() {
         ClientLoggingProperties clientLoggingProperties = gpdClientLoggingProperties();
 
-        GpdClientLoggingInterceptor clientLogging = new GpdClientLoggingInterceptor(reService);
-        clientLogging.setRequestIncludeHeaders(clientLoggingProperties.getRequest().isIncludeHeaders());
-        clientLogging.setRequestIncludePayload(clientLoggingProperties.getRequest().isIncludePayload());
-        clientLogging.setRequestMaxPayloadLength(clientLoggingProperties.getRequest().getMaxPayloadLength());
-        clientLogging.setRequestHeaderPredicate(p -> !p.equals(clientLoggingProperties.getRequest().getMaskHeaderName()));
-        clientLogging.setRequestPretty(clientLoggingProperties.getRequest().isPretty());
-
-        clientLogging.setResponseIncludeHeaders(clientLoggingProperties.getResponse().isIncludeHeaders());
-        clientLogging.setResponseIncludePayload(clientLoggingProperties.getResponse().isIncludePayload());
-        clientLogging.setResponseMaxPayloadLength(clientLoggingProperties.getResponse().getMaxPayloadLength());
-        clientLogging.setResponsePretty(clientLoggingProperties.getResponse().isPretty());
+        GpdClientLoggingInterceptor clientLogging = new GpdClientLoggingInterceptor(clientLoggingProperties, reService);
 
         RestTemplate restTemplate = restTemplate();
 

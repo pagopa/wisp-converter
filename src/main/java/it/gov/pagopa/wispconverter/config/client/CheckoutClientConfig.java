@@ -1,7 +1,7 @@
 package it.gov.pagopa.wispconverter.config.client;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.wispconverter.service.ReService;
+import it.gov.pagopa.wispconverter.util.client.ClientLoggingProperties;
 import it.gov.pagopa.wispconverter.util.client.checkout.CheckoutClientLoggingInterceptor;
 import it.gov.pagopa.wispconverter.util.client.checkout.CheckoutClientResponseErrorHandler;
 import lombok.RequiredArgsConstructor;
@@ -49,17 +49,7 @@ public class CheckoutClientConfig {
     public it.gov.pagopa.gen.wispconverter.client.checkout.invoker.ApiClient checkoutClient() {
         ClientLoggingProperties clientLoggingProperties = checkoutClientLoggingProperties();
 
-        CheckoutClientLoggingInterceptor clientLogging = new CheckoutClientLoggingInterceptor(reService);
-        clientLogging.setRequestIncludeHeaders(clientLoggingProperties.getRequest().isIncludeHeaders());
-        clientLogging.setRequestIncludePayload(clientLoggingProperties.getRequest().isIncludePayload());
-        clientLogging.setRequestMaxPayloadLength(clientLoggingProperties.getRequest().getMaxPayloadLength());
-        clientLogging.setRequestHeaderPredicate(p -> !p.equals(clientLoggingProperties.getRequest().getMaskHeaderName()));
-        clientLogging.setRequestPretty(clientLoggingProperties.getRequest().isPretty());
-
-        clientLogging.setResponseIncludeHeaders(clientLoggingProperties.getResponse().isIncludeHeaders());
-        clientLogging.setResponseIncludePayload(clientLoggingProperties.getResponse().isIncludePayload());
-        clientLogging.setResponseMaxPayloadLength(clientLoggingProperties.getResponse().getMaxPayloadLength());
-        clientLogging.setResponsePretty(clientLoggingProperties.getResponse().isPretty());
+        CheckoutClientLoggingInterceptor clientLogging = new CheckoutClientLoggingInterceptor(clientLoggingProperties, reService);
 
         RestTemplate restTemplate = restTemplate();
 

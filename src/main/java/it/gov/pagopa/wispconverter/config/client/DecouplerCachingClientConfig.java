@@ -1,7 +1,7 @@
 package it.gov.pagopa.wispconverter.config.client;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.wispconverter.service.ReService;
+import it.gov.pagopa.wispconverter.util.client.ClientLoggingProperties;
 import it.gov.pagopa.wispconverter.util.client.decouplercaching.DecouplerCachingClientLoggingInterceptor;
 import it.gov.pagopa.wispconverter.util.client.decouplercaching.DecouplerCachingClientResponseErrorHandler;
 import lombok.RequiredArgsConstructor;
@@ -49,17 +49,7 @@ public class DecouplerCachingClientConfig {
     public it.gov.pagopa.gen.wispconverter.client.decouplercaching.invoker.ApiClient decouplerCachingClient() {
         ClientLoggingProperties clientLoggingProperties = decouplerCachingClientLoggingProperties();
 
-        DecouplerCachingClientLoggingInterceptor clientLogging = new DecouplerCachingClientLoggingInterceptor(reService);
-        clientLogging.setRequestIncludeHeaders(clientLoggingProperties.getRequest().isIncludeHeaders());
-        clientLogging.setRequestIncludePayload(clientLoggingProperties.getRequest().isIncludePayload());
-        clientLogging.setRequestMaxPayloadLength(clientLoggingProperties.getRequest().getMaxPayloadLength());
-        clientLogging.setRequestHeaderPredicate(p -> !p.equals(clientLoggingProperties.getRequest().getMaskHeaderName()));
-        clientLogging.setRequestPretty(clientLoggingProperties.getRequest().isPretty());
-
-        clientLogging.setResponseIncludeHeaders(clientLoggingProperties.getResponse().isIncludeHeaders());
-        clientLogging.setResponseIncludePayload(clientLoggingProperties.getResponse().isIncludePayload());
-        clientLogging.setResponseMaxPayloadLength(clientLoggingProperties.getResponse().getMaxPayloadLength());
-        clientLogging.setResponsePretty(clientLoggingProperties.getResponse().isPretty());
+        DecouplerCachingClientLoggingInterceptor clientLogging = new DecouplerCachingClientLoggingInterceptor(clientLoggingProperties, reService);
 
         RestTemplate restTemplate = restTemplate();
 

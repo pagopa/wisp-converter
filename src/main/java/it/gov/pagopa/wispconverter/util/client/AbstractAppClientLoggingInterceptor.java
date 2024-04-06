@@ -5,8 +5,6 @@ import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import it.gov.pagopa.wispconverter.util.CommonUtility;
 import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.ReUtil;
-import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.MDC;
@@ -27,12 +25,37 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-@Getter
-@Setter
+
 @Slf4j
 public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpRequestInterceptor {
 
-  protected abstract ReService getReService();
+  private final ReService reService;
+
+  public AbstractAppClientLoggingInterceptor(ClientLoggingProperties clientLoggingProperties, ReService reService) {
+    this.reService = reService;
+
+    if(clientLoggingProperties!=null){
+      ClientLoggingProperties.Request request = clientLoggingProperties.getRequest();
+      if(request!=null){
+        this.requestIncludeHeaders = request.isIncludeHeaders();
+        this.requestIncludePayload = request.isIncludePayload();
+        this.requestMaxPayloadLength = request.getMaxPayloadLength() != null ? request.getMaxPayloadLength() : REQUEST_DEFAULT_MAX_PAYLOAD_LENGTH;
+        this.requestHeaderPredicate = s -> !s.equals(request.getMaskHeaderName());
+        this.requestPretty = request.isPretty();
+      }
+      ClientLoggingProperties.Response response = clientLoggingProperties.getResponse();
+      if(response!=null){
+        this.responseIncludeHeaders = response.isIncludeHeaders();
+        this.responseIncludePayload = response.isIncludePayload();
+        this.responseMaxPayloadLength = response.getMaxPayloadLength() != null ? response.getMaxPayloadLength() : RESPONSE_DEFAULT_MAX_PAYLOAD_LENGTH;
+        this.responseHeaderPredicate = null;
+        this.responsePretty = response.isPretty();
+      }
+    }
+
+  }
+
+//  protected abstract ReService getReService();
 
   public static final String REQUEST_DEFAULT_MESSAGE_PREFIX = "===> CLIENT Request OPERATION_ID=%s, CLIENT_OPERATION_ID=%s - ";
   public static final String RESPONSE_DEFAULT_MESSAGE_PREFIX = "<=== CLIENT Response OPERATION_ID=%s, CLIENT_OPERATION_ID=%s -";
@@ -43,13 +66,13 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
   private static final String PRETTY_OUT = "\n===> *";
   private static final String PRETTY_IN = "\n<=== *";
 
-  private boolean requestIncludeHeaders = false;
+  private boolean requestIncludeHeaders;
 
-  private boolean responseIncludeHeaders = false;
+  private boolean responseIncludeHeaders;
 
-  private boolean requestIncludePayload = false;
+  private boolean requestIncludePayload;
 
-  private boolean responseIncludePayload = false;
+  private boolean responseIncludePayload;
 
   private Predicate<String> requestHeaderPredicate;
 
@@ -59,9 +82,9 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
 
   private int responseMaxPayloadLength = RESPONSE_DEFAULT_MAX_PAYLOAD_LENGTH;
 
-  private boolean requestPretty = false;
+  private boolean requestPretty;
 
-  private boolean responsePretty = false;
+  private boolean responsePretty;
 
   @Override
   public ClientHttpResponse intercept(HttpRequest request, byte[] body, ClientHttpRequestExecution execution) throws IOException {
@@ -75,8 +98,9 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
 //    MDC.getCopyOfContextMap().forEach((k,v) -> {
 //      log.debug(String.format("CLIENT AFTER MDC %s=%s",k, v));
 //    });
+    log.debug("[intercept] add RE CLIENT OUT");
     ReEventDto reEventDtoClientIN = ReUtil.createReClientInterfaceRequest(request, body);
-    getReService().addRe(reEventDtoClientIN);
+    reService.addRe(reEventDtoClientIN);
 
 
     ClientHttpResponse response = execution.execute(request, body);
@@ -90,8 +114,9 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
 //      log.debug(String.format("CLIENT BEFORE MDC %s=%s",k, v));
 //    });
 
+    log.debug("[intercept] add RE CLIENT IN");
     ReEventDto reEventDtoClientOUT = ReUtil.createReClientInterfaceResponse(request, response);
-    getReService().addRe(reEventDtoClientOUT);
+    reService.addRe(reEventDtoClientOUT);
 
 
     MDC.remove(Constants.MDC_CLIENT_OPERATION_ID);
@@ -104,44 +129,44 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
   public String createRequestMessage(String clientOperationId, String operationId, HttpRequest request, byte[] reqBody) {
     StringBuilder msg = new StringBuilder();
     msg.append(String.format(REQUEST_DEFAULT_MESSAGE_PREFIX, operationId, clientOperationId));
-    if(isRequestPretty()){
+    if(this.requestPretty){
       msg.append(PRETTY_OUT).append(SPACE);
     }
     msg.append("path: ").append(request.getMethod()).append(' ');
     msg.append(request.getURI());
 
-    if (isRequestIncludeHeaders()) {
+    if (this.requestIncludeHeaders) {
       HttpHeaders headers = new HttpHeaders();
       request.getHeaders().forEach((s,h)->{
         headers.add(s, StringUtils.join(h,","));
       });
-      if (getRequestHeaderPredicate() != null) {
+      if (this.requestHeaderPredicate != null) {
         headers.forEach(
             (key, value) -> {
-              if (!getRequestHeaderPredicate().test(key)) {
+              if (!this.requestHeaderPredicate.test(key)) {
                 headers.set(key, "masked");
               }
             });
       }
       String formatRequestHeaders = formatRequestHeaders(headers);
       if(formatRequestHeaders!=null){
-        if(isRequestPretty()){
+        if(this.requestPretty){
           msg.append(PRETTY_OUT).append(SPACE);
         } else{
           msg.append(", ");
         }
         msg.append("headers: [").append(formatRequestHeaders);
-        if(isRequestPretty()){
+        if(this.requestPretty){
           msg.append(PRETTY_OUT).append(SPACE);
         }
         msg.append("]");
       }
     }
 
-    if (isRequestIncludePayload()) {
+    if (this.requestIncludePayload) {
       String payload = new String(reqBody, StandardCharsets.UTF_8);
       if (payload != null) {
-        if(isRequestPretty()){
+        if(this.requestPretty){
           msg.append(PRETTY_OUT).append(SPACE);
         } else{
           msg.append(", ");
@@ -157,56 +182,56 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
       throws IOException {
     StringBuilder msg = new StringBuilder();
     msg.append(String.format(RESPONSE_DEFAULT_MESSAGE_PREFIX, operationId, clientOperationId));
-    if(isResponsePretty()){
+    if(this.responsePretty){
       msg.append(PRETTY_IN).append(SPACE);
     }
     msg.append("path: ").append(request.getMethod()).append(' ');
     msg.append(request.getURI());
 
-    if(isResponsePretty()){
+    if(this.responsePretty){
       msg.append(PRETTY_IN).append(SPACE);
     }
     msg.append("status: ").append(response.getStatusCode().value());
 
-    if(isResponsePretty()){
+    if(this.responsePretty){
       msg.append(PRETTY_IN).append(SPACE);
     } else{
       msg.append(", ");
     }
     msg.append("client-execution-time: ").append(clientExecutionTime).append("ms");
 
-    if (isResponseIncludeHeaders()) {
+    if (this.responseIncludeHeaders) {
       HttpHeaders headers = new HttpHeaders();
       response.getHeaders().forEach((s,h)->{
         headers.add(s, StringUtils.join(h,","));
       });
-      if (getResponseHeaderPredicate() != null) {
+      if (this.responseHeaderPredicate != null) {
         headers.forEach(
             (key, value) -> {
-              if (!getRequestHeaderPredicate().test(key)) {
+              if (!this.requestHeaderPredicate.test(key)) {
                 headers.set(key, "masked");
               }
             });
       }
       String formatResponseHeaders = formatResponseHeaders(headers);
       if(formatResponseHeaders!=null){
-        if(isRequestPretty()){
+        if(this.requestPretty){
           msg.append(PRETTY_IN).append(SPACE);
         } else{
           msg.append(", ");
         }
         msg.append("headers: [").append(formatResponseHeaders);
-        if(isRequestPretty()){
+        if(this.requestPretty){
           msg.append(PRETTY_OUT).append(SPACE);
         }
         msg.append("]");
       }
     }
 
-    if (isResponseIncludePayload()) {
+    if (this.responseIncludePayload) {
       String payload = bodyToString(response.getBody());
       if (!payload.isBlank()) {
-        if(isRequestPretty()){
+        if(this.requestPretty){
           msg.append(PRETTY_IN).append(SPACE);
         } else{
           msg.append(", ");
@@ -227,7 +252,7 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
   private String formatRequestHeaders(MultiValueMap<String, String> headers) {
     Stream<String> stream = headers.entrySet().stream()
             .map((entry) -> {
-              if(isRequestPretty()){
+              if(this.requestPretty){
                 String values = entry.getValue().stream().collect(Collectors.joining("\", \"","\"","\""));
                 return PRETTY_OUT +"*\t"+entry.getKey() + ": [" + values + "]";
               } else {
@@ -235,7 +260,7 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
                 return entry.getKey() + ": [" + values + "]";
               }
             });
-    if(isRequestPretty()){
+    if(this.requestPretty){
       return stream.collect(Collectors.joining(""));
     } else {
       return stream.collect(Collectors.joining(", "));
@@ -245,7 +270,7 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
   private String formatResponseHeaders(MultiValueMap<String, String> headers) {
     Stream<String> stream = headers.entrySet().stream()
             .map((entry) -> {
-              if(isResponsePretty()){
+              if(this.responsePretty){
                 String values = entry.getValue().stream().collect(Collectors.joining("\", \"","\"","\""));
                 return PRETTY_IN +"*\t"+entry.getKey().toLowerCase() + ": [" + values + "]";
               } else {
@@ -253,7 +278,7 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
                 return entry.getKey().toLowerCase() + ": [" + values + "]";
               }
             });
-    if(isRequestPretty()){
+    if(this.requestPretty){
       return stream.collect(Collectors.joining(""));
     } else {
       return stream.collect(Collectors.joining(", "));
