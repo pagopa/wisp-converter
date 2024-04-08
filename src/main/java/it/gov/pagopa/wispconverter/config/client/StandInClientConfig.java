@@ -8,9 +8,6 @@ import it.gov.pagopa.wispconverter.util.client.apiconfigcache.ApiConfigCacheClie
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cache.CacheManager;
-import org.springframework.cache.annotation.EnableCaching;
-import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.BufferingClientHttpRequestFactory;
@@ -25,46 +22,46 @@ import java.util.List;
 @Configuration
 @Slf4j
 @RequiredArgsConstructor
-public class APIConfigCacheClientConfig {
+public class StandInClientConfig {
     private final ReService reService;
 
-    @Value("${client.cache.read-timeout}")
+    @Value("${client.standin.read-timeout}")
     private Integer readTimeout;
 
-    @Value("${client.cache.connect-timeout}")
+    @Value("${client.standin.connect-timeout}")
     private Integer connectTimeout;
 
-    @Value("${client.cache.base-path}")
+    @Value("${client.standin.base-path}")
     private String basePath;
 
-    @Value("${client.cache.api-key}")
+    @Value("${client.standin.api-key}")
     private String apiKey;
 
-    @Value("${log.client.cache.request.include-headers}")
+    @Value("${log.client.standin.request.include-headers}")
     private boolean clientRequestIncludeHeaders;
-    @Value("${log.client.cache.request.include-payload}")
+    @Value("${log.client.standin.request.include-payload}")
     private boolean clientRequestIncludePayload;
-    @Value("${log.client.cache.request.max-payload-length}")
+    @Value("${log.client.standin.request.max-payload-length}")
     private int clientRequestMaxLength;
-    @Value("${log.client.cache.response.include-headers}")
+    @Value("${log.client.standin.response.include-headers}")
     private boolean clientResponseIncludeHeaders;
-    @Value("${log.client.cache.response.include-payload}")
+    @Value("${log.client.standin.response.include-payload}")
     private boolean clientResponseIncludePayload;
-    @Value("${log.client.cache.response.max-payload-length}")
+    @Value("${log.client.standin.response.max-payload-length}")
     private int clientResponseMaxLength;
 
-    @Value("${log.client.cache.mask.header.name}")
+    @Value("${log.client.standin.mask.header.name}")
     private String maskHeaderName;
 
-    @Value("${log.client.cache.request.pretty}")
+    @Value("${log.client.standin.request.pretty}")
     private boolean clientRequestPretty;
 
-    @Value("${log.client.cache.response.pretty}")
+    @Value("${log.client.standin.response.pretty}")
     private boolean clientResponsePretty;
 
 
-    @Bean(name="cacheClient")
-    public it.gov.pagopa.gen.wispconverter.client.cache.invoker.ApiClient cacheClient() {
+    @Bean(name="standinClient")
+    public it.gov.pagopa.gen.wispconverter.client.standin.invoker.ApiClient standinClient() {
         ApiConfigCacheClientLoggingInterceptor clientLogging = new ApiConfigCacheClientLoggingInterceptor();
         clientLogging.setRequestIncludeHeaders(clientRequestIncludeHeaders);
         clientLogging.setRequestIncludePayload(clientRequestIncludePayload);
@@ -87,7 +84,7 @@ public class APIConfigCacheClientConfig {
 
         restTemplate.setErrorHandler(new ApiConfigCacheClientResponseErrorHandler());
 
-        it.gov.pagopa.gen.wispconverter.client.cache.invoker.ApiClient client = new it.gov.pagopa.gen.wispconverter.client.cache.invoker.ApiClient(restTemplate);
+        it.gov.pagopa.gen.wispconverter.client.standin.invoker.ApiClient client = new it.gov.pagopa.gen.wispconverter.client.standin.invoker.ApiClient(restTemplate);
         client.setBasePath(basePath);
         client.setApiKey(apiKey);
 
