@@ -23,6 +23,6 @@ public class PaymentRequestDTO {
     private SubjectAuthentication subjectAuthentication;
     private PaymentSubjectDTO debtor; // versante
     private PaymentSubjectDTO payer; // pagatore
-    private PaymentSubjectDTO payeeInstitution;
+    private PaymentSubjectDTO payerInstitution;
     private TransferDataDTO transferData;
 }

@@ -17,7 +17,7 @@ public interface RPTMapper {
     @Mapping(source = "autenticazioneSoggetto", target = "subjectAuthentication")
     @Mapping(source = "soggettoVersante", target = "debtor")
     @Mapping(source = "soggettoPagatore", target = "payer")
-    @Mapping(source = "enteBeneficiario", target = "payeeInstitution")
+    @Mapping(source = "enteBeneficiario", target = "payerInstitution")
     @Mapping(source = "datiVersamento", target = "transferData")
     PaymentRequestDTO toPaymentRequestDTO(CtRichiestaPagamentoTelematico rpt);
 
@@ -57,7 +57,7 @@ public interface RPTMapper {
     @Mapping(source = "localitaBeneficiario", target = "city")
     @Mapping(source = "provinciaBeneficiario", target = "province")
     @Mapping(source = "nazioneBeneficiario", target = "nation")
-    PaymentSubjectDTO toPaymentPayeeInstitutionDTO(CtEnteBeneficiario enteBeneficiario);
+    PaymentSubjectDTO toPaymentPayerInstitutionDTO(CtEnteBeneficiario enteBeneficiario);
 
     @Mapping(source = "tipoIdentificativoUnivoco", target = "type")
     @Mapping(source = "codiceIdentificativoUnivoco", target = "code")

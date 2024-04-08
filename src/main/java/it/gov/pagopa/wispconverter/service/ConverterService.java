@@ -26,7 +26,7 @@ public class ConverterService {
 
     private final CheckoutService checkoutService;
 
-    private final RPTRequestRepository rptRequestRepository;
+    private final RptCosmosService rptCosmosService;
 
     private final ReService reService;
 
@@ -39,7 +39,7 @@ public class ConverterService {
         reService.addRe(reInternal);
 
         // get RPT request entity from database
-        RPTRequestEntity rptRequestEntity = getRPTRequestEntity(sessionId);
+        RPTRequestEntity rptRequestEntity = rptCosmosService.getRPTRequestEntity(sessionId);
 
         // unmarshalling and mapping RPT content from request entity
         CommonRPTFieldsDTO commonRPTFieldsDTO = this.rptExtractorService.extractRPTContentDTOs(rptRequestEntity.getPrimitive(), rptRequestEntity.getPayload());
@@ -57,10 +57,4 @@ public class ConverterService {
         return this.checkoutService.executeCall(commonRPTFieldsDTO);
     }
 
-    private RPTRequestEntity getRPTRequestEntity(String sessionId) {
-        Optional<RPTRequestEntity> optRPTReqEntity = this.rptRequestRepository.findById(sessionId);
-        return optRPTReqEntity.orElseThrow(() -> new AppException(AppErrorCodeMessageEnum.PERSISTENCE_RPT_NOT_FOUND, sessionId));
-
-        // TODO RE
-    }
 }
