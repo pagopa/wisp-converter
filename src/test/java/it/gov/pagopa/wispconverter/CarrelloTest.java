@@ -2,7 +2,9 @@ package it.gov.pagopa.wispconverter;
 
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 
+@ActiveProfiles(profiles = "test")
 @SpringBootTest(classes = Application.class)
 @AutoConfigureMockMvc
 class CarrelloTest {

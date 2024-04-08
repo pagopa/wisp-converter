@@ -2,7 +2,7 @@
 <configuration>
     <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
 
-    <springProfile name="!default">
+    <springProfile name="!jsonLog">
         <include resource="org/springframework/boot/logging/logback/console-appender.xml" />
 
         <root level="INFO">
@@ -10,7 +10,7 @@
         </root>
     </springProfile>
 
-    <springProfile name="default">
+    <springProfile name="jsonLog">
         <springProperty name="OTEL_SERVICE_NAME" source="otel.service.name"/>
         <springProperty name="SERVICE_VERSION" source="info.application.version"/>
         <springProperty name="ENV" source="info.properties.environment"/>
