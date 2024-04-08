@@ -23,7 +23,9 @@ public class CheckoutService {
 
     private final it.gov.pagopa.gen.wispconverter.client.checkout.invoker.ApiClient checkoutClient;
 
-    private final ConfigStandInService configStandInService;
+    private final DecouplerService decouplerService;
+
+    private final ConfigCacheService configCacheService;
 
     private final CartMapper mapper;
 
@@ -64,13 +66,13 @@ public class CheckoutService {
     }
 
     private String getRedirectURL(String stationId) {
-        it.gov.pagopa.gen.wispconverter.client.standin.model.ConfigDataV1Dto cache = configStandInService.getConfigData();
-        Map<String, it.gov.pagopa.gen.wispconverter.client.standin.model.StationDto> stations = cache.getStations();
-        it.gov.pagopa.gen.wispconverter.client.standin.model.StationDto station = stations.get(stationId);
+        it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigDataV1Dto cache = configCacheService.getConfigData();
+        Map<String, it.gov.pagopa.gen.wispconverter.client.cache.model.StationDto> stations = cache.getStations();
+        it.gov.pagopa.gen.wispconverter.client.cache.model.StationDto station = stations.get(stationId);
         if (station == null) {
             throw new AppException(AppErrorCodeMessageEnum.CONFIGURATION_INVALID_STATION, stationId);
         }
-        it.gov.pagopa.gen.wispconverter.client.standin.model.RedirectDto redirect = station.getRedirect();
+        it.gov.pagopa.gen.wispconverter.client.cache.model.RedirectDto redirect = station.getRedirect();
         String protocol = redirect.getProtocol() == null ? "http" : redirect.getProtocol().getValue().toLowerCase();
         String url = redirect.getIp() + "/" + redirect.getPath();
         url = url.replace("//", "/");

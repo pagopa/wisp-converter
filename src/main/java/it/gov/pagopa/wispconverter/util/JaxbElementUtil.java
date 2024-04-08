@@ -2,10 +2,7 @@ package it.gov.pagopa.wispconverter.util;
 
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
-import jakarta.xml.bind.JAXBContext;
-import jakarta.xml.bind.JAXBElement;
-import jakarta.xml.bind.JAXBException;
-import jakarta.xml.bind.Unmarshaller;
+import jakarta.xml.bind.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -23,6 +20,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.util.List;
 
 @Slf4j
@@ -63,7 +61,18 @@ public class JaxbElementUtil {
             throw new AppException(e, AppErrorCodeMessageEnum.PARSING_GENERIC_ERROR, e.getMessage());
         }
     }
-
+    
+    public <T> String convertToString(Object object, Class<T> targetType) {
+        try {
+            JAXBContext context = JAXBContext.newInstance(targetType);
+            Marshaller marshaller = context.createMarshaller();
+            StringWriter sw = new StringWriter();
+            marshaller.marshal(object, sw);
+            return sw.toString();
+        } catch (JAXBException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     public Element convertToEnvelopeElement(byte[] source) {
         return convertToElement(new InputSource(new ByteArrayInputStream(source)), ENVELOPE_NAMESPACE_URI, ENVELOPE_LOCAL_NAME);

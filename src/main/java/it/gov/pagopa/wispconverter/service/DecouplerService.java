@@ -19,7 +19,7 @@ import java.util.List;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class CacheService {
+public class DecouplerService {
 
     private static final String COMPOSITE_TWOVALUES_KEY_TEMPLATE = "%s_%s";
 

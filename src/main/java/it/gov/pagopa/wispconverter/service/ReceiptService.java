@@ -7,6 +7,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import gov.telematici.pagamenti.ws.ObjectFactory;
 import gov.telematici.pagamenti.ws.PaaInviaRT;
 import gov.telematici.pagamenti.ws.ppthead.IntestazionePPT;
+import io.netty.handler.codec.base64.Base64Encoder;
 import it.gov.digitpa.schemas._2011.pagamenti.*;
 import it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigDataV1Dto;
 import it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigurationKeyDto;
@@ -18,6 +19,7 @@ import it.gov.pagopa.wispconverter.service.mapper.RTMapper;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
 import it.gov.pagopa.wispconverter.util.JaxbElementUtil;
 import it.gov.pagopa.wispconverter.util.XmlUtil;
+import it.gov.spcoop.nodopagamentispc.servizi.pagamentitelematicirt.PagamentiTelematiciRT;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -28,6 +30,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -50,8 +53,16 @@ public class ReceiptService {
         try {
             List<ReceiptDto> receiptDtos = List.of(mapper.readValue(payload, ReceiptDto[].class));
             //TODO: convert CPV2/SPRV2 to paaInviaRT-
+            gov.telematici.pagamenti.ws.ppthead.ObjectFactory objectFactoryHead =
+                    new gov.telematici.pagamenti.ws.ppthead.ObjectFactory();
+            ObjectFactory objectFactory = new ObjectFactory();
 
-            paaInviaRTNegativa();
+            CtRicevutaTelematica ctRicevutaTelematica = generatePaaRTNegativa();
+            String xmlString = jaxbElementUtil.convertToString(ctRicevutaTelematica, CtRicevutaTelematica.class);
+
+            PaaInviaRT paaInviaRT = objectFactory.createPaaInviaRT();
+            paaInviaRT.setRt(Base64.getEncoder().encode(xmlString.getBytes(StandardCharsets.UTF_8)));
+
         } catch (JsonProcessingException e) {
             throw new AppException(AppErrorCodeMessageEnum.PARSING_INVALID_BODY);
         }
@@ -66,7 +77,7 @@ public class ReceiptService {
             PaSendRTV2Request soapBody = jaxbElementUtil.getSoapBody(envelope, PaSendRTV2Request.class);
             String idDominio = soapHeader.getIdentificativoDominio();
 
-            //TODO: convert paSendRTV2 to paaInviaRT-
+            //TODO: convert paSendRTV2 to paaInviaRT+
 //            IntestazionePPT header = generateIntestazionePPT();
             generatePaaInviaRTPositiva(soapBody);
 
@@ -100,7 +111,7 @@ public class ReceiptService {
         //        rtService.paaInviaRT(paaInviaRT, header);
     }
 
-    private void paaInviaRTNegativa() {
+    private CtRicevutaTelematica generatePaaRTNegativa() {
         ConfigDataV1Dto cache = configCacheService.getConfigData();
         Map<String, ConfigurationKeyDto> configurations = cache.getConfigurations();
 
@@ -148,7 +159,7 @@ public class ReceiptService {
 //        ctEnteBeneficiario.setProvinciaBeneficiario();
 //        ctEnteBeneficiario.setNazioneBeneficiario();
 
-        CtSoggettoVersante ctSoggettoVersante = objectFactory.createCtSoggettoVersante();//TODO recuperare valori da RPT
+//        CtSoggettoVersante ctSoggettoVersante = objectFactory.createCtSoggettoVersante();//TODO recuperare valori da RPT
         CtSoggettoPagatore ctSoggettoPagatore = objectFactory.createCtSoggettoPagatore();//TODO recuperare valori da RPT
 
         //val motivoAnnullamentoDesc = MotivoAnnullamentoEnum.description(motivoAnnullamento)
@@ -166,7 +177,7 @@ public class ReceiptService {
         ctRicevutaTelematica.setIstitutoAttestante(ctIstitutoAttestante);
 
         ctRicevutaTelematica.setEnteBeneficiario(ctEnteBeneficiario);
-        ctRicevutaTelematica.setSoggettoVersante(ctSoggettoVersante);
+//        ctRicevutaTelematica.setSoggettoVersante(ctSoggettoVersante);
         ctRicevutaTelematica.setSoggettoPagatore(ctSoggettoPagatore);
 
         CtDatiVersamentoRT ctDatiVersamentoRT = objectFactory.createCtDatiVersamentoRT();
@@ -184,6 +195,7 @@ public class ReceiptService {
         ctDatiSingoloPagamentoRT.setDatiSpecificiRiscossione("");//TODO recuperare dal versamento di RPT - dsv.datiSpecificiRiscossione
         ctDatiVersamentoRT.getDatiSingoloPagamento().add(ctDatiSingoloPagamentoRT);
 
+        return ctRicevutaTelematica;
     }
 
     private IntestazionePPT generateIntestazionePPT(String idDominio, String iuv, String ccp, String idIntermediarioPa, String idStazione) {
