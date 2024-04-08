@@ -1,13 +1,13 @@
 package it.gov.pagopa.wispconverter.config.client;
 
 import it.gov.pagopa.wispconverter.service.ReService;
-import it.gov.pagopa.wispconverter.util.client.MDCInterceptor;
-import it.gov.pagopa.wispconverter.util.client.ReInterceptor;
+import it.gov.pagopa.wispconverter.util.client.ClientLoggingProperties;
 import it.gov.pagopa.wispconverter.util.client.gpd.GpdClientLoggingInterceptor;
 import it.gov.pagopa.wispconverter.util.client.gpd.GpdClientResponseErrorHandler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.BufferingClientHttpRequestFactory;
@@ -23,6 +23,7 @@ import java.util.List;
 @Slf4j
 @RequiredArgsConstructor
 public class GpdClientConfig {
+
     private final ReService reService;
 
     @Value("${client.gpd.read-timeout}")
@@ -37,47 +38,22 @@ public class GpdClientConfig {
     @Value("${client.gpd.api-key}")
     private String apiKey;
 
-    @Value("${log.client.gpd.request.include-headers}")
-    private boolean clientRequestIncludeHeaders;
-    @Value("${log.client.gpd.request.include-payload}")
-    private boolean clientRequestIncludePayload;
-    @Value("${log.client.gpd.request.max-payload-length}")
-    private int clientRequestMaxLength;
-    @Value("${log.client.gpd.response.include-headers}")
-    private boolean clientResponseIncludeHeaders;
-    @Value("${log.client.gpd.response.include-payload}")
-    private boolean clientResponseIncludePayload;
-    @Value("${log.client.gpd.response.max-payload-length}")
-    private int clientResponseMaxLength;
 
-    @Value("${log.client.gpd.mask.header.name}")
-    private String maskHeaderName;
-
-    @Value("${log.client.gpd.request.pretty}")
-    private boolean clientRequestPretty;
-
-    @Value("${log.client.gpd.response.pretty}")
-    private boolean clientResponsePretty;
+    @Bean
+    @ConfigurationProperties(prefix = "log.client.gpd")
+    public ClientLoggingProperties gpdClientLoggingProperties() {
+        return new ClientLoggingProperties();
+    }
 
     @Bean
     public it.gov.pagopa.gen.wispconverter.client.gpd.invoker.ApiClient gpdClient() {
-        GpdClientLoggingInterceptor clientLogging = new GpdClientLoggingInterceptor();
-        clientLogging.setRequestIncludeHeaders(clientRequestIncludeHeaders);
-        clientLogging.setRequestIncludePayload(clientRequestIncludePayload);
-        clientLogging.setRequestMaxPayloadLength(clientRequestMaxLength);
-        clientLogging.setRequestHeaderPredicate(p -> !p.equals(maskHeaderName));
-        clientLogging.setRequestPretty(clientRequestPretty);
+        ClientLoggingProperties clientLoggingProperties = gpdClientLoggingProperties();
 
-        clientLogging.setResponseIncludeHeaders(clientResponseIncludeHeaders);
-        clientLogging.setResponseIncludePayload(clientResponseIncludePayload);
-        clientLogging.setResponseMaxPayloadLength(clientResponseMaxLength);
-        clientLogging.setResponsePretty(clientResponsePretty);
+        GpdClientLoggingInterceptor clientLogging = new GpdClientLoggingInterceptor(clientLoggingProperties, reService);
 
         RestTemplate restTemplate = restTemplate();
 
         List<ClientHttpRequestInterceptor> currentInterceptors = restTemplate.getInterceptors();
-        currentInterceptors.add(new MDCInterceptor());
-        currentInterceptors.add(new ReInterceptor(reService));
         currentInterceptors.add(clientLogging);
         restTemplate.setInterceptors(currentInterceptors);
 

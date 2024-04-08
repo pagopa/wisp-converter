@@ -2,10 +2,15 @@ package it.gov.pagopa.wispconverter.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.wispconverter.config.model.AppCors;
-import it.gov.pagopa.wispconverter.util.MDCEnrichInterceptor;
+import it.gov.pagopa.wispconverter.service.ReService;
+import it.gov.pagopa.wispconverter.util.interceptor.MDCEnrichInterceptor;
+import it.gov.pagopa.wispconverter.util.interceptor.ReInterceptor;
+import it.gov.pagopa.wispconverter.util.client.ServerLoggingProperties;
+import it.gov.pagopa.wispconverter.util.interceptor.AppServerLoggingInterceptor;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -27,6 +32,8 @@ import java.util.Locale;
 @RequiredArgsConstructor
 public class WebMvcConfig implements WebMvcConfigurer {
 
+    private final ReService reService;
+
     List<Locale> locales = Arrays.asList(Locale.ENGLISH, Locale.ITALIAN);
 
     @Value("${cors.configuration}")
@@ -34,6 +41,12 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     @Value("${filter.exclude-url-patterns}")
     private List<String> excludeUrlPatterns;
+
+    @Bean
+    @ConfigurationProperties(prefix = "log.server")
+    public ServerLoggingProperties serverLoggingProperties() {
+        return new ServerLoggingProperties();
+    }
 
 
     @SneakyThrows
@@ -76,7 +89,12 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
+        ServerLoggingProperties serverLoggingProperties = serverLoggingProperties();
+
+        registry.addInterceptor(new AppServerLoggingInterceptor(serverLoggingProperties)).excludePathPatterns(excludeUrlPatterns);
+        registry.addInterceptor(new ReInterceptor(reService)).excludePathPatterns(excludeUrlPatterns);
         registry.addInterceptor(new MDCEnrichInterceptor()).excludePathPatterns(excludeUrlPatterns);
+
     }
 }
 
