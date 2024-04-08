@@ -7,7 +7,6 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import gov.telematici.pagamenti.ws.ObjectFactory;
 import gov.telematici.pagamenti.ws.PaaInviaRT;
 import gov.telematici.pagamenti.ws.ppthead.IntestazionePPT;
-import io.netty.handler.codec.base64.Base64Encoder;
 import it.gov.digitpa.schemas._2011.pagamenti.*;
 import it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigDataV1Dto;
 import it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigurationKeyDto;
@@ -17,9 +16,10 @@ import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.service.mapper.RTMapper;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
+import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import it.gov.pagopa.wispconverter.util.JaxbElementUtil;
+import it.gov.pagopa.wispconverter.util.ReUtil;
 import it.gov.pagopa.wispconverter.util.XmlUtil;
-import it.gov.spcoop.nodopagamentispc.servizi.pagamentitelematicirt.PagamentiTelematiciRT;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -41,10 +41,12 @@ import java.util.UUID;
 public class ReceiptService {
 
     private final RTMapper rtMapper;
+
     private final JaxbElementUtil jaxbElementUtil;
 
     private final ConfigCacheService configCacheService;
     private final ConverterService converterService;
+    private final ReService reService;
 
     public void paaInviaRTKo(String payload) throws IOException {
         ObjectMapper mapper = JsonMapper.builder()
@@ -62,6 +64,11 @@ public class ReceiptService {
 
             PaaInviaRT paaInviaRT = objectFactory.createPaaInviaRT();
             paaInviaRT.setRt(Base64.getEncoder().encode(xmlString.getBytes(StandardCharsets.UTF_8)));
+
+            ReEventDto reInternal = ReUtil.createBaseReInternal()
+                    .psp("FIXME")
+                    .build();
+            reService.addRe(reInternal);
 
         } catch (JsonProcessingException e) {
             throw new AppException(AppErrorCodeMessageEnum.PARSING_INVALID_BODY);

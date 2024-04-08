@@ -1,13 +1,13 @@
 package it.gov.pagopa.wispconverter.config.client;
 
 import it.gov.pagopa.wispconverter.service.ReService;
-import it.gov.pagopa.wispconverter.util.client.MDCInterceptor;
-import it.gov.pagopa.wispconverter.util.client.ReInterceptor;
+import it.gov.pagopa.wispconverter.util.client.ClientLoggingProperties;
 import it.gov.pagopa.wispconverter.util.client.iuvgenerator.IuvGeneratorClientLoggingInterceptor;
 import it.gov.pagopa.wispconverter.util.client.iuvgenerator.IuvGeneratorClientResponseErrorHandler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.BufferingClientHttpRequestFactory;
@@ -23,6 +23,7 @@ import java.util.List;
 @Slf4j
 @RequiredArgsConstructor
 public class IuvGeneratorClientConfig {
+
     private final ReService reService;
 
     @Value("${client.iuvgenerator.read-timeout}")
@@ -37,48 +38,23 @@ public class IuvGeneratorClientConfig {
     @Value("${client.iuvgenerator.api-key}")
     private String apiKey;
 
-    @Value("${log.client.iuvgenerator.request.include-headers}")
-    private boolean clientRequestIncludeHeaders;
-    @Value("${log.client.iuvgenerator.request.include-payload}")
-    private boolean clientRequestIncludePayload;
-    @Value("${log.client.iuvgenerator.request.max-payload-length}")
-    private int clientRequestMaxLength;
-    @Value("${log.client.iuvgenerator.response.include-headers}")
-    private boolean clientResponseIncludeHeaders;
-    @Value("${log.client.iuvgenerator.response.include-payload}")
-    private boolean clientResponseIncludePayload;
-    @Value("${log.client.iuvgenerator.response.max-payload-length}")
-    private int clientResponseMaxLength;
 
-    @Value("${log.client.iuvgenerator.mask.header.name}")
-    private String maskHeaderName;
-
-    @Value("${log.client.iuvgenerator.request.pretty}")
-    private boolean clientRequestPretty;
-
-    @Value("${log.client.iuvgenerator.response.pretty}")
-    private boolean clientResponsePretty;
+    @Bean
+    @ConfigurationProperties(prefix = "log.client.iuvgenerator")
+    public ClientLoggingProperties iuvGeneratorClientLoggingProperties() {
+        return new ClientLoggingProperties();
+    }
 
 
     @Bean
     public it.gov.pagopa.gen.wispconverter.client.iuvgenerator.invoker.ApiClient iuvGeneratorClient() {
-        IuvGeneratorClientLoggingInterceptor clientLogging = new IuvGeneratorClientLoggingInterceptor();
-        clientLogging.setRequestIncludeHeaders(clientRequestIncludeHeaders);
-        clientLogging.setRequestIncludePayload(clientRequestIncludePayload);
-        clientLogging.setRequestMaxPayloadLength(clientRequestMaxLength);
-        clientLogging.setRequestHeaderPredicate(p -> !p.equals(maskHeaderName));
-        clientLogging.setRequestPretty(clientRequestPretty);
+        ClientLoggingProperties clientLoggingProperties = iuvGeneratorClientLoggingProperties();
 
-        clientLogging.setResponseIncludeHeaders(clientResponseIncludeHeaders);
-        clientLogging.setResponseIncludePayload(clientResponseIncludePayload);
-        clientLogging.setResponseMaxPayloadLength(clientResponseMaxLength);
-        clientLogging.setResponsePretty(clientResponsePretty);
+        IuvGeneratorClientLoggingInterceptor clientLogging = new IuvGeneratorClientLoggingInterceptor(clientLoggingProperties, reService);
 
         RestTemplate restTemplate = restTemplate();
 
         List<ClientHttpRequestInterceptor> currentInterceptors = restTemplate.getInterceptors();
-        currentInterceptors.add(new MDCInterceptor());
-        currentInterceptors.add(new ReInterceptor(reService));
         currentInterceptors.add(clientLogging);
         restTemplate.setInterceptors(currentInterceptors);
 

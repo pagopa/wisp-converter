@@ -1,7 +1,6 @@
 package it.gov.pagopa.wispconverter.exception;
 
 import lombok.Getter;
-import org.apache.commons.lang3.StringUtils;
 
 import java.text.MessageFormat;
 

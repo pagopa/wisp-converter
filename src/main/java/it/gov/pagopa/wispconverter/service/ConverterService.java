@@ -5,6 +5,8 @@ import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
 import it.gov.pagopa.wispconverter.service.model.CommonRPTFieldsDTO;
+import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
+import it.gov.pagopa.wispconverter.util.ReUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -26,7 +28,15 @@ public class ConverterService {
 
     private final RPTRequestRepository rptRequestRepository;
 
+    private final ReService reService;
+
     public String convert(String sessionId) {
+
+        //FIXME
+        ReEventDto reInternal = ReUtil.createBaseReInternal()
+                .psp("FIXME")
+                .build();
+        reService.addRe(reInternal);
 
         // get RPT request entity from database
         RPTRequestEntity rptRequestEntity = getRPTRequestEntity(sessionId);
@@ -36,6 +46,9 @@ public class ConverterService {
 
         // calling GPD creation API in order to generate the debt position associated to RPTs
         this.debtPositionService.createDebtPositions(commonRPTFieldsDTO);
+
+
+
 
         // call APIM policy for save key for decoupler and save in Redis cache the mapping of the request identifier needed for RT generation in next steps
         this.decouplerService.storeRequestMappingInCache(commonRPTFieldsDTO, sessionId);

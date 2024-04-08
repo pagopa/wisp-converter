@@ -33,12 +33,14 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.web.client.RestClientException;
+import org.springframework.test.context.ActiveProfiles;
 
+@ActiveProfiles(profiles = "test")
 @SpringBootTest(classes = Application.class)
 @AutoConfigureMockMvc
 class RptTest {
 
-    
+
     @Autowired
     ObjectMapper objectMapper;
     @Autowired
@@ -358,5 +360,5 @@ class RptTest {
         verify(decouplerCachingClient,times(1)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
 
     }
-     
+
 }
