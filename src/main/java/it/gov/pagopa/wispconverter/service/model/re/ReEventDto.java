@@ -50,6 +50,8 @@ public class ReEventDto {
   private String compressedPayload;       //zip+Base64
   private Integer compressedPayloadLength;
 
+  private String businessProcess;
+
   private String operationStatus;       //dettaglio response in uscita
   private String operationErrorTitle;   //dettaglio response in uscita
   private String operationErrorDetail;  //dettaglio response in uscita
@@ -68,7 +70,7 @@ public class ReEventDto {
   private String parametriSpecificiInterfaccia;
   private String status;
   private String info;
-  private String businessProcess;
+
   private String pspDescr;
   private String noticeNumber;
   private String creditorReferenceId;
