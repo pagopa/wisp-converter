@@ -5,7 +5,6 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
@@ -21,10 +20,9 @@ import static it.gov.pagopa.wispconverter.util.Constants.HEADER_REQUEST_ID;
 
 
 @Slf4j
-@Getter
-@Setter
 public class RequestIdFilter extends OncePerRequestFilter {
 
+    @Setter
     private List<String> excludeUrlPatterns;
 
     @Override
@@ -45,6 +43,8 @@ public class RequestIdFilter extends OncePerRequestFilter {
         ((HttpServletResponse) response).setHeader(HEADER_REQUEST_ID, requestId);
 
         filterChain.doFilter(request, response);
+
+        MDC.clear();
     }
 
     @Override

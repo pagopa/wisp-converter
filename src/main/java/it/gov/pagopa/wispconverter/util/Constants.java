@@ -24,7 +24,14 @@ public class Constants {
     public static final String MDC_REQUEST_ID = "requestId";
     public static final String MDC_OPERATION_ID = "operationId";
 
+    public static final String MDC_BUSINESS_PROCESS = "businessProcess";
+
     public static final String MDC_CLIENT_OPERATION_ID = "clientOperationId";
     public static final String MDC_CLIENT_EXECUTION_TIME = "clientExecutionTime";
+
+    public static final String MDC_EROGATORE = "erogatore";
+    public static final String MDC_EROGATORE_DESCR = "erogatoreDescr";
+
+
 
 }
