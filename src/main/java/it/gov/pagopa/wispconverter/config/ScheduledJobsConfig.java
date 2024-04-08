@@ -1,7 +1,6 @@
 package it.gov.pagopa.wispconverter.config;
 
 import it.gov.pagopa.wispconverter.service.ConfigCacheService;
-import it.gov.pagopa.wispconverter.service.ConfigStandInService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.annotation.Configuration;
@@ -16,19 +15,10 @@ import java.time.ZonedDateTime;
 @EnableScheduling
 public class ScheduledJobsConfig {
 
-    private final ConfigStandInService configStandInService;
     private final ConfigCacheService configCacheService;
 
-    public ScheduledJobsConfig(ConfigStandInService configStandInService, ConfigCacheService configCacheService) {
-        this.configStandInService = configStandInService;
+    public ScheduledJobsConfig(ConfigCacheService configCacheService) {
         this.configCacheService = configCacheService;
-    }
-
-    @Scheduled(cron = "${wisp-converter.refresh.standin.cron:-}")
-    @EventListener(ApplicationReadyEvent.class)
-    public void refreshStandIn() {
-        log.info("[Scheduled] Starting configuration standin refresh {}", ZonedDateTime.now());
-        configStandInService.getCache();
     }
 
     @Scheduled(cron = "${wisp-converter.refresh.cache.cron:-}")

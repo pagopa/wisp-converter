@@ -11,9 +11,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 
-import static it.gov.pagopa.wispconverter.util.Constants.NODO_INVIA_CARRELLO_RPT;
-import static it.gov.pagopa.wispconverter.util.Constants.NODO_INVIA_RPT;
-
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -23,7 +20,7 @@ public class ConverterService {
 
     private final DebtPositionService debtPositionService;
 
-    private final CacheService cacheService;
+    private final DecouplerService decouplerService;
 
     private final CheckoutService checkoutService;
 
@@ -41,7 +38,7 @@ public class ConverterService {
         this.debtPositionService.createDebtPositions(commonRPTFieldsDTO);
 
         // call APIM policy for save key for decoupler and save in Redis cache the mapping of the request identifier needed for RT generation in next steps
-        this.cacheService.storeRequestMappingInCache(commonRPTFieldsDTO, sessionId);
+        this.decouplerService.storeRequestMappingInCache(commonRPTFieldsDTO, sessionId);
 
         // execute communication with Checkout service and set the redirection URI as response
         return this.checkoutService.executeCall(commonRPTFieldsDTO);
