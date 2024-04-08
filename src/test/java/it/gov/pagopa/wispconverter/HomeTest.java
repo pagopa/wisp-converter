@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.wispconverter.controller.model.AppInfoResponse;
 import it.gov.pagopa.wispconverter.repository.CacheRepository;
 import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
-import it.gov.pagopa.wispconverter.service.ConfigCacheService;
+import it.gov.pagopa.wispconverter.service.ConfigStandInService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -33,7 +33,7 @@ class HomeTest {
     @Autowired
     private MockMvc mvc;
     @Autowired
-    private ConfigCacheService configCacheService;
+    private ConfigStandInService configStandInService;
 
     @MockBean
     private RPTRequestRepository rptRequestRepository;

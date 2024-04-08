@@ -21,15 +21,15 @@ public class ReInterceptor implements ClientHttpRequestInterceptor {
   @Override
   public ClientHttpResponse intercept(HttpRequest request, byte[] body, ClientHttpRequestExecution execution) throws IOException {
 
-      MDC.getCopyOfContextMap().forEach((k, v) -> {
-        log.debug(String.format("BEFORE MDC %s=%s",k, v));
-      });
+//      MDC.getCopyOfContextMap().forEach((k, v) -> {
+//        log.debug(String.format("BEFORE MDC %s=%s",k, v));
+//      });
       reService.addRe("CLIENT IN");
       ClientHttpResponse response = execution.execute(request, body);
 
-      MDC.getCopyOfContextMap().forEach((k,v) -> {
-        log.debug(String.format("AFTER MDC %s=%s",k, v));
-      });
+//      MDC.getCopyOfContextMap().forEach((k,v) -> {
+//        log.debug(String.format("AFTER MDC %s=%s",k, v));
+//      });
       reService.addRe("CLIENT OUT");
 
     return response;

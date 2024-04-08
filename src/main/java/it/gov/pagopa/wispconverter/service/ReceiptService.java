@@ -41,6 +41,7 @@ public class ReceiptService {
     private final JaxbElementUtil jaxbElementUtil;
 
     private final ConfigCacheService configCacheService;
+    private final ConverterService converterService;
 
     public void paaInviaRTKo(String payload) throws IOException {
         ObjectMapper mapper = JsonMapper.builder()
@@ -51,7 +52,6 @@ public class ReceiptService {
             //TODO: convert CPV2/SPRV2 to paaInviaRT-
 
             paaInviaRTNegativa();
-            return;
         } catch (JsonProcessingException e) {
             throw new AppException(AppErrorCodeMessageEnum.PARSING_INVALID_BODY);
         }
@@ -67,10 +67,9 @@ public class ReceiptService {
             String idDominio = soapHeader.getIdentificativoDominio();
 
             //TODO: convert paSendRTV2 to paaInviaRT-
-            IntestazionePPT header = generateIntestazionePPT();
+//            IntestazionePPT header = generateIntestazionePPT();
             generatePaaInviaRTPositiva(soapBody);
 
-            return;
         } catch (AppException e) {
             throw e;
         } catch (Exception e) {
@@ -86,6 +85,12 @@ public class ReceiptService {
         ObjectFactory objectFactory = new ObjectFactory();
         PaaInviaRT paaInviaRT = objectFactory.createPaaInviaRT();
 
+        IntestazionePPT intestazionePPT = generateIntestazionePPT(paSendRTV2Request.getIdPA(),
+                "",
+                "",
+                paSendRTV2Request.getIdBrokerPA(),
+                paSendRTV2Request.getIdStation());
+
         it.gov.digitpa.schemas._2011.pagamenti.ObjectFactory objectFactoryPagamenti =
                 new it.gov.digitpa.schemas._2011.pagamenti.ObjectFactory();
         CtRicevutaTelematica ctRicevutaTelematica = objectFactoryPagamenti.createCtRicevutaTelematica();
@@ -96,13 +101,13 @@ public class ReceiptService {
     }
 
     private void paaInviaRTNegativa() {
-        ConfigDataV1Dto cache = configCacheService.getCache();
-
+        ConfigDataV1Dto cache = configCacheService.getConfigData();
         Map<String, ConfigurationKeyDto> configurations = cache.getConfigurations();
 
         String tipoIdentificativoUnivoco =
                 configurations.get("GLOBAL-istitutoAttestante.identificativoUnivocoAttestante.tipoIdentificativoUnivoco").getValue();
-        String codiceIdentificativoUnivoco = configurations.get("GLOBAL-istitutoAttestante.identificativoUnivocoAttestante.codiceIdentificativoUnivoco").getValue();
+        String codiceIdentificativoUnivoco =
+                configurations.get("GLOBAL-istitutoAttestante.identificativoUnivocoAttestante.codiceIdentificativoUnivoco").getValue();
         String denominazioneAttestante = configurations.get("GLOBAL-istitutoAttestante.denominazioneAttestante").getValue();
         String codiceUnitOperAttestante = configurations.get("GLOBAL-istitutoAttestante.codiceUnitOperAttestante").getValue();
         String denomUnitOperAttestante = configurations.get("GLOBAL-istitutoAttestante.denomUnitOperAttestante").getValue();
@@ -115,35 +120,38 @@ public class ReceiptService {
 
         it.gov.digitpa.schemas._2011.pagamenti.ObjectFactory objectFactory = new it.gov.digitpa.schemas._2011.pagamenti.ObjectFactory();
         CtIstitutoAttestante ctIstitutoAttestante = objectFactory.createCtIstitutoAttestante();
-        ctIstitutoAttestante.setDenominazioneAttestante("");
-        ctIstitutoAttestante.setCodiceUnitOperAttestante("");
-        ctIstitutoAttestante.setDenomUnitOperAttestante("");
-        ctIstitutoAttestante.setIndirizzoAttestante("");
+        CtIdentificativoUnivoco ctIdentificativoUnivoco = objectFactory.createCtIdentificativoUnivoco();
+        ctIdentificativoUnivoco.setTipoIdentificativoUnivoco(StTipoIdentificativoUnivoco.fromValue(tipoIdentificativoUnivoco));
+        ctIdentificativoUnivoco.setCodiceIdentificativoUnivoco(codiceIdentificativoUnivoco);
+        ctIstitutoAttestante.setIdentificativoUnivocoAttestante(ctIdentificativoUnivoco);
+        ctIstitutoAttestante.setDenominazioneAttestante(denominazioneAttestante);
+        ctIstitutoAttestante.setCodiceUnitOperAttestante(codiceUnitOperAttestante);
+        ctIstitutoAttestante.setDenomUnitOperAttestante(denomUnitOperAttestante);
+        ctIstitutoAttestante.setIndirizzoAttestante(indirizzoAttestante);
+        ctIstitutoAttestante.setCivicoAttestante(civicoAttestante);
+        ctIstitutoAttestante.setCapAttestante(capAttestante);
+        ctIstitutoAttestante.setLocalitaAttestante(localitaAttestante);
+        ctIstitutoAttestante.setProvinciaAttestante(provinciaAttestante);
+        ctIstitutoAttestante.setNazioneAttestante(nazioneAttestante);
 
         CtDominio ctDominio = objectFactory.createCtDominio();
         ctDominio.setIdentificativoDominio("");//TODO
         ctDominio.setIdentificativoStazioneRichiedente("");//TODO
 
         CtEnteBeneficiario ctEnteBeneficiario = objectFactory.createCtEnteBeneficiario();//TODO recuperare valori da RPT
+//        ctEnteBeneficiario.setCapBeneficiario();
+//        ctEnteBeneficiario.setCivicoBeneficiario();
+//        ctEnteBeneficiario.setDenominazioneBeneficiario();
+//        ctEnteBeneficiario.setDenomUnitOperBeneficiario();
+//        ctEnteBeneficiario.setIndirizzoBeneficiario();
+//        ctEnteBeneficiario.setLocalitaBeneficiario();
+//        ctEnteBeneficiario.setProvinciaBeneficiario();
+//        ctEnteBeneficiario.setNazioneBeneficiario();
 
         CtSoggettoVersante ctSoggettoVersante = objectFactory.createCtSoggettoVersante();//TODO recuperare valori da RPT
         CtSoggettoPagatore ctSoggettoPagatore = objectFactory.createCtSoggettoPagatore();//TODO recuperare valori da RPT
 
-        //TODO: recuperare da cache i valori dalla tabella CONFIGURATION_KEYS
-//        val tipoIdentificativoUnivoco = DDataChecks.getConfigurationKeys(ddataMap, "istitutoAttestante.identificativoUnivocoAttestante.tipoIdentificativoUnivoco")
-//        val codiceIdentificativoUnivoco = DDataChecks.getConfigurationKeys(ddataMap, "istitutoAttestante.identificativoUnivocoAttestante.codiceIdentificativoUnivoco")
-//        val denominazioneAttestante = DDataChecks.getConfigurationKeys(ddataMap, "istitutoAttestante.denominazioneAttestante")
-//        val codiceUnitOperAttestante = DDataChecks.getConfigurationKeys(ddataMap, "istitutoAttestante.codiceUnitOperAttestante")
-//        val denomUnitOperAttestante = DDataChecks.getConfigurationKeys(ddataMap, "istitutoAttestante.denomUnitOperAttestante")
-//        val indirizzoAttestante = DDataChecks.getConfigurationKeys(ddataMap, "istitutoAttestante.indirizzoAttestante")
-//        val civicoAttestante = DDataChecks.getConfigurationKeys(ddataMap, "istitutoAttestante.civicoAttestante")
-//        val capAttestante = DDataChecks.getConfigurationKeys(ddataMap, "istitutoAttestante.capAttestante")
-//        val localitaAttestante = DDataChecks.getConfigurationKeys(ddataMap, "istitutoAttestante.localitaAttestante")
-//        val provinciaAttestante = DDataChecks.getConfigurationKeys(ddataMap, "istitutoAttestante.provinciaAttestante")
-//        val nazioneAttestante = DDataChecks.getConfigurationKeys(ddataMap, "istitutoAttestante.nazioneAttestante")
-
-        //                                        val motivoAnnullamentoDesc = MotivoAnnullamentoEnum.description(motivoAnnullamento)
-
+        //val motivoAnnullamentoDesc = MotivoAnnullamentoEnum.description(motivoAnnullamento)
 
         CtRicevutaTelematica ctRicevutaTelematica = objectFactory.createCtRicevutaTelematica();
 
@@ -164,59 +172,30 @@ public class ReceiptService {
         CtDatiVersamentoRT ctDatiVersamentoRT = objectFactory.createCtDatiVersamentoRT();
         ctDatiVersamentoRT.setCodiceEsitoPagamento("1");//TODO capire che valore mettere
         ctDatiVersamentoRT.setImportoTotalePagato(BigDecimal.ZERO);
-        ctDatiVersamentoRT.setIdentificativoUnivocoVersamento("");//TODO recuperare valori da RPT
-        ctDatiVersamentoRT.setCodiceContestoPagamento("");//TODO recuperare valori da RPT
+        ctDatiVersamentoRT.setIdentificativoUnivocoVersamento("");//TODO recuperare valori da RPT - rpt.datiVersamento.identificativoUnivocoVersamento
+        ctDatiVersamentoRT.setCodiceContestoPagamento("");//TODO recuperare valori da RPT - rpt.datiVersamento.codiceContestoPagamento
 
         CtDatiSingoloPagamentoRT ctDatiSingoloPagamentoRT = objectFactory.createCtDatiSingoloPagamentoRT();
         ctDatiSingoloPagamentoRT.setSingoloImportoPagato(BigDecimal.ZERO);
         ctDatiSingoloPagamentoRT.setEsitoSingoloPagamento("");//TODO cosa mettere?
         ctDatiSingoloPagamentoRT.setDataEsitoSingoloPagamento(XmlUtil.toXMLGregoirianCalendar(now));
         ctDatiSingoloPagamentoRT.setIdentificativoUnivocoRiscossione("0");
-        ctDatiSingoloPagamentoRT.setCausaleVersamento("");//TODO recuperare dal versamento di RPT
-        ctDatiSingoloPagamentoRT.setDatiSpecificiRiscossione("");//TODO recuperare dal versamento di RPT
+        ctDatiSingoloPagamentoRT.setCausaleVersamento("");//TODO recuperare dal versamento di RPT - dsv.causaleVersamento
+        ctDatiSingoloPagamentoRT.setDatiSpecificiRiscossione("");//TODO recuperare dal versamento di RPT - dsv.datiSpecificiRiscossione
         ctDatiVersamentoRT.getDatiSingoloPagamento().add(ctDatiSingoloPagamentoRT);
 
-//                                        val body = CtRicevutaTelematica(
-//                                        "6.2.0",
-//                                        rpt.dominio,
-//                                        UUID.randomUUID().toString.replaceAll("-", ""), //check
-//                                        XmlUtil.StringXMLGregorianCalendarDate.format(now, XsdDatePattern.DATE_TIME), //check
-//                                        rpt.identificativoMessaggioRichiesta,
-//                                        XmlUtil.StringXMLGregorianCalendarDate.format(rpt.dataOraMessaggioRichiesta.toGregorianCalendar.toZonedDateTime.toLocalDateTime, XsdDatePattern.DATE),
-//                                        istitutoAttestante,
-//                                        rpt.enteBeneficiario,
-//                                        rpt.soggettoVersante,
-//                                        rpt.soggettoPagatore,
-//                                        CtDatiVersamentoRT(
-//                                                codiceEsitoPagamento,
-//                                                BigDecimal2(BigDecimal(0)),
-//                                                rpt.datiVersamento.identificativoUnivocoVersamento,
-//                                                rpt.datiVersamento.codiceContestoPagamento,
-//                                                rpt.datiVersamento.datiSingoloVersamento.map(dsv => {
-//                                                        CtDatiSingoloPagamentoRT(
-//                                                                BigDecimal2(BigDecimal(0)),
-//                                                                Some(motivoAnnullamentoDesc),
-//                                                                XmlUtil.StringXMLGregorianCalendarDate.format(now, XsdDatePattern.DATE),
-//                                                                "0",
-//                                                                dsv.causaleVersamento,
-//                                                                dsv.datiSpecificiRiscossione,
-//                                                                None,
-//                                                                None
-//                                                        )
-//                                                })
-//                                )
     }
 
-    private IntestazionePPT generateIntestazionePPT() {
+    private IntestazionePPT generateIntestazionePPT(String idDominio, String iuv, String ccp, String idIntermediarioPa, String idStazione) {
         gov.telematici.pagamenti.ws.ppthead.ObjectFactory objectFactoryHead =
                 new gov.telematici.pagamenti.ws.ppthead.ObjectFactory();
 
         IntestazionePPT header = objectFactoryHead.createIntestazionePPT();
-//        header.setIdentificativoStazioneIntermediarioPA(paSendRTV2Request.getIdStation());
-//        header.setCodiceContestoPagamento(ctReceiptV2.getCreditorReferenceId());
-//        header.setIdentificativoDominio(ctReceiptV2.getFiscalCode());
-//        header.setIdentificativoUnivocoVersamento(ctReceiptV2.getNoticeNumber());
-//        header.setIdentificativoIntermediarioPA(paSendRTV2Request.getIdBrokerPA());
+        header.setIdentificativoDominio(idDominio);
+        header.setIdentificativoUnivocoVersamento(iuv);
+        header.setCodiceContestoPagamento(ccp);
+        header.setIdentificativoIntermediarioPA(idIntermediarioPa);
+        header.setIdentificativoStazioneIntermediarioPA(idStazione);
         return header;
     }
 
