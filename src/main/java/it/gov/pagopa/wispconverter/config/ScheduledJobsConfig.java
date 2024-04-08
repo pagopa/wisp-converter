@@ -22,7 +22,7 @@ public class ScheduledJobsConfig {
     }
 
     @Scheduled(cron = "${wisp-converter.refresh.cache.cron:-}")
-    @EventListener(ApplicationReadyEvent.class)
+//    @EventListener(ApplicationReadyEvent.class)
     public void refreshCache() {
         log.info("[Scheduled] Starting configuration cache refresh {}", ZonedDateTime.now());
         configCacheService.getCache();

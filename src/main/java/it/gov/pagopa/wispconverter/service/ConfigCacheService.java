@@ -1,18 +1,14 @@
 package it.gov.pagopa.wispconverter.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigDataV1Dto;
+import java.util.List;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
-import java.util.UUID;
 
 @Service
 @Getter
@@ -24,6 +20,13 @@ public class ConfigCacheService {
     private final it.gov.pagopa.gen.wispconverter.client.cache.invoker.ApiClient configCacheClient;
 
     private it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigDataV1Dto configData;
+
+    public ConfigDataV1Dto getConfigData(){
+        if(configData==null){
+            loadCache();
+        }
+        return configData;
+    }
 
     @Value("${client.cache.keys}")
     private List<String> cacheKeys;

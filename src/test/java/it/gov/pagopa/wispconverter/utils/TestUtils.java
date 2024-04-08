@@ -39,6 +39,19 @@ public class TestUtils {
         station.getRedirect().setProtocol(it.gov.pagopa.gen.wispconverter.client.cache.model.RedirectDto.ProtocolEnum.HTTPS);
         station.getRedirect().setQueryString("param=1");
         configDataV1.getStations().put(station.getStationCode(), station);
+
+        configDataV1.setConfigurations(new HashMap<>());
+        configDataV1.getConfigurations().put("GLOBAL-istitutoAttestante.identificativoUnivocoAttestante.tipoIdentificativoUnivoco", new it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigurationKeyDto().value("G"));
+        configDataV1.getConfigurations().put("GLOBAL-istitutoAttestante.identificativoUnivocoAttestante.codiceIdentificativoUnivoco", new it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigurationKeyDto().value("codiceIdentificativoUnivoco"));
+        configDataV1.getConfigurations().put("GLOBAL-istitutoAttestante.denominazioneAttestante", new it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigurationKeyDto().value("denominazioneAttestante"));
+        configDataV1.getConfigurations().put("GLOBAL-istitutoAttestante.codiceUnitOperAttestante", new it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigurationKeyDto().value("codiceUnitOperAttestante"));
+        configDataV1.getConfigurations().put("GLOBAL-istitutoAttestante.denomUnitOperAttestante", new it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigurationKeyDto().value("denomUnitOperAttestante"));
+        configDataV1.getConfigurations().put("GLOBAL-istitutoAttestante.indirizzoAttestante", new it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigurationKeyDto().value("indirizzoAttestante"));
+        configDataV1.getConfigurations().put("GLOBAL-istitutoAttestante.civicoAttestante", new it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigurationKeyDto().value("civicoAttestante"));
+        configDataV1.getConfigurations().put("GLOBAL-istitutoAttestante.capAttestante", new it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigurationKeyDto().value("capAttestante"));
+        configDataV1.getConfigurations().put("GLOBAL-istitutoAttestante.localitaAttestante", new it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigurationKeyDto().value("localitaAttestante"));
+        configDataV1.getConfigurations().put("GLOBAL-istitutoAttestante.provinciaAttestante", new it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigurationKeyDto().value("provinciaAttestante"));
+        configDataV1.getConfigurations().put("GLOBAL-istitutoAttestante.nazioneAttestante", new it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigurationKeyDto().value("nazioneAttestante"));
         return configDataV1;
     }
 
@@ -77,6 +90,5 @@ public class TestUtils {
         when(client.selectHeaderAccept(any())).thenReturn(Arrays.asList());
         when(client.selectHeaderContentType(any())).thenReturn(MediaType.APPLICATION_JSON);
     }
-
 
 }

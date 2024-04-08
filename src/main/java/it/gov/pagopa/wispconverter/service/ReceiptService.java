@@ -20,12 +20,7 @@ import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import it.gov.pagopa.wispconverter.util.JaxbElementUtil;
 import it.gov.pagopa.wispconverter.util.ReUtil;
 import it.gov.pagopa.wispconverter.util.XmlUtil;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.w3c.dom.Element;
-import org.xmlsoap.schemas.soap.envelope.Envelope;
-
+import jakarta.xml.bind.JAXBElement;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
@@ -34,6 +29,11 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.w3c.dom.Element;
+import org.xmlsoap.schemas.soap.envelope.Envelope;
 
 @Service
 @Slf4j
@@ -58,9 +58,8 @@ public class ReceiptService {
             gov.telematici.pagamenti.ws.ppthead.ObjectFactory objectFactoryHead =
                     new gov.telematici.pagamenti.ws.ppthead.ObjectFactory();
             ObjectFactory objectFactory = new ObjectFactory();
-
-            CtRicevutaTelematica ctRicevutaTelematica = generatePaaRTNegativa();
-            String xmlString = jaxbElementUtil.convertToString(ctRicevutaTelematica, CtRicevutaTelematica.class);
+            JAXBElement<CtRicevutaTelematica> rt = new it.gov.digitpa.schemas._2011.pagamenti.ObjectFactory().createRT(generatePaaRTNegativa());
+            String xmlString = jaxbElementUtil.convertToString(rt,CtRicevutaTelematica.class);
 
             PaaInviaRT paaInviaRT = objectFactory.createPaaInviaRT();
             paaInviaRT.setRt(Base64.getEncoder().encode(xmlString.getBytes(StandardCharsets.UTF_8)));
@@ -80,9 +79,7 @@ public class ReceiptService {
             Element envelopeElement = jaxbElementUtil.convertToEnvelopeElement(payload.getBytes(StandardCharsets.UTF_8));
             Envelope envelope = jaxbElementUtil.convertToBean(envelopeElement, Envelope.class);
 
-            IntestazionePPT soapHeader = jaxbElementUtil.getSoapHeader(envelope, IntestazionePPT.class);
             PaSendRTV2Request soapBody = jaxbElementUtil.getSoapBody(envelope, PaSendRTV2Request.class);
-            String idDominio = soapHeader.getIdentificativoDominio();
 
             //TODO: convert paSendRTV2 to paaInviaRT+
 //            IntestazionePPT header = generateIntestazionePPT();
