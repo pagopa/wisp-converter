@@ -56,13 +56,14 @@ public class ReUtil {
     }
 
     private static ReEventDto.ReEventDtoBuilder createBaseReBuilder(){
+        Instant insertedTimestamp = MDC.get(Constants.MDC_START_TIME) == null ? Instant.now() : Instant.ofEpochMilli(Long.parseLong(MDC.get(Constants.MDC_START_TIME)));
         return ReEventDto.builder()
                 .id(UUID.randomUUID().toString())
                 .requestId(MDC.get(Constants.MDC_REQUEST_ID))
                 .operationId(MDC.get(Constants.MDC_OPERATION_ID))
                 .clientOperationId(MDC.get(Constants.MDC_CLIENT_OPERATION_ID))
                 .componente(ComponenteEnum.WISP_CONVERTER)
-                .insertedTimestamp(Instant.ofEpochMilli(Long.parseLong(MDC.get(Constants.MDC_START_TIME))))
+                .insertedTimestamp(insertedTimestamp)
                 .businessProcess(MDC.get(Constants.MDC_BUSINESS_PROCESS));
     }
 

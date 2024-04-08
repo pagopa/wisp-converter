@@ -324,7 +324,7 @@
                             <goal>generate</goal>
                         </goals>
                         <configuration>
-                            <inputSpec>${project.basedir}/openapi-client/apiconfig-cache/openapi.json</inputSpec>
+                            <inputSpec>${project.basedir}/openapi-client/apiconfig-cache/openapi_cache.json</inputSpec>
                             <generatorName>java</generatorName>
                             <modelNameSuffix>Dto</modelNameSuffix>
                             <generateApiTests>false</generateApiTests>
