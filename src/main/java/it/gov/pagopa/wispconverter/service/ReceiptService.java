@@ -14,6 +14,7 @@ import it.gov.pagopa.pagopa_api.pa.pafornode.CtReceiptV2;
 import it.gov.pagopa.pagopa_api.pa.pafornode.PaSendRTV2Request;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
+import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
 import it.gov.pagopa.wispconverter.service.mapper.RTMapper;
 import it.gov.pagopa.wispconverter.service.model.CommonRPTFieldsDTO;
@@ -24,16 +25,22 @@ import it.gov.pagopa.wispconverter.util.JaxbElementUtil;
 import it.gov.pagopa.wispconverter.util.ReUtil;
 import it.gov.pagopa.wispconverter.util.XmlUtil;
 import jakarta.xml.bind.JAXBElement;
+import jakarta.xml.soap.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.w3c.dom.Element;
+import org.xmlsoap.schemas.soap.envelope.Body;
 import org.xmlsoap.schemas.soap.envelope.Envelope;
+import org.xmlsoap.schemas.soap.envelope.Header;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
@@ -49,11 +56,13 @@ public class ReceiptService {
     private final JaxbElementUtil jaxbElementUtil;
 
     private final ConfigCacheService configCacheService;
-    private final ConverterService converterService;
     private final RptCosmosService rptCosmosService;
     private final RPTExtractorService rptExtractorService;
     private final ReService reService;
 
+    private final RPTRequestRepository rptRequestRepository;
+
+    @Transactional
     public void paaInviaRTKo(String payload) throws IOException {
         ObjectMapper mapper = JsonMapper.builder()
                 .addModule(new JavaTimeModule())
@@ -62,8 +71,9 @@ public class ReceiptService {
             List<ReceiptDto> receiptDtos = List.of(mapper.readValue(payload, ReceiptDto[].class));
             ObjectFactory objectFactory = new ObjectFactory();
 
-            receiptDtos.stream().forEach(receipt -> {
+            receiptDtos.forEach(receipt -> {
                 RPTRequestEntity rptRequestEntity = rptCosmosService.getRPTRequestEntity("intPaLorenz_75fa058f-d1b5-4c7e-865e-a220091d3954");
+                String brokerPa = rptRequestEntity.getId().split("_")[0];
 
                 CommonRPTFieldsDTO commonRPTFieldsDTO = this.rptExtractorService.extractRPTContentDTOs(rptRequestEntity.getPrimitive(), rptRequestEntity.getPayload());
 
@@ -73,16 +83,38 @@ public class ReceiptService {
                         receipt.getPaymentToken(),
                         commonRPTFieldsDTO.getCreditorInstitutionBrokerId(),
                         commonRPTFieldsDTO.getStationId());
-                JAXBElement<CtRicevutaTelematica> rt = new it.gov.digitpa.schemas._2011.pagamenti.ObjectFactory().createRT(generatePaaRTNegativa(commonRPTFieldsDTO.getRpts()));
-                String xmlString = jaxbElementUtil.convertToString(rt,CtRicevutaTelematica.class);
 
-                PaaInviaRT paaInviaRT = objectFactory.createPaaInviaRT();
-                paaInviaRT.setRt(Base64.getEncoder().encode(xmlString.getBytes(StandardCharsets.UTF_8)));
+                commonRPTFieldsDTO.getRpts().forEach(rpt ->  {
+                    JAXBElement<CtRicevutaTelematica> rt = new it.gov.digitpa.schemas._2011.pagamenti.ObjectFactory().createRT(generatePaaRTNegativa(rpt));
+                    String xmlString = jaxbElementUtil.convertToString(rt,CtRicevutaTelematica.class);
 
-                ReEventDto reInternal = ReUtil.createBaseReInternal()
-                        .status("RT_GENERATA_NODO")
-                        .build();
-                reService.addRe(reInternal);
+                    PaaInviaRT paaInviaRT = objectFactory.createPaaInviaRT();
+                    paaInviaRT.setRt(Base64.getEncoder().encode(xmlString.getBytes(StandardCharsets.UTF_8)));
+
+                    ReEventDto reInternal = ReUtil.createBaseReInternal()
+                            .status("RT_GENERATA")
+                            .build();
+                    reService.addRe(reInternal);
+
+                    org.xmlsoap.schemas.soap.envelope.ObjectFactory objectFactoryEnvelope = new org.xmlsoap.schemas.soap.envelope.ObjectFactory();
+                    Envelope envelope = objectFactoryEnvelope.createEnvelope();
+                    Body body = objectFactoryEnvelope.createBody();
+                    body.getAny().add(paaInviaRT);
+                    Header header = objectFactoryEnvelope.createHeader();
+                    header.getAny().add(intestazionePPT);
+                    envelope.setBody(body);
+                    envelope.setHeader(header);
+
+                    RPTRequestEntity paaInviaRptRequestEntity = RPTRequestEntity
+                            .builder()
+                            .id(brokerPa+"_"+UUID.randomUUID())
+                            .primitive("paaInviaRT")
+                            .partitionKey(LocalDate.now().toString())
+                            .payload("")//TOOD generare payload paaInviaRT request completo
+                            .build();
+                    rptRequestRepository.save(paaInviaRptRequestEntity);
+                });
+
             });
 
         } catch (JsonProcessingException e) {
@@ -96,6 +128,18 @@ public class ReceiptService {
             Envelope envelope = jaxbElementUtil.convertToBean(envelopeElement, Envelope.class);
 
             PaSendRTV2Request soapBody = jaxbElementUtil.getSoapBody(envelope, PaSendRTV2Request.class);
+
+            RPTRequestEntity rptRequestEntity = rptCosmosService.getRPTRequestEntity("intPaLorenz_75fa058f-d1b5-4c7e-865e-a220091d3954");
+
+            CommonRPTFieldsDTO commonRPTFieldsDTO = this.rptExtractorService.extractRPTContentDTOs(rptRequestEntity.getPrimitive(), rptRequestEntity.getPayload());
+
+//            IntestazionePPT intestazionePPT = generateIntestazionePPT(
+//                    receipt.getIdentificativoDominio(),
+//                    receipt.getIdentificativoUnivocoVersamento(),
+//                    receipt.getPaymentToken(),
+//                    commonRPTFieldsDTO.getCreditorInstitutionBrokerId(),
+//                    commonRPTFieldsDTO.getStationId());
+
 
             //TODO: convert paSendRTV2 to paaInviaRT+
 //            IntestazionePPT header = generateIntestazionePPT();
@@ -126,7 +170,7 @@ public class ReceiptService {
         //        rtService.paaInviaRT(paaInviaRT, header);
     }
 
-    private CtRicevutaTelematica generatePaaRTNegativa(List<RPTContentDTO> rpts) {
+    private CtRicevutaTelematica generatePaaRTNegativa(RPTContentDTO rpt) {
         Instant now = Instant.now();
         ConfigDataV1Dto cache = configCacheService.getConfigData();
         Map<String, ConfigurationKeyDto> configurations = cache.getConfigurations();
@@ -162,6 +206,49 @@ public class ReceiptService {
         ctIstitutoAttestante.setLocalitaAttestante(localitaAttestante);
         ctIstitutoAttestante.setProvinciaAttestante(provinciaAttestante);
         ctIstitutoAttestante.setNazioneAttestante(nazioneAttestante);
+
+        CtDominio ctDominio = objectFactory.createCtDominio();
+        rtMapper.toCtDominio(ctDominio, rpt.getRpt().getDomain());
+
+        CtEnteBeneficiario ctEnteBeneficiario = objectFactory.createCtEnteBeneficiario();
+        rtMapper.toCtEnteBeneficiario(ctEnteBeneficiario, rpt.getRpt().getPayerInstitution());
+
+        CtSoggettoPagatore ctSoggettoPagatore = objectFactory.createCtSoggettoPagatore();
+        rtMapper.toCtSoggettoPagatore(ctSoggettoPagatore, rpt.getRpt().getPayer());
+
+        ctRicevutaTelematica.setVersioneOggetto("6.2.0");
+        ctRicevutaTelematica.setDominio(ctDominio);
+
+        ctRicevutaTelematica.setIdentificativoMessaggioRicevuta(UUID.randomUUID().toString().replaceAll("-", ""));
+        ctRicevutaTelematica.setDataOraMessaggioRicevuta(XmlUtil.toXMLGregoirianCalendar(now));
+        ctRicevutaTelematica.setRiferimentoDataRichiesta(rpt.getRpt().getMessageRequestDatetime());
+        ctRicevutaTelematica.setIstitutoAttestante(ctIstitutoAttestante);
+
+        ctRicevutaTelematica.setEnteBeneficiario(ctEnteBeneficiario);
+        ctRicevutaTelematica.setSoggettoPagatore(ctSoggettoPagatore);
+
+        CtDatiVersamentoRT ctDatiVersamentoRT = objectFactory.createCtDatiVersamentoRT();
+        rtMapper.toCtDatiVersamentoRT(ctDatiVersamentoRT, rpt.getRpt().getTransferData());
+
+        ctRicevutaTelematica.setDatiPagamento(ctDatiVersamentoRT);
+
+        return ctRicevutaTelematica;
+    }
+
+    private CtRicevutaTelematica generatePaaRTPositiva(List<RPTContentDTO> rpts, PaSendRTV2Request paSendRTV2Request) {
+        Instant now = Instant.now();
+        ConfigDataV1Dto cache = configCacheService.getConfigData();
+        Map<String, ConfigurationKeyDto> configurations = cache.getConfigurations();
+
+        it.gov.digitpa.schemas._2011.pagamenti.ObjectFactory objectFactory = new it.gov.digitpa.schemas._2011.pagamenti.ObjectFactory();
+        CtRicevutaTelematica ctRicevutaTelematica = objectFactory.createCtRicevutaTelematica();
+
+        CtIstitutoAttestante ctIstitutoAttestante = objectFactory.createCtIstitutoAttestante();
+        CtIdentificativoUnivoco ctIdentificativoUnivoco = objectFactory.createCtIdentificativoUnivoco();
+        ctIdentificativoUnivoco.setTipoIdentificativoUnivoco(StTipoIdentificativoUnivoco.G);
+        ctIdentificativoUnivoco.setCodiceIdentificativoUnivoco(paSendRTV2Request.getReceipt().getFiscalCode());
+        ctIstitutoAttestante.setIdentificativoUnivocoAttestante(ctIdentificativoUnivoco);
+        ctIstitutoAttestante.setDenominazioneAttestante(paSendRTV2Request.getReceipt().getPSPCompanyName());
 
         rpts.stream().forEach(rpt -> {
             CtDominio ctDominio = objectFactory.createCtDominio();
@@ -219,6 +306,7 @@ public class ReceiptService {
                 ctDatiSingoloPagamentoRT.setDatiSpecificiRiscossione(transfer.getCategory());
                 ctDatiVersamentoRT.getDatiSingoloPagamento().add(ctDatiSingoloPagamentoRT);
             });
+            ctRicevutaTelematica.setDatiPagamento(ctDatiVersamentoRT);
         });
 
         return ctRicevutaTelematica;
@@ -236,6 +324,5 @@ public class ReceiptService {
         header.setIdentificativoStazioneIntermediarioPA(idStazione);
         return header;
     }
-
 
 }

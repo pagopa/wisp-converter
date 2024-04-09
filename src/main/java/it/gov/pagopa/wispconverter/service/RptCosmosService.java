@@ -7,6 +7,7 @@ import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
@@ -21,5 +22,10 @@ public class RptCosmosService {
         Optional<RPTRequestEntity> optRPTReqEntity = this.rptRequestRepository.findById(sessionId);
         return optRPTReqEntity.orElseThrow(() -> new AppException(AppErrorCodeMessageEnum.PERSISTENCE_RPT_NOT_FOUND, sessionId));
         // TODO RE
+    }
+
+    @Transactional
+    public void saveRPTRequestEntity(RPTRequestEntity rptRequestEntity) {
+        rptRequestRepository.save(rptRequestEntity);
     }
 }
