@@ -34,9 +34,9 @@ microservice-chart:
     servicePort: 8080
   serviceAccount:
     create: false
-    annotations: {}
+    annotations: { }
     name: ""
-  podAnnotations: {}
+  podAnnotations: { }
   podSecurityContext:
     seccompProfile:
       type: RuntimeDefault
@@ -67,8 +67,6 @@ microservice-chart:
     APP_LOGGING_LEVEL: 'INFO'
     DEFAULT_LOGGING_LEVEL: 'INFO'
     CORS_CONFIGURATION: '{"origins": ["*"], "methods": ["*"]}'
-    REDIS_HOST: "pagopa-u-redis.redis.cache.windows.net"
-    REDIS_PORT: "6380"
     OTEL_SERVICE_NAME: "pagopa-wisp-converter"
     OTEL_RESOURCE_ATTRIBUTES: "service.environment=uat"
     OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector.elastic-system.svc:4317"
@@ -76,6 +74,21 @@ microservice-chart:
     OTEL_METRICS_EXPORTER: otlp
     OTEL_LOGS_EXPORTER: none
     OTEL_TRACES_SAMPLER: "always_on"
+    REDIS_HOST: "pagopa-u-redis.redis.cache.windows.net"
+    REDIS_PORT: "6380"
+    COSMOS_URI: "https://pagopa-u-weu-nodo-wispconv-cosmos-account.documents.azure.com:443/"
+    CACHED_REQUESTID_MAPPING_TTL_MINUTES: "1440"
+    CACHE_REFRESH_CRON: "0 */60 * * * *"
+    CLIENT_GPD_READ_TIMEOUT: '5000'
+    CLIENT_IUVGENERATOR_READ_TIMEOUT: '5000'
+    CLIENT_CHECKOUT_READ_TIMEOUT: '5000'
+    CLIENT_DECOUPLERCACHING_READ_TIMEOUT: '5000'
+    CLIENT_CACHE_READ_TIMEOUT: '5000'
+    CLIENT_GPD_HOST: 'https://api.uat.platform.pagopa.it/gpd/api/v1'
+    CLIENT_IUVGENERATOR_HOST: 'https://api.uat.platform.pagopa.it/shared/iuv-generator-service/v1'
+    CLIENT_CHECKOUT_HOST: 'https://api.uat.platform.pagopa.it/checkout/ec/v1/'
+    CLIENT_DECOUPLERCACHING_HOST: 'https://api.uat.platform.pagopa.it/wisp-converter/caching/api/v1'
+    CLIENT_CACHE_HOST: 'https://api.uat.platform.pagopa.it/api-config-cache/o/v1'
   secretProvider:
     create: true
     envSecrets:
@@ -83,13 +96,18 @@ microservice-chart:
       APPLICATIONINSIGHTS_CONNECTION_STRING: 'ai-u-connection-string'
       OTEL_EXPORTER_OTLP_HEADERS: elastic-apm-secret-token
       REDIS_PASSWORD: 'redis-primary-key'
+      COSMOS_KEY: 'cosmosdb-wisp-converter-account-key'
+      CLIENT_GPD_SUBKEY: 'gpd-pagopa-v1-subscription-key'
+      CLIENT_IUVGENERATOR_SUBKEY: 'iuv-generator-subscription-key'
+      CLIENT_DECOUPLERCACHING_SUBKEY: 'wisp-converter-caching-subscription-key'
+      CLIENT_CACHE_SUBKEY: 'api-config-cache-subscription-key-string'
     keyvault:
       name: "pagopa-u-nodo-kv"
       tenantId: "7788edaf-0346-4068-9d79-c868aed15b3d"
   tmpVolumeMount:
     create: true
-  nodeSelector: {}
-  tolerations: []
+  nodeSelector: { }
+  tolerations: [ ]
   affinity:
     nodeAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:
@@ -116,5 +134,5 @@ microservice-chart:
         repository: ghcr.io/pagopa/pagopa-wisp-converter
         tag: "0.0.0"
         pullPolicy: Always
-      envConfig: {}
-      envSecret: {}
+      envConfig: { }
+      envSecret: { }
