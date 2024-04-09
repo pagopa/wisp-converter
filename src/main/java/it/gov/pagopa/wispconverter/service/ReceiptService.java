@@ -80,8 +80,7 @@ public class ReceiptService {
                 paaInviaRT.setRt(Base64.getEncoder().encode(xmlString.getBytes(StandardCharsets.UTF_8)));
 
                 ReEventDto reInternal = ReUtil.createBaseReInternal()
-                        .status("RT_GENERATA_NODO")
-                        .build();
+                        .status("RT_GENERATA_NODO");
                 reService.addRe(reInternal);
             });
 

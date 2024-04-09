@@ -1,18 +1,21 @@
 package it.gov.pagopa.wispconverter.utils;
 
 
-import io.micrometer.core.instrument.util.IOUtils;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
+import io.micrometer.core.instrument.util.IOUtils;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.HashMap;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
+import java.util.zip.GZIPOutputStream;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 
 public class TestUtils {
 
@@ -89,6 +92,59 @@ public class TestUtils {
         when(client.parameterToString(any())).thenReturn("");
         when(client.selectHeaderAccept(any())).thenReturn(Arrays.asList());
         when(client.selectHeaderContentType(any())).thenReturn(MediaType.APPLICATION_JSON);
+    }
+
+    public static String getRptPayload(boolean bollo,String station,String amount,String datiSpecificiRiscossione){
+        if(datiSpecificiRiscossione==null){
+            datiSpecificiRiscossione = "9/tipodovuto_7/datospecifico";
+        }
+        String rpt = TestUtils.loadFileContent(bollo?"/requests/rptBollo.xml":"/requests/rpt.xml");
+        String rptreplace = rpt
+                .replace("{datiSpecificiRiscossione}",datiSpecificiRiscossione)
+                .replaceAll("\\{amount\\}", amount);
+        String nodoInviaRPT = TestUtils.loadFileContent("/requests/nodoInviaRPT.xml");
+        return nodoInviaRPT
+                .replace("{station}",station)
+                .replace("{rpt}", Base64.getEncoder().encodeToString(rptreplace.getBytes(StandardCharsets.UTF_8)));
+    }
+
+    public static String getCarrelloPayload(int numofrpt,String station,String amount,boolean multibeneficiario){
+        String rpt = TestUtils.loadFileContent("/requests/rpt.xml");
+        String rptreplace = rpt.replaceAll("\\{amount\\}", amount);
+        StringBuilder listaRpt = new StringBuilder("");
+        for(int i=0;i<numofrpt;i++){
+            listaRpt.append(
+                    ("<elementoListaRPT>"+
+                            "<identificativoDominio></identificativoDominio>"+
+                            "<identificativoUnivocoVersamento></identificativoUnivocoVersamento>"+
+                            "<codiceContestoPagamento></codiceContestoPagamento>"+
+                            "<tipoFirma></tipoFirma>"+
+                            "<rpt>{rpt}</rpt>" +
+                            "</elementoListaRPT>").replace("{rpt}",Base64.getEncoder().encodeToString(rptreplace.getBytes(StandardCharsets.UTF_8)))
+            );
+        }
+
+        String carrello = TestUtils.loadFileContent("/requests/nodoInviaCarrelloRPT.xml");
+        return carrello
+                .replace("{station}",station)
+                .replace("{multi}",multibeneficiario?"<multiBeneficiario>true</multiBeneficiario>":"")
+                .replace("{elementiRpt}", listaRpt.toString());
+    }
+
+    public static byte[] zip(byte[] uncompressed) throws IOException {
+        ByteArrayOutputStream bais = new ByteArrayOutputStream();
+        GZIPOutputStream gzipOutputStream = new GZIPOutputStream(bais);
+        gzipOutputStream.write(uncompressed);
+        gzipOutputStream.close();
+        bais.close();
+        return bais.toByteArray();
+    }
+    public static String zipAndEncode(String p){
+        try {
+            return new String(Base64.getEncoder().encode(zip(p.getBytes(StandardCharsets.UTF_8))));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 }

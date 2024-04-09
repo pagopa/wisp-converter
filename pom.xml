@@ -24,6 +24,8 @@
         <java-ecs-logging.version>1.6.0</java-ecs-logging.version>
         <aspectjrt.version>1.9.20.1</aspectjrt.version>
         <azure-sdk-bom.version>1.2.21</azure-sdk-bom.version>
+        <azure-messaging.version>5.18.2</azure-messaging.version>
+        <azure-blob.version>1.19.2</azure-blob.version>
         <netty.version>4.1.101.Final</netty.version>
         <cosmos-data-version>5.10.0</cosmos-data-version>
         <spring-cloud.version>2023.0.0</spring-cloud.version>
@@ -99,6 +101,16 @@
             <groupId>com.azure</groupId>
             <artifactId>azure-spring-data-cosmos</artifactId>
             <version>${cosmos-data-version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.azure</groupId>
+            <artifactId>azure-messaging-eventhubs</artifactId>
+            <version>${azure-messaging.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.azure</groupId>
+            <artifactId>azure-messaging-eventhubs-checkpointstore-blob</artifactId>
+            <version>${azure-blob.version}</version>
         </dependency>
 
         <!-- Swagger/OpenAPI -->

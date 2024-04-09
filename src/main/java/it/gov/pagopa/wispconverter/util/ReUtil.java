@@ -4,6 +4,14 @@ import it.gov.pagopa.wispconverter.service.model.re.*;
 import it.gov.pagopa.wispconverter.util.filter.RepeatableContentCachingRequestWrapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.util.Enumeration;
+import java.util.Iterator;
+import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.MDC;
@@ -14,21 +22,12 @@ import org.springframework.util.StreamUtils;
 import org.springframework.web.util.ContentCachingResponseWrapper;
 import org.springframework.web.util.WebUtils;
 
-import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.time.Instant;
-import java.util.Enumeration;
-import java.util.Iterator;
-import java.util.UUID;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 @Slf4j
 public class ReUtil {
 
     private static final String NODO_DEI_PAGAMENTI_SP = "NodoDeiPagamentiSPC";
 
-    private static ReEventDto.ReEventDtoBuilder createBaseReInterface(CategoriaEventoEnum categoriaEvento, SottoTipoEventoEnum sottoTipoEvento, EsitoEnum esitoEnum, String erogatore, String erogatoreDescr, String fruitore, String fruitoreDescr,
+    private static ReEventDto createBaseReInterface(CategoriaEventoEnum categoriaEvento, SottoTipoEventoEnum sottoTipoEvento, EsitoEnum esitoEnum, String erogatore, String erogatoreDescr, String fruitore, String fruitoreDescr,
                                               String httpMethod, String httpUri, String httpHeaders, String httpCallRemoteAddress, String compressedPayload, Integer compressedPayloadLength,
                                               CallTypeEnum callTypeEnum) {
 
@@ -55,9 +54,9 @@ public class ReUtil {
                 .compressedPayloadLength(compressedPayloadLength);
     }
 
-    private static ReEventDto.ReEventDtoBuilder createBaseReBuilder(){
+    private static ReEventDto createBaseReBuilder(){
         Instant insertedTimestamp = MDC.get(Constants.MDC_START_TIME) == null ? Instant.now() : Instant.ofEpochMilli(Long.parseLong(MDC.get(Constants.MDC_START_TIME)));
-        return ReEventDto.builder()
+        return new ReEventDto()
                 .id(UUID.randomUUID().toString())
                 .requestId(MDC.get(Constants.MDC_REQUEST_ID))
                 .operationId(MDC.get(Constants.MDC_OPERATION_ID))
@@ -67,7 +66,7 @@ public class ReUtil {
                 .businessProcess(MDC.get(Constants.MDC_BUSINESS_PROCESS));
     }
 
-    public static ReEventDto.ReEventDtoBuilder createBaseReInternal(){
+    public static ReEventDto createBaseReInternal(){
         return createBaseReBuilder()
                 .categoriaEvento(CategoriaEventoEnum.INTERNO)
                 .sottoTipoEvento(SottoTipoEventoEnum.INTERN);
@@ -106,8 +105,7 @@ public class ReUtil {
                 NODO_DEI_PAGAMENTI_SP, NODO_DEI_PAGAMENTI_SP,
                 null, null,
                 httpMethod, httpUri, httpHeaders, httpCallRemoteAddress, compressedPayload, compressedPayloadLength,
-                CallTypeEnum.SERVER)
-                .build();
+                CallTypeEnum.SERVER);
     }
     public static ReEventDto createReServerInterfaceResponse(HttpServletRequest request, HttpServletResponse response){
 
@@ -136,7 +134,7 @@ public class ReUtil {
         }
         String httpUri = msg.toString();
 
-        ReEventDto.ReEventDtoBuilder target = createBaseReInterface(
+        ReEventDto target = createBaseReInterface(
                 CategoriaEventoEnum.INTERFACCIA,
                 SottoTipoEventoEnum.RESP,
                 EsitoEnum.INVIATA,
@@ -152,7 +150,7 @@ public class ReUtil {
         target.operationErrorTitle(MDC.get(Constants.MDC_ERROR_TITLE));
         target.operationErrorDetail(MDC.get(Constants.MDC_ERROR_DETAIL));
         target.operationErrorCode(MDC.get(Constants.MDC_ERROR_CODE));
-        return target.build();
+        return target;
     }
 
     public static ReEventDto createReClientInterfaceRequest(HttpRequest request, byte[] reqBody){
@@ -182,8 +180,7 @@ public class ReUtil {
                 erogatore, erogatoreDescr,
                 NODO_DEI_PAGAMENTI_SP, NODO_DEI_PAGAMENTI_SP,
                 httpMethod, httpUri, httpHeaders, null, compressedPayload, compressedPayloadPayloadLength,
-                CallTypeEnum.CLIENT)
-                .build();
+                CallTypeEnum.CLIENT);
     }
 
     public static ReEventDto createReClientInterfaceResponse(HttpRequest request, ClientHttpResponse response){
@@ -214,7 +211,7 @@ public class ReUtil {
         String httpMethod = request.getMethod().toString();
         String httpUri = request.getURI().toString();
 
-        ReEventDto.ReEventDtoBuilder target = createBaseReInterface(
+        ReEventDto target = createBaseReInterface(
                 CategoriaEventoEnum.INTERFACCIA,
                 SottoTipoEventoEnum.RESP,
                 EsitoEnum.RICEVUTA, //FIXME RICEVUTA o RICEVUTA_KO
@@ -226,7 +223,7 @@ public class ReUtil {
         target.httpStatusCode(status);
         target.executionTimeMs(Long.parseLong(executionTime));
 
-        return target.build();
+        return target;
     }
 
 
