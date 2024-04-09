@@ -12,17 +12,12 @@ import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
 import it.gov.pagopa.wispconverter.service.ConfigCacheService;
 import it.gov.pagopa.wispconverter.utils.TestUtils;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.zip.GZIPOutputStream;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
@@ -30,6 +25,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
@@ -56,39 +52,6 @@ class CarrelloTest {
     @Qualifier("redisSimpleTemplate")
     @MockBean private RedisTemplate<String, Object> redisSimpleTemplate;
 
-    private String getCarrelloPayload(int numofrpt,String station,String amount,boolean multibeneficiario){
-        String rpt = TestUtils.loadFileContent("/requests/rpt.xml");
-        String rptreplace = rpt.replaceAll("\\{amount\\}", amount);
-        StringBuilder listaRpt = new StringBuilder("");
-        for(int i=0;i<numofrpt;i++){
-            listaRpt.append(
-                    ("<elementoListaRPT>"+
-                    "<identificativoDominio></identificativoDominio>"+
-                    "<identificativoUnivocoVersamento></identificativoUnivocoVersamento>"+
-                    "<codiceContestoPagamento></codiceContestoPagamento>"+
-                    "<tipoFirma></tipoFirma>"+
-                    "<rpt>{rpt}</rpt>" +
-                    "</elementoListaRPT>").replace("{rpt}",Base64.getEncoder().encodeToString(rptreplace.getBytes(StandardCharsets.UTF_8)))
-            );
-        }
-
-        String carrello = TestUtils.loadFileContent("/requests/nodoInviaCarrelloRPT.xml");
-        return carrello
-                .replace("{station}",station)
-                .replace("{multi}",multibeneficiario?"<multiBeneficiario>true</multiBeneficiario>":"")
-                .replace("{elementiRpt}", listaRpt.toString());
-    }
-
-    private byte[] zip(byte[] uncompressed) throws IOException {
-        ByteArrayOutputStream bais = new ByteArrayOutputStream();
-        GZIPOutputStream gzipOutputStream = new GZIPOutputStream(bais);
-        gzipOutputStream.write(uncompressed);
-        gzipOutputStream.close();
-        bais.close();
-        return bais.toByteArray();
-    }
-
-
     @Test
     void success() throws Exception {
         String station = "mystation";
@@ -108,10 +71,9 @@ class CarrelloTest {
                 Optional.of(
                         RPTRequestEntity.builder().primitive("nodoInviaCarrelloRPT")
                                 .payload(
-                                        new String(Base64.getEncoder().encode(zip(
-                                                getCarrelloPayload(2,station,
+                                        TestUtils.zipAndEncode(TestUtils.getCarrelloPayload(2,station,
                                                         "100.00",true
-                                                ).getBytes(StandardCharsets.UTF_8))),StandardCharsets.UTF_8)
+                                                ))
                                 ).build()
                 )
         );
@@ -151,10 +113,9 @@ class CarrelloTest {
                 Optional.of(
                         RPTRequestEntity.builder().primitive("nodoInviaCarrelloRPT")
                                 .payload(
-                                        new String(Base64.getEncoder().encode(zip(
-                                                getCarrelloPayload(2,station,
+                                        TestUtils.zipAndEncode(TestUtils.getCarrelloPayload(2,station,
                                                         "100.00",true
-                                                ).getBytes(StandardCharsets.UTF_8))),StandardCharsets.UTF_8)
+                                                ))
                                 ).build()
                 )
         );
@@ -194,10 +155,10 @@ class CarrelloTest {
                 Optional.of(
                         RPTRequestEntity.builder().primitive("nodoInviaCarrelloRPT")
                                 .payload(
-                                        new String(Base64.getEncoder().encode(zip(
-                                                getCarrelloPayload(1,station,
+                                        TestUtils.zipAndEncode(
+                                                TestUtils.getCarrelloPayload(1,station,
                                                         "100.00",true
-                                                ).getBytes(StandardCharsets.UTF_8))),StandardCharsets.UTF_8)
+                                                ))
                                 ).build()
                 )
         );

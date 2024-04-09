@@ -1,7 +1,6 @@
 package it.gov.pagopa.wispconverter;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -10,12 +9,10 @@ import it.gov.pagopa.gen.wispconverter.client.iuvgenerator.model.IuvGenerationMo
 import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
 import it.gov.pagopa.wispconverter.service.ConfigCacheService;
+import it.gov.pagopa.wispconverter.service.ReService;
+import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import it.gov.pagopa.wispconverter.utils.TestUtils;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.zip.GZIPOutputStream;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,17 +20,19 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.web.client.RestClientException;
-import org.springframework.test.context.ActiveProfiles;
 
 @ActiveProfiles(profiles = "test")
 @SpringBootTest(classes = Application.class)
@@ -56,29 +55,8 @@ class RptTest {
     @MockBean private it.gov.pagopa.gen.wispconverter.client.decouplercaching.invoker.ApiClient decouplerCachingClient;
     @Qualifier("redisSimpleTemplate")
     @MockBean private RedisTemplate<String, Object> redisSimpleTemplate;
-
-    private String getRptPayload(boolean bollo,String station,String amount,String datiSpecificiRiscossione){
-        if(datiSpecificiRiscossione==null){
-            datiSpecificiRiscossione = "9/tipodovuto_7/datospecifico";
-        }
-        String rpt = TestUtils.loadFileContent(bollo?"/requests/rptBollo.xml":"/requests/rpt.xml");
-        String rptreplace = rpt
-                .replace("{datiSpecificiRiscossione}",datiSpecificiRiscossione)
-                .replaceAll("\\{amount\\}", amount);
-        String nodoInviaRPT = TestUtils.loadFileContent("/requests/nodoInviaRPT.xml");
-        return nodoInviaRPT
-                .replace("{station}",station)
-                .replace("{rpt}", Base64.getEncoder().encodeToString(rptreplace.getBytes(StandardCharsets.UTF_8)));
-    }
-
-    private byte[] zip(byte[] uncompressed) throws IOException {
-        ByteArrayOutputStream bais = new ByteArrayOutputStream();
-        GZIPOutputStream gzipOutputStream = new GZIPOutputStream(bais);
-        gzipOutputStream.write(uncompressed);
-        gzipOutputStream.close();
-        bais.close();
-        return bais.toByteArray();
-    }
+    @SpyBean
+    private ReService reService;
 
     @Test
     void success() throws Exception {
@@ -99,8 +77,7 @@ class RptTest {
                 Optional.of(
                         RPTRequestEntity.builder().primitive("nodoInviaRPT")
                                 .payload(
-                                        new String(Base64.getEncoder().encode(zip(
-                                                getRptPayload(false,station,"100.00",null).getBytes(StandardCharsets.UTF_8))),StandardCharsets.UTF_8)
+                                        TestUtils.zipAndEncode(TestUtils.getRptPayload(false,station,"100.00",null))
                                 ).build()
                 )
         );
@@ -126,6 +103,10 @@ class RptTest {
         MultiplePaymentPositionModelDto value = (MultiplePaymentPositionModelDto) argument.getValue();
         assertEquals(1, value.getPaymentPositions().size());
         assertEquals("TTTTTT11T11T123T", value.getPaymentPositions().get(0).getFiscalCode());
+
+        ArgumentCaptor<ReEventDto> reevents = ArgumentCaptor.forClass(ReEventDto.class);
+        verify(reService,times(2)).addRe(reevents.capture());
+        reevents.getAllValues();
     }
 
     @Test
@@ -147,8 +128,7 @@ class RptTest {
                 Optional.of(
                         RPTRequestEntity.builder().primitive("nodoInviaRPT")
                                 .payload(
-                                        new String(Base64.getEncoder().encode(zip(
-                                                getRptPayload(false,station,"100.00","datispec").getBytes(StandardCharsets.UTF_8))),StandardCharsets.UTF_8)
+                                        TestUtils.zipAndEncode(TestUtils.getRptPayload(false,station,"100.00","datispec"))
                                 ).build()
                 )
         );
@@ -189,8 +169,7 @@ class RptTest {
                 Optional.of(
                         RPTRequestEntity.builder().primitive("nodoInviaRPT")
                                 .payload(
-                                        new String(Base64.getEncoder().encode(zip(
-                                                getRptPayload(true,station,"100.00",null).getBytes(StandardCharsets.UTF_8))),StandardCharsets.UTF_8)
+                                        TestUtils.zipAndEncode(TestUtils.getRptPayload(true,station,"100.00",null))
                                 ).build()
                 )
         );
@@ -213,6 +192,74 @@ class RptTest {
     }
 
     @Test
+    void fail_rpt_not_exists() throws Exception {
+        String station = "mystation";
+        TestUtils.setMock(cacheClient,ResponseEntity.ok().body(TestUtils.configData(station)));
+
+        org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configCacheClient",cacheClient);
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("location","locationheader");
+        TestUtils.setMock(checkoutClient, ResponseEntity.status(HttpStatus.FOUND).headers(headers).build());
+
+        IuvGenerationModelResponseDto iuvGenerationModelResponseDto = new IuvGenerationModelResponseDto();
+        iuvGenerationModelResponseDto.setIuv("00000000");
+        doThrow(new RestClientException("fail"))
+                .when(iuveneratorClient).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
+        TestUtils.setMock(gpdClient,ResponseEntity.ok().build());
+        TestUtils.setMock(decouplerCachingClient,ResponseEntity.ok().build());
+        when(redisSimpleTemplate.opsForValue()).thenReturn(mock(ValueOperations.class));
+
+
+        MvcResult resultActions = mvc.perform(MockMvcRequestBuilders.get("/redirect?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
+                .andExpect(MockMvcResultMatchers.status().is4xxClientError()).andDo(
+                        (result) -> {
+                            assertNotNull(result);
+                            assertNotNull(result.getResponse());
+                        }).andReturn();
+        assertEquals("text/html;charset=UTF-8",resultActions.getResponse().getContentType());
+        String contentAsString = resultActions.getResponse().getContentAsString();
+        assertTrue(contentAsString.contains("WIC-2000"));
+        assertTrue(contentAsString.contains("RPT with sessionId [aaaaaaaaaaaa] not found."));
+        verify(checkoutClient,times(0)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
+        verify(gpdClient,times(0)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
+        verify(decouplerCachingClient,times(0)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
+    }
+
+    @Test
+    void fail_generic() throws Exception {
+        String station = "mystation";
+        TestUtils.setMock(cacheClient,ResponseEntity.ok().body(TestUtils.configData(station)));
+
+        org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configCacheClient",cacheClient);
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("location","locationheader");
+        TestUtils.setMock(checkoutClient, ResponseEntity.status(HttpStatus.FOUND).headers(headers).build());
+
+        IuvGenerationModelResponseDto iuvGenerationModelResponseDto = new IuvGenerationModelResponseDto();
+        iuvGenerationModelResponseDto.setIuv("00000000");
+        doThrow(new RestClientException("fail"))
+                .when(iuveneratorClient).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
+        TestUtils.setMock(gpdClient,ResponseEntity.ok().build());
+        TestUtils.setMock(decouplerCachingClient,ResponseEntity.ok().build());
+        when(redisSimpleTemplate.opsForValue()).thenReturn(mock(ValueOperations.class));
+        when(rptRequestRepository.findById(any())).thenThrow(new RuntimeException("fail"));
+
+        MvcResult resultActions = mvc.perform(MockMvcRequestBuilders.get("/redirect?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
+                .andExpect(MockMvcResultMatchers.status().is5xxServerError()).andDo(
+                        (result) -> {
+                            assertNotNull(result);
+                            assertNotNull(result.getResponse());
+                        }).andReturn();
+        assertEquals("text/html;charset=UTF-8",resultActions.getResponse().getContentType());
+        String contentAsString = resultActions.getResponse().getContentAsString();
+        assertTrue(contentAsString.contains("WIC-500"));
+        assertTrue(contentAsString.contains("An unexpected error has occurred. Please contact support"));
+        verify(checkoutClient,times(0)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
+        verify(gpdClient,times(0)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
+        verify(decouplerCachingClient,times(0)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
+    }
+
+    @Test
     void fail_getNAVCodeFromIUVGenerator() throws Exception {
         String station = "mystation";
         TestUtils.setMock(cacheClient,ResponseEntity.ok().body(TestUtils.configData(station)));
@@ -232,8 +279,7 @@ class RptTest {
                 Optional.of(
                         RPTRequestEntity.builder().primitive("nodoInviaRPT")
                                 .payload(
-                                        new String(Base64.getEncoder().encode(zip(
-                                                getRptPayload(false,station,"100.00",null).getBytes(StandardCharsets.UTF_8))),StandardCharsets.UTF_8)
+                                        TestUtils.zipAndEncode(TestUtils.getRptPayload(false,station,"100.00",null))
                                 ).build()
                 )
         );
@@ -268,8 +314,7 @@ class RptTest {
                 Optional.of(
                         RPTRequestEntity.builder().primitive("nodoInviaRPT")
                                 .payload(
-                                        new String(Base64.getEncoder().encode(zip(
-                                                getRptPayload(false,station,"100.00",null).getBytes(StandardCharsets.UTF_8))),StandardCharsets.UTF_8)
+                                        TestUtils.zipAndEncode(TestUtils.getRptPayload(false,station,"100.00",null))
                                 ).build()
                 )
         );
@@ -306,8 +351,7 @@ class RptTest {
                 Optional.of(
                         RPTRequestEntity.builder().primitive("nodoInviaRPT")
                                 .payload(
-                                        new String(Base64.getEncoder().encode(zip(
-                                                getRptPayload(false,station,"100.00",null).getBytes(StandardCharsets.UTF_8))),StandardCharsets.UTF_8)
+                                        TestUtils.zipAndEncode(TestUtils.getRptPayload(false,station,"100.00",null))
                                 ).build()
                 )
         );
@@ -343,8 +387,7 @@ class RptTest {
                 Optional.of(
                         RPTRequestEntity.builder().primitive("nodoInviaRPT")
                                 .payload(
-                                        new String(Base64.getEncoder().encode(zip(
-                                                getRptPayload(false,station,"100.00",null).getBytes(StandardCharsets.UTF_8))),StandardCharsets.UTF_8)
+                                        TestUtils.zipAndEncode(TestUtils.getRptPayload(false,station,"100.00",null))
                                 ).build()
                 )
         );

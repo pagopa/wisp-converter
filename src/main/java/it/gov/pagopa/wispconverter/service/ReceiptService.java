@@ -92,8 +92,7 @@ public class ReceiptService {
                     paaInviaRT.setRt(Base64.getEncoder().encode(xmlString.getBytes(StandardCharsets.UTF_8)));
 
                     ReEventDto reInternal = ReUtil.createBaseReInternal()
-                            .status("RT_GENERATA")
-                            .build();
+                            .status("RT_GENERATA_NODO");
                     reService.addRe(reInternal);
 
                     org.xmlsoap.schemas.soap.envelope.ObjectFactory objectFactoryEnvelope = new org.xmlsoap.schemas.soap.envelope.ObjectFactory();

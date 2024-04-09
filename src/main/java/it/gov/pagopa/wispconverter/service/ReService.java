@@ -18,7 +18,7 @@ public class ReService {
         try {
             log.info("\n" +
                     "#################\n" +
-                    "# RE "+reEventDto.getCategoriaEvento()+"/"+reEventDto.getCallType()+"/"+reEventDto.getSottoTipoEvento()+" \n" +
+                    "# RE "+reEventDto.categoriaEvento()+"/"+reEventDto.callType()+"/"+reEventDto.sottoTipoEvento()+" \n" +
                     objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(reEventDto) + "\n" +
                     "#################");
         } catch (JsonProcessingException e) {
