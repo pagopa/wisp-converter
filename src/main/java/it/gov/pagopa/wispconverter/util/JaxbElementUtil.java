@@ -1,11 +1,19 @@
 package it.gov.pagopa.wispconverter.util;
 
-import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
+import it.gov.pagopa.wispconverter.exception.AppException;
 import jakarta.xml.bind.*;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.util.List;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.oxm.jaxb.Jaxb2Marshaller;
 import org.springframework.stereotype.Component;
+import org.springframework.xml.transform.StringResult;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -14,14 +22,6 @@ import org.xml.sax.SAXException;
 import org.xmlsoap.schemas.soap.envelope.Body;
 import org.xmlsoap.schemas.soap.envelope.Envelope;
 import org.xmlsoap.schemas.soap.envelope.Header;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.StringWriter;
-import java.util.List;
 
 @Slf4j
 @Component
@@ -63,15 +63,15 @@ public class JaxbElementUtil {
     }
     
     public <T> String convertToString(Object object, Class<T> targetType) {
-        try {
-            JAXBContext context = JAXBContext.newInstance(targetType);
-            Marshaller marshaller = context.createMarshaller();
-            StringWriter sw = new StringWriter();
-            marshaller.marshal(object, sw);
-            return sw.toString();
-        } catch (JAXBException e) {
-            throw new RuntimeException(e);
-        }
+            Jaxb2Marshaller marshaller = new Jaxb2Marshaller();
+            marshaller.setPackagesToScan(new String[]{
+                    "org.xmlsoap.schemas.soap.envelope",
+                    "gov.telematici.pagamenti.ws.ppthead",
+                    "gov.telematici.pagamenti.ws"
+            });
+            StringResult ss = new StringResult();
+            marshaller.marshal(object, ss);
+            return ss.toString();
     }
 
     public Element convertToEnvelopeElement(byte[] source) {
