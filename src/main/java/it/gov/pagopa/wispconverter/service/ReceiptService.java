@@ -95,28 +95,19 @@ public class ReceiptService {
                             .status("RT_GENERATA_NODO");
                     reService.addRe(reInternal);
 
-                    org.xmlsoap.schemas.soap.envelope.ObjectFactory objectFactoryEnvelope = new org.xmlsoap.schemas.soap.envelope.ObjectFactory();
-                    Envelope envelope = objectFactoryEnvelope.createEnvelope();
-                    Body body = objectFactoryEnvelope.createBody();
-                    body.getAny().add(paaInviaRT);
-                    Header header = objectFactoryEnvelope.createHeader();
-                    header.getAny().add(intestazionePPT);
-                    envelope.setBody(body);
-                    envelope.setHeader(header);
-                    JAXBElement<Envelope> envelope1 = objectFactoryEnvelope.createEnvelope(envelope);
+                    JAXBElement<Envelope> envelope = jaxbElementUtil.createEnvelope(paaInviaRT, intestazionePPT);
 
                     RPTRequestEntity paaInviaRptRequestEntity = RPTRequestEntity
                             .builder()
                             .id(brokerPa+"_"+UUID.randomUUID())
                             .primitive("paaInviaRT")
                             .partitionKey(LocalDate.now().toString())
-                            .payload(jaxbElementUtil.convertToString(envelope1, Envelope.class))//TOOD generare payload paaInviaRT request completo
+                            .payload(jaxbElementUtil.convertToString(envelope, Envelope.class))
                             .build();
                     rptRequestRepository.save(paaInviaRptRequestEntity);
                 });
 
             });
-
         } catch (JsonProcessingException e) {
             throw new AppException(AppErrorCodeMessageEnum.PARSING_INVALID_BODY);
         }
