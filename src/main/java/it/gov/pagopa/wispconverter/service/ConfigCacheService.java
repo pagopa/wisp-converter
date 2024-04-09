@@ -1,8 +1,11 @@
 package it.gov.pagopa.wispconverter.service;
 
+import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
+import it.gov.pagopa.wispconverter.exception.AppException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
 
 @Service
 @Slf4j
@@ -26,8 +29,9 @@ public class ConfigCacheService {
         try {
             it.gov.pagopa.gen.wispconverter.client.cache.api.CacheApi apiInstance = new it.gov.pagopa.gen.wispconverter.client.cache.api.CacheApi(configCacheClient);
             configData = apiInstance.cache();
-        } catch (Exception e) {
-            log.error("Cannot get cache", e);
+        } catch (RestClientException e) {
+            throw new AppException(AppErrorCodeMessageEnum.CLIENT_DECOUPLER_CACHING,
+                    String.format("RestClientException ERROR [%s] - %s", e.getCause().getClass().getCanonicalName(), e.getMessage()));
         }
     }
 }

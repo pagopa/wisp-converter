@@ -56,10 +56,9 @@ public class DebtPositionService {
             it.gov.pagopa.gen.wispconverter.client.gpd.api.DebtPositionsApiApi apiInstance = new it.gov.pagopa.gen.wispconverter.client.gpd.api.DebtPositionsApiApi(gpdClient);
             apiInstance.createMultiplePositions1(rptContentDTOs.getCreditorInstitutionId(), multiplePaymentPositions, MDC.get(Constants.MDC_REQUEST_ID), true);
 
-            //FIXME gestire errori di connessione
-            //FIXME cosa succede se si spacca al secondo giro?
         } catch (RestClientException e) {
-            throw new AppException(AppErrorCodeMessageEnum.CLIENT_GPD, e.getMessage());
+            throw new AppException(AppErrorCodeMessageEnum.CLIENT_GPD,
+                    String.format("RestClientException ERROR [%s] - %s", e.getCause().getClass().getCanonicalName(), e.getMessage()));
         }
     }
 
