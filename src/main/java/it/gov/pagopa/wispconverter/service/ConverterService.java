@@ -47,9 +47,6 @@ public class ConverterService {
         // calling GPD creation API in order to generate the debt position associated to RPTs
         this.debtPositionService.createDebtPositions(commonRPTFieldsDTO);
 
-
-
-
         // call APIM policy for save key for decoupler and save in Redis cache the mapping of the request identifier needed for RT generation in next steps
         this.cacheService.storeRequestMappingInCache(commonRPTFieldsDTO, sessionId);
 
