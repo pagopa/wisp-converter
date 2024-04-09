@@ -103,13 +103,14 @@ public class ReceiptService {
                     header.getAny().add(intestazionePPT);
                     envelope.setBody(body);
                     envelope.setHeader(header);
+                    JAXBElement<Envelope> envelope1 = objectFactoryEnvelope.createEnvelope(envelope);
 
                     RPTRequestEntity paaInviaRptRequestEntity = RPTRequestEntity
                             .builder()
                             .id(brokerPa+"_"+UUID.randomUUID())
                             .primitive("paaInviaRT")
                             .partitionKey(LocalDate.now().toString())
-                            .payload("")//TOOD generare payload paaInviaRT request completo
+                            .payload(jaxbElementUtil.convertToString(envelope1, Envelope.class))//TOOD generare payload paaInviaRT request completo
                             .build();
                     rptRequestRepository.save(paaInviaRptRequestEntity);
                 });
