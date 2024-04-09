@@ -110,4 +110,16 @@ public class JaxbElementUtil {
         Element element = (Element) list.get(0);
         return convertToBean(element, targetType);
     }
+
+    public JAXBElement<Envelope> createEnvelope(Object body, Object header) {
+        org.xmlsoap.schemas.soap.envelope.ObjectFactory objectFactoryEnvelope = new org.xmlsoap.schemas.soap.envelope.ObjectFactory();
+        Envelope envelope = objectFactoryEnvelope.createEnvelope();
+        Body bodyEnvelope = objectFactoryEnvelope.createBody();
+        bodyEnvelope.getAny().add(body);
+        Header headerEnvelope = objectFactoryEnvelope.createHeader();
+        headerEnvelope.getAny().add(header);
+        envelope.setBody(bodyEnvelope);
+        envelope.setHeader(headerEnvelope);
+        return objectFactoryEnvelope.createEnvelope(envelope);
+    }
 }
