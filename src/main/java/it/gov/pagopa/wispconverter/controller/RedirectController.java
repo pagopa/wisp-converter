@@ -29,7 +29,9 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.ErrorResponse;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.time.Instant;
 import java.util.Map;
@@ -42,18 +44,17 @@ import java.util.Map;
 @Slf4j
 public class RedirectController {
 
+    private static final String BO_REDIRECT = "redirect";
     private final ConverterService converterService;
     private final ErrorUtil errorUtil;
     private final MessageSource messageSource;
-
-    private static final String BO_REDIRECT = "redirect";
 
     @Operation(summary = "", description = "", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"Redirect"})
     @ApiResponses(value = {
             @ApiResponse(responseCode = "302", description = "Redirect to Checkout service.", content = @Content(schema = @Schema()))
     })
-    @GetMapping(value = "/redirect")
-    @TraceReEvent(businessProcess=BO_REDIRECT)
+    @GetMapping(value = "/payments")
+    @TraceReEvent(businessProcess = BO_REDIRECT)
     public String redirect(@Parameter(description = "", example = "identificativoIntermediarioPA_sessionId")
                            @NotBlank(message = "{redirect.session-id.not-blank}")
                            @RequestParam("sessionId") String sessionId,
@@ -93,7 +94,7 @@ public class RedirectController {
             @ApiResponse(responseCode = "200", description = "Redirect info to Checkout service.", content = @Content(schema = @Schema(implementation = RedirectResponse.class)))
     })
     @GetMapping(value = "/redirect", consumes = MediaType.APPLICATION_JSON_VALUE)
-    @TraceReEvent(businessProcess=BO_REDIRECT)
+    @TraceReEvent(businessProcess = BO_REDIRECT)
     public ResponseEntity<RedirectResponse> redirectInfo(@Parameter(description = "", example = "identificativoIntermediarioPA_sessionId")
                                                          @NotBlank(message = "{redirect.session-id.not-blank}")
                                                          @RequestParam("sessionId") String sessionId) {
