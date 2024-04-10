@@ -2,7 +2,6 @@ package it.gov.pagopa.wispconverter.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import gov.telematici.pagamenti.ws.nodoperpa.NodoInviaRPT;
 import gov.telematici.pagamenti.ws.nodoperpa.ppthead.IntestazionePPT;
 import gov.telematici.pagamenti.ws.pafornode.PaSendRTV2Request;
 import gov.telematici.pagamenti.ws.papernodo.PaaInviaRT;
@@ -33,26 +32,23 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.xmlsoap.schemas.soap.envelope.Body;
-import org.xmlsoap.schemas.soap.envelope.Envelope;
-import org.xmlsoap.schemas.soap.envelope.Header;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+
+import static it.gov.pagopa.wispconverter.util.Constants.NODO_DEI_PAGAMENTI_SPC;
+import static it.gov.pagopa.wispconverter.util.Constants.PA_INVIA_RT;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class ReceiptService {
-
-    public static final String PAA_INVIA_RT = "paaInviaRT";
 
     private final RTMapper rtMapper;
 
@@ -278,7 +274,7 @@ public class ReceiptService {
         return RTRequestEntity
                 .builder()
                 .id(brokerPa+"_"+UUID.randomUUID())
-                .primitive(PAA_INVIA_RT)
+                .primitive(PA_INVIA_RT)
                 .partitionKey(LocalDate.ofInstant(now, ZoneId.systemDefault()).toString())
                 .payload(AppBase64Util.base64Encode(ZipUtil.zip(payload)))
                 .url(url)
@@ -302,6 +298,8 @@ public class ReceiptService {
                                           PaymentServiceProviderDto psp) {
         ReEventDto reEventDto = ReUtil.createBaseReInternal()
                 .status(EntityStatusEnum.RT_GENERATA.name())
+                .erogatore(NODO_DEI_PAGAMENTI_SPC)
+                .erogatoreDescr(NODO_DEI_PAGAMENTI_SPC)
                 .sessionIdOriginal(rptRequestEntity.getId())
                 .ccp(rptContentDTO.getRpt().getTransferData().getCcp())
                 .idDominio(rptContentDTO.getRpt().getDomain().getDomainId())
@@ -316,13 +314,9 @@ public class ReceiptService {
         if( station != null ) {
             reEventDto.stazione(station.getStationCode());
         }
-
 //        ReUtil.createBaseReInternal()
 //                .canale("")//TODO
-//                .erogatore("")//TODO
-//                .erogatoreDescr("")//TODO
-//                .standIn(false);//TODO aggiungere anche parte standin da configurazione
-
+//                .standIn(false);//TODO vale la pena aggiungere anche parte standin da configurazione?
         return reEventDto;
     }
 

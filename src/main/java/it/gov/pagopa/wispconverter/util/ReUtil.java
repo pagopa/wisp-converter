@@ -22,10 +22,10 @@ import org.springframework.util.StreamUtils;
 import org.springframework.web.util.ContentCachingResponseWrapper;
 import org.springframework.web.util.WebUtils;
 
+import static it.gov.pagopa.wispconverter.util.Constants.NODO_DEI_PAGAMENTI_SPC;
+
 @Slf4j
 public class ReUtil {
-
-    private static final String NODO_DEI_PAGAMENTI_SP = "NodoDeiPagamentiSPC";
 
     private static ReEventDto createBaseReInterface(CategoriaEventoEnum categoriaEvento, SottoTipoEventoEnum sottoTipoEvento, EsitoEnum esitoEnum, String erogatore, String erogatoreDescr, String fruitore, String fruitoreDescr,
                                               String httpMethod, String httpUri, String httpHeaders, String httpCallRemoteAddress, String compressedPayload, Integer compressedPayloadLength,
@@ -102,7 +102,7 @@ public class ReUtil {
                 CategoriaEventoEnum.INTERFACCIA,
                 SottoTipoEventoEnum.REQ,
                 EsitoEnum.RICEVUTA,
-                NODO_DEI_PAGAMENTI_SP, NODO_DEI_PAGAMENTI_SP,
+                NODO_DEI_PAGAMENTI_SPC, NODO_DEI_PAGAMENTI_SPC,
                 null, null,
                 httpMethod, httpUri, httpHeaders, httpCallRemoteAddress, compressedPayload, compressedPayloadLength,
                 CallTypeEnum.SERVER);
@@ -138,7 +138,7 @@ public class ReUtil {
                 CategoriaEventoEnum.INTERFACCIA,
                 SottoTipoEventoEnum.RESP,
                 EsitoEnum.INVIATA,
-                NODO_DEI_PAGAMENTI_SP, NODO_DEI_PAGAMENTI_SP,
+                NODO_DEI_PAGAMENTI_SPC, NODO_DEI_PAGAMENTI_SPC,
                 null, null,
                 httpMethod, httpUri, httpHeaders, null, compressedPayload, compressedPayloadLength,
                 CallTypeEnum.SERVER);
@@ -178,7 +178,7 @@ public class ReUtil {
                 SottoTipoEventoEnum.REQ,
                 EsitoEnum.INVIATA, //FIXME INVIATA o INVIATA_KO
                 erogatore, erogatoreDescr,
-                NODO_DEI_PAGAMENTI_SP, NODO_DEI_PAGAMENTI_SP,
+                NODO_DEI_PAGAMENTI_SPC, NODO_DEI_PAGAMENTI_SPC,
                 httpMethod, httpUri, httpHeaders, null, compressedPayload, compressedPayloadPayloadLength,
                 CallTypeEnum.CLIENT);
     }
@@ -216,7 +216,7 @@ public class ReUtil {
                 SottoTipoEventoEnum.RESP,
                 EsitoEnum.RICEVUTA, //FIXME RICEVUTA o RICEVUTA_KO
                 erogatore, erogatoreDescr,
-                NODO_DEI_PAGAMENTI_SP, NODO_DEI_PAGAMENTI_SP,
+                NODO_DEI_PAGAMENTI_SPC, NODO_DEI_PAGAMENTI_SPC,
                 httpMethod, httpUri, httpHeaders, null, compressedPayload, compressedPayloadPayloadLength,
                 CallTypeEnum.CLIENT);
 
