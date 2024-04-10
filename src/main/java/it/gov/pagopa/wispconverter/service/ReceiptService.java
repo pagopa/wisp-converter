@@ -284,10 +284,17 @@ public class ReceiptService {
 
     private String getStationUrl(StationDto stationDto) {
         ConnectionDto.ProtocolEnum connection = stationDto.getConnection().getProtocol();
-        String ip = stationDto.getConnection().getIp();
-        Long port = stationDto.getConnection().getPort();
-        String path = stationDto.getService().getPath();
-        return "";
+        StringBuilder url =
+                new StringBuilder(connection.getValue())
+                        .append("//")
+                        .append(stationDto.getConnection().getIp())
+                        .append(":")
+                        .append(stationDto.getConnection().getPort())
+                        .append("/");
+        if( null != stationDto.getService() && null != stationDto.getService().getPath() ) {
+            url.append(stationDto.getService().getPath());
+        }
+        return url.toString();
     }
 
     private ReEventDto generateReInternal(RPTRequestEntity rptRequestEntity,
