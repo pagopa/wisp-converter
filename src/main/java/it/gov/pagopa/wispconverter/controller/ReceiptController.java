@@ -9,10 +9,14 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import it.gov.pagopa.wispconverter.controller.model.ReceiptRequest;
 import it.gov.pagopa.wispconverter.service.ReceiptService;
+import it.gov.pagopa.wispconverter.util.TraceReEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
 
@@ -25,6 +29,8 @@ public class ReceiptController {
 
     private final ReceiptService receiptService;
 
+    private static final String BO_RECEIPT = "receipt";
+
     @Operation(summary = "", description = "", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"Receipt"})
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successfully forwarded paaInviaRT- to EC", content = @Content(schema = @Schema()))
@@ -34,6 +40,7 @@ public class ReceiptController {
             produces = MediaType.APPLICATION_JSON_VALUE,
             consumes = MediaType.APPLICATION_JSON_VALUE
     )
+    @TraceReEvent(businessProcess=BO_RECEIPT)
     public void receiptKo(@RequestBody ReceiptRequest request) throws IOException {
 
         receiptService.paaInviaRTKo(request.getContent());
@@ -48,6 +55,7 @@ public class ReceiptController {
             produces = MediaType.APPLICATION_JSON_VALUE,
             consumes = MediaType.APPLICATION_JSON_VALUE
     )
+    @TraceReEvent(businessProcess=BO_RECEIPT)
     public void receiptOk(@RequestBody ReceiptRequest request) throws IOException {
 
         receiptService.paaInviaRTOk(request.getContent());

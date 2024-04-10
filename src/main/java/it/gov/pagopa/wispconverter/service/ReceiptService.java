@@ -105,12 +105,7 @@ public class ReceiptService {
                     jaxbElementUtil.addBody(message, paaInviaRTJaxb, PaaInviaRT.class);
                     jaxbElementUtil.addHeader(message, intestazionePPT, IntestazionePPT.class);
 
-                    RTRequestEntity rtRequestEntity = null;
-                    try {
-                        rtRequestEntity = generateRTEntity(brokerPa, now, jaxbElementUtil.toString(message), getStationUrl(stationDto));
-                    } catch (IOException e) {
-                        throw new AppException(AppErrorCodeMessageEnum.PARSING_GENERIC_ERROR);
-                    }
+                    RTRequestEntity rtRequestEntity = generateRTEntity(brokerPa, now, jaxbElementUtil.toString(message), getStationUrl(stationDto));
                     rtRequestRepository.save(rtRequestEntity);
 
                     PaymentServiceProviderDto psp = psps.get(rpt.getRpt().getPayerInstitution().getSubjectUniqueIdentifier().getCode());
@@ -169,12 +164,7 @@ public class ReceiptService {
                 jaxbElementUtil.addBody(message, paaInviaRTJaxb, PaaInviaRT.class);
                 jaxbElementUtil.addHeader(message, intestazionePPT, IntestazionePPT.class);
 
-                RTRequestEntity rtRequestEntity = null;
-                try {
-                    rtRequestEntity = generateRTEntity(brokerPa, now, jaxbElementUtil.toString(message), getStationUrl(stationDto));
-                } catch (IOException e) {
-                    throw new AppException(AppErrorCodeMessageEnum.PARSING_GENERIC_ERROR);
-                }
+                RTRequestEntity rtRequestEntity = generateRTEntity(brokerPa, now, jaxbElementUtil.toString(message), getStationUrl(stationDto));
                 rtRequestRepository.save(rtRequestEntity);
 
                 PaymentServiceProviderDto psp = psps.get(rpt.getRpt().getPayerInstitution().getSubjectUniqueIdentifier().getCode());
@@ -270,16 +260,21 @@ public class ReceiptService {
         return header;
     }
 
-    private RTRequestEntity generateRTEntity(String brokerPa, Instant now, String payload, String url) throws IOException {
-        return RTRequestEntity
-                .builder()
-                .id(brokerPa+"_"+UUID.randomUUID())
-                .primitive(PA_INVIA_RT)
-                .partitionKey(LocalDate.ofInstant(now, ZoneId.systemDefault()).toString())
-                .payload(AppBase64Util.base64Encode(ZipUtil.zip(payload)))
-                .url(url)
-                .retry(0)
-                .build();
+    private RTRequestEntity generateRTEntity(String brokerPa, Instant now, String payload, String url) {
+        try {
+            return RTRequestEntity
+                    .builder()
+                    .id(brokerPa+"_"+UUID.randomUUID())
+                    .primitive(PA_INVIA_RT)
+                    .partitionKey(LocalDate.ofInstant(now, ZoneId.systemDefault()).toString())
+                    .payload(AppBase64Util.base64Encode(ZipUtil.zip(payload)))
+                    .url(url)
+                    .retry(0)
+                    .build();
+
+        } catch (Exception e) {
+            throw new AppException(AppErrorCodeMessageEnum.PARSING_GENERIC_ERROR);
+        }
     }
 
     private String getStationUrl(StationDto stationDto) {
