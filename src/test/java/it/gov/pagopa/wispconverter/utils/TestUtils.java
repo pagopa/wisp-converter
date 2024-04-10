@@ -94,6 +94,16 @@ public class TestUtils {
         when(client.selectHeaderContentType(any())).thenReturn(MediaType.APPLICATION_JSON);
     }
 
+    public static String getInnerRptPayload(boolean bollo,String amount,String datiSpecificiRiscossione){
+        if(datiSpecificiRiscossione==null){
+            datiSpecificiRiscossione = "9/tipodovuto_7/datospecifico";
+        }
+        String rpt = TestUtils.loadFileContent(bollo?"/requests/rptBollo.xml":"/requests/rpt.xml");
+        return rpt
+                .replace("{datiSpecificiRiscossione}",datiSpecificiRiscossione)
+                .replaceAll("\\{amount\\}", amount);
+    }
+
     public static String getRptPayload(boolean bollo,String station,String amount,String datiSpecificiRiscossione){
         if(datiSpecificiRiscossione==null){
             datiSpecificiRiscossione = "9/tipodovuto_7/datospecifico";

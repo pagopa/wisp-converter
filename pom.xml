@@ -244,15 +244,38 @@
                                 <wsdlOption>
                                     <wsdl>${basedir}/src/main/resources/wsdl/NodoPerPa.wsdl</wsdl>
                                     <wsdlLocation>classpath:wsdl/NodoPerPa.wsdl</wsdlLocation>
+                                    <packagenames>
+                                        <packagename>http://ws.pagamenti.telematici.gov/ppthead=gov.telematici.pagamenti.ws.nodoperpa.ppthead</packagename>
+                                        <packagename>http://ws.pagamenti.telematici.gov/=gov.telematici.pagamenti.ws.nodoperpa</packagename>
+                                        <packagename>http://www.digitpa.gov.it/schemas/2011/Pagamenti/=gov.telematici.pagamenti.ws.nodoperpa.pagamenti</packagename>
+                                    </packagenames>
                                 </wsdlOption>
                                 <wsdlOption>
                                     <wsdl>${basedir}/src/main/resources/wsdl/PaPerNodo.wsdl</wsdl>
                                     <wsdlLocation>classpath:wsdl/PaPerNodo.wsdl</wsdlLocation>
+                                    <packagenames>
+                                        <packagename>http://ws.pagamenti.telematici.gov/ppthead=gov.telematici.pagamenti.ws.papernodo.ppthead</packagename>
+                                        <packagename>http://ws.pagamenti.telematici.gov/=gov.telematici.pagamenti.ws.papernodo</packagename>
+                                        <packagename>http://www.digitpa.gov.it/schemas/2011/Pagamenti/=gov.telematici.pagamenti.ws.papernodo.pagamenti</packagename>
+                                    </packagenames>
                                 </wsdlOption>
                                 <wsdlOption>
                                     <wsdl>${basedir}/src/main/resources/wsdl/paForNode.wsdl</wsdl>
                                     <wsdlLocation>classpath:wsdl/paForNode.wsdl</wsdlLocation>
+                                    <packagenames>
+                                        <packagename>http://pagopa-api.pagopa.gov.it/paForNode=gov.telematici.pagamenti.ws.pafornode</packagename>
+                                        <packagename>http://pagopa-api.pagopa.gov.it/pa/paForNode.xsd=gov.telematici.pagamenti.ws.pafornode</packagename>
+                                        <packagename>http://ws.pagamenti.telematici.gov/=gov.telematici.pagamenti.ws.pafornode.common</packagename>
+                                    </packagenames>
                                 </wsdlOption>
+                                <!--                                <wsdlOption>-->
+                                <!--                                    <wsdl>${basedir}/src/main/resources/wsdl/PaPerNodo.wsdl</wsdl>-->
+                                <!--                                    <wsdlLocation>classpath:wsdl/PaPerNodo.wsdl</wsdlLocation>-->
+                                <!--                                </wsdlOption>-->
+                                <!--                                <wsdlOption>-->
+                                <!--                                    <wsdl>${basedir}/src/main/resources/wsdl/paForNode.wsdl</wsdl>-->
+                                <!--                                    <wsdlLocation>classpath:wsdl/paForNode.wsdl</wsdlLocation>-->
+                                <!--                                </wsdlOption>-->
                             </wsdlOptions>
                         </configuration>
                         <goals>
