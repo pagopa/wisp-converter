@@ -1,7 +1,8 @@
 package it.gov.pagopa.wispconverter.service.mapper;
 
+import gov.telematici.pagamenti.ws.pafornode.*;
 import it.gov.digitpa.schemas._2011.pagamenti.*;
-import it.gov.pagopa.pagopa_api.pa.pafornode.*;
+
 import it.gov.pagopa.pagopa_api.xsd.common_types.v1_0.CtMapEntry;
 import it.gov.pagopa.wispconverter.service.model.*;
 import it.gov.pagopa.wispconverter.service.model.paymentrequest.PaymentRequestDTO;

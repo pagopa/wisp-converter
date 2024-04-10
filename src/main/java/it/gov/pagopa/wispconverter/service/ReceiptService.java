@@ -4,13 +4,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import gov.telematici.pagamenti.ws.ObjectFactory;
-import gov.telematici.pagamenti.ws.PaaInviaRT;
-import gov.telematici.pagamenti.ws.ppthead.IntestazionePPT;
+import gov.telematici.pagamenti.ws.nodoperpa.ppthead.IntestazionePPT;
+import gov.telematici.pagamenti.ws.pafornode.PaSendRTV2Request;
+import gov.telematici.pagamenti.ws.papernodo.PaaInviaRT;
 import it.gov.digitpa.schemas._2011.pagamenti.*;
 import it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigurationKeyDto;
 import it.gov.pagopa.gen.wispconverter.client.cache.model.StationDto;
-import it.gov.pagopa.pagopa_api.pa.pafornode.PaSendRTV2Request;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
@@ -25,13 +24,7 @@ import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import it.gov.pagopa.wispconverter.util.JaxbElementUtil;
 import it.gov.pagopa.wispconverter.util.ReUtil;
 import jakarta.xml.bind.JAXBElement;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.w3c.dom.Element;
-import org.xmlsoap.schemas.soap.envelope.Envelope;
-
+import jakarta.xml.soap.SOAPMessage;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -40,6 +33,11 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.xmlsoap.schemas.soap.envelope.Envelope;
 
 @Service
 @Slf4j
@@ -65,7 +63,7 @@ public class ReceiptService {
                 .build();
         try {
             List<ReceiptDto> receiptDtos = List.of(mapper.readValue(payload, ReceiptDto[].class));
-            ObjectFactory objectFactory = new ObjectFactory();
+            gov.telematici.pagamenti.ws.papernodo.ObjectFactory objectFactory = new gov.telematici.pagamenti.ws.papernodo.ObjectFactory();
 
             Map<String, ConfigurationKeyDto> configurations = configCacheService.getConfigData().getConfigurations();
 
@@ -88,7 +86,7 @@ public class ReceiptService {
 
                     Instant now = Instant.now();
                     JAXBElement<CtRicevutaTelematica> rt = new it.gov.digitpa.schemas._2011.pagamenti.ObjectFactory().createRT(generateCtRicevutaTelematica(rpt, configurations, now));
-                    String xmlString = jaxbElementUtil.convertToString(rt,CtRicevutaTelematica.class);
+                    String xmlString = jaxbElementUtil.objectToString(rt);
 
                     PaaInviaRT paaInviaRT = objectFactory.createPaaInviaRT();
                     paaInviaRT.setRt(Base64.getEncoder().encode(xmlString.getBytes(StandardCharsets.UTF_8)));
@@ -123,11 +121,8 @@ public class ReceiptService {
 
     public void paaInviaRTOk(String payload) {
         try {
-            Element envelopeElement = jaxbElementUtil.convertToEnvelopeElement(payload.getBytes(StandardCharsets.UTF_8));
-            Envelope requestEnvelope = jaxbElementUtil.convertToBean(envelopeElement, Envelope.class);
-
-            PaSendRTV2Request paSendRTV2Request = jaxbElementUtil.getSoapBody(requestEnvelope, PaSendRTV2Request.class);
-
+            SOAPMessage envelopeElement = jaxbElementUtil.getMessage(payload);
+            PaSendRTV2Request paSendRTV2Request = jaxbElementUtil.getBody(envelopeElement, PaSendRTV2Request.class);
             RPTRequestEntity rptRequestEntity = rptCosmosService.getRPTRequestEntity("intPaLorenz_75fa058f-d1b5-4c7e-865e-a220091d3954");
 
             CommonRPTFieldsDTO commonRPTFieldsDTO = this.rptExtractorService.extractRPTContentDTOs(rptRequestEntity.getPrimitive(), rptRequestEntity.getPayload());
@@ -137,7 +132,7 @@ public class ReceiptService {
             Map<String, StationDto> stations = configCacheService.getConfigData().getStations();
             StationDto stationDto = stations.get(paSendRTV2Request.getIdStation());
 
-            ObjectFactory objectFactory = new ObjectFactory();
+            gov.telematici.pagamenti.ws.papernodo.ObjectFactory objectFactory = new gov.telematici.pagamenti.ws.papernodo.ObjectFactory();
 
             commonRPTFieldsDTO.getRpts().forEach(rpt ->  {
                 Instant now = Instant.now();
@@ -150,7 +145,7 @@ public class ReceiptService {
                         commonRPTFieldsDTO.getStationId());
 
                 JAXBElement<CtRicevutaTelematica> rt = new it.gov.digitpa.schemas._2011.pagamenti.ObjectFactory().createRT(generateCtRicevutaTelematica(rpt, paSendRTV2Request));
-                String xmlString = jaxbElementUtil.convertToString(rt,CtRicevutaTelematica.class);
+                String xmlString = jaxbElementUtil.objectToString(rt);
 
                 PaaInviaRT paaInviaRT = objectFactory.createPaaInviaRT();
                 paaInviaRT.setRt(Base64.getEncoder().encode(xmlString.getBytes(StandardCharsets.UTF_8)));
@@ -234,8 +229,8 @@ public class ReceiptService {
     }
 
     private IntestazionePPT generateIntestazionePPT(String idDominio, String iuv, String ccp, String idIntermediarioPa, String idStazione) {
-        gov.telematici.pagamenti.ws.ppthead.ObjectFactory objectFactoryHead =
-                new gov.telematici.pagamenti.ws.ppthead.ObjectFactory();
+        gov.telematici.pagamenti.ws.nodoperpa.ppthead.ObjectFactory objectFactoryHead =
+                new gov.telematici.pagamenti.ws.nodoperpa.ppthead.ObjectFactory();
 
         IntestazionePPT header = objectFactoryHead.createIntestazionePPT();
         header.setIdentificativoDominio(idDominio);
