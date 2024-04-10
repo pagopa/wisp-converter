@@ -34,7 +34,7 @@ public class CheckoutService {
         try {
             // execute mapping for Checkout carts invocation
             it.gov.pagopa.gen.wispconverter.client.checkout.model.CartRequestDto cart = mapper.toCart(commonRPTFieldsDTO);
-            String stationRedirectURL = ""; // FIXME on next API version will be added the stationID so -> getRedirectURL(cart.getStationId());
+            String stationRedirectURL = getRedirectURL(commonRPTFieldsDTO.getStationId());
             it.gov.pagopa.gen.wispconverter.client.checkout.model.CartRequestReturnUrlsDto returnUrls = new it.gov.pagopa.gen.wispconverter.client.checkout.model.CartRequestReturnUrlsDto();
             returnUrls.setReturnOkUrl(new URI(stationRedirectURL + "/success.html"));
             returnUrls.setReturnCancelUrl(new URI(stationRedirectURL + "/cancel.html"));

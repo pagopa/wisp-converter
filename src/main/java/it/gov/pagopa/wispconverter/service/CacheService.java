@@ -49,12 +49,6 @@ public class CacheService {
             apiInstance.saveMapping(decouplerCachingKeys, MDC.get(Constants.MDC_REQUEST_ID));
 
             // save in Redis cache the mapping of the request identifier needed for RT generation in next steps
-            /*
-            for (String noticeNumber : noticeNumbers) {
-                String requestIDForRTHandling = String.format(CACHING_KEY_TEMPLATE, creditorInstitutionBrokerId, noticeNumber);
-                this.cacheRepository.insert(requestIDForRTHandling, sessionId, this.requestIDMappingTTL);
-            }
-            */
             Set<String> iuvs = commonRPTFieldsDTO.getRpts().stream()
                     .map(RPTContentDTO::getIuv)
                     .collect(Collectors.toSet());
