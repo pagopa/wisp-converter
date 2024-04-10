@@ -29,8 +29,8 @@ public class ReUtil {
     private static final String NODO_DEI_PAGAMENTI_SP = "NodoDeiPagamentiSPC";
 
     private static ReEventDto.ReEventDtoBuilder createBaseReInterface(CategoriaEventoEnum categoriaEvento, SottoTipoEventoEnum sottoTipoEvento, EsitoEnum esitoEnum, String erogatore, String erogatoreDescr, String fruitore, String fruitoreDescr,
-                                                                      String httpMethod, String httpUri, String httpHeaders, String httpCallRemoteAddress, String compressedPayload, Integer compressedPayloadLength,
-                                                                      CallTypeEnum callTypeEnum) {
+                                              String httpMethod, String httpUri, String httpHeaders, String httpCallRemoteAddress, String compressedPayload, Integer compressedPayloadLength,
+                                              CallTypeEnum callTypeEnum) {
 
 
         return createBaseReBuilder()
@@ -56,13 +56,14 @@ public class ReUtil {
     }
 
     private static ReEventDto.ReEventDtoBuilder createBaseReBuilder(){
+        Instant mdcStartTime = MDC.get(Constants.MDC_START_TIME) == null ? Instant.now() : Instant.ofEpochMilli(Long.parseLong(MDC.get(Constants.MDC_START_TIME)));
         return ReEventDto.builder()
                 .id(UUID.randomUUID().toString())
                 .requestId(MDC.get(Constants.MDC_REQUEST_ID))
                 .operationId(MDC.get(Constants.MDC_OPERATION_ID))
                 .clientOperationId(MDC.get(Constants.MDC_CLIENT_OPERATION_ID))
                 .componente(ComponenteEnum.WISP_CONVERTER)
-                .insertedTimestamp(Instant.ofEpochMilli(Long.parseLong(MDC.get(Constants.MDC_START_TIME))))
+                .insertedTimestamp(mdcStartTime)
                 .businessProcess(MDC.get(Constants.MDC_BUSINESS_PROCESS));
     }
 
