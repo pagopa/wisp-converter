@@ -1,6 +1,10 @@
 package it.gov.pagopa.wispconverter.util.client;
 
+import io.netty.channel.ConnectTimeoutException;
+import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
+import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.service.ReService;
+import it.gov.pagopa.wispconverter.service.model.re.EsitoEnum;
 import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import it.gov.pagopa.wispconverter.util.CommonUtility;
 import it.gov.pagopa.wispconverter.util.Constants;
@@ -14,11 +18,14 @@ import org.springframework.http.client.ClientHttpRequestExecution;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestClientException;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 import java.util.function.Predicate;
@@ -98,33 +105,54 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
 //    MDC.getCopyOfContextMap().forEach((k,v) -> {
 //      log.debug(String.format("CLIENT AFTER MDC %s=%s",k, v));
 //    });
-    log.debug("[intercept] add RE CLIENT OUT");
-    ReEventDto reEventDtoClientIN = ReUtil.createReClientInterfaceRequest(request, body);
-    reService.addRe(reEventDtoClientIN);
 
 
-    ClientHttpResponse response = execution.execute(request, body);
+    ClientHttpResponse response;
+    try {
+      response = execution.execute(request, body);
 
-    String executionClientTime = CommonUtility.getExecutionTime(startClient);
-    MDC.put(Constants.MDC_CLIENT_EXECUTION_TIME, executionClientTime);
+      String executionClientTime = CommonUtility.getExecutionTime(startClient);
+      MDC.put(Constants.MDC_CLIENT_EXECUTION_TIME, executionClientTime);
 
-    response(clientOperationId, operationId, executionClientTime, request, response);
+      log.debug("[intercept] add RE CLIENT OUT - Sent");
+      ReEventDto reEventDtoClientIN = ReUtil.createReClientInterfaceRequest(request, body, EsitoEnum.INVIATA);
+      reService.addRe(reEventDtoClientIN);
 
-//    MDC.getCopyOfContextMap().forEach((k,v) -> {
-//      log.debug(String.format("CLIENT BEFORE MDC %s=%s",k, v));
-//    });
+      if(response.getStatusCode().is2xxSuccessful()){
+        log.debug("[intercept] add RE CLIENT IN - Sent - RICEVUTA");
+        ReEventDto reEventDtoClientOUT = ReUtil.createReClientInterfaceResponse(request, response, EsitoEnum.RICEVUTA);
+        reService.addRe(reEventDtoClientOUT);
+      } else {
+        log.debug("[intercept] add RE CLIENT IN - Sent - RICEVUTA_KO");
+        ReEventDto reEventDtoClientOUT = ReUtil.createReClientInterfaceResponse(request, response, EsitoEnum.RICEVUTA_KO);
+        reService.addRe(reEventDtoClientOUT);
+      }
 
-    log.debug("[intercept] add RE CLIENT IN");
-    ReEventDto reEventDtoClientOUT = ReUtil.createReClientInterfaceResponse(request, response);
-    reService.addRe(reEventDtoClientOUT);
 
+      response(clientOperationId, operationId, executionClientTime, request, response);
 
-    MDC.remove(Constants.MDC_CLIENT_OPERATION_ID);
-    MDC.remove(Constants.MDC_CLIENT_EXECUTION_TIME);
+    } catch (Exception e) {
+      String executionClientTime = CommonUtility.getExecutionTime(startClient);
+      MDC.put(Constants.MDC_CLIENT_EXECUTION_TIME, executionClientTime);
+
+      log.debug("[intercept] add RE CLIENT OUT - NOT Sent");
+      ReEventDto reEventDtoClientIN = ReUtil.createReClientInterfaceRequest(request, body, EsitoEnum.INVIATA_KO);
+      reService.addRe(reEventDtoClientIN);
+
+      log.debug("[intercept] add RE CLIENT IN - NOT Sent - NO_RICEVUTA");
+      ReEventDto reEventDtoClientOUT = ReUtil.createReClientInterfaceResponse(request, null, EsitoEnum.NO_RICEVUTA);
+      reService.addRe(reEventDtoClientOUT);
+
+      response(clientOperationId, operationId, executionClientTime, request, null);
+
+      throw e;
+    } finally {
+      MDC.remove(Constants.MDC_CLIENT_OPERATION_ID);
+      MDC.remove(Constants.MDC_CLIENT_EXECUTION_TIME);
+    }
 
     return response;
   }
-
 
   public String createRequestMessage(String clientOperationId, String operationId, HttpRequest request, byte[] reqBody) {
     StringBuilder msg = new StringBuilder();
@@ -190,54 +218,61 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
 
     if(this.responsePretty){
       msg.append(PRETTY_IN).append(SPACE);
-    }
-    msg.append("status: ").append(response.getStatusCode().value());
-
-    if(this.responsePretty){
-      msg.append(PRETTY_IN).append(SPACE);
     } else{
       msg.append(", ");
     }
     msg.append("client-execution-time: ").append(clientExecutionTime).append("ms");
 
-    if (this.responseIncludeHeaders) {
-      HttpHeaders headers = new HttpHeaders();
-      response.getHeaders().forEach((s,h)->{
-        headers.add(s, StringUtils.join(h,","));
-      });
-      if (this.responseHeaderPredicate != null) {
-        headers.forEach(
-            (key, value) -> {
-              if (!this.requestHeaderPredicate.test(key)) {
-                headers.set(key, "masked");
-              }
-            });
+    if(response!=null){
+      if(this.responsePretty){
+        msg.append(PRETTY_IN).append(SPACE);
       }
-      String formatResponseHeaders = formatResponseHeaders(headers);
-      if(formatResponseHeaders!=null){
-        if(this.requestPretty){
-          msg.append(PRETTY_IN).append(SPACE);
-        } else{
-          msg.append(", ");
-        }
-        msg.append("headers: [").append(formatResponseHeaders);
-        if(this.requestPretty){
-          msg.append(PRETTY_OUT).append(SPACE);
-        }
-        msg.append("]");
-      }
-    }
+      msg.append("status: ").append(response.getStatusCode().value());
 
-    if (this.responseIncludePayload) {
-      String payload = bodyToString(response.getBody());
-      if (!payload.isBlank()) {
-        if(this.requestPretty){
-          msg.append(PRETTY_IN).append(SPACE);
-        } else{
-          msg.append(", ");
+      if (this.responseIncludeHeaders) {
+        HttpHeaders headers = new HttpHeaders();
+        response.getHeaders().forEach((s,h)->{
+          headers.add(s, StringUtils.join(h,","));
+        });
+        if (this.responseHeaderPredicate != null) {
+          headers.forEach(
+                  (key, value) -> {
+                    if (!this.requestHeaderPredicate.test(key)) {
+                      headers.set(key, "masked");
+                    }
+                  });
         }
-        msg.append("payload: ").append(payload);
+        String formatResponseHeaders = formatResponseHeaders(headers);
+        if(formatResponseHeaders!=null){
+          if(this.requestPretty){
+            msg.append(PRETTY_IN).append(SPACE);
+          } else{
+            msg.append(", ");
+          }
+          msg.append("headers: [").append(formatResponseHeaders);
+          if(this.requestPretty){
+            msg.append(PRETTY_OUT).append(SPACE);
+          }
+          msg.append("]");
+        }
       }
+
+      if (this.responseIncludePayload) {
+        String payload = bodyToString(response.getBody());
+        if (!payload.isBlank()) {
+          if(this.requestPretty){
+            msg.append(PRETTY_IN).append(SPACE);
+          } else{
+            msg.append(", ");
+          }
+          msg.append("payload: ").append(payload);
+        }
+      }
+    } else {
+      if(this.responsePretty){
+        msg.append(PRETTY_IN).append(SPACE);
+      }
+      msg.append("NO RICEVUTA");
     }
 
     return msg.toString();

@@ -57,7 +57,8 @@ public class CheckoutService {
             location = locationHeader.stream().findFirst().orElseThrow(() -> new AppException(AppErrorCodeMessageEnum.CLIENT_CHECKOUT_INVALID_REDIRECT_LOCATION));
 
         } catch (RestClientException e) {
-            throw new AppException(AppErrorCodeMessageEnum.CLIENT_CHECKOUT, e.getMessage());
+            throw new AppException(AppErrorCodeMessageEnum.CLIENT_CHECKOUT,
+                    String.format("RestClientException ERROR [%s] - %s", e.getCause().getClass().getCanonicalName(), e.getMessage()));
         } catch (URISyntaxException e) {
             throw new AppException(AppErrorCodeMessageEnum.CONFIGURATION_INVALID_STATION_REDIRECT_URL);
         }

@@ -6,17 +6,20 @@ import it.gov.pagopa.wispconverter.service.mapper.DebtPositionMapper;
 import it.gov.pagopa.wispconverter.service.model.*;
 import it.gov.pagopa.wispconverter.service.model.paymentrequest.PaymentRequestDTO;
 import it.gov.pagopa.wispconverter.util.Constants;
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
+
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 @Slf4j
@@ -28,6 +31,8 @@ public class DebtPositionService {
     private final it.gov.pagopa.gen.wispconverter.client.iuvgenerator.invoker.ApiClient iuvGeneratorClient;
 
     private final DebtPositionMapper mapper;
+
+    private final Pattern taxonomyPattern = Pattern.compile("([^/]++/[^/]++)/?");
 
     @Value("${wisp-converter.poste-italiane.abi-code}")
     private String posteItalianeABICode;
@@ -48,10 +53,9 @@ public class DebtPositionService {
             it.gov.pagopa.gen.wispconverter.client.gpd.api.DebtPositionsApiApi apiInstance = new it.gov.pagopa.gen.wispconverter.client.gpd.api.DebtPositionsApiApi(gpdClient);
             apiInstance.createMultiplePositions1(rptContentDTOs.getCreditorInstitutionId(), multiplePaymentPositions, MDC.get(Constants.MDC_REQUEST_ID), true);
 
-            //FIXME gestire errori di connessione
-            //FIXME cosa succede se si spacca al secondo giro?
         } catch (RestClientException e) {
-            throw new AppException(AppErrorCodeMessageEnum.CLIENT_GPD, e.getMessage());
+            throw new AppException(AppErrorCodeMessageEnum.CLIENT_GPD,
+                    String.format("RestClientException ERROR [%s] - %s", e.getCause().getClass().getCanonicalName(), e.getMessage()));
         }
     }
 
@@ -176,7 +180,8 @@ public class DebtPositionService {
 
             navCode = response.getIuv();
         } catch (RestClientException e) {
-            throw new AppException(AppErrorCodeMessageEnum.CLIENT_IUVGENERATOR, e.getMessage());
+            throw new AppException(AppErrorCodeMessageEnum.CLIENT_IUVGENERATOR,
+                    String.format("RestClientException ERROR [%s] - %s", e.getCause().getClass().getCanonicalName(), e.getMessage()));
         }
         return navCode;
     }
@@ -202,8 +207,10 @@ public class DebtPositionService {
         */
         DigitalStampDTO digitalStampDTO = transferDTO.getDigitalStamp();
         if (digitalStampDTO != null) {
+
             transfer.setStamp(mapper.toStamp(digitalStampDTO));
         } else {
+
             String iban = transferDTO.getCreditIban();
             if (iban == null) {
                 throw new AppException(AppErrorCodeMessageEnum.VALIDATION_INVALID_IBANS);
@@ -212,21 +219,21 @@ public class DebtPositionService {
             transfer.setPostalIban(isPostalIBAN(iban) ? iban : null);
             transfer.setOrganizationFiscalCode(organizationFiscalCode);
         }
+
         return transfer;
     }
 
     private String getTaxonomy(TransferDTO transferDTO) {
         String taxonomy = transferDTO.getCategory();
-        int firstlash = taxonomy.indexOf('/');
-        int lastslash = taxonomy.lastIndexOf('/');
-        if(firstlash != lastslash && lastslash>=0){
-            taxonomy = taxonomy.substring(0,lastslash);
+        Matcher matcher = taxonomyPattern.matcher(taxonomy);
+        if (matcher.find()) {
+            taxonomy = matcher.group(1);
         }
         return taxonomy;
     }
 
     private boolean isPostalIBAN(String iban) {
-        return iban.substring(5, 10).equals(posteItalianeABICode);
+        return iban != null && iban.substring(5, 10).equals(posteItalianeABICode);
     }
 
     private String calculateIUPD(String creditorInstitutionBroker) {
