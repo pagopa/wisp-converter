@@ -9,13 +9,13 @@ import jakarta.xml.soap.SOAPMessage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
+import javax.xml.transform.stream.StreamSource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.w3c.dom.Node;
-
-import javax.xml.transform.stream.StreamSource;
 
 @Slf4j
 @Component
@@ -117,6 +117,19 @@ public class JaxbElementUtil {
         }
         String ss = new String(byteArrayOutputStream.toByteArray(),StandardCharsets.UTF_8);
         return ss;
+    }
+
+    public String toString(JAXBElement element){
+        try {
+            StringWriter stringWriter = new StringWriter();
+            JAXBContext jaxbContext = JAXBContext.newInstance(element.getValue().getClass());
+
+            Marshaller marshaller = jaxbContext.createMarshaller();
+            marshaller.marshal(element,stringWriter);
+            return stringWriter.toString();
+        } catch (JAXBException e) {
+            throw new AppException(e, AppErrorCodeMessageEnum.PARSING_GENERIC_ERROR, e.getMessage());
+        }
     }
 
 }
