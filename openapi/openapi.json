@@ -14,9 +14,6 @@
     "description" : "Application info APIs",
     "name" : "Home"
   }, {
-    "description" : "Convert sendPaymentResultV2, closePaymentV2 or paSendRTV2 into paaInviaRT to EC",
-    "name" : "Receipt"
-  }, {
     "description" : "Conversion and redirection APIs",
     "name" : "Redirect"
   } ],
@@ -58,86 +55,6 @@
           "type" : "string"
         }
       } ]
-    },
-    "/receipt/ko" : {
-      "parameters" : [ {
-        "description" : "This header identifies the call, if not passed it is self-generated. This ID is returned in the response.",
-        "in" : "header",
-        "name" : "X-Request-Id",
-        "schema" : {
-          "type" : "string"
-        }
-      } ],
-      "post" : {
-        "operationId" : "receiptKo",
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/ReceiptRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "Successfully forwarded paaInviaRT- to EC",
-            "headers" : {
-              "X-Request-Id" : {
-                "description" : "This header identifies the call",
-                "schema" : {
-                  "type" : "string"
-                }
-              }
-            }
-          }
-        },
-        "security" : [ {
-          "ApiKey" : [ ]
-        } ],
-        "tags" : [ "Receipt" ]
-      }
-    },
-    "/receipt/ok" : {
-      "parameters" : [ {
-        "description" : "This header identifies the call, if not passed it is self-generated. This ID is returned in the response.",
-        "in" : "header",
-        "name" : "X-Request-Id",
-        "schema" : {
-          "type" : "string"
-        }
-      } ],
-      "post" : {
-        "operationId" : "receiptOk",
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/ReceiptRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "Successfully forwarded paaInviaRT+ to EC",
-            "headers" : {
-              "X-Request-Id" : {
-                "description" : "This header identifies the call",
-                "schema" : {
-                  "type" : "string"
-                }
-              }
-            }
-          }
-        },
-        "security" : [ {
-          "ApiKey" : [ ]
-        } ],
-        "tags" : [ "Receipt" ]
-      }
     },
     "/redirect" : {
       "get" : {
@@ -209,14 +126,6 @@
             "type" : "string"
           },
           "version" : {
-            "type" : "string"
-          }
-        }
-      },
-      "ReceiptRequest" : {
-        "type" : "object",
-        "properties" : {
-          "content" : {
             "type" : "string"
           }
         }
