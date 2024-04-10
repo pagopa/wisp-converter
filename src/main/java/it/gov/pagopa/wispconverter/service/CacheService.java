@@ -37,14 +37,14 @@ public class CacheService {
 
     public void storeRequestMappingInCache(CommonRPTFieldsDTO commonRPTFieldsDTO, String sessionId) {
         try {
-            String creditorInstitutionBrokerId = commonRPTFieldsDTO.getCreditorInstitutionBrokerId();
+            String creditorInstitutionId = commonRPTFieldsDTO.getCreditorInstitutionId();
             List<String> noticeNumbers = commonRPTFieldsDTO.getPaymentNotices().stream()
                     .map(PaymentNoticeContentDTO::getNoticeNumber)
                     .toList();
 
             // communicating with APIM policy for caching data for decoupler
             it.gov.pagopa.gen.wispconverter.client.decouplercaching.model.DecouplerCachingKeysDto decouplerCachingKeys = new it.gov.pagopa.gen.wispconverter.client.decouplercaching.model.DecouplerCachingKeysDto();
-            noticeNumbers.forEach(noticeNumber -> decouplerCachingKeys.addKeysItem(String.format(COMPOSITE_TWOVALUES_KEY_TEMPLATE, creditorInstitutionBrokerId, noticeNumber)));
+            noticeNumbers.forEach(noticeNumber -> decouplerCachingKeys.addKeysItem(String.format(COMPOSITE_TWOVALUES_KEY_TEMPLATE, creditorInstitutionId, noticeNumber)));
             it.gov.pagopa.gen.wispconverter.client.decouplercaching.api.DefaultApi apiInstance = new it.gov.pagopa.gen.wispconverter.client.decouplercaching.api.DefaultApi(decouplerCachingClient);
             apiInstance.saveMapping(decouplerCachingKeys, MDC.get(Constants.MDC_REQUEST_ID));
 
@@ -55,7 +55,6 @@ public class CacheService {
                 this.cacheRepository.insert(requestIDForRTHandling, sessionId, this.requestIDMappingTTL);
             }
             */
-            String creditorInstitutionId = commonRPTFieldsDTO.getCreditorInstitutionId();
             Set<String> iuvs = commonRPTFieldsDTO.getRpts().stream()
                     .map(RPTContentDTO::getIuv)
                     .collect(Collectors.toSet());
