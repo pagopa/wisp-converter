@@ -298,7 +298,7 @@ public class ReceiptService {
                                           String paymentToken,
                                           StationDto station,
                                           PaymentServiceProviderDto psp) {
-        ReEventDto reEventDto = ReUtil.createBaseReInternal()
+        ReEventDto.ReEventDtoBuilder reEventDtoBuilder = ReUtil.createBaseReInternal()
                 .status(EntityStatusEnum.RT_GENERATA.name())
                 .erogatore(NODO_DEI_PAGAMENTI_SPC)
                 .erogatoreDescr(NODO_DEI_PAGAMENTI_SPC)
@@ -310,16 +310,16 @@ public class ReceiptService {
                 .paymentToken(paymentToken);
 
         if( psp != null ) {
-            reEventDto.psp(psp.getPspCode());
-            reEventDto.pspDescr(psp.getDescription());
+            reEventDtoBuilder.psp(psp.getPspCode());
+            reEventDtoBuilder.pspDescr(psp.getDescription());
         }
         if( station != null ) {
-            reEventDto.stazione(station.getStationCode());
+            reEventDtoBuilder.stazione(station.getStationCode());
         }
 //        ReUtil.createBaseReInternal()
 //                .canale("")//TODO
 //                .standIn(false);//TODO vale la pena aggiungere anche parte standin da configurazione?
-        return reEventDto;
+        return reEventDtoBuilder.build();
     }
 
 }

@@ -11,7 +11,7 @@ import lombok.experimental.Accessors;
 @NoArgsConstructor
 @Builder
 @JsonPropertyOrder()
-@Accessors(fluent = true,chain = true)
+//@Accessors(fluent = true,chain = true)
 public class ReEventDto {
   //// START KEY
   private String id;
