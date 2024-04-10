@@ -2,13 +2,14 @@ package it.gov.pagopa.wispconverter.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import gov.telematici.pagamenti.ws.nodoperpa.NodoInviaRPT;
 import gov.telematici.pagamenti.ws.nodoperpa.ppthead.IntestazionePPT;
 import gov.telematici.pagamenti.ws.pafornode.PaSendRTV2Request;
 import gov.telematici.pagamenti.ws.papernodo.PaaInviaRT;
 import it.gov.digitpa.schemas._2011.pagamenti.*;
 import it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigurationKeyDto;
+import it.gov.pagopa.gen.wispconverter.client.cache.model.ConnectionDto;
+import it.gov.pagopa.gen.wispconverter.client.cache.model.PaymentServiceProviderDto;
 import it.gov.pagopa.gen.wispconverter.client.cache.model.StationDto;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
@@ -20,11 +21,23 @@ import it.gov.pagopa.wispconverter.service.mapper.RTMapper;
 import it.gov.pagopa.wispconverter.service.model.CommonRPTFieldsDTO;
 import it.gov.pagopa.wispconverter.service.model.RPTContentDTO;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
+import it.gov.pagopa.wispconverter.service.model.re.EntityStatusEnum;
 import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
+import it.gov.pagopa.wispconverter.util.AppBase64Util;
 import it.gov.pagopa.wispconverter.util.JaxbElementUtil;
 import it.gov.pagopa.wispconverter.util.ReUtil;
+import it.gov.pagopa.wispconverter.util.ZipUtil;
 import jakarta.xml.bind.JAXBElement;
 import jakarta.xml.soap.SOAPMessage;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.xmlsoap.schemas.soap.envelope.Body;
+import org.xmlsoap.schemas.soap.envelope.Envelope;
+import org.xmlsoap.schemas.soap.envelope.Header;
+
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -33,15 +46,13 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class ReceiptService {
+
+    public static final String PAA_INVIA_RT = "paaInviaRT";
 
     private final RTMapper rtMapper;
 
@@ -55,20 +66,24 @@ public class ReceiptService {
     private final RPTRequestRepository rptRequestRepository;
     private final RTRequestRepository rtRequestRepository;
 
+    private final ObjectMapper mapper;
+
     @Transactional
     public void paaInviaRTKo(String payload) {
-        ObjectMapper mapper = JsonMapper.builder()
-                .addModule(new JavaTimeModule())
-                .build();
         try {
             List<ReceiptDto> receiptDtos = List.of(mapper.readValue(payload, ReceiptDto[].class));
             gov.telematici.pagamenti.ws.papernodo.ObjectFactory objectFactory = new gov.telematici.pagamenti.ws.papernodo.ObjectFactory();
 
             Map<String, ConfigurationKeyDto> configurations = configCacheService.getConfigData().getConfigurations();
+            Map<String, PaymentServiceProviderDto> psps = configCacheService.getConfigData().getPsps();
+            Map<String, StationDto> stations = configCacheService.getConfigData().getStations();
 
             receiptDtos.forEach(receipt -> {
-                RPTRequestEntity rptRequestEntity = rptCosmosService.getRPTRequestEntity("intPaLorenz_75fa058f-d1b5-4c7e-865e-a220091d3954");
-                String brokerPa = rptRequestEntity.getId().split("_")[0];
+                //TODO: interrogare Redis per recuperare sessionId da usare su Cosmos
+                String sessionIdEntity = "intPaLorenz_75fa058f-d1b5-4c7e-865e-a220091d3954";
+                String brokerPa = sessionIdEntity.split("_")[0];
+
+                RPTRequestEntity rptRequestEntity = rptCosmosService.getRPTRequestEntity(sessionIdEntity);
 
                 CommonRPTFieldsDTO commonRPTFieldsDTO = this.rptExtractorService.extractRPTContentDTOs(rptRequestEntity.getPrimitive(), rptRequestEntity.getPayload());
 
@@ -80,57 +95,59 @@ public class ReceiptService {
                         commonRPTFieldsDTO.getStationId());
 
                 commonRPTFieldsDTO.getRpts().forEach(rpt ->  {
-                    Map<String, StationDto> stations = configCacheService.getConfigData().getStations();
-                    StationDto stationDto = stations.get(rpt.getRpt().getDomain().getStationId());
+                    StationDto stationDto = stations.get(commonRPTFieldsDTO.getStationId());
 
                     Instant now = Instant.now();
                     JAXBElement<CtRicevutaTelematica> rt = new it.gov.digitpa.schemas._2011.pagamenti.ObjectFactory().createRT(generateCtRicevutaTelematica(rpt, configurations, now));
                     String xmlString = jaxbElementUtil.objectToString(rt);
 
                     PaaInviaRT paaInviaRT = objectFactory.createPaaInviaRT();
-                    paaInviaRT.setRt(Base64.getEncoder().encode(xmlString.getBytes(StandardCharsets.UTF_8)));
+                    paaInviaRT.setRt(AppBase64Util.base64Encode(xmlString.getBytes(StandardCharsets.UTF_8)).getBytes(StandardCharsets.UTF_8));
+                    JAXBElement<PaaInviaRT> paaInviaRTJaxb = objectFactory.createPaaInviaRT(paaInviaRT);
 
-                    ReEventDto reInternal = ReUtil.createBaseReInternal()
-                            .status("RT_GENERATA")
-                            .ccp(rpt.getRpt().getTransferData().getCcp())
-                            .canale("")
-                            .erogatore("")
-                            .erogatoreDescr("")
-                            .idDominio(rpt.getRpt().getDomain().getDomainId())
-                            .iuv(rpt.getIuv())
-                            .noticeNumber(receipt.getIdentificativoUnivocoVersamento())
-                            .paymentToken(receipt.getPaymentToken())
-                            .psp(rpt.getRpt().getPayerInstitution().getSubjectUniqueIdentifier().getCode())
-                            .pspDescr("")
-                            .stazione(stationDto.getStationCode())
-                            .standIn(false);
-                    reService.addRe(reInternal);
+                    SOAPMessage message = jaxbElementUtil.newMessage();
+                    jaxbElementUtil.addBody(message, paaInviaRTJaxb, PaaInviaRT.class);
+                    jaxbElementUtil.addHeader(message, intestazionePPT, IntestazionePPT.class);
 
-                    SOAPMessage soapMessage = jaxbElementUtil.newMessage();
-                    jaxbElementUtil.addHeader(soapMessage,intestazionePPT, IntestazionePPT.class);
-                    jaxbElementUtil.addBody(soapMessage,paaInviaRT, PaaInviaRT.class);
-
-                    RTRequestEntity rtRequestEntity = generateRTEntity(brokerPa, now, jaxbElementUtil.toString(soapMessage), "");//TODO: impostare url stazione
+                    RTRequestEntity rtRequestEntity = null;
+                    try {
+                        rtRequestEntity = generateRTEntity(brokerPa, now, jaxbElementUtil.toString(message), getStationUrl(stationDto));
+                    } catch (IOException e) {
+                        throw new AppException(AppErrorCodeMessageEnum.PARSING_GENERIC_ERROR);
+                    }
                     rtRequestRepository.save(rtRequestEntity);
-                });
 
+                    PaymentServiceProviderDto psp = psps.get(rpt.getRpt().getPayerInstitution().getSubjectUniqueIdentifier().getCode());
+
+                    //generate and save re event internal for change status
+                    ReEventDto reEventDto = generateReInternal(rptRequestEntity, rpt, receipt.getIdentificativoUnivocoVersamento(), receipt.getPaymentToken(), stationDto, psp);
+                    reService.addRe(reEventDto);
+                });
             });
         } catch (JsonProcessingException e) {
             throw new AppException(AppErrorCodeMessageEnum.PARSING_INVALID_BODY);
+        } catch (Exception e) {
+            throw new AppException(AppErrorCodeMessageEnum.GENERIC_ERROR);
         }
     }
 
+    @Transactional
     public void paaInviaRTOk(String payload) {
         try {
+            Map<String, StationDto> stations = configCacheService.getConfigData().getStations();
+            Map<String, PaymentServiceProviderDto> psps = configCacheService.getConfigData().getPsps();
+
             SOAPMessage envelopeElement = jaxbElementUtil.getMessage(payload);
             PaSendRTV2Request paSendRTV2Request = jaxbElementUtil.getBody(envelopeElement, PaSendRTV2Request.class);
+
+            //TODO: interrogare Redis per recuperare sessionId da usare su Cosmos
+            String sessionIdEntity = "intPaLorenz_75fa058f-d1b5-4c7e-865e-a220091d3954";
+            String brokerPa = sessionIdEntity.split("_")[0];
+
             RPTRequestEntity rptRequestEntity = rptCosmosService.getRPTRequestEntity("intPaLorenz_75fa058f-d1b5-4c7e-865e-a220091d3954");
 
             CommonRPTFieldsDTO commonRPTFieldsDTO = this.rptExtractorService.extractRPTContentDTOs(rptRequestEntity.getPrimitive(), rptRequestEntity.getPayload());
 
-            String brokerPa = rptRequestEntity.getId().split("_")[0];
-
-            Map<String, StationDto> stations = configCacheService.getConfigData().getStations();
             StationDto stationDto = stations.get(paSendRTV2Request.getIdStation());
 
             gov.telematici.pagamenti.ws.papernodo.ObjectFactory objectFactory = new gov.telematici.pagamenti.ws.papernodo.ObjectFactory();
@@ -149,19 +166,31 @@ public class ReceiptService {
                 String xmlString = jaxbElementUtil.objectToString(rt);
 
                 PaaInviaRT paaInviaRT = objectFactory.createPaaInviaRT();
-                paaInviaRT.setRt(Base64.getEncoder().encode(xmlString.getBytes(StandardCharsets.UTF_8)));
+                paaInviaRT.setRt(AppBase64Util.base64Encode(xmlString.getBytes(StandardCharsets.UTF_8)).getBytes(StandardCharsets.UTF_8));
+                JAXBElement<PaaInviaRT> paaInviaRTJaxb = objectFactory.createPaaInviaRT(paaInviaRT);
 
-                ReEventDto reInternal = ReUtil.createBaseReInternal()
-                        .status("RT_GENERATA");
-                reService.addRe(reInternal);
+                SOAPMessage message = jaxbElementUtil.newMessage();
+                jaxbElementUtil.addBody(message, paaInviaRTJaxb, PaaInviaRT.class);
+                jaxbElementUtil.addHeader(message, intestazionePPT, IntestazionePPT.class);
 
-
-                SOAPMessage soapMessage = jaxbElementUtil.newMessage();
-                jaxbElementUtil.addHeader(soapMessage,intestazionePPT, IntestazionePPT.class);
-                jaxbElementUtil.addBody(soapMessage,paaInviaRT, PaaInviaRT.class);
-
-                RTRequestEntity rtRequestEntity = generateRTEntity(brokerPa, now, jaxbElementUtil.toString(soapMessage), "");//TODO: impostare url stazione
+                RTRequestEntity rtRequestEntity = null;
+                try {
+                    rtRequestEntity = generateRTEntity(brokerPa, now, jaxbElementUtil.toString(message), getStationUrl(stationDto));
+                } catch (IOException e) {
+                    throw new AppException(AppErrorCodeMessageEnum.PARSING_GENERIC_ERROR);
+                }
                 rtRequestRepository.save(rtRequestEntity);
+
+                PaymentServiceProviderDto psp = psps.get(rpt.getRpt().getPayerInstitution().getSubjectUniqueIdentifier().getCode());
+
+                //generate and save re event internal for change status
+                ReEventDto reEventDto = generateReInternal(rptRequestEntity,
+                        rpt,
+                        paSendRTV2Request.getReceipt().getNoticeNumber(),
+                        paSendRTV2Request.getReceipt().getCreditorReferenceId(),
+                        stationDto,
+                        psp);
+                reService.addRe(reEventDto);
             });
 
         } catch (AppException e) {
@@ -245,20 +274,56 @@ public class ReceiptService {
         return header;
     }
 
-    private RTRequestEntity generateRTEntity(String brokerPa, Instant now, String payload, String url) {
+    private RTRequestEntity generateRTEntity(String brokerPa, Instant now, String payload, String url) throws IOException {
         return RTRequestEntity
                 .builder()
                 .id(brokerPa+"_"+UUID.randomUUID())
-                .primitive("paaInviaRT")
+                .primitive(PAA_INVIA_RT)
                 .partitionKey(LocalDate.ofInstant(now, ZoneId.systemDefault()).toString())
-                .payload(payload)
+                .payload(AppBase64Util.base64Encode(ZipUtil.zip(payload)))
                 .url(url)
                 .retry(0)
                 .build();
     }
 
-//    private String getStationUrl(StationDto stationDto) {
-//        String connection = stationDto.getConnection().getProtocol();
-//    }
+    private String getStationUrl(StationDto stationDto) {
+        ConnectionDto.ProtocolEnum connection = stationDto.getConnection().getProtocol();
+        String ip = stationDto.getConnection().getIp();
+        Long port = stationDto.getConnection().getPort();
+        String path = stationDto.getService().getPath();
+        return "";
+    }
+
+    private ReEventDto generateReInternal(RPTRequestEntity rptRequestEntity,
+                                          RPTContentDTO rptContentDTO,
+                                          String noticeNumber,
+                                          String paymentToken,
+                                          StationDto station,
+                                          PaymentServiceProviderDto psp) {
+        ReEventDto reEventDto = ReUtil.createBaseReInternal()
+                .status(EntityStatusEnum.RT_GENERATA.name())
+                .sessionIdOriginal(rptRequestEntity.getId())
+                .ccp(rptContentDTO.getRpt().getTransferData().getCcp())
+                .idDominio(rptContentDTO.getRpt().getDomain().getDomainId())
+                .iuv(rptContentDTO.getIuv())
+                .noticeNumber(noticeNumber)
+                .paymentToken(paymentToken);
+
+        if( psp != null ) {
+            reEventDto.psp(psp.getPspCode());
+            reEventDto.pspDescr(psp.getDescription());
+        }
+        if( station != null ) {
+            reEventDto.stazione(station.getStationCode());
+        }
+
+//        ReUtil.createBaseReInternal()
+//                .canale("")//TODO
+//                .erogatore("")//TODO
+//                .erogatoreDescr("")//TODO
+//                .standIn(false);//TODO aggiungere anche parte standin da configurazione
+
+        return reEventDto;
+    }
 
 }
