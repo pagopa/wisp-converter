@@ -119,12 +119,18 @@ public class JaxbElementUtil {
         return ss;
     }
 
-    public String toString(JAXBElement element){
+    public String objectToString(Object element){
         try {
             StringWriter stringWriter = new StringWriter();
-            JAXBContext jaxbContext = JAXBContext.newInstance(element.getValue().getClass());
-
+            Class c;
+            if(element instanceof JAXBElement element1){
+                c = element1.getValue().getClass();
+            }else{
+                c = element.getClass();
+            }
+            JAXBContext jaxbContext = JAXBContext.newInstance(c);
             Marshaller marshaller = jaxbContext.createMarshaller();
+            marshaller.setProperty(Marshaller.JAXB_FRAGMENT, Boolean.TRUE);
             marshaller.marshal(element,stringWriter);
             return stringWriter.toString();
         } catch (JAXBException e) {

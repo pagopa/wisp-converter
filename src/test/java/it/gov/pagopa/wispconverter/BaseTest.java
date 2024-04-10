@@ -1,6 +1,5 @@
 package it.gov.pagopa.wispconverter;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import gov.telematici.pagamenti.ws.nodoperpa.NodoInviaCarrelloRPT;
@@ -11,9 +10,7 @@ import gov.telematici.pagamenti.ws.nodoperpa.ppthead.IntestazionePPT;
 import it.gov.digitpa.schemas._2011.pagamenti.CtRichiestaPagamentoTelematico;
 import it.gov.pagopa.wispconverter.util.JaxbElementUtil;
 import it.gov.pagopa.wispconverter.utils.TestUtils;
-import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBElement;
-import jakarta.xml.bind.Marshaller;
 import jakarta.xml.soap.*;
 import javax.xml.parsers.ParserConfigurationException;
 import lombok.SneakyThrows;
@@ -56,6 +53,18 @@ public class BaseTest {
 
         CtRichiestaPagamentoTelematico ctRichiestaPagamentoTelematico = new it.gov.digitpa.schemas._2011.pagamenti.ObjectFactory().createCtRichiestaPagamentoTelematico();
         JAXBElement<CtRichiestaPagamentoTelematico> rpt1 = new it.gov.digitpa.schemas._2011.pagamenti.ObjectFactory().createRPT(ctRichiestaPagamentoTelematico);
+        String string = jaxbElementUtil.objectToString(rpt1);
+        assert(true);
+
+    }
+
+    @SneakyThrows
+    @Test
+    public void testInte() throws ParserConfigurationException {
+        IntestazionePPT intestazionePPT = new gov.telematici.pagamenti.ws.nodoperpa.ppthead.ObjectFactory().createIntestazionePPT();
+        JaxbElementUtil jaxbElementUtil = new JaxbElementUtil();
+        String string = jaxbElementUtil.objectToString(intestazionePPT);
+        assert(true);
 
     }
 
