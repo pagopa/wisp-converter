@@ -37,7 +37,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.xmlsoap.schemas.soap.envelope.Envelope;
 
 @Service
 @Slf4j
@@ -107,9 +106,11 @@ public class ReceiptService {
                             .standIn(false);
                     reService.addRe(reInternal);
 
-                    JAXBElement<Envelope> envelope = jaxbElementUtil.createEnvelope(paaInviaRT, intestazionePPT);
+                    SOAPMessage soapMessage = jaxbElementUtil.newMessage();
+                    jaxbElementUtil.addHeader(soapMessage,intestazionePPT, IntestazionePPT.class);
+                    jaxbElementUtil.addBody(soapMessage,paaInviaRT, PaaInviaRT.class);
 
-                    RTRequestEntity rtRequestEntity = generateRTEntity(brokerPa, now, envelope, "");//TODO: impostare url stazione
+                    RTRequestEntity rtRequestEntity = generateRTEntity(brokerPa, now, jaxbElementUtil.toString(soapMessage), "");//TODO: impostare url stazione
                     rtRequestRepository.save(rtRequestEntity);
                 });
 
@@ -154,9 +155,12 @@ public class ReceiptService {
                         .status("RT_GENERATA");
                 reService.addRe(reInternal);
 
-                JAXBElement<Envelope> envelope = jaxbElementUtil.createEnvelope(paaInviaRT, intestazionePPT);
 
-                RTRequestEntity rtRequestEntity = generateRTEntity(brokerPa, now, envelope, "");//TODO: impostare url stazione
+                SOAPMessage soapMessage = jaxbElementUtil.newMessage();
+                jaxbElementUtil.addHeader(soapMessage,intestazionePPT, IntestazionePPT.class);
+                jaxbElementUtil.addBody(soapMessage,paaInviaRT, PaaInviaRT.class);
+
+                RTRequestEntity rtRequestEntity = generateRTEntity(brokerPa, now, jaxbElementUtil.toString(soapMessage), "");//TODO: impostare url stazione
                 rtRequestRepository.save(rtRequestEntity);
             });
 
@@ -241,13 +245,13 @@ public class ReceiptService {
         return header;
     }
 
-    private RTRequestEntity generateRTEntity(String brokerPa, Instant now, JAXBElement<Envelope> envelope, String url) {
+    private RTRequestEntity generateRTEntity(String brokerPa, Instant now, String payload, String url) {
         return RTRequestEntity
                 .builder()
                 .id(brokerPa+"_"+UUID.randomUUID())
                 .primitive("paaInviaRT")
                 .partitionKey(LocalDate.ofInstant(now, ZoneId.systemDefault()).toString())
-                .payload(jaxbElementUtil.convertToString(envelope, Envelope.class))
+                .payload(payload)
                 .url(url)
                 .retry(0)
                 .build();
