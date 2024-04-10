@@ -50,11 +50,9 @@ public class CacheService {
                 String requestIDForRTHandling = String.format(CACHING_KEY_TEMPLATE, idIntermediarioPA, noticeNumber);
                 this.cacheRepository.insert(requestIDForRTHandling, sessionId, this.requestIDMappingTTL);
             }
-
         } catch (RestClientException e) {
-            throw new AppException(e, AppErrorCodeMessageEnum.CLIENT_DECOUPLER_CACHING, e.getMessage());
-        } catch (RedisException e) {
-            throw new AppException(e, AppErrorCodeMessageEnum.PERSISTENCE_REQUESTID_CACHING_ERROR, e.getMessage());
+            throw new AppException(AppErrorCodeMessageEnum.CLIENT_DECOUPLER_CACHING,
+                    String.format("RestClientException ERROR [%s] - %s", e.getCause().getClass().getCanonicalName(), e.getMessage()));
         }
     }
 }

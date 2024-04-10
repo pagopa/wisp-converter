@@ -1,5 +1,6 @@
 package it.gov.pagopa.wispconverter.service;
 
+import io.netty.channel.ConnectTimeoutException;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.service.mapper.DebtPositionMapper;
@@ -14,6 +15,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
 
 import java.math.BigDecimal;
+import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -53,10 +56,9 @@ public class DebtPositionService {
             it.gov.pagopa.gen.wispconverter.client.gpd.api.DebtPositionsApiApi apiInstance = new it.gov.pagopa.gen.wispconverter.client.gpd.api.DebtPositionsApiApi(gpdClient);
             apiInstance.createMultiplePositions1(rptContentDTOs.getCreditorInstitutionId(), multiplePaymentPositions, MDC.get(Constants.MDC_REQUEST_ID), true);
 
-            //FIXME gestire errori di connessione
-            //FIXME cosa succede se si spacca al secondo giro?
         } catch (RestClientException e) {
-            throw new AppException(AppErrorCodeMessageEnum.CLIENT_GPD, e.getMessage());
+            throw new AppException(AppErrorCodeMessageEnum.CLIENT_GPD,
+                    String.format("RestClientException ERROR [%s] - %s", e.getCause().getClass().getCanonicalName(), e.getMessage()));
         }
     }
 
@@ -181,7 +183,8 @@ public class DebtPositionService {
 
             navCode = response.getIuv();
         } catch (RestClientException e) {
-            throw new AppException(AppErrorCodeMessageEnum.CLIENT_IUVGENERATOR, e.getMessage());
+            throw new AppException(AppErrorCodeMessageEnum.CLIENT_IUVGENERATOR,
+                    String.format("RestClientException ERROR [%s] - %s", e.getCause().getClass().getCanonicalName(), e.getMessage()));
         }
         return navCode;
     }
