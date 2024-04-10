@@ -9,7 +9,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import it.gov.pagopa.wispconverter.controller.model.ReceiptRequest;
 import it.gov.pagopa.wispconverter.service.ReceiptService;
-import it.gov.pagopa.wispconverter.util.TraceReEvent;
+import it.gov.pagopa.wispconverter.util.Trace;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
@@ -29,7 +29,8 @@ public class ReceiptController {
 
     private final ReceiptService receiptService;
 
-    private static final String BO_RECEIPT = "receipt";
+    private static final String BP_RECEIPT_OK = "receipt-ok";
+    private static final String BP_RECEIPT_KO = "receipt-ko";
 
     @Operation(summary = "", description = "", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"Receipt"})
     @ApiResponses(value = {
@@ -40,7 +41,7 @@ public class ReceiptController {
             produces = MediaType.APPLICATION_JSON_VALUE,
             consumes = MediaType.APPLICATION_JSON_VALUE
     )
-    @TraceReEvent(businessProcess=BO_RECEIPT)
+    @Trace(businessProcess=BP_RECEIPT_KO, reEnabled = true)
     public void receiptKo(@RequestBody ReceiptRequest request) throws IOException {
 
         receiptService.paaInviaRTKo(request.getContent());
@@ -55,7 +56,7 @@ public class ReceiptController {
             produces = MediaType.APPLICATION_JSON_VALUE,
             consumes = MediaType.APPLICATION_JSON_VALUE
     )
-    @TraceReEvent(businessProcess=BO_RECEIPT)
+    @Trace(businessProcess=BP_RECEIPT_OK, reEnabled = true)
     public void receiptOk(@RequestBody ReceiptRequest request) throws IOException {
 
         receiptService.paaInviaRTOk(request.getContent());

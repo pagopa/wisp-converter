@@ -14,7 +14,7 @@ import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.service.ConverterService;
 import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.ErrorUtil;
-import it.gov.pagopa.wispconverter.util.TraceReEvent;
+import it.gov.pagopa.wispconverter.util.Trace;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
@@ -46,14 +46,14 @@ public class RedirectController {
     private final ErrorUtil errorUtil;
     private final MessageSource messageSource;
 
-    private static final String BO_REDIRECT = "redirect";
+    private static final String BP_REDIRECT = "redirect";
 
     @Operation(summary = "", description = "", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"Redirect"})
     @ApiResponses(value = {
             @ApiResponse(responseCode = "302", description = "Redirect to Checkout service.", content = @Content(schema = @Schema()))
     })
     @GetMapping(value = "/redirect")
-    @TraceReEvent(businessProcess=BO_REDIRECT)
+    @Trace(businessProcess=BP_REDIRECT, reEnabled = true)
     public String redirect(@Parameter(description = "", example = "identificativoIntermediarioPA_sessionId")
                            @NotBlank(message = "{redirect.session-id.not-blank}")
                            @RequestParam("sessionId") String sessionId,
@@ -93,7 +93,7 @@ public class RedirectController {
             @ApiResponse(responseCode = "200", description = "Redirect info to Checkout service.", content = @Content(schema = @Schema(implementation = RedirectResponse.class)))
     })
     @GetMapping(value = "/redirect", consumes = MediaType.APPLICATION_JSON_VALUE)
-    @TraceReEvent(businessProcess=BO_REDIRECT)
+    @Trace(businessProcess=BP_REDIRECT, reEnabled = true)
     public ResponseEntity<RedirectResponse> redirectInfo(@Parameter(description = "", example = "identificativoIntermediarioPA_sessionId")
                                                          @NotBlank(message = "{redirect.session-id.not-blank}")
                                                          @RequestParam("sessionId") String sessionId) {

@@ -1,6 +1,9 @@
 package it.gov.pagopa.wispconverter.util.interceptor;
 
+import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import it.gov.pagopa.wispconverter.util.Constants;
+import it.gov.pagopa.wispconverter.util.ReUtil;
+import it.gov.pagopa.wispconverter.util.Trace;
 import it.gov.pagopa.wispconverter.util.client.ServerLoggingProperties;
 import it.gov.pagopa.wispconverter.util.filter.RepeatableContentCachingRequestWrapper;
 import jakarta.servlet.FilterChain;
@@ -17,6 +20,7 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.util.StreamUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.util.ContentCachingResponseWrapper;
 import org.springframework.web.util.WebUtils;
@@ -93,54 +97,34 @@ public abstract class AbstractAppServerLoggingInterceptor implements HandlerInte
 
   @Override
   public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-    String operationId = UUID.randomUUID().toString();
-    MDC.put(Constants.MDC_START_TIME, String.valueOf(System.currentTimeMillis()));
-    MDC.put(Constants.MDC_OPERATION_ID, operationId);
+    if(handler instanceof HandlerMethod){
+      Trace trace = ((HandlerMethod) handler).getMethod().getAnnotation(Trace.class);
+      if(trace !=null){
+        String operationId = UUID.randomUUID().toString();
+        MDC.put(Constants.MDC_START_TIME, String.valueOf(System.currentTimeMillis()));
+        MDC.put(Constants.MDC_OPERATION_ID, operationId);
 
-    request(operationId, request);
+        String businessProcess = trace.businessProcess();
+        MDC.put(Constants.MDC_BUSINESS_PROCESS, businessProcess);
+
+        request(operationId, request);
+      }
+    }
+
     return true;
   }
 
   @Override
   public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
-    String operationId = MDC.get(Constants.MDC_OPERATION_ID);
-    String executionTime = MDC.get(Constants.MDC_EXECUTION_TIME);
-    MDC.put(Constants.MDC_EXECUTION_TIME, executionTime);
-    response(operationId, executionTime, request, response);
-  }
-
-//  @Override
-//  protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-//    try {
-//      String operationId = UUID.randomUUID().toString();
-//      MDC.put(Constants.MDC_START_TIME, String.valueOf(System.currentTimeMillis()));
-//      MDC.put(Constants.MDC_OPERATION_ID, operationId);
-//
-//      request(operationId, request);
-//      filterChain.doFilter(request, response);
-//    } finally {
-//      String operationId = MDC.get(Constants.MDC_OPERATION_ID);
-//      String executionTime = MDC.get(Constants.MDC_EXECUTION_TIME);
-//      MDC.put(Constants.MDC_EXECUTION_TIME, executionTime);
-//      response(operationId, executionTime, request, response);
-//    }
-//  }
-//
-//  @Override
-//  protected boolean shouldNotFilter(HttpServletRequest request) {
-//    AntPathMatcher pathMatcher = new AntPathMatcher();
-//    return excludeUrlPatterns
-//            .stream()
-//            .anyMatch(p -> pathMatcher.match(p, request.getServletPath()));
-//  }
-
-  private static String getExecutionTime(String startTime) {
-    if (startTime != null) {
-      long endTime = System.currentTimeMillis();
-      long executionTime = endTime - Long.parseLong(startTime);
-      return String.valueOf(executionTime);
+    if(handler instanceof HandlerMethod) {
+      Trace trace = ((HandlerMethod) handler).getMethod().getAnnotation(Trace.class);
+      if (trace != null) {
+        String operationId = MDC.get(Constants.MDC_OPERATION_ID);
+        String executionTime = MDC.get(Constants.MDC_EXECUTION_TIME);
+        MDC.put(Constants.MDC_EXECUTION_TIME, executionTime);
+        response(operationId, executionTime, request, response);
+      }
     }
-    return "-";
   }
 
 
