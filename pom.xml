@@ -136,6 +136,7 @@
             <artifactId>logback-ecs-encoder</artifactId>
             <version>${java-ecs-logging.version}</version>
         </dependency>
+
     </dependencies>
 
     <profiles>
