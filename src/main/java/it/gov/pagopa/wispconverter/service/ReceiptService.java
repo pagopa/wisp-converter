@@ -286,7 +286,7 @@ public class ReceiptService {
         ConnectionDto.ProtocolEnum connection = stationDto.getConnection().getProtocol();
         StringBuilder url =
                 new StringBuilder(connection.getValue())
-                        .append("//")
+                        .append("://")
                         .append(stationDto.getConnection().getIp())
                         .append(":")
                         .append(stationDto.getConnection().getPort())
