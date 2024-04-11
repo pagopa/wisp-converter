@@ -1,7 +1,6 @@
 package it.gov.pagopa.wispconverter.util.client;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 @Setter
 @Getter
@@ -13,6 +12,9 @@ public class RequestResponseLoggingProperties {
 
     @Setter
     @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class Request {
         private String maskHeaderName;
         private boolean includeHeaders;
@@ -23,6 +25,9 @@ public class RequestResponseLoggingProperties {
 
     @Setter
     @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class Response {
         private boolean includeHeaders;
         private boolean includePayload;

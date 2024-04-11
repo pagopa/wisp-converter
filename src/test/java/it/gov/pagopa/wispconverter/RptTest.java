@@ -4,8 +4,8 @@ import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import it.gov.pagopa.gen.wispconverter.client.iuvgenerator.model.IUVGenerationResponseDto;
 import it.gov.pagopa.gen.wispconverter.client.gpd.model.MultiplePaymentPositionModelDto;
-import it.gov.pagopa.gen.wispconverter.client.iuvgenerator.model.IuvGenerationModelResponseDto;
 import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.RTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.ReEventRepository;
@@ -61,20 +61,16 @@ class RptTest {
     @MockBean private RedisTemplate<String, Object> redisSimpleTemplate;
     @MockBean
     private ReEventRepository reEventRepository;
-    @SpyBean
-    private ReService reService;
 
     @Test
     void success() throws Exception {
         String station = "mystation";
-        TestUtils.setMock(cacheClient,ResponseEntity.ok().body(TestUtils.configData(station)));
-
-        org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configCacheClient",cacheClient);
+        org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configData",TestUtils.configData(station));
         HttpHeaders headers = new HttpHeaders();
         headers.add("location","locationheader");
         TestUtils.setMock(checkoutClient, ResponseEntity.status(HttpStatus.FOUND).headers(headers).build());
 
-        IuvGenerationModelResponseDto iuvGenerationModelResponseDto = new IuvGenerationModelResponseDto();
+        it.gov.pagopa.gen.wispconverter.client.iuvgenerator.model.IUVGenerationResponseDto iuvGenerationModelResponseDto = new IUVGenerationResponseDto();
         iuvGenerationModelResponseDto.setIuv("00000000");
         TestUtils.setMock(iuveneratorClient,ResponseEntity.ok().body(iuvGenerationModelResponseDto));
         TestUtils.setMock(gpdClient,ResponseEntity.ok().build());
@@ -111,21 +107,19 @@ class RptTest {
         assertEquals("TTTTTT11T11T123T", value.getPaymentPositions().get(0).getFiscalCode());
 
         ArgumentCaptor<ReEventDto> reevents = ArgumentCaptor.forClass(ReEventDto.class);
-        verify(reService,times(2)).addRe(reevents.capture());
+        verify(reEventRepository,times(2)).save(any());
         reevents.getAllValues();
     }
 
     @Test
     void success_tassonomia() throws Exception {
         String station = "mystation";
-        TestUtils.setMock(cacheClient,ResponseEntity.ok().body(TestUtils.configData(station)));
-
-        org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configCacheClient",cacheClient);
+        org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configData",TestUtils.configData(station));
         HttpHeaders headers = new HttpHeaders();
         headers.add("location","locationheader");
         TestUtils.setMock(checkoutClient, ResponseEntity.status(HttpStatus.FOUND).headers(headers).build());
 
-        IuvGenerationModelResponseDto iuvGenerationModelResponseDto = new IuvGenerationModelResponseDto();
+        IUVGenerationResponseDto iuvGenerationModelResponseDto = new IUVGenerationResponseDto();
         iuvGenerationModelResponseDto.setIuv("00000000");
         TestUtils.setMock(iuveneratorClient,ResponseEntity.ok().body(iuvGenerationModelResponseDto));
         TestUtils.setMock(gpdClient,ResponseEntity.ok().build());
@@ -159,14 +153,12 @@ class RptTest {
     @Test
     void success_bollo() throws Exception {
         String station = "mystation";
-        TestUtils.setMock(cacheClient,ResponseEntity.ok().body(TestUtils.configData(station)));
-
-        org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configCacheClient",cacheClient);
+        org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configData",TestUtils.configData(station));
         HttpHeaders headers = new HttpHeaders();
         headers.add("location","locationheader");
         TestUtils.setMock(checkoutClient, ResponseEntity.status(HttpStatus.FOUND).headers(headers).build());
 
-        IuvGenerationModelResponseDto iuvGenerationModelResponseDto = new IuvGenerationModelResponseDto();
+        IUVGenerationResponseDto iuvGenerationModelResponseDto = new IUVGenerationResponseDto();
         iuvGenerationModelResponseDto.setIuv("00000000");
         TestUtils.setMock(iuveneratorClient,ResponseEntity.ok().body(iuvGenerationModelResponseDto));
         TestUtils.setMock(gpdClient,ResponseEntity.ok().build());
@@ -200,14 +192,12 @@ class RptTest {
     @Test
     void fail_rpt_not_exists() throws Exception {
         String station = "mystation";
-        TestUtils.setMock(cacheClient,ResponseEntity.ok().body(TestUtils.configData(station)));
-
-        org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configCacheClient",cacheClient);
+        org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configData",TestUtils.configData(station));
         HttpHeaders headers = new HttpHeaders();
         headers.add("location","locationheader");
         TestUtils.setMock(checkoutClient, ResponseEntity.status(HttpStatus.FOUND).headers(headers).build());
 
-        IuvGenerationModelResponseDto iuvGenerationModelResponseDto = new IuvGenerationModelResponseDto();
+        IUVGenerationResponseDto iuvGenerationModelResponseDto = new IUVGenerationResponseDto();
         iuvGenerationModelResponseDto.setIuv("00000000");
         doThrow(new RestClientException("fail", new RuntimeException("this test must fail")))
                 .when(iuveneratorClient).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
@@ -234,14 +224,12 @@ class RptTest {
     @Test
     void fail_generic() throws Exception {
         String station = "mystation";
-        TestUtils.setMock(cacheClient,ResponseEntity.ok().body(TestUtils.configData(station)));
-
-        org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configCacheClient",cacheClient);
+        org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configData",TestUtils.configData(station));
         HttpHeaders headers = new HttpHeaders();
         headers.add("location","locationheader");
         TestUtils.setMock(checkoutClient, ResponseEntity.status(HttpStatus.FOUND).headers(headers).build());
 
-        IuvGenerationModelResponseDto iuvGenerationModelResponseDto = new IuvGenerationModelResponseDto();
+        IUVGenerationResponseDto iuvGenerationModelResponseDto = new IUVGenerationResponseDto();
         iuvGenerationModelResponseDto.setIuv("00000000");
         doThrow(new RestClientException("fail", new RuntimeException("this test must fail")))
                 .when(iuveneratorClient).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
@@ -268,14 +256,12 @@ class RptTest {
     @Test
     void fail_getNAVCodeFromIUVGenerator() throws Exception {
         String station = "mystation";
-        TestUtils.setMock(cacheClient,ResponseEntity.ok().body(TestUtils.configData(station)));
-
-        org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configCacheClient",cacheClient);
+        org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configData",TestUtils.configData(station));
         HttpHeaders headers = new HttpHeaders();
         headers.add("location","locationheader");
         TestUtils.setMock(checkoutClient, ResponseEntity.status(HttpStatus.FOUND).headers(headers).build());
 
-        IuvGenerationModelResponseDto iuvGenerationModelResponseDto = new IuvGenerationModelResponseDto();
+        IUVGenerationResponseDto iuvGenerationModelResponseDto = new IUVGenerationResponseDto();
         iuvGenerationModelResponseDto.setIuv("00000000");
         doThrow(new RestClientException("fail", new RuntimeException("this test must fail")))
                 .when(iuveneratorClient).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
@@ -303,14 +289,12 @@ class RptTest {
     @Test
     void fail_createDebtPositions() throws Exception {
         String station = "mystation";
-        TestUtils.setMock(cacheClient,ResponseEntity.ok().body(TestUtils.configData(station)));
-
-        org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configCacheClient",cacheClient);
+        org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configData",TestUtils.configData(station));
         HttpHeaders headers = new HttpHeaders();
         headers.add("location","locationheader");
         TestUtils.setMock(checkoutClient, ResponseEntity.status(HttpStatus.FOUND).headers(headers).build());
 
-        IuvGenerationModelResponseDto iuvGenerationModelResponseDto = new IuvGenerationModelResponseDto();
+        IUVGenerationResponseDto iuvGenerationModelResponseDto = new IUVGenerationResponseDto();
         iuvGenerationModelResponseDto.setIuv("00000000");
         TestUtils.setMock(iuveneratorClient,ResponseEntity.ok().body(iuvGenerationModelResponseDto));
         doThrow(new RestClientException("fail", new RuntimeException("this test must fail")))
@@ -340,14 +324,12 @@ class RptTest {
     @Test
     void fail_storeRequestMappingInCache() throws Exception {
         String station = "mystation";
-        TestUtils.setMock(cacheClient,ResponseEntity.ok().body(TestUtils.configData(station)));
-
-        org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configCacheClient",cacheClient);
+        org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configData",TestUtils.configData(station));
         HttpHeaders headers = new HttpHeaders();
         headers.add("location","locationheader");
         TestUtils.setMock(checkoutClient, ResponseEntity.status(HttpStatus.FOUND).headers(headers).build());
 
-        IuvGenerationModelResponseDto iuvGenerationModelResponseDto = new IuvGenerationModelResponseDto();
+        IUVGenerationResponseDto iuvGenerationModelResponseDto = new IUVGenerationResponseDto();
         iuvGenerationModelResponseDto.setIuv("00000000");
         TestUtils.setMock(iuveneratorClient,ResponseEntity.ok().body(iuvGenerationModelResponseDto));
         TestUtils.setMock(gpdClient,ResponseEntity.ok().build());
@@ -378,15 +360,13 @@ class RptTest {
     @Test
     void fail_checkout() throws Exception {
         String station = "mystation";
-        TestUtils.setMock(cacheClient,ResponseEntity.ok().body(TestUtils.configData(station)));
-
-        org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configCacheClient",cacheClient);
+        org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configData",TestUtils.configData(station));
         HttpHeaders headers = new HttpHeaders();
         headers.add("location","locationheader");
         doThrow(new RestClientException("fail", new RuntimeException("this test must fail")))
                 .when(checkoutClient).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
 
-        IuvGenerationModelResponseDto iuvGenerationModelResponseDto = new IuvGenerationModelResponseDto();
+        IUVGenerationResponseDto iuvGenerationModelResponseDto = new IUVGenerationResponseDto();
         iuvGenerationModelResponseDto.setIuv("00000000");
         TestUtils.setMock(iuveneratorClient,ResponseEntity.ok().body(iuvGenerationModelResponseDto));
         TestUtils.setMock(gpdClient,ResponseEntity.ok().build());

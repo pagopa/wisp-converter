@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <logger name="it.gov.pagopa.wispconverter.util.client.apiconfigcache" level="DEBUG"/>
+
+    <root level="INFO">
+        <appender-ref ref="ECS_JSON_CONSOLE"/>
+    </root>
+
+</configuration>

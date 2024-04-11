@@ -3,7 +3,6 @@ package it.gov.pagopa.wispconverter.service.model.re;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import java.time.Instant;
 import lombok.*;
-import lombok.experimental.Accessors;
 
 @Data
 @EqualsAndHashCode

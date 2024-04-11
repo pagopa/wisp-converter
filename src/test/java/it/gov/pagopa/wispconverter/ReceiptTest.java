@@ -7,12 +7,12 @@ import static org.mockito.Mockito.*;
 import com.azure.cosmos.CosmosClientBuilder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.wispconverter.controller.model.ReceiptRequest;
+import it.gov.pagopa.wispconverter.repository.CacheRepository;
 import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.RTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.ReEventRepository;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
 import it.gov.pagopa.wispconverter.service.ConfigCacheService;
-import it.gov.pagopa.wispconverter.service.ReService;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
 import it.gov.pagopa.wispconverter.utils.TestUtils;
 import java.io.ByteArrayOutputStream;
@@ -26,11 +26,9 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.core.metrics.ApplicationStartup;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
@@ -64,6 +62,7 @@ class ReceiptTest {
     @MockBean private RedisTemplate<String, Object> redisSimpleTemplate;
     @MockBean
     private ReEventRepository reEventRepository;
+    @MockBean private CacheRepository cacheRepository;
 
     private String getPaSendRTPayload(){
         String pasendrtv2 = TestUtils.loadFileContent("/requests/paSendRTV2.xml");
@@ -92,6 +91,7 @@ class ReceiptTest {
                                 ).build()
                 )
         );
+        when(cacheRepository.read(any(),any())).thenReturn("asdsad");
 
         mvc.perform(MockMvcRequestBuilders.post("/receipt/ok")
                         .accept(MediaType.APPLICATION_JSON)
@@ -111,8 +111,7 @@ class ReceiptTest {
     @Test
     void success_negative() throws Exception {
         String station = "mystation";
-        TestUtils.setMock(cacheClient,ResponseEntity.ok().body(TestUtils.configData(station)));
-        org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configCacheClient",cacheClient);
+        org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configData",TestUtils.configData(station));
 
         when(rptRequestRepository.findById(any())).thenReturn(Optional.of(RPTRequestEntity
                 .builder()
@@ -120,6 +119,7 @@ class ReceiptTest {
                         .primitive("nodoInviaRPT")
                         .payload(TestUtils.zipAndEncode(TestUtils.getRptPayload(false,"mystation","10.00","dati")))
                 .build()));
+        when(cacheRepository.read(any(),any())).thenReturn("asdsad");
 
         ReceiptDto[] receiptDtos = {
                 new ReceiptDto("token", "dominio", "iuv")
