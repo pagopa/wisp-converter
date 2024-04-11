@@ -4,6 +4,8 @@ import com.azure.cosmos.CosmosAsyncClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.wispconverter.controller.RedirectController;
 import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
+import it.gov.pagopa.wispconverter.repository.RTRequestRepository;
+import it.gov.pagopa.wispconverter.repository.ReEventRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -40,7 +42,13 @@ class OpenApiGenerationTest {
     private RPTRequestRepository rptRequestRepository;
 
     @MockBean
+    private RTRequestRepository rtRequestRepository;
+
+    @MockBean
     private CosmosAsyncClient cosmosAsyncClient;
+
+    @MockBean
+    private ReEventRepository reEventRepository;
 
     @Test
     void swaggerSpringPlugin() throws Exception {

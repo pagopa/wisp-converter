@@ -8,6 +8,8 @@ import com.azure.cosmos.CosmosClientBuilder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.wispconverter.controller.model.ReceiptRequest;
 import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
+import it.gov.pagopa.wispconverter.repository.RTRequestRepository;
+import it.gov.pagopa.wispconverter.repository.ReEventRepository;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
 import it.gov.pagopa.wispconverter.service.ConfigCacheService;
 import it.gov.pagopa.wispconverter.service.ReService;
@@ -48,9 +50,10 @@ class ReceiptTest {
 
     @MockBean
     private ApplicationStartup applicationStartup;
-
     @MockBean
     private RPTRequestRepository rptRequestRepository;
+    @MockBean
+    private RTRequestRepository rtRequestRepository;
     @MockBean private it.gov.pagopa.gen.wispconverter.client.iuvgenerator.invoker.ApiClient iuveneratorClient;
     @MockBean private it.gov.pagopa.gen.wispconverter.client.gpd.invoker.ApiClient gpdClient;
     @MockBean private it.gov.pagopa.gen.wispconverter.client.checkout.invoker.ApiClient checkoutClient;
@@ -59,8 +62,8 @@ class ReceiptTest {
     @MockBean private CosmosClientBuilder cosmosClientBuilder;
     @Qualifier("redisSimpleTemplate")
     @MockBean private RedisTemplate<String, Object> redisSimpleTemplate;
-    @SpyBean
-    private ReService reService;
+    @MockBean
+    private ReEventRepository reEventRepository;
 
     private String getPaSendRTPayload(){
         String pasendrtv2 = TestUtils.loadFileContent("/requests/paSendRTV2.xml");
@@ -79,8 +82,17 @@ class ReceiptTest {
     @Test
     void success_positive() throws Exception {
         String station = "mystation";
-        TestUtils.setMock(cacheClient,ResponseEntity.ok().body(TestUtils.configData(station)));
-        org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configCacheClient",cacheClient);
+        org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configData",TestUtils.configData(station));
+
+        when(rptRequestRepository.findById(any())).thenReturn(
+                Optional.of(
+                        RPTRequestEntity.builder().primitive("nodoInviaRPT")
+                                .payload(
+                                        TestUtils.zipAndEncode(TestUtils.getRptPayload(false,station,"100.00","datispec"))
+                                ).build()
+                )
+        );
+
         mvc.perform(MockMvcRequestBuilders.post("/receipt/ok")
                         .accept(MediaType.APPLICATION_JSON)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -93,7 +105,7 @@ class ReceiptTest {
                         });
 
 
-        verify(reService,times(1)).addRe(any());
+        verify(reEventRepository,times(3)).save(any());
     }
 
     @Test
@@ -123,7 +135,7 @@ class ReceiptTest {
                             assertNotNull(result.getResponse());
                         });
 
-        verify(reService,times(1)).addRe(any());
+        verify(reEventRepository,times(3)).save(any());
     }
      
 }

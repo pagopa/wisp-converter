@@ -6,6 +6,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.wispconverter.controller.model.AppInfoResponse;
 import it.gov.pagopa.wispconverter.repository.CacheRepository;
 import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
+import it.gov.pagopa.wispconverter.repository.RTRequestRepository;
+import it.gov.pagopa.wispconverter.repository.ReEventRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -39,7 +41,11 @@ class HomeTest {
     @MockBean
     private RPTRequestRepository rptRequestRepository;
     @MockBean
+    private RTRequestRepository rtRequestRepository;
+    @MockBean
     private CacheRepository cacheRepository;
+    @MockBean
+    private ReEventRepository reEventRepository;
 
     @Test
     void slash() throws Exception {

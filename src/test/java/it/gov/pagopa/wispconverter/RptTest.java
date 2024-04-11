@@ -8,6 +8,7 @@ import it.gov.pagopa.gen.wispconverter.client.gpd.model.MultiplePaymentPositionM
 import it.gov.pagopa.gen.wispconverter.client.iuvgenerator.model.IuvGenerationModelResponseDto;
 import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.RTRequestRepository;
+import it.gov.pagopa.wispconverter.repository.ReEventRepository;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
 import it.gov.pagopa.wispconverter.service.ConfigCacheService;
 import it.gov.pagopa.wispconverter.service.ReService;
@@ -58,6 +59,8 @@ class RptTest {
     @MockBean private it.gov.pagopa.gen.wispconverter.client.decouplercaching.invoker.ApiClient decouplerCachingClient;
     @Qualifier("redisSimpleTemplate")
     @MockBean private RedisTemplate<String, Object> redisSimpleTemplate;
+    @MockBean
+    private ReEventRepository reEventRepository;
     @SpyBean
     private ReService reService;
 
@@ -206,7 +209,7 @@ class RptTest {
 
         IuvGenerationModelResponseDto iuvGenerationModelResponseDto = new IuvGenerationModelResponseDto();
         iuvGenerationModelResponseDto.setIuv("00000000");
-        doThrow(new RestClientException("fail"))
+        doThrow(new RestClientException("fail", new RuntimeException("this test must fail")))
                 .when(iuveneratorClient).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
         TestUtils.setMock(gpdClient,ResponseEntity.ok().build());
         TestUtils.setMock(decouplerCachingClient,ResponseEntity.ok().build());
@@ -240,7 +243,7 @@ class RptTest {
 
         IuvGenerationModelResponseDto iuvGenerationModelResponseDto = new IuvGenerationModelResponseDto();
         iuvGenerationModelResponseDto.setIuv("00000000");
-        doThrow(new RestClientException("fail"))
+        doThrow(new RestClientException("fail", new RuntimeException("this test must fail")))
                 .when(iuveneratorClient).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
         TestUtils.setMock(gpdClient,ResponseEntity.ok().build());
         TestUtils.setMock(decouplerCachingClient,ResponseEntity.ok().build());
@@ -274,7 +277,7 @@ class RptTest {
 
         IuvGenerationModelResponseDto iuvGenerationModelResponseDto = new IuvGenerationModelResponseDto();
         iuvGenerationModelResponseDto.setIuv("00000000");
-        doThrow(new RestClientException("fail"))
+        doThrow(new RestClientException("fail", new RuntimeException("this test must fail")))
                 .when(iuveneratorClient).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
         TestUtils.setMock(gpdClient,ResponseEntity.ok().build());
         TestUtils.setMock(decouplerCachingClient,ResponseEntity.ok().build());
@@ -310,7 +313,7 @@ class RptTest {
         IuvGenerationModelResponseDto iuvGenerationModelResponseDto = new IuvGenerationModelResponseDto();
         iuvGenerationModelResponseDto.setIuv("00000000");
         TestUtils.setMock(iuveneratorClient,ResponseEntity.ok().body(iuvGenerationModelResponseDto));
-        doThrow(new RestClientException("fail"))
+        doThrow(new RestClientException("fail", new RuntimeException("this test must fail")))
                 .when(gpdClient).parameterToMultiValueMap(any(),any(),any());
         TestUtils.setMock(decouplerCachingClient,ResponseEntity.ok().build());
         when(rptRequestRepository.findById(any())).thenReturn(
@@ -348,8 +351,10 @@ class RptTest {
         iuvGenerationModelResponseDto.setIuv("00000000");
         TestUtils.setMock(iuveneratorClient,ResponseEntity.ok().body(iuvGenerationModelResponseDto));
         TestUtils.setMock(gpdClient,ResponseEntity.ok().build());
-        doThrow(new RestClientException("fail"))
-                .when(decouplerCachingClient).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
+    doThrow(new RestClientException("fail", new RuntimeException("this test must fail")))
+        .when(decouplerCachingClient)
+        .invokeAPI(
+            any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
         when(rptRequestRepository.findById(any())).thenReturn(
                 Optional.of(
                         RPTRequestEntity.builder().primitive("nodoInviaRPT")
@@ -378,7 +383,7 @@ class RptTest {
         org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configCacheClient",cacheClient);
         HttpHeaders headers = new HttpHeaders();
         headers.add("location","locationheader");
-        doThrow(new RestClientException("fail"))
+        doThrow(new RestClientException("fail", new RuntimeException("this test must fail")))
                 .when(checkoutClient).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
 
         IuvGenerationModelResponseDto iuvGenerationModelResponseDto = new IuvGenerationModelResponseDto();

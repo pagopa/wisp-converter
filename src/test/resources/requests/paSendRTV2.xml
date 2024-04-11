@@ -3,7 +3,7 @@
       <pafn:paSendRTReq>
         <idPA>77777777777</idPA>
         <idBrokerPA>77777777777</idBrokerPA>
-        <idStation>77777777777_01</idStation>
+        <idStation>mystation</idStation>
         <receipt>
           <receiptId>c110729d258c4ab1b765fe902aae41d6</receiptId>
           <noticeNumber>311111111112222222</noticeNumber>
