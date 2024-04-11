@@ -32,6 +32,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Predicate;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -65,6 +66,7 @@ public abstract class AbstractAppServerLoggingInterceptor implements HandlerInte
   public static final String RESPONSE_DEFAULT_MESSAGE_PREFIX = "<= SERVER Response OPERATION_ID=%s - ";
   private static final int REQUEST_DEFAULT_MAX_PAYLOAD_LENGTH = 50;
   private static final int RESPONSE_DEFAULT_MAX_PAYLOAD_LENGTH = 50;
+  private static final Collector<CharSequence, ?, String> JOINCOLLECTOR = Collectors.joining("\", \"","\"","\"");
 
   private static final String SPACE = " ";
   private static final String PRETTY_IN = "\n=> *";
@@ -347,10 +349,10 @@ public abstract class AbstractAppServerLoggingInterceptor implements HandlerInte
     Stream<String> stream = headers.entrySet().stream()
             .map((entry) -> {
               if(this.requestPretty){
-                String values = entry.getValue().stream().collect(Collectors.joining("\", \"","\"","\""));
+                String values = entry.getValue().stream().collect(JOINCOLLECTOR);
                 return PRETTY_IN +"*\t"+entry.getKey() + ": [" + values + "]";
               } else {
-                String values = entry.getValue().stream().collect(Collectors.joining("\", \"","\"","\""));
+                String values = entry.getValue().stream().collect(JOINCOLLECTOR);
                 return entry.getKey() + ": [" + values + "]";
               }
             });
@@ -365,10 +367,10 @@ public abstract class AbstractAppServerLoggingInterceptor implements HandlerInte
     Stream<String> stream = headers.entrySet().stream()
             .map((entry) -> {
               if(this.responsePretty){
-                String values = entry.getValue().stream().collect(Collectors.joining("\", \"","\"","\""));
+                String values = entry.getValue().stream().collect(JOINCOLLECTOR);
                 return PRETTY_OUT +"*\t"+entry.getKey().toLowerCase() + ": [" + values + "]";
               } else {
-                String values = entry.getValue().stream().collect(Collectors.joining("\", \"","\"","\""));
+                String values = entry.getValue().stream().collect(JOINCOLLECTOR);
                 return entry.getKey().toLowerCase() + ": [" + values + "]";
               }
             });

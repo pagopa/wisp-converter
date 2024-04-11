@@ -54,7 +54,7 @@ public class BaseTest {
         CtRichiestaPagamentoTelematico ctRichiestaPagamentoTelematico = new it.gov.digitpa.schemas._2011.pagamenti.ObjectFactory().createCtRichiestaPagamentoTelematico();
         JAXBElement<CtRichiestaPagamentoTelematico> rpt1 = new it.gov.digitpa.schemas._2011.pagamenti.ObjectFactory().createRPT(ctRichiestaPagamentoTelematico);
         String string = jaxbElementUtil.objectToString(rpt1);
-        assert(true);
+        assertTrue(true);
 
     }
 
@@ -64,7 +64,7 @@ public class BaseTest {
         IntestazionePPT intestazionePPT = new gov.telematici.pagamenti.ws.nodoperpa.ppthead.ObjectFactory().createIntestazionePPT();
         JaxbElementUtil jaxbElementUtil = new JaxbElementUtil();
         String string = jaxbElementUtil.objectToString(intestazionePPT);
-        assert(true);
+        assertTrue(true);
 
     }
 

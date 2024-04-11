@@ -27,6 +27,7 @@ import java.util.stream.Stream;
 public class ReUtil {
 
     private static final String NODO_DEI_PAGAMENTI_SP = "NodoDeiPagamentiSPC";
+    private static final String UNZIP_ERROR = "Unzip error";
 
     private static ReEventDto.ReEventDtoBuilder createBaseReInterface(CategoriaEventoEnum categoriaEvento, SottoTipoEventoEnum sottoTipoEvento, EsitoEnum esitoEnum, String erogatore, String erogatoreDescr, String fruitore, String fruitoreDescr,
                                               String httpMethod, String httpUri, String httpHeaders, String httpCallRemoteAddress, String compressedPayload, Integer compressedPayloadLength,
@@ -95,7 +96,7 @@ public class ReUtil {
                 compressedPayloadLength = compressedPayload.length();
             }
         } catch (IOException e) {
-            log.error("Unzip error", e);
+            log.error(UNZIP_ERROR, e);
         }
 
 
@@ -121,7 +122,7 @@ public class ReUtil {
                 compressedPayloadLength = compressedPayload.length();
             }
         } catch (IOException e) {
-            log.error("Unzip error", e);
+            log.error(UNZIP_ERROR, e);
         }
 
         int status = response.getStatus();
@@ -169,7 +170,7 @@ public class ReUtil {
                 compressedPayloadPayloadLength = compressedPayload.length();
             }
         } catch (IOException e) {
-            log.error("Unzip error", e);
+            log.error(UNZIP_ERROR, e);
         }
 
         String erogatore = MDC.get(Constants.MDC_EROGATORE);
@@ -200,7 +201,7 @@ public class ReUtil {
                     compressedPayloadPayloadLength = compressedPayload.length();
                 }
             } catch (IOException e) {
-                log.error("Unzip error", e);
+                log.error(UNZIP_ERROR, e);
             }
             try {
                 status = response.getStatusCode().value();
