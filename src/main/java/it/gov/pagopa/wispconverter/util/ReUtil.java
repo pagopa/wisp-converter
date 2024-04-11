@@ -57,7 +57,7 @@ public class ReUtil {
     }
 
     private static ReEventDto.ReEventDtoBuilder createBaseReBuilder(){
-        Instant mdcStartTime = MDC.get(Constants.MDC_START_TIME) == null ? Instant.now() : Instant.ofEpochMilli(Long.parseLong(MDC.get(Constants.MDC_START_TIME)));
+        Instant mdcStartTime = MDC.get(Constants.MDC_START_TIME) == null ? null: Instant.ofEpochMilli(Long.parseLong(MDC.get(Constants.MDC_START_TIME)));
         return ReEventDto.builder()
                 .id(UUID.randomUUID().toString())
                 .requestId(MDC.get(Constants.MDC_REQUEST_ID))
