@@ -1,22 +1,22 @@
 const axios = require("axios");
 
-function call(method, url, body) {
+async function call(method, url, body, headers) {
   if (method === 'GET') {
-    return get(url)
+    return await get(url, headers)
   }
   if (method === 'POST') {
-    return post(url, body)
+    return await post(url, body, headers)
   }
   if (method === 'PUT') {
-    return put(url, body)
+    return await put(url, body, headers)
   }
   if (method === 'DELETE') {
-    return del(url)
+    return await del(url, headers)
   }
 }
 
-function get(url) {
-  return axios.get(url)
+async function get(url, headers) {
+  return await axios.get(url, headers)
       .then(res => {
         return res;
       })
@@ -25,8 +25,8 @@ function get(url) {
       });
 }
 
-function post(url, body) {
-  return axios.post(url, body)
+async function post(url, body, headers) {
+  return await axios.post(url, body, headers)
       .then(res => {
         return res;
       })
@@ -35,8 +35,8 @@ function post(url, body) {
       });
 }
 
-function put(url, body) {
-  return axios.put(url, body)
+async function put(url, body, headers) {
+  return await axios.put(url, body, headers)
       .then(res => {
         return res;
       })
@@ -45,8 +45,8 @@ function put(url, body) {
       });
 }
 
-function del(url) {
-  return axios.delete(url)
+async function del(url, headers) {
+  return await axios.delete(url, headers)
       .then(res => {
         return res;
       })
