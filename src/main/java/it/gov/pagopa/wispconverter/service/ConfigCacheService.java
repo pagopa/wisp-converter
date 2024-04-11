@@ -14,7 +14,6 @@ import org.springframework.web.client.RestClientException;
 import java.util.List;
 
 @Service
-@Getter
 @CacheConfig(cacheNames="cache")
 @Slf4j
 @RequiredArgsConstructor
@@ -22,13 +21,16 @@ public class ConfigCacheService {
 
     private final it.gov.pagopa.gen.wispconverter.client.cache.invoker.ApiClient configCacheClient;
 
+    @Getter
     private it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigDataV1Dto configData;
 
     @Value("${client.cache.keys}")
     private List<String> cacheKeys;
 
-    public void getCache() {
-        loadCache();
+    public void checkCache() {
+        if (configData == null) {
+            loadCache();
+        }
     }
 
     @Cacheable
