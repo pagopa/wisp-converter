@@ -34,7 +34,7 @@ public class CheckoutService {
         try {
             // execute mapping for Checkout carts invocation
             it.gov.pagopa.gen.wispconverter.client.checkout.model.CartRequestDto cart = mapper.toCart(commonRPTFieldsDTO);
-            String stationRedirectURL = ""; // FIXME on next API version will be added the stationID so -> getRedirectURL(cart.getStationId());
+            String stationRedirectURL = getRedirectURL(commonRPTFieldsDTO.getStationId());
             it.gov.pagopa.gen.wispconverter.client.checkout.model.CartRequestReturnUrlsDto returnUrls = new it.gov.pagopa.gen.wispconverter.client.checkout.model.CartRequestReturnUrlsDto();
             returnUrls.setReturnOkUrl(new URI(stationRedirectURL + "/success.html"));
             returnUrls.setReturnCancelUrl(new URI(stationRedirectURL + "/cancel.html"));
@@ -66,6 +66,9 @@ public class CheckoutService {
 
     private String getRedirectURL(String stationId) {
         it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigDataV1Dto cache = configCacheService.getCache();
+        if (cache == null) {
+            throw new AppException(AppErrorCodeMessageEnum.CONFIGURATION_INVALID_CACHE);
+        }
         Map<String, it.gov.pagopa.gen.wispconverter.client.cache.model.StationDto> stations = cache.getStations();
         it.gov.pagopa.gen.wispconverter.client.cache.model.StationDto station = stations.get(stationId);
         if (station == null) {

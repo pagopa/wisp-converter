@@ -60,7 +60,7 @@ public class APIConfigCacheClientConfig {
 
         it.gov.pagopa.gen.wispconverter.client.cache.invoker.ApiClient client = new it.gov.pagopa.gen.wispconverter.client.cache.invoker.ApiClient(restTemplate);
         client.setBasePath(basePath);
-//        client.setApiKey(apiKey);
+        client.setApiKey(apiKey);
 
         return client;
     }

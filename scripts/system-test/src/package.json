@@ -1,0 +1,16 @@
+{
+  "name": "pagopa-wisp-converter-systemtest",
+  "license": "MIT",
+  "version": "1.0.0",
+  "scripts": {
+    "test:local": "dotenv -e ./config/.env.local node start.js",
+    "test:dev": "dotenv -e ./config/.env.dev node start.js",
+    "test:uat": "dotenv -e ./config/.env.uat node start.js"
+  },
+  "dependencies": {
+    "axios": "^0.27.2",
+    "dotenv": "^16.0.2",
+    "dotenv-cli": "^3.2.0",
+    "xmldom": "^0.6.0"
+  }
+}
