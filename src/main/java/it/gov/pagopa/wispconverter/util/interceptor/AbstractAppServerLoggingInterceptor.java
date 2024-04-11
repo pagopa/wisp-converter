@@ -41,6 +41,7 @@ public abstract class AbstractAppServerLoggingInterceptor implements HandlerInte
         this.requestMaxPayloadLength = request.getMaxPayloadLength() != null ? request.getMaxPayloadLength() : REQUEST_DEFAULT_MAX_PAYLOAD_LENGTH;
         this.requestHeaderPredicate = s -> !s.equals(request.getMaskHeaderName());
         this.requestPretty = request.isPretty();
+        this.requestIncludeClientInfo = request.isIncludeClientInfo();
       }
       RequestResponseLoggingProperties.Response response = serverLoggingProperties.getResponse();
       if(response!=null){

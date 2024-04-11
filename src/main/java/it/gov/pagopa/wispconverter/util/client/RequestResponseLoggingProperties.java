@@ -21,6 +21,7 @@ public class RequestResponseLoggingProperties {
         private boolean includePayload;
         private Integer maxPayloadLength;
         private boolean pretty;
+        private boolean includeClientInfo;
     }
 
     @Setter
