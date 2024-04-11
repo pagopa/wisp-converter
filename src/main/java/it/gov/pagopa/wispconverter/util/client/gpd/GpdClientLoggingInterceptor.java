@@ -2,7 +2,7 @@ package it.gov.pagopa.wispconverter.util.client.gpd;
 
 import it.gov.pagopa.wispconverter.service.ReService;
 import it.gov.pagopa.wispconverter.util.client.AbstractAppClientLoggingInterceptor;
-import it.gov.pagopa.wispconverter.util.client.ClientLoggingProperties;
+import it.gov.pagopa.wispconverter.util.client.RequestResponseLoggingProperties;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpRequest;
@@ -11,7 +11,7 @@ import org.springframework.http.client.ClientHttpResponse;
 @Slf4j
 public class GpdClientLoggingInterceptor extends AbstractAppClientLoggingInterceptor {
 
-  public GpdClientLoggingInterceptor(ClientLoggingProperties clientLoggingProperties, ReService reService){
+  public GpdClientLoggingInterceptor(RequestResponseLoggingProperties clientLoggingProperties, ReService reService){
     super(clientLoggingProperties, reService);
   }
 

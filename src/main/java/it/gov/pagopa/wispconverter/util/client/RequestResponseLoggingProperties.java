@@ -1,12 +1,11 @@
 package it.gov.pagopa.wispconverter.util.client;
 
-import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
 @Setter
 @Getter
-public class ServerLoggingProperties {
+public class RequestResponseLoggingProperties {
 
 
     private Request request = new Request();

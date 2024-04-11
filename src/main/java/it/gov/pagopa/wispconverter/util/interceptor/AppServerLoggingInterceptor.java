@@ -1,6 +1,6 @@
 package it.gov.pagopa.wispconverter.util.interceptor;
 
-import it.gov.pagopa.wispconverter.util.client.ServerLoggingProperties;
+import it.gov.pagopa.wispconverter.util.client.RequestResponseLoggingProperties;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -8,7 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class AppServerLoggingInterceptor extends AbstractAppServerLoggingInterceptor {
 
-  public AppServerLoggingInterceptor(ServerLoggingProperties serverLoggingProperties){
+  public AppServerLoggingInterceptor(RequestResponseLoggingProperties serverLoggingProperties){
     super(serverLoggingProperties);
   }
 

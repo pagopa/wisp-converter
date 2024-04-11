@@ -5,7 +5,7 @@ import it.gov.pagopa.wispconverter.config.model.AppCors;
 import it.gov.pagopa.wispconverter.service.ReService;
 import it.gov.pagopa.wispconverter.util.interceptor.MDCEnrichInterceptor;
 import it.gov.pagopa.wispconverter.util.interceptor.ReInterceptor;
-import it.gov.pagopa.wispconverter.util.client.ServerLoggingProperties;
+import it.gov.pagopa.wispconverter.util.client.RequestResponseLoggingProperties;
 import it.gov.pagopa.wispconverter.util.interceptor.AppServerLoggingInterceptor;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -44,8 +44,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     @Bean
     @ConfigurationProperties(prefix = "log.server")
-    public ServerLoggingProperties serverLoggingProperties() {
-        return new ServerLoggingProperties();
+    public RequestResponseLoggingProperties serverLoggingProperties() {
+        return new RequestResponseLoggingProperties();
     }
 
 
@@ -89,7 +89,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        ServerLoggingProperties serverLoggingProperties = serverLoggingProperties();
+        RequestResponseLoggingProperties serverLoggingProperties = serverLoggingProperties();
 
         registry.addInterceptor(new AppServerLoggingInterceptor(serverLoggingProperties)).excludePathPatterns(excludeUrlPatterns);
         registry.addInterceptor(new ReInterceptor(reService)).excludePathPatterns(excludeUrlPatterns);

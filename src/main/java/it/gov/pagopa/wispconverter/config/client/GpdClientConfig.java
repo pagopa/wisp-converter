@@ -1,9 +1,10 @@
 package it.gov.pagopa.wispconverter.config.client;
 
 import it.gov.pagopa.wispconverter.service.ReService;
-import it.gov.pagopa.wispconverter.util.client.ClientLoggingProperties;
+import it.gov.pagopa.wispconverter.util.client.RequestResponseLoggingProperties;
 import it.gov.pagopa.wispconverter.util.client.gpd.GpdClientLoggingInterceptor;
 import it.gov.pagopa.wispconverter.util.client.gpd.GpdClientResponseErrorHandler;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,8 +17,6 @@ import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.DefaultUriBuilderFactory;
-
-import java.util.List;
 
 @Configuration
 @Slf4j
@@ -41,13 +40,13 @@ public class GpdClientConfig {
 
     @Bean
     @ConfigurationProperties(prefix = "log.client.gpd")
-    public ClientLoggingProperties gpdClientLoggingProperties() {
-        return new ClientLoggingProperties();
+    public RequestResponseLoggingProperties gpdClientLoggingProperties() {
+        return new RequestResponseLoggingProperties();
     }
 
     @Bean
     public it.gov.pagopa.gen.wispconverter.client.gpd.invoker.ApiClient gpdClient() {
-        ClientLoggingProperties clientLoggingProperties = gpdClientLoggingProperties();
+        RequestResponseLoggingProperties clientLoggingProperties = gpdClientLoggingProperties();
 
         GpdClientLoggingInterceptor clientLogging = new GpdClientLoggingInterceptor(clientLoggingProperties, reService);
 

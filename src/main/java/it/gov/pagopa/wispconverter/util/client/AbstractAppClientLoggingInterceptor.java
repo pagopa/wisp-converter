@@ -1,14 +1,21 @@
 package it.gov.pagopa.wispconverter.util.client;
 
-import io.netty.channel.ConnectTimeoutException;
-import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
-import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.service.ReService;
 import it.gov.pagopa.wispconverter.service.model.re.EsitoEnum;
 import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import it.gov.pagopa.wispconverter.util.CommonUtility;
 import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.ReUtil;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.UUID;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.MDC;
@@ -18,31 +25,17 @@ import org.springframework.http.client.ClientHttpRequestExecution;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.client.RestClientException;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.SocketTimeoutException;
-import java.net.UnknownHostException;
-import java.nio.charset.StandardCharsets;
-import java.util.UUID;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 
 @Slf4j
 public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpRequestInterceptor {
 
   private final ReService reService;
 
-  public AbstractAppClientLoggingInterceptor(ClientLoggingProperties clientLoggingProperties, ReService reService) {
+  public AbstractAppClientLoggingInterceptor(RequestResponseLoggingProperties clientLoggingProperties, ReService reService) {
     this.reService = reService;
 
     if(clientLoggingProperties!=null){
-      ClientLoggingProperties.Request request = clientLoggingProperties.getRequest();
+      RequestResponseLoggingProperties.Request request = clientLoggingProperties.getRequest();
       if(request!=null){
         this.requestIncludeHeaders = request.isIncludeHeaders();
         this.requestIncludePayload = request.isIncludePayload();
@@ -50,7 +43,7 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
         this.requestHeaderPredicate = s -> !s.equals(request.getMaskHeaderName());
         this.requestPretty = request.isPretty();
       }
-      ClientLoggingProperties.Response response = clientLoggingProperties.getResponse();
+      RequestResponseLoggingProperties.Response response = clientLoggingProperties.getResponse();
       if(response!=null){
         this.responseIncludeHeaders = response.isIncludeHeaders();
         this.responseIncludePayload = response.isIncludePayload();
@@ -280,9 +273,18 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
 
 
 
-  protected abstract void request(String clientOperationId, String operationId, HttpRequest request, byte[] reqBody);
+  protected void request(String clientOperationId, String operationId, HttpRequest request, byte[] reqBody) {
+    if(log.isDebugEnabled()){
+      log.debug(createRequestMessage(clientOperationId, operationId, request, reqBody));
+    }
+  }
 
-  protected abstract void response(String clientOperationId, String operationId, String clientExecutionTime, HttpRequest request, ClientHttpResponse response);
+  @SneakyThrows
+  protected void response(String clientOperationId, String operationId, String clientExecutionTime, HttpRequest request, ClientHttpResponse response) {
+    if(log.isDebugEnabled()){
+      log.debug(createResponseMessage(clientOperationId, operationId, clientExecutionTime, request, response));
+    }
+  }
 
   private String formatRequestHeaders(MultiValueMap<String, String> headers) {
     Stream<String> stream = headers.entrySet().stream()

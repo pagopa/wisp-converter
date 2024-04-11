@@ -1,30 +1,12 @@
 package it.gov.pagopa.wispconverter.util.interceptor;
 
-import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import it.gov.pagopa.wispconverter.util.Constants;
-import it.gov.pagopa.wispconverter.util.ReUtil;
 import it.gov.pagopa.wispconverter.util.Trace;
-import it.gov.pagopa.wispconverter.util.client.ServerLoggingProperties;
+import it.gov.pagopa.wispconverter.util.client.RequestResponseLoggingProperties;
 import it.gov.pagopa.wispconverter.util.filter.RepeatableContentCachingRequestWrapper;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
-import org.slf4j.MDC;
-import org.springframework.http.HttpHeaders;
-import org.springframework.util.AntPathMatcher;
-import org.springframework.util.MultiValueMap;
-import org.springframework.util.StreamUtils;
-import org.springframework.util.StringUtils;
-import org.springframework.web.filter.OncePerRequestFilter;
-import org.springframework.web.method.HandlerMethod;
-import org.springframework.web.servlet.HandlerInterceptor;
-import org.springframework.web.util.ContentCachingResponseWrapper;
-import org.springframework.web.util.WebUtils;
-
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.Enumeration;
@@ -35,13 +17,24 @@ import java.util.function.Predicate;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
+import org.springframework.http.HttpHeaders;
+import org.springframework.util.MultiValueMap;
+import org.springframework.util.StreamUtils;
+import org.springframework.util.StringUtils;
+import org.springframework.web.method.HandlerMethod;
+import org.springframework.web.servlet.HandlerInterceptor;
+import org.springframework.web.util.ContentCachingResponseWrapper;
+import org.springframework.web.util.WebUtils;
 
 @Slf4j
 public abstract class AbstractAppServerLoggingInterceptor implements HandlerInterceptor {
 
-  public AbstractAppServerLoggingInterceptor(ServerLoggingProperties serverLoggingProperties) {
+  public AbstractAppServerLoggingInterceptor(RequestResponseLoggingProperties serverLoggingProperties) {
     if(serverLoggingProperties!=null){
-      ServerLoggingProperties.Request request = serverLoggingProperties.getRequest();
+      RequestResponseLoggingProperties.Request request = serverLoggingProperties.getRequest();
       if(request!=null){
         this.requestIncludeHeaders = request.isIncludeHeaders();
         this.requestIncludePayload = request.isIncludePayload();
@@ -49,7 +42,7 @@ public abstract class AbstractAppServerLoggingInterceptor implements HandlerInte
         this.requestHeaderPredicate = s -> !s.equals(request.getMaskHeaderName());
         this.requestPretty = request.isPretty();
       }
-      ServerLoggingProperties.Response response = serverLoggingProperties.getResponse();
+      RequestResponseLoggingProperties.Response response = serverLoggingProperties.getResponse();
       if(response!=null){
         this.responseIncludeHeaders = response.isIncludeHeaders();
         this.responseIncludePayload = response.isIncludePayload();

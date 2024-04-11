@@ -1,9 +1,10 @@
 package it.gov.pagopa.wispconverter.config.client;
 
 import it.gov.pagopa.wispconverter.service.ReService;
-import it.gov.pagopa.wispconverter.util.client.ClientLoggingProperties;
+import it.gov.pagopa.wispconverter.util.client.RequestResponseLoggingProperties;
 import it.gov.pagopa.wispconverter.util.client.decouplercaching.DecouplerCachingClientLoggingInterceptor;
 import it.gov.pagopa.wispconverter.util.client.decouplercaching.DecouplerCachingClientResponseErrorHandler;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,8 +17,6 @@ import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.DefaultUriBuilderFactory;
-
-import java.util.List;
 
 @Configuration
 @Slf4j
@@ -41,13 +40,13 @@ public class DecouplerCachingClientConfig {
 
     @Bean
     @ConfigurationProperties(prefix = "log.client.decoupler-caching")
-    public ClientLoggingProperties decouplerCachingClientLoggingProperties() {
-        return new ClientLoggingProperties();
+    public RequestResponseLoggingProperties decouplerCachingClientLoggingProperties() {
+        return new RequestResponseLoggingProperties();
     }
 
     @Bean
     public it.gov.pagopa.gen.wispconverter.client.decouplercaching.invoker.ApiClient decouplerCachingClient() {
-        ClientLoggingProperties clientLoggingProperties = decouplerCachingClientLoggingProperties();
+        RequestResponseLoggingProperties clientLoggingProperties = decouplerCachingClientLoggingProperties();
 
         DecouplerCachingClientLoggingInterceptor clientLogging = new DecouplerCachingClientLoggingInterceptor(clientLoggingProperties, reService);
 
