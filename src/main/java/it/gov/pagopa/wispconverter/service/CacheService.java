@@ -1,6 +1,5 @@
 package it.gov.pagopa.wispconverter.service;
 
-import io.lettuce.core.RedisException;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.CacheRepository;
@@ -57,8 +56,16 @@ public class CacheService {
                 this.cacheRepository.insert(requestIDForRTHandling, sessionId, this.requestIDMappingTTL);
             }
         } catch (RestClientException e) {
-            throw new AppException(AppErrorCodeMessageEnum.CLIENT_DECOUPLER_CACHING,
-                    String.format("RestClientException ERROR [%s] - %s", e.getCause().getClass().getCanonicalName(), e.getMessage()));
+            throw new AppException(AppErrorCodeMessageEnum.CLIENT_DECOUPLER_CACHING, String.format("RestClientException ERROR [%s] - %s", e.getCause().getClass().getCanonicalName(), e.getMessage()));
         }
+    }
+
+    public String getCachedSessionId(String creditorInstitutionId, String iuv) {
+        String cachedKey = String.format(CACHING_KEY_TEMPLATE, creditorInstitutionId, iuv);
+        String sessionId = this.cacheRepository.read(cachedKey, String.class);
+        if (sessionId == null) {
+            throw new AppException(AppErrorCodeMessageEnum.PERSISTENCE_REQUESTID_CACHING_ERROR, cachedKey);
+        }
+        return sessionId;
     }
 }
