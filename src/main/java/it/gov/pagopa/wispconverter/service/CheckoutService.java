@@ -65,7 +65,7 @@ public class CheckoutService {
     }
 
     private String getRedirectURL(String stationId) {
-        it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigDataV1Dto cache = configCacheService.getCache();
+        it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigDataV1Dto cache = configCacheService.getConfigData();
         if (cache == null) {
             throw new AppException(AppErrorCodeMessageEnum.CONFIGURATION_INVALID_CACHE);
         }

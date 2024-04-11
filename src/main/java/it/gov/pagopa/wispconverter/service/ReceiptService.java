@@ -57,8 +57,8 @@ public class ReceiptService {
     private final RptCosmosService rptCosmosService;
     private final RPTExtractorService rptExtractorService;
     private final ReService reService;
+    private final DecouplerService decouplerService;
 
-    private final RPTRequestRepository rptRequestRepository;
     private final RTRequestRepository rtRequestRepository;
 
     private final ObjectMapper mapper;
@@ -74,10 +74,9 @@ public class ReceiptService {
             Map<String, StationDto> stations = configCacheService.getConfigData().getStations();
 
             receiptDtos.forEach(receipt -> {
-                //TODO: interrogare Redis per recuperare sessionId da usare su Cosmos
-                String sessionIdEntity = "intPaLorenz_75fa058f-d1b5-4c7e-865e-a220091d3954";
+                String cachedSessionId = decouplerService.getCachedSessionId(receipt.getIdentificativoDominio(), receipt.getIdentificativoUnivocoVersamento());
 
-                RPTRequestEntity rptRequestEntity = rptCosmosService.getRPTRequestEntity(sessionIdEntity);
+                RPTRequestEntity rptRequestEntity = rptCosmosService.getRPTRequestEntity(cachedSessionId);
 
                 CommonRPTFieldsDTO commonRPTFieldsDTO = this.rptExtractorService.extractRPTContentDTOs(rptRequestEntity.getPrimitive(), rptRequestEntity.getPayload());
 
@@ -129,10 +128,9 @@ public class ReceiptService {
             SOAPMessage envelopeElement = jaxbElementUtil.getMessage(payload);
             PaSendRTV2Request paSendRTV2Request = jaxbElementUtil.getBody(envelopeElement, PaSendRTV2Request.class);
 
-            //TODO: interrogare Redis per recuperare sessionId da usare su Cosmos
-            String sessionIdEntity = "intPaLorenz_75fa058f-d1b5-4c7e-865e-a220091d3954";
+            String cachedSessionId = decouplerService.getCachedSessionId(paSendRTV2Request.getIdPA(), paSendRTV2Request.getReceipt().getNoticeNumber());
 
-            RPTRequestEntity rptRequestEntity = rptCosmosService.getRPTRequestEntity("intPaLorenz_75fa058f-d1b5-4c7e-865e-a220091d3954");
+            RPTRequestEntity rptRequestEntity = rptCosmosService.getRPTRequestEntity(cachedSessionId);
 
             CommonRPTFieldsDTO commonRPTFieldsDTO = this.rptExtractorService.extractRPTContentDTOs(rptRequestEntity.getPrimitive(), rptRequestEntity.getPayload());
 
@@ -313,9 +311,6 @@ public class ReceiptService {
         if( station != null ) {
             reEventDtoBuilder.stazione(station.getStationCode());
         }
-//        ReUtil.createBaseReInternal()
-//                .canale("")//TODO
-//                .standIn(false);//TODO vale la pena aggiungere anche parte standin da configurazione?
         return reEventDtoBuilder.build();
     }
 
