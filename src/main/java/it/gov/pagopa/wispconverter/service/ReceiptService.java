@@ -33,7 +33,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -77,7 +76,6 @@ public class ReceiptService {
             receiptDtos.forEach(receipt -> {
                 //TODO: interrogare Redis per recuperare sessionId da usare su Cosmos
                 String sessionIdEntity = "intPaLorenz_75fa058f-d1b5-4c7e-865e-a220091d3954";
-                String brokerPa = sessionIdEntity.split("_")[0];
 
                 RPTRequestEntity rptRequestEntity = rptCosmosService.getRPTRequestEntity(sessionIdEntity);
 
@@ -105,7 +103,7 @@ public class ReceiptService {
                     jaxbElementUtil.addBody(message, paaInviaRTJaxb, PaaInviaRT.class);
                     jaxbElementUtil.addHeader(message, intestazionePPT, IntestazionePPT.class);
 
-                    RTRequestEntity rtRequestEntity = generateRTEntity(brokerPa, now, jaxbElementUtil.toString(message), getStationUrl(stationDto));
+                    RTRequestEntity rtRequestEntity = generateRTEntity(stationDto.getBrokerCode(), now, jaxbElementUtil.toString(message), getStationUrl(stationDto));
                     rtRequestRepository.save(rtRequestEntity);
 
                     PaymentServiceProviderDto psp = psps.get(rpt.getRpt().getPayerInstitution().getSubjectUniqueIdentifier().getCode());
@@ -133,7 +131,6 @@ public class ReceiptService {
 
             //TODO: interrogare Redis per recuperare sessionId da usare su Cosmos
             String sessionIdEntity = "intPaLorenz_75fa058f-d1b5-4c7e-865e-a220091d3954";
-            String brokerPa = sessionIdEntity.split("_")[0];
 
             RPTRequestEntity rptRequestEntity = rptCosmosService.getRPTRequestEntity("intPaLorenz_75fa058f-d1b5-4c7e-865e-a220091d3954");
 
@@ -164,7 +161,7 @@ public class ReceiptService {
                 jaxbElementUtil.addBody(message, paaInviaRTJaxb, PaaInviaRT.class);
                 jaxbElementUtil.addHeader(message, intestazionePPT, IntestazionePPT.class);
 
-                RTRequestEntity rtRequestEntity = generateRTEntity(brokerPa, now, jaxbElementUtil.toString(message), getStationUrl(stationDto));
+                RTRequestEntity rtRequestEntity = generateRTEntity(stationDto.getBrokerCode(), now, jaxbElementUtil.toString(message), getStationUrl(stationDto));
                 rtRequestRepository.save(rtRequestEntity);
 
                 PaymentServiceProviderDto psp = psps.get(rpt.getRpt().getPayerInstitution().getSubjectUniqueIdentifier().getCode());
