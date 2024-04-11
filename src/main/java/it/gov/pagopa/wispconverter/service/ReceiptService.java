@@ -115,7 +115,7 @@ public class ReceiptService {
         } catch (JsonProcessingException e) {
             throw new AppException(AppErrorCodeMessageEnum.PARSING_INVALID_BODY);
         } catch (Exception e) {
-            throw new AppException(AppErrorCodeMessageEnum.GENERIC_ERROR);
+            throw new AppException(AppErrorCodeMessageEnum.GENERIC_ERROR, e.getMessage());
         }
     }
 
@@ -177,7 +177,7 @@ public class ReceiptService {
         } catch (AppException e) {
             throw e;
         } catch (Exception e) {
-            throw new AppException(AppErrorCodeMessageEnum.GENERIC_ERROR);
+            throw new AppException(AppErrorCodeMessageEnum.GENERIC_ERROR, e.getMessage());
         }
     }
 
