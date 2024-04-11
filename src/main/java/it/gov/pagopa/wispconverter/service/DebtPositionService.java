@@ -41,10 +41,10 @@ public class DebtPositionService {
     private String posteItalianeABICode;
 
     @Value("${wisp-converter.aux-digit}")
-    private Long auxDigit;
+    private Integer auxDigit;
 
     @Value("${wisp-converter.segregation-code}")
-    private Long segregationCode;
+    private Integer segregationCode;
 
     public void createDebtPositions(CommonRPTFieldsDTO rptContentDTOs) {
 
@@ -173,13 +173,13 @@ public class DebtPositionService {
 
         String navCode;
         try {
-            it.gov.pagopa.gen.wispconverter.client.iuvgenerator.model.IuvGenerationModelDto request = new it.gov.pagopa.gen.wispconverter.client.iuvgenerator.model.IuvGenerationModelDto();
+            it.gov.pagopa.gen.wispconverter.client.iuvgenerator.model.IUVGenerationRequestDto request = new it.gov.pagopa.gen.wispconverter.client.iuvgenerator.model.IUVGenerationRequestDto();
             request.setAuxDigit(this.auxDigit);
             request.setSegregationCode(this.segregationCode);
 
             // communicating with IUV Generator service in order to retrieve response
-            it.gov.pagopa.gen.wispconverter.client.iuvgenerator.api.IuvGeneratorApiApi apiInstance = new it.gov.pagopa.gen.wispconverter.client.iuvgenerator.api.IuvGeneratorApiApi(iuvGeneratorClient);
-            it.gov.pagopa.gen.wispconverter.client.iuvgenerator.model.IuvGenerationModelResponseDto response = apiInstance.generateIUV(creditorInstitutionCode, request);
+            it.gov.pagopa.gen.wispconverter.client.iuvgenerator.api.GenerationApi apiInstance = new it.gov.pagopa.gen.wispconverter.client.iuvgenerator.api.GenerationApi(iuvGeneratorClient);
+            it.gov.pagopa.gen.wispconverter.client.iuvgenerator.model.IUVGenerationResponseDto response = apiInstance.generateIUV(creditorInstitutionCode, request);
 
             navCode = response.getIuv();
         } catch (RestClientException e) {

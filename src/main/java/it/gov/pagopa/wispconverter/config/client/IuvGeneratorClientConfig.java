@@ -61,7 +61,7 @@ public class IuvGeneratorClientConfig {
 
         it.gov.pagopa.gen.wispconverter.client.iuvgenerator.invoker.ApiClient client = new it.gov.pagopa.gen.wispconverter.client.iuvgenerator.invoker.ApiClient(restTemplate);
         client.setBasePath(basePath);
-//        client.setApiKey(apiKey);
+        client.setApiKey(apiKey);
 
         return client;
     }

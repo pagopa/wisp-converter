@@ -21,9 +21,10 @@ public enum AppErrorCodeMessageEnum {
     VALIDATION_INVALID_CREDITOR_INSTITUTION(1103, "Creditor institution not valid", "Error while generating debt position for GPD service. The creditor institution information is different between the various RPT of the cart.", HttpStatus.BAD_REQUEST),
     CONFIGURATION_INVALID_STATION(1200, "Station not valid", "Error while generating cart for Checkout service. No valid station found with code [{0}].", HttpStatus.NOT_FOUND),
     CONFIGURATION_INVALID_STATION_REDIRECT_URL(1201, "Station not valid", "Error while generating cart for Checkout service. The station with code [{0}] contains wrong redirect URL and it is not possible to generate valid URI.", HttpStatus.NOT_FOUND),
+    CONFIGURATION_INVALID_CACHE(1202, "Cache not valid", "Error while reading configuration cache. No valid cached configuration found.", HttpStatus.NOT_FOUND),
     // --- DB and storage interaction errors ---
     PERSISTENCE_RPT_NOT_FOUND(2000, "RPT not found", "Error while retrieving RPT. RPT with sessionId [{0}] not found.", HttpStatus.NOT_FOUND),
-    PERSISTENCE_REQUESTID_CACHING_ERROR(2001, "RequestID caching error", "Error while caching RequestID. {0}", HttpStatus.UNPROCESSABLE_ENTITY),
+    PERSISTENCE_REQUESTID_CACHING_ERROR(2001, "RequestID caching error", "Error while reading cached RequestID. No valid value found for key [{0}].", HttpStatus.UNPROCESSABLE_ENTITY),
     // --- Client errors ---
     CLIENT_APICONFIGCACHE(3000, "APIConfig cache client error", "Error while communicating with APIConfig cache service. {0}", HttpStatus.EXPECTATION_FAILED),
     CLIENT_GPD(3001, "GPD client error", "Error while communicating with GPD service. {0}", HttpStatus.EXPECTATION_FAILED),

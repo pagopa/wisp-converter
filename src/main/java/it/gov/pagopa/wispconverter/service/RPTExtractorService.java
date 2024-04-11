@@ -67,6 +67,16 @@ public class RPTExtractorService {
                 .payerType(rpt.getPayer().getSubjectUniqueIdentifier().getType())
                 .payerFiscalCode(rpt.getPayer().getSubjectUniqueIdentifier().getCode())
                 .payerFullName(rpt.getPayer().getName())
+                .payerType(rpt.getPayer().getSubjectUniqueIdentifier().getType())
+                .payerFiscalCode(rpt.getPayer().getSubjectUniqueIdentifier().getCode())
+                .payerFullName(rpt.getPayer().getName())
+                .payerAddressStreetName(rpt.getPayer().getAddress())
+                .payerAddressStreetNumber(rpt.getPayer().getStreetNumber())
+                .payerAddressPostalCode(rpt.getPayer().getPostalCode())
+                .payerAddressCity(rpt.getPayer().getCity())
+                .payerAddressProvince(rpt.getPayer().getProvince())
+                .payerAddressNation(rpt.getPayer().getNation())
+                .payerEmail(rpt.getPayer().getEmail())
                 .isMultibeneficiary(false)
                 .containsDigitalStamp(containsDigitalStamp)
                 .paymentNotices(new ArrayList<>())
@@ -84,7 +94,7 @@ public class RPTExtractorService {
         NodoInviaCarrelloRPT soapBody = this.jaxbElementUtil.getBody(soapMessage, NodoInviaCarrelloRPT.class);
 
         // initializing common fields
-        boolean isMultibeneficiary = soapBody.isMultiBeneficiario() !=null && soapBody.isMultiBeneficiario();
+        boolean isMultibeneficiary = soapBody.isMultiBeneficiario() != null && soapBody.isMultiBeneficiario();
         String creditorInstitutionId = null;
         String payerType = null;
         String payerFiscalCode = null;

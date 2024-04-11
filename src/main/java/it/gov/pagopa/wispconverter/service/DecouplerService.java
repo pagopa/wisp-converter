@@ -1,11 +1,11 @@
 package it.gov.pagopa.wispconverter.service;
 
-import io.lettuce.core.RedisException;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.CacheRepository;
 import it.gov.pagopa.wispconverter.service.model.CommonRPTFieldsDTO;
 import it.gov.pagopa.wispconverter.service.model.PaymentNoticeContentDTO;
+import it.gov.pagopa.wispconverter.service.model.RPTContentDTO;
 import it.gov.pagopa.wispconverter.util.Constants;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +15,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -34,25 +36,36 @@ public class DecouplerService {
 
     public void storeRequestMappingInCache(CommonRPTFieldsDTO commonRPTFieldsDTO, String sessionId) {
         try {
-            String idIntermediarioPA = commonRPTFieldsDTO.getCreditorInstitutionBrokerId();
+            String creditorInstitutionId = commonRPTFieldsDTO.getCreditorInstitutionId();
             List<String> noticeNumbers = commonRPTFieldsDTO.getPaymentNotices().stream()
                     .map(PaymentNoticeContentDTO::getNoticeNumber)
                     .toList();
 
             // communicating with APIM policy for caching data for decoupler
             it.gov.pagopa.gen.wispconverter.client.decouplercaching.model.DecouplerCachingKeysDto decouplerCachingKeys = new it.gov.pagopa.gen.wispconverter.client.decouplercaching.model.DecouplerCachingKeysDto();
-            noticeNumbers.forEach(noticeNumber -> decouplerCachingKeys.addKeysItem(String.format(COMPOSITE_TWOVALUES_KEY_TEMPLATE, idIntermediarioPA, noticeNumber)));
+            noticeNumbers.forEach(noticeNumber -> decouplerCachingKeys.addKeysItem(String.format(COMPOSITE_TWOVALUES_KEY_TEMPLATE, creditorInstitutionId, noticeNumber)));
             it.gov.pagopa.gen.wispconverter.client.decouplercaching.api.DefaultApi apiInstance = new it.gov.pagopa.gen.wispconverter.client.decouplercaching.api.DefaultApi(decouplerCachingClient);
             apiInstance.saveMapping(decouplerCachingKeys, MDC.get(Constants.MDC_REQUEST_ID));
 
             // save in Redis cache the mapping of the request identifier needed for RT generation in next steps
-            for (String noticeNumber : noticeNumbers) {
-                String requestIDForRTHandling = String.format(CACHING_KEY_TEMPLATE, idIntermediarioPA, noticeNumber);
+            Set<String> iuvs = commonRPTFieldsDTO.getRpts().stream()
+                    .map(RPTContentDTO::getIuv)
+                    .collect(Collectors.toSet());
+            for (String iuv : iuvs) {
+                String requestIDForRTHandling = String.format(CACHING_KEY_TEMPLATE, creditorInstitutionId, iuv);
                 this.cacheRepository.insert(requestIDForRTHandling, sessionId, this.requestIDMappingTTL);
             }
         } catch (RestClientException e) {
-            throw new AppException(AppErrorCodeMessageEnum.CLIENT_DECOUPLER_CACHING,
-                    String.format("RestClientException ERROR [%s] - %s", e.getCause().getClass().getCanonicalName(), e.getMessage()));
+            throw new AppException(AppErrorCodeMessageEnum.CLIENT_DECOUPLER_CACHING, String.format("RestClientException ERROR [%s] - %s", e.getCause().getClass().getCanonicalName(), e.getMessage()));
         }
+    }
+
+    public String getCachedSessionId(String creditorInstitutionId, String iuv) {
+        String cachedKey = String.format(CACHING_KEY_TEMPLATE, creditorInstitutionId, iuv);
+        String sessionId = this.cacheRepository.read(cachedKey, String.class);
+        if (sessionId == null) {
+            throw new AppException(AppErrorCodeMessageEnum.PERSISTENCE_REQUESTID_CACHING_ERROR, cachedKey);
+        }
+        return sessionId;
     }
 }
