@@ -6,16 +6,13 @@ import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import it.gov.pagopa.wispconverter.util.CommonUtility;
 import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.ReUtil;
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.MDC;
@@ -25,6 +22,7 @@ import org.springframework.http.client.ClientHttpRequestExecution;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.util.MultiValueMap;
+import org.springframework.util.StreamUtils;
 
 @Slf4j
 public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpRequestInterceptor {
@@ -273,18 +271,10 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
 
 
 
-  protected void request(String clientOperationId, String operationId, HttpRequest request, byte[] reqBody) {
-    if(log.isDebugEnabled()){
-      log.debug(createRequestMessage(clientOperationId, operationId, request, reqBody));
-    }
-  }
+  protected abstract void request(String clientOperationId, String operationId, HttpRequest request, byte[] reqBody);
 
-  @SneakyThrows
-  protected void response(String clientOperationId, String operationId, String clientExecutionTime, HttpRequest request, ClientHttpResponse response) {
-    if(log.isDebugEnabled()){
-      log.debug(createResponseMessage(clientOperationId, operationId, clientExecutionTime, request, response));
-    }
-  }
+  protected abstract void response(String clientOperationId, String operationId, String clientExecutionTime, HttpRequest request, ClientHttpResponse response);
+
 
   private String formatRequestHeaders(MultiValueMap<String, String> headers) {
     Stream<String> stream = headers.entrySet().stream()
@@ -323,15 +313,7 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
   }
 
   private String bodyToString(InputStream body) throws IOException {
-    StringBuilder builder = new StringBuilder();
-    BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(body, StandardCharsets.UTF_8));
-    String line = bufferedReader.readLine();
-    while (line != null) {
-      builder.append(line).append(System.lineSeparator());
-      line = bufferedReader.readLine();
-    }
-    bufferedReader.close();
-    return builder.toString();
+    return StreamUtils.copyToString(body,StandardCharsets.UTF_8);
   }
 
 }

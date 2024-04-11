@@ -15,6 +15,7 @@ import java.util.HashMap;
 import java.util.zip.GZIPOutputStream;
 
 import it.gov.pagopa.gen.wispconverter.client.cache.model.ConnectionDto;
+import it.gov.pagopa.gen.wispconverter.client.cache.model.ServiceDto;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -41,6 +42,8 @@ public class TestUtils {
     station.getConnection().setIp("127.0.0.1");
     station.getConnection().setPort(8888l);
     station.getConnection().setProtocol(ConnectionDto.ProtocolEnum.HTTP);
+    station.setService(new ServiceDto());
+    station.getService().setPath("/path");
         station.setRedirect(new it.gov.pagopa.gen.wispconverter.client.cache.model.RedirectDto());
         station.getRedirect().setIp("127.0.0.1");
         station.getRedirect().setPath("/redirect");
