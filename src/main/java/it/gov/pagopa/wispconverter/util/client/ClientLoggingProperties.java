@@ -1,15 +1,19 @@
 package it.gov.pagopa.wispconverter.util.client;
 
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
+@Setter
+@Getter
 public class ClientLoggingProperties {
 
 
     private Request request = new Request();
     private Response response = new Response();
 
-    @Data
+    @Setter
+    @Getter
     public static class Request {
         private String maskHeaderName;
         private boolean includeHeaders;
@@ -18,7 +22,8 @@ public class ClientLoggingProperties {
         private boolean pretty;
     }
 
-    @Data
+    @Setter
+    @Getter
     public static class Response {
         private boolean includeHeaders;
         private boolean includePayload;
