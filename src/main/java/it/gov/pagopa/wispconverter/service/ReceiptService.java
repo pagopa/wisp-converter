@@ -22,10 +22,7 @@ import it.gov.pagopa.wispconverter.service.model.RPTContentDTO;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
 import it.gov.pagopa.wispconverter.service.model.re.EntityStatusEnum;
 import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
-import it.gov.pagopa.wispconverter.util.AppBase64Util;
-import it.gov.pagopa.wispconverter.util.JaxbElementUtil;
-import it.gov.pagopa.wispconverter.util.ReUtil;
-import it.gov.pagopa.wispconverter.util.ZipUtil;
+import it.gov.pagopa.wispconverter.util.*;
 import jakarta.xml.bind.JAXBElement;
 import jakarta.xml.soap.SOAPMessage;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +30,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -74,7 +73,8 @@ public class ReceiptService {
             Map<String, StationDto> stations = configCacheService.getConfigData().getStations();
 
             receiptDtos.forEach(receipt -> {
-                String cachedSessionId = decouplerService.getCachedSessionId(receipt.getIdentificativoDominio(), receipt.getIdentificativoUnivocoVersamento());
+//                String cachedSessionId = decouplerService.getCachedSessionId(receipt.getIdentificativoDominio(), receipt.getIdentificativoUnivocoVersamento());
+                String cachedSessionId = "66666666666_279fc47d-2d22-49e7-b39f-8a0ac5ff843a";
 
                 RPTRequestEntity rptRequestEntity = rptCosmosService.getRPTRequestEntity(cachedSessionId);
 
@@ -102,7 +102,16 @@ public class ReceiptService {
                     jaxbElementUtil.addBody(message, paaInviaRTJaxb, PaaInviaRT.class);
                     jaxbElementUtil.addHeader(message, intestazionePPT, IntestazionePPT.class);
 
-                    RTRequestEntity rtRequestEntity = generateRTEntity(stationDto.getBrokerCode(), now, jaxbElementUtil.toString(message), getStationUrl(stationDto));
+                    String url = CommonUtility.constructUrl(
+                            stationDto.getConnection().getProtocol().getValue(),
+                            stationDto.getConnection().getIp(),
+                            stationDto.getConnection().getPort().intValue(),
+                            stationDto.getService().getPath(),
+                            null,
+                            null
+                    );
+
+                    RTRequestEntity rtRequestEntity = generateRTEntity(stationDto.getBrokerCode(), now, jaxbElementUtil.toString(message), url);
                     rtRequestRepository.save(rtRequestEntity);
 
                     PaymentServiceProviderDto psp = psps.get(rpt.getRpt().getPayerInstitution().getSubjectUniqueIdentifier().getCode());
@@ -159,7 +168,16 @@ public class ReceiptService {
                 jaxbElementUtil.addBody(message, paaInviaRTJaxb, PaaInviaRT.class);
                 jaxbElementUtil.addHeader(message, intestazionePPT, IntestazionePPT.class);
 
-                RTRequestEntity rtRequestEntity = generateRTEntity(stationDto.getBrokerCode(), now, jaxbElementUtil.toString(message), getStationUrl(stationDto));
+                String url = CommonUtility.constructUrl(
+                        stationDto.getConnection().getProtocol().getValue(),
+                        stationDto.getConnection().getIp(),
+                        stationDto.getConnection().getPort().intValue(),
+                        stationDto.getService().getPath(),
+                        null,
+                        null
+                );
+
+                RTRequestEntity rtRequestEntity = generateRTEntity(stationDto.getBrokerCode(), now, jaxbElementUtil.toString(message), url);
                 rtRequestRepository.save(rtRequestEntity);
 
                 PaymentServiceProviderDto psp = psps.get(rpt.getRpt().getPayerInstitution().getSubjectUniqueIdentifier().getCode());
@@ -270,21 +288,6 @@ public class ReceiptService {
         } catch (Exception e) {
             throw new AppException(AppErrorCodeMessageEnum.PARSING_GENERIC_ERROR);
         }
-    }
-
-    private String getStationUrl(StationDto stationDto) {
-        ConnectionDto.ProtocolEnum connection = stationDto.getConnection().getProtocol();
-        StringBuilder url =
-                new StringBuilder(connection.getValue().toLowerCase())
-                        .append("://")
-                        .append(stationDto.getConnection().getIp())
-                        .append(":")
-                        .append(stationDto.getConnection().getPort())
-                        .append("/");
-        if( null != stationDto.getService() && null != stationDto.getService().getPath() ) {
-            url.append(stationDto.getService().getPath());
-        }
-        return url.toString();
     }
 
     private ReEventDto generateReInternal(RPTRequestEntity rptRequestEntity,
