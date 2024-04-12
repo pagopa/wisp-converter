@@ -73,8 +73,7 @@ public class ReceiptService {
             Map<String, StationDto> stations = configCacheService.getConfigData().getStations();
 
             receiptDtos.forEach(receipt -> {
-//                String cachedSessionId = decouplerService.getCachedSessionId(receipt.getIdentificativoDominio(), receipt.getIdentificativoUnivocoVersamento());
-                String cachedSessionId = "66666666666_279fc47d-2d22-49e7-b39f-8a0ac5ff843a";
+                String cachedSessionId = decouplerService.getCachedSessionId(receipt.getIdentificativoDominio(), receipt.getIdentificativoUnivocoVersamento());
 
                 RPTRequestEntity rptRequestEntity = rptCosmosService.getRPTRequestEntity(cachedSessionId);
 
