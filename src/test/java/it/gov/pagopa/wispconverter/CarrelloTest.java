@@ -1,5 +1,6 @@
 package it.gov.pagopa.wispconverter;
 
+import static it.gov.pagopa.wispconverter.ConstantsTestHelper.REDIRECT_PATH;
 import static it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum.VALIDATION_INVALID_MULTIBENEFICIARY_CART;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -36,7 +37,6 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 @SpringBootTest(classes = Application.class)
 @AutoConfigureMockMvc
 class CarrelloTest {
-
 
     @Autowired
     ObjectMapper objectMapper;
@@ -86,7 +86,7 @@ class CarrelloTest {
 
 
 
-        mvc.perform(MockMvcRequestBuilders.get("/redirect?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
+        mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.status().is3xxRedirection())
                 .andDo(
                         (result) -> {
@@ -127,7 +127,7 @@ class CarrelloTest {
 
 
 
-        mvc.perform(MockMvcRequestBuilders.get("/redirect?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
+        mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.status().is3xxRedirection())
                 .andDo(
                         (result) -> {
@@ -170,7 +170,7 @@ class CarrelloTest {
 
 
 
-        mvc.perform(MockMvcRequestBuilders.get("/redirect?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
+        mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.status().is4xxClientError())
                 .andDo(
                         (result) -> {
