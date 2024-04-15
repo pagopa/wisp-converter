@@ -6,11 +6,13 @@ const {DOMParser} = require('xmldom');
 const {env} = require("dotenv");
 
 
-const nodoInviaRPTPrimitive = "NodoInviaRPT";
-const nodoInviaCarrelloRPTPrimitive = "NodoInviaCarrelloRPT";
+const nodoInviaRPTPrimitive = "nodoInviaRPT";
+const nodoInviaCarrelloRPTPrimitive = "nodoInviaCarrelloRPT";
 
 const file = process.argv[2];
 const subkey = process.argv[3];
+
+console.log("Executing test case [", file, "]");
 main();
 
 
@@ -19,36 +21,37 @@ async function main() {
     let request = getRequest();
     let responseFromSOAPConverter = await callWispSoapConverter(request);
 
+    if (responseFromSOAPConverter.status !== 200) {
+        console.log('Error [', responseFromSOAPConverter.data, ']\n=====================\n');
+        return;
+    }
+
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(responseFromSOAPConverter.data, "text/xml");
     const outcome = xmlDoc.getElementsByTagName("esito")[0].textContent;
-    console.log('==Response:==\nStatus: [', responseFromSOAPConverter.status, ']\n=====================\n');
 
 
     let url = "";
-    let isOK = false;
     if (outcome === "OK") {
-        isOK = true;
         url = xmlDoc.getElementsByTagName("url")[0].textContent;
     } else {
         const faultCode = xmlDoc.getElementsByTagName("faultCode")[0].textContent;
         const description = xmlDoc.getElementsByTagName("description")[0].textContent;
         console.log('Error [', faultCode, ']: ', description, "\n=====================\n");
+        return;
     }
 
-    if (isOK) {
-        // temporary replacement
-        url = url.replace(/http:\/\/adapterecommerce\.pagopa\.it\?idSession/g, process.env.wisp_converter_host);
+    // temporary replacement
+    url = url.replace(/http:\/\/adapterecommerce\.pagopa\.it\?idSession/g, process.env.wisp_converter_host);
 
-        console.log('Calling WISP Converter at URL [', url, ']\n=====================\n');
-        let responseFromConverter = await call("GET", url, {});
+    console.log('Calling WISP Converter at URL [', url, ']\n=====================\n');
+    let responseFromConverter = await call("GET", url, {});
 
-        console.log('==Response:==\nStatus: [', responseFromConverter.status, ']\n');
-        if (responseFromConverter.status !== 200) {
-            console.log(responseFromConverter.data);
-        }
-        console.log('\n=====================\n');
+    console.log('==Response:==\nStatus: [', responseFromConverter.status, ']\n');
+    if (responseFromConverter.status !== 200) {
+        console.log(responseFromConverter.data);
     }
+    console.log('\n=====================\n');
 }
 
 function getRequest() {
@@ -68,10 +71,12 @@ function getRequest() {
 }
 
 async function callWispSoapConverter(request) {
-    console.log('==Request:==\nContent: ', request[1], "\n=====================\n");
+    let url = process.env.wisp_converter_soap_host;
     let headers = {
         "SOAPAction": request[0],
-        "Ocp-Apim-Subscription-Key": subkey
+        "Ocp-Apim-Subscription-Key": `${subkey};product=nodo-auth-wisp`
     }
+    console.log('==Request:==\nURL: [', url, ']\nContent: ', request[1], "\nHeaders: ", headers, "\n=====================\n");
     return await call("POST", process.env.wisp_converter_soap_host, request[1], headers);
 }
+
