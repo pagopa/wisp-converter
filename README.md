@@ -1,7 +1,7 @@
 # pagoPA WISP Converter
 
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=TODO-set-your-id&metric=alert_status)](https://sonarcloud.io/dashboard?id=TODO-set-your-id)
-[![Integration Tests](https://github.com/pagopa/<TODO-repo>/actions/workflows/integration_test.yml/badge.svg?branch=main)](https://github.com/pagopa/<TODO-repo>/actions/workflows/integration_test.yml)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=pagopa_pagopa-wisp-converter&metric=alert_status)](https://sonarcloud.io/dashboard?id=pagopa_pagopa-wisp-converter)
+[![Integration Tests](https://github.com/pagopa/pagopa-wisp-converter/actions/workflows/integration_test.yml/badge.svg?branch=main)](https://github.com/pagopa/pagopa-wisp-converter/actions/workflows/integration_test.yml)
 
 A service that permits to handle nodoInviaRPT and nodoInviaCarrelloRPT request from WISP, interfacing
 them with GPD system
@@ -59,7 +59,13 @@ To run the **Junit** tests:
 
 #### Integration testing
 
-From `./integration-test/src`
+For automatic execution of simple tests for checking the correct workflow between the various components, execute the
+following commands from `./integration-test/system-test`:
+
+`sh run.sh dev TESTCASE SUBKEY`
+
+A more wide information about this test can be found in Readme file in the same folder.  
+For classical integration tests with Cucumber, execute the following commands from `./integration-test/cucumber/src`:
 
 1. `yarn install`
 2. `yarn test`

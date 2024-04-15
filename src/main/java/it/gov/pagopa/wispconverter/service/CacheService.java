@@ -23,9 +23,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CacheService {
 
-    private static final String COMPOSITE_TWOVALUES_KEY_TEMPLATE = "%s_%s";
-
-    private static final String CACHING_KEY_TEMPLATE = "wisp_" + COMPOSITE_TWOVALUES_KEY_TEMPLATE;
+    private static final String CACHING_KEY_TEMPLATE = "wisp_%s_%s";
 
     private final it.gov.pagopa.gen.wispconverter.client.decouplercaching.invoker.ApiClient decouplerCachingClient;
 
@@ -43,7 +41,7 @@ public class CacheService {
 
             // communicating with APIM policy for caching data for decoupler
             it.gov.pagopa.gen.wispconverter.client.decouplercaching.model.DecouplerCachingKeysDto decouplerCachingKeys = new it.gov.pagopa.gen.wispconverter.client.decouplercaching.model.DecouplerCachingKeysDto();
-            noticeNumbers.forEach(noticeNumber -> decouplerCachingKeys.addKeysItem(String.format(COMPOSITE_TWOVALUES_KEY_TEMPLATE, creditorInstitutionId, noticeNumber)));
+            noticeNumbers.forEach(noticeNumber -> decouplerCachingKeys.addKeysItem(String.format(CACHING_KEY_TEMPLATE, creditorInstitutionId, noticeNumber)));
             it.gov.pagopa.gen.wispconverter.client.decouplercaching.api.DefaultApi apiInstance = new it.gov.pagopa.gen.wispconverter.client.decouplercaching.api.DefaultApi(decouplerCachingClient);
             apiInstance.saveMapping(decouplerCachingKeys, MDC.get(Constants.MDC_REQUEST_ID));
 
