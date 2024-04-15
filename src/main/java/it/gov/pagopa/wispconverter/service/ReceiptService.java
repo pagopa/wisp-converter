@@ -91,27 +91,8 @@ public class ReceiptService {
 
                     Instant now = Instant.now();
                     JAXBElement<CtRicevutaTelematica> rt = new it.gov.digitpa.schemas._2011.pagamenti.ObjectFactory().createRT(generateCtRicevutaTelematica(rpt, configurations, now));
-                    String xmlString = jaxbElementUtil.objectToString(rt);
 
-                    PaaInviaRT paaInviaRT = objectFactory.createPaaInviaRT();
-                    paaInviaRT.setRt(AppBase64Util.base64Encode(xmlString.getBytes(StandardCharsets.UTF_8)).getBytes(StandardCharsets.UTF_8));
-                    JAXBElement<PaaInviaRT> paaInviaRTJaxb = objectFactory.createPaaInviaRT(paaInviaRT);
-
-                    SOAPMessage message = jaxbElementUtil.newMessage();
-                    jaxbElementUtil.addBody(message, paaInviaRTJaxb, PaaInviaRT.class);
-                    jaxbElementUtil.addHeader(message, intestazionePPT, IntestazionePPT.class);
-
-                    String url = CommonUtility.constructUrl(
-                            stationDto.getConnection().getProtocol().getValue(),
-                            stationDto.getConnection().getIp(),
-                            stationDto.getConnection().getPort().intValue(),
-                            stationDto.getService().getPath(),
-                            null,
-                            null
-                    );
-
-                    RTRequestEntity rtRequestEntity = generateRTEntity(stationDto.getBrokerCode(), now, jaxbElementUtil.toString(message), url);
-                    rtRequestRepository.save(rtRequestEntity);
+                    generatePaaInviaRTAndTrace(intestazionePPT, rt, objectFactory, stationDto, now);
 
                     PaymentServiceProviderDto psp = psps.get(rpt.getRpt().getPayerInstitution().getSubjectUniqueIdentifier().getCode());
 
@@ -157,27 +138,8 @@ public class ReceiptService {
                         commonRPTFieldsDTO.getStationId());
 
                 JAXBElement<CtRicevutaTelematica> rt = new it.gov.digitpa.schemas._2011.pagamenti.ObjectFactory().createRT(generateCtRicevutaTelematica(rpt, paSendRTV2Request));
-                String xmlString = jaxbElementUtil.objectToString(rt);
 
-                PaaInviaRT paaInviaRT = objectFactory.createPaaInviaRT();
-                paaInviaRT.setRt(AppBase64Util.base64Encode(xmlString.getBytes(StandardCharsets.UTF_8)).getBytes(StandardCharsets.UTF_8));
-                JAXBElement<PaaInviaRT> paaInviaRTJaxb = objectFactory.createPaaInviaRT(paaInviaRT);
-
-                SOAPMessage message = jaxbElementUtil.newMessage();
-                jaxbElementUtil.addBody(message, paaInviaRTJaxb, PaaInviaRT.class);
-                jaxbElementUtil.addHeader(message, intestazionePPT, IntestazionePPT.class);
-
-                String url = CommonUtility.constructUrl(
-                        stationDto.getConnection().getProtocol().getValue(),
-                        stationDto.getConnection().getIp(),
-                        stationDto.getConnection().getPort().intValue(),
-                        stationDto.getService().getPath(),
-                        null,
-                        null
-                );
-
-                RTRequestEntity rtRequestEntity = generateRTEntity(stationDto.getBrokerCode(), now, jaxbElementUtil.toString(message), url);
-                rtRequestRepository.save(rtRequestEntity);
+                generatePaaInviaRTAndTrace(intestazionePPT, rt, objectFactory, stationDto, now);
 
                 PaymentServiceProviderDto psp = psps.get(rpt.getRpt().getPayerInstitution().getSubjectUniqueIdentifier().getCode());
 
@@ -314,6 +276,34 @@ public class ReceiptService {
             reEventDtoBuilder.stazione(station.getStationCode());
         }
         return reEventDtoBuilder.build();
+    }
+
+    private void generatePaaInviaRTAndTrace(IntestazionePPT intestazionePPT,
+                                           JAXBElement<CtRicevutaTelematica> rt,
+                                           gov.telematici.pagamenti.ws.papernodo.ObjectFactory objectFactory,
+                                           StationDto stationDto,
+                                           Instant instant) {
+        String xmlString = jaxbElementUtil.objectToString(rt);
+
+        PaaInviaRT paaInviaRT = objectFactory.createPaaInviaRT();
+        paaInviaRT.setRt(AppBase64Util.base64Encode(xmlString.getBytes(StandardCharsets.UTF_8)).getBytes(StandardCharsets.UTF_8));
+        JAXBElement<PaaInviaRT> paaInviaRTJaxb = objectFactory.createPaaInviaRT(paaInviaRT);
+
+        SOAPMessage message = jaxbElementUtil.newMessage();
+        jaxbElementUtil.addBody(message, paaInviaRTJaxb, PaaInviaRT.class);
+        jaxbElementUtil.addHeader(message, intestazionePPT, IntestazionePPT.class);
+
+        String url = CommonUtility.constructUrl(
+                stationDto.getConnection().getProtocol().getValue(),
+                stationDto.getConnection().getIp(),
+                stationDto.getConnection().getPort().intValue(),
+                stationDto.getService().getPath(),
+                null,
+                null
+        );
+
+        RTRequestEntity rtRequestEntity = generateRTEntity(stationDto.getBrokerCode(), instant, jaxbElementUtil.toString(message), url);
+        rtRequestRepository.save(rtRequestEntity);
     }
 
 }
