@@ -16,7 +16,7 @@ async function call(method, url, body, headers) {
 }
 
 async function get(url, headers) {
-  return await axios.get(url, headers)
+  return await axios.get(url, { headers: headers })
       .then(res => {
         return res;
       })
@@ -26,7 +26,7 @@ async function get(url, headers) {
 }
 
 async function post(url, body, headers) {
-  return await axios.post(url, body, headers)
+  return await axios.post(url, body, { headers: headers })
       .then(res => {
         return res;
       })
@@ -36,7 +36,7 @@ async function post(url, body, headers) {
 }
 
 async function put(url, body, headers) {
-  return await axios.put(url, body, headers)
+  return await axios.put(url, body, { headers: headers })
       .then(res => {
         return res;
       })
@@ -46,7 +46,7 @@ async function put(url, body, headers) {
 }
 
 async function del(url, headers) {
-  return await axios.delete(url, headers)
+  return await axios.delete(url, { headers: headers })
       .then(res => {
         return res;
       })

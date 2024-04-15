@@ -1,25 +1,33 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-    <head>
-        <meta charset="utf-8">
-        <meta http-equiv="x-ua-compatible" content="ie=edge">
-        <title>Error</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-    </head>
-    <body>
-        <h1>Something went wrong! </h1>
-        <h2>Our Engineers are on it</h2>
+<html lang="it" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta content="ie=edge" http-equiv="x-ua-compatible">
+    <title>Errore</title>
+    <meta content="width=device-width, initial-scale=1" name="viewport">
+    <link rel="stylesheet" th:href="@{/style/main.css}"/>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<div class="container">
+    <div class="row justify-content-center align-items-center">
+        <div class="col-lg-3"></div>
+        <div class="col-lg-6 main-div">
+            <div class="text-center">
+                <img alt="Error icon" class="error-icon mx-auto" th:src="@{images/error-icon.png}">
+            </div>
+            <div class="text-center">
+                <h2 class="error-title">Si &egrave; verificato un errore imprevisto</h2>
+                <p class="error-subtitle">Riprova, oppure contatta l'assistenza</p>
+                <button class="button">Contatta l'assistenza</button>
+            </div>
+        </div>
+        <div class="col-lg-3"></div>
+    </div>
+</div>
 
-        <div th:text="${sessionId}"></div>
-        <div th:text="${type}"></div>
-        <div th:text="${title}"></div>
-        <div th:text="${status}"></div>
-        <div th:text="${detail}"></div>
-        <div th:text="${timestamp}"></div>
-        <div th:text="${operationId}"></div>
-        <div th:text="${errorCode}"></div>
-
-
-        <a href="/">Go Home</a>
-    </body>
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
 </html>
