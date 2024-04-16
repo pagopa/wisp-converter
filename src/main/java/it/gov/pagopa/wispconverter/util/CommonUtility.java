@@ -76,7 +76,7 @@ public class CommonUtility {
         try {
             return configurations.get(key).getValue();
         } catch ( NullPointerException e) {
-            throw new AppException(AppErrorCodeMessageEnum.GENERIC_ERROR, "ConfigurationKey '" + key + "' not found in cache");
+            throw new AppException(AppErrorCodeMessageEnum.ERROR, "ConfigurationKey '" + key + "' not found in cache");
         }
     }
 }

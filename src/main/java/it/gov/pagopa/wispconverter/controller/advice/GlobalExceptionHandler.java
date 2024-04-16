@@ -34,7 +34,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(AppException.class)
     public ErrorResponse handleAppException(AppException appEx) {
         String operationId = MDC.get(Constants.MDC_OPERATION_ID);
-        log.error(String.format("AppException: operation-id=[%s]", operationId!=null?operationId:"n/a"), appEx);
+
+        if( appEx.getError() == AppErrorCodeMessageEnum.ERROR ) {
+            log.error(String.format("[ALERT] AppException: operation-id=[%s]", operationId!=null?operationId:"n/a"), appEx);
+        } else {
+            log.error(String.format("AppException: operation-id=[%s]", operationId!=null?operationId:"n/a"), appEx);
+        }
 
         ErrorResponse errorResponse = errorUtil.forAppException(appEx);
         ProblemDetail problemDetail = errorResponse.updateAndGetBody(this.messageSource, LocaleContextHolder.getLocale());

@@ -103,6 +103,8 @@ public class ReceiptService {
             });
         } catch (JsonProcessingException e) {
             throw new AppException(AppErrorCodeMessageEnum.PARSING_INVALID_BODY);
+        } catch (AppException appEx) {
+            throw appEx;
         } catch (Exception e) {
             throw new AppException(AppErrorCodeMessageEnum.GENERIC_ERROR, e.getMessage());
         }
@@ -153,8 +155,8 @@ public class ReceiptService {
                 reService.addRe(reEventDto);
             });
 
-        } catch (AppException e) {
-            throw e;
+        } catch (AppException appEx) {
+            throw appEx;
         } catch (Exception e) {
             throw new AppException(AppErrorCodeMessageEnum.GENERIC_ERROR, e.getMessage());
         }
