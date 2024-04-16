@@ -90,7 +90,7 @@ public class ReceiptService {
 
                     generatePaaInviaRTAndTrace(intestazionePPT, rt, objectFactory, stationDto, now);
 
-                    PaymentServiceProviderDto psp = psps.get(rpt.getRpt().getPayerInstitution().getSubjectUniqueIdentifier().getCode());
+                    PaymentServiceProviderDto psp = psps.get(rpt.getRpt().getPayeeInstitution().getSubjectUniqueIdentifier().getCode());
 
                     //generate and save re event internal for change status
                     ReEventDto reEventDto = generateReInternal(rptRequestEntity, rpt, receipt.getIdentificativoUnivocoVersamento(), receipt.getPaymentToken(), stationDto, psp);
@@ -139,7 +139,7 @@ public class ReceiptService {
 
                 generatePaaInviaRTAndTrace(intestazionePPT, rt, objectFactory, stationDto, now);
 
-                PaymentServiceProviderDto psp = psps.get(rpt.getRpt().getPayerInstitution().getSubjectUniqueIdentifier().getCode());
+                PaymentServiceProviderDto psp = psps.get(rpt.getRpt().getPayeeInstitution().getSubjectUniqueIdentifier().getCode());
 
                 //generate and save re event internal for change status
                 ReEventDto reEventDto = generateReInternal(rptRequestEntity,
@@ -170,7 +170,7 @@ public class ReceiptService {
         rtMapper.toCtDominio(ctDominio, rpt.getRpt().getDomain());
 
         CtEnteBeneficiario ctEnteBeneficiario = objectFactory.createCtEnteBeneficiario();
-        rtMapper.toCtEnteBeneficiario(ctEnteBeneficiario, rpt.getRpt().getPayerInstitution());
+        rtMapper.toCtEnteBeneficiario(ctEnteBeneficiario, rpt.getRpt().getPayeeInstitution());
 
         CtSoggettoPagatore ctSoggettoPagatore = objectFactory.createCtSoggettoPagatore();
         rtMapper.toCtSoggettoPagatore(ctSoggettoPagatore, rpt.getRpt().getPayer());
@@ -200,7 +200,7 @@ public class ReceiptService {
         rtMapper.toCtDominio(ctDominio, rpt.getRpt().getDomain());
 
         CtEnteBeneficiario ctEnteBeneficiario = objectFactory.createCtEnteBeneficiario();
-        rtMapper.toCtEnteBeneficiario(ctEnteBeneficiario, rpt.getRpt().getPayerInstitution());
+        rtMapper.toCtEnteBeneficiario(ctEnteBeneficiario, rpt.getRpt().getPayeeInstitution());
 
         CtSoggettoPagatore ctSoggettoPagatore = objectFactory.createCtSoggettoPagatore();
         rtMapper.toCtSoggettoPagatore(ctSoggettoPagatore, paSendRTV2Request.getReceipt().getDebtor());

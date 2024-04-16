@@ -85,7 +85,7 @@ public abstract class RTMapper {
     @Mapping(source = "city", target = "localitaBeneficiario")
     @Mapping(source = "province", target = "provinciaBeneficiario")
     @Mapping(source = "nation", target = "nazioneBeneficiario")
-    public abstract void toCtEnteBeneficiario(@MappingTarget CtEnteBeneficiario ctEnteBeneficiario, PaymentSubjectDTO payerInstitution);
+    public abstract void toCtEnteBeneficiario(@MappingTarget CtEnteBeneficiario ctEnteBeneficiario, PaymentSubjectDTO payeeInstitution);
 
     @Mapping(source = "subjectUniqueIdentifier", target = "identificativoUnivocoPagatore")
     @Mapping(source = "name", target = "anagraficaPagatore")
