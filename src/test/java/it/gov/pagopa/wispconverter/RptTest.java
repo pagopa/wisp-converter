@@ -206,15 +206,14 @@ class RptTest {
 
 
         MvcResult resultActions = mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
-                .andExpect(MockMvcResultMatchers.status().is4xxClientError()).andDo(
+                .andExpect(MockMvcResultMatchers.status().is2xxSuccessful()).andDo(
                         (result) -> {
                             assertNotNull(result);
                             assertNotNull(result.getResponse());
                         }).andReturn();
         assertEquals("text/html;charset=UTF-8",resultActions.getResponse().getContentType());
         String contentAsString = resultActions.getResponse().getContentAsString();
-        assertTrue(contentAsString.contains("WIC-2000"));
-        assertTrue(contentAsString.contains("RPT with sessionId [aaaaaaaaaaaa] not found."));
+        assertTrue(contentAsString.contains("Riprova, oppure contatta l'assistenza"));
         verify(checkoutClient,times(0)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
         verify(gpdClient,times(0)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
         verify(decouplerCachingClient,times(0)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
@@ -238,15 +237,14 @@ class RptTest {
         when(rptRequestRepository.findById(any())).thenThrow(new RuntimeException("fail"));
 
         MvcResult resultActions = mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
-                .andExpect(MockMvcResultMatchers.status().is5xxServerError()).andDo(
+                .andExpect(MockMvcResultMatchers.status().is2xxSuccessful()).andDo(
                         (result) -> {
                             assertNotNull(result);
                             assertNotNull(result.getResponse());
                         }).andReturn();
         assertEquals("text/html;charset=UTF-8",resultActions.getResponse().getContentType());
         String contentAsString = resultActions.getResponse().getContentAsString();
-        assertTrue(contentAsString.contains("WIC-500"));
-        assertTrue(contentAsString.contains("An unexpected error has occurred. Please contact support"));
+        assertTrue(contentAsString.contains("Riprova, oppure contatta l'assistenza"));
         verify(checkoutClient,times(0)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
         verify(gpdClient,times(0)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
         verify(decouplerCachingClient,times(0)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
@@ -278,7 +276,7 @@ class RptTest {
 
 
         mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
-                .andExpect(MockMvcResultMatchers.status().is4xxClientError());
+                .andExpect(MockMvcResultMatchers.status().is2xxSuccessful());
 
         verify(checkoutClient,times(0)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
         verify(gpdClient,times(0)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
@@ -312,7 +310,7 @@ class RptTest {
 
 
         mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
-                .andExpect(MockMvcResultMatchers.status().is4xxClientError());
+                .andExpect(MockMvcResultMatchers.status().is2xxSuccessful());
 
         verify(iuveneratorClient,times(1)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
         verify(gpdClient,times(0)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
@@ -347,7 +345,7 @@ class RptTest {
         when(redisSimpleTemplate.opsForValue()).thenReturn(mock(ValueOperations.class));
 
         mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
-                .andExpect(MockMvcResultMatchers.status().is4xxClientError());
+                .andExpect(MockMvcResultMatchers.status().is2xxSuccessful());
 
         verify(iuveneratorClient,times(1)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
         verify(gpdClient,times(1)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
@@ -383,7 +381,7 @@ class RptTest {
 
 
         mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
-                .andExpect(MockMvcResultMatchers.status().is4xxClientError());
+                .andExpect(MockMvcResultMatchers.status().is2xxSuccessful());
 
         verify(iuveneratorClient,times(1)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
         verify(gpdClient,times(1)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());

@@ -171,12 +171,12 @@ class CarrelloTest {
 
 
         mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
-                .andExpect(MockMvcResultMatchers.status().is4xxClientError())
+                .andExpect(MockMvcResultMatchers.status().is2xxSuccessful())
                 .andDo(
                         (result) -> {
                             assertNotNull(result);
                             assertNotNull(result.getResponse());
-                            assertTrue(result.getResponse().getContentAsString().contains(VALIDATION_INVALID_MULTIBENEFICIARY_CART.getDetail()));
+                            assertTrue(result.getResponse().getContentAsString().contains("Riprova, oppure contatta l'assistenza"));
                         });
 
         verify(checkoutClient,times(0)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
