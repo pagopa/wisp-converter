@@ -1,11 +1,14 @@
 package it.gov.pagopa.wispconverter.service.mapper;
 
-import gov.telematici.pagamenti.ws.pafornode.*;
+import gov.telematici.pagamenti.ws.pafornode.CtReceiptV2;
+import gov.telematici.pagamenti.ws.pafornode.CtSubject;
+import gov.telematici.pagamenti.ws.pafornode.CtTransferPAReceiptV2;
+import gov.telematici.pagamenti.ws.pafornode.PaSendRTV2Request;
 import it.gov.digitpa.schemas._2011.pagamenti.*;
-
 import it.gov.pagopa.pagopa_api.xsd.common_types.v1_0.CtMapEntry;
 import it.gov.pagopa.wispconverter.service.model.*;
 import it.gov.pagopa.wispconverter.service.model.paymentrequest.PaymentRequestDTO;
+import it.gov.pagopa.wispconverter.util.CommonUtility;
 import org.mapstruct.*;
 import org.springframework.beans.factory.annotation.Value;
 
@@ -13,7 +16,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public abstract class RTMapper {
@@ -24,19 +26,17 @@ public abstract class RTMapper {
     public void toCtIstitutoAttestante(@MappingTarget CtIstitutoAttestante ctIstitutoAttestante,
                                        CtIdentificativoUnivoco ctIdentificativoUnivoco,
                                        Map<String, it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigurationKeyDto> configurations) {
-        String tipoIdentificativoUnivoco =
-                configurations.get("GLOBAL-istitutoAttestante.identificativoUnivocoAttestante.tipoIdentificativoUnivoco").getValue();
-        String codiceIdentificativoUnivoco =
-                configurations.get("GLOBAL-istitutoAttestante.identificativoUnivocoAttestante.codiceIdentificativoUnivoco").getValue();
-        String denominazioneAttestante = configurations.get("GLOBAL-istitutoAttestante.denominazioneAttestante").getValue();
-        String codiceUnitOperAttestante = configurations.get("GLOBAL-istitutoAttestante.codiceUnitOperAttestante").getValue();
-        String denomUnitOperAttestante = configurations.get("GLOBAL-istitutoAttestante.denomUnitOperAttestante").getValue();
-        String indirizzoAttestante = configurations.get("GLOBAL-istitutoAttestante.indirizzoAttestante").getValue();
-        String civicoAttestante = configurations.get("GLOBAL-istitutoAttestante.civicoAttestante").getValue();
-        String capAttestante = configurations.get("GLOBAL-istitutoAttestante.capAttestante").getValue();
-        String localitaAttestante = configurations.get("GLOBAL-istitutoAttestante.localitaAttestante").getValue();
-        String provinciaAttestante = configurations.get("GLOBAL-istitutoAttestante.provinciaAttestante").getValue();
-        String nazioneAttestante = configurations.get("GLOBAL-istitutoAttestante.nazioneAttestante").getValue();
+        String tipoIdentificativoUnivoco = CommonUtility.getConfigKeyValueCache(configurations, "GLOBAL-istitutoAttestante.identificativoUnivocoAttestante.tipoIdentificativoUnivoco");
+        String codiceIdentificativoUnivoco = CommonUtility.getConfigKeyValueCache(configurations, "GLOBAL-istitutoAttestante.identificativoUnivocoAttestante.codiceIdentificativoUnivoco");
+        String denominazioneAttestante = CommonUtility.getConfigKeyValueCache(configurations, "GLOBAL-istitutoAttestante.denominazioneAttestante");
+        String codiceUnitOperAttestante = CommonUtility.getConfigKeyValueCache(configurations, "GLOBAL-istitutoAttestante.codiceUnitOperAttestante");
+        String denomUnitOperAttestante = CommonUtility.getConfigKeyValueCache(configurations, "GLOBAL-istitutoAttestante.denomUnitOperAttestante");
+        String indirizzoAttestante = CommonUtility.getConfigKeyValueCache(configurations, "GLOBAL-istitutoAttestante.indirizzoAttestante");
+        String civicoAttestante = CommonUtility.getConfigKeyValueCache(configurations, "GLOBAL-istitutoAttestante.civicoAttestante");
+        String capAttestante = CommonUtility.getConfigKeyValueCache(configurations, "GLOBAL-istitutoAttestante.capAttestante");
+        String localitaAttestante = CommonUtility.getConfigKeyValueCache(configurations, "GLOBAL-istitutoAttestante.localitaAttestante");
+        String provinciaAttestante = CommonUtility.getConfigKeyValueCache(configurations, "GLOBAL-istitutoAttestante.provinciaAttestante");
+        String nazioneAttestante = CommonUtility.getConfigKeyValueCache(configurations, "GLOBAL-istitutoAttestante.nazioneAttestante");
 
         ctIdentificativoUnivoco.setTipoIdentificativoUnivoco(StTipoIdentificativoUnivoco.fromValue(tipoIdentificativoUnivoco));
         ctIdentificativoUnivoco.setCodiceIdentificativoUnivoco(codiceIdentificativoUnivoco);

@@ -6,6 +6,7 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
 import java.net.URI;
+import java.util.Map;
 import java.util.Optional;
 
 
@@ -68,6 +69,14 @@ public class CommonUtility {
                     fragment).toString();
         } catch (Exception e) {
             throw new AppException(AppErrorCodeMessageEnum.PARSING_GENERIC_ERROR);
+        }
+    }
+
+    public static String getConfigKeyValueCache(Map<String, it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigurationKeyDto> configurations, String key) {
+        try {
+            return configurations.get(key).getValue();
+        } catch ( NullPointerException e) {
+            throw new AppException(AppErrorCodeMessageEnum.GENERIC_ERROR, "ConfigurationKey '" + key + "' not found in cache");
         }
     }
 }
