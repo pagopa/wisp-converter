@@ -19,7 +19,9 @@
             <div class="text-center">
                 <h2 class="error-title">Si &egrave; verificato un errore imprevisto</h2>
                 <p class="error-subtitle">Riprova, oppure contatta l'assistenza</p>
-                <button class="button">Contatta l'assistenza</button>
+                <form method="get" th:action="@{https://pagopa.gov.it/assistenza}">
+                    <button class="button">Contatta l'assistenza</button>
+                </form>
             </div>
         </div>
         <div class="col-lg-3"></div>
