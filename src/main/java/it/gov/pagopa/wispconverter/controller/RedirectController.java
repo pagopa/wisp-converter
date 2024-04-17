@@ -13,7 +13,7 @@ import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.service.ConverterService;
 import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.ErrorUtil;
-import it.gov.pagopa.wispconverter.util.TraceReEvent;
+import it.gov.pagopa.wispconverter.util.Trace;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
@@ -25,9 +25,7 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.ErrorResponse;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 
 @Controller
 @RequestMapping
@@ -37,7 +35,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 @Slf4j
 public class RedirectController {
 
-    private static final String BO_REDIRECT = "redirect";
+    private static final String BP_REDIRECT = "redirect";
     private final ConverterService converterService;
     private final ErrorUtil errorUtil;
     private final MessageSource messageSource;
@@ -47,7 +45,7 @@ public class RedirectController {
             @ApiResponse(responseCode = "302", description = "Redirect to Checkout service.", content = @Content(schema = @Schema()))
     })
     @GetMapping(value = "/payments")
-    @TraceReEvent(businessProcess = BO_REDIRECT)
+    @Trace(businessProcess=BP_REDIRECT, reEnabled = true)
     public String redirect(@Parameter(description = "", example = "identificativoIntermediarioPA_sessionId")
                            @NotBlank(message = "{redirect.session-id.not-blank}")
                            @RequestParam("sessionId") String sessionId,

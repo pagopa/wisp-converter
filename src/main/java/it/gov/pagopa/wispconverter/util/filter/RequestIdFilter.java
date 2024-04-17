@@ -43,7 +43,6 @@ public class RequestIdFilter extends OncePerRequestFilter {
         ((HttpServletResponse) response).setHeader(HEADER_REQUEST_ID, requestId);
 
         filterChain.doFilter(request, response);
-
         MDC.clear();
     }
 

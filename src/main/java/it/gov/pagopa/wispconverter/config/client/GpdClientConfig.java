@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import it.gov.pagopa.wispconverter.service.ReService;
-import it.gov.pagopa.wispconverter.util.client.ClientLoggingProperties;
+import it.gov.pagopa.wispconverter.util.client.RequestResponseLoggingProperties;
 import it.gov.pagopa.wispconverter.util.client.gpd.GpdClientLoggingInterceptor;
 import it.gov.pagopa.wispconverter.util.client.gpd.GpdClientResponseErrorHandler;
 import lombok.RequiredArgsConstructor;
@@ -52,13 +52,13 @@ public class GpdClientConfig {
 
     @Bean
     @ConfigurationProperties(prefix = "log.client.gpd")
-    public ClientLoggingProperties gpdClientLoggingProperties() {
-        return new ClientLoggingProperties();
+    public RequestResponseLoggingProperties gpdClientLoggingProperties() {
+        return new RequestResponseLoggingProperties();
     }
 
     @Bean
     public it.gov.pagopa.gen.wispconverter.client.gpd.invoker.ApiClient gpdClient() {
-        ClientLoggingProperties clientLoggingProperties = gpdClientLoggingProperties();
+        RequestResponseLoggingProperties clientLoggingProperties = gpdClientLoggingProperties();
 
         GpdClientLoggingInterceptor clientLogging = new GpdClientLoggingInterceptor(clientLoggingProperties, reService);
 

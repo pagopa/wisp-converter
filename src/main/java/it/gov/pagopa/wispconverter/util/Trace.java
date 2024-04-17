@@ -7,6 +7,7 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
-public @interface TraceReEvent {
+public @interface Trace {
     public String businessProcess() default "not-configured";
+    public boolean reEnabled() default false;
 }

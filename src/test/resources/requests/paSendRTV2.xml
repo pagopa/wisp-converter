@@ -1,0 +1,95 @@
+<soapenv:Envelope xmlns:pafn="http://pagopa-api.pagopa.gov.it/pa/paForNode.xsd" xmlns:ppt="http://ws.pagamenti.telematici.gov/ppthead" xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ws="http://ws.pagamenti.telematici.gov/">
+    <soapenv:Body>
+      <pafn:paSendRTReq>
+        <idPA>77777777777</idPA>
+        <idBrokerPA>77777777777</idBrokerPA>
+        <idStation>mystation</idStation>
+        <receipt>
+          <receiptId>c110729d258c4ab1b765fe902aae41d6</receiptId>
+          <noticeNumber>311111111112222222</noticeNumber>
+          <fiscalCode>77777777777</fiscalCode>
+          <outcome>OK</outcome>
+          <creditorReferenceId>11111111112222222</creditorReferenceId>
+          <paymentAmount>30.00</paymentAmount>
+          <description>test</description>
+          <companyName>company EC1</companyName>
+          <officeName>office EC</officeName>
+          <debtor>
+            <uniqueIdentifier>
+              <entityUniqueIdentifierType>F</entityUniqueIdentifierType>
+              <entityUniqueIdentifierValue>JHNDOE00A01F205N</entityUniqueIdentifierValue>
+            </uniqueIdentifier>
+            <fullName>John Doe</fullName>
+            <streetName>street</streetName>
+            <civicNumber>12</civicNumber>
+            <postalCode>89020</postalCode>
+            <city>city</city>
+            <stateProvinceRegion>MI</stateProvinceRegion>
+            <country>IT</country>
+            <e-mail>john.doe@test.it</e-mail>
+          </debtor>
+          <transferList>
+            <transfer>
+              <idTransfer>1</idTransfer>
+              <transferAmount>20.00</transferAmount>
+              <fiscalCodePA>77777777777</fiscalCodePA>
+              <companyName>company EC1</companyName>
+              <IBAN>IT0000000000000000000000000</IBAN>
+              <remittanceInformation>remittanceInformation1</remittanceInformation>
+              <transferCategory>0101100IM</transferCategory>
+              <metadata>
+                <mapEntry>
+                  <key>keytest</key>
+                  <value>1</value>
+                </mapEntry>
+              </metadata>
+            </transfer>
+            <transfer>
+              <idTransfer>2</idTransfer>
+              <transferAmount>10.00</transferAmount>
+              <fiscalCodePA>77777777778</fiscalCodePA>
+              <companyName>company EC2</companyName>
+              <IBAN>IT0000000000000000000000001</IBAN>
+              <remittanceInformation>remittanceInformation2</remittanceInformation>
+              <transferCategory>0201102IM</transferCategory>
+            </transfer>
+          </transferList>
+          <idPSP>88888888888</idPSP>
+          <pspFiscalCode>88888888888</pspFiscalCode>
+          <pspPartitaIVA>88888888888</pspPartitaIVA>
+          <PSPCompanyName>PSP name</PSPCompanyName>
+          <idChannel>88888888888_01</idChannel>
+          <channelDescription>app</channelDescription>
+          <payer>
+            <uniqueIdentifier>
+              <entityUniqueIdentifierType>F</entityUniqueIdentifierType>
+              <entityUniqueIdentifierValue>JHNDOE00A01F205N</entityUniqueIdentifierValue>
+            </uniqueIdentifier>
+            <fullName>John Doe</fullName>
+            <streetName>street</streetName>
+            <civicNumber>12</civicNumber>
+            <postalCode>89020</postalCode>
+            <city>city</city>
+            <stateProvinceRegion>MI</stateProvinceRegion>
+            <country>IT</country>
+            <e-mail>john.doe@test.it</e-mail>
+          </payer>
+          <paymentMethod>creditCard</paymentMethod>
+          <fee>2.00</fee>
+          <primaryCiIncurredFee>0.50</primaryCiIncurredFee>
+          <idBundle>1</idBundle>
+          <idCiBundle>2</idCiBundle>
+          <paymentDateTime>2021-10-01T17:48:22</paymentDateTime>
+          <applicationDate>2021-10-01</applicationDate>
+          <transferDate>2021-10-02</transferDate>
+          <metadata>
+            <mapEntry>
+              <key>keytest</key>
+              <value>1</value>
+            </mapEntry>
+          </metadata>
+          <standin>false</standin>
+        </receipt>
+      </pafn:paSendRTReq>
+    </soapenv:Body>
+  </soapenv:Envelope>
