@@ -1,14 +1,12 @@
 {
   "openapi" : "3.0.1",
   "info" : {
-    "title" : "API-Config Cacher",
-    "description" : "Generate cache for regarding Nodo dei Pagamenti configuration",
+    "title" : "API-Config Cache ${service}",
+    "description" : "Generate cache for various microservices",
     "termsOfService" : "https://www.pagopa.gov.it/",
-    "version" : "0.8.6"
+    "version" : "0.8.20"
   },
   "servers" : [ {
-    "url" : "http://localhost:8080"
-  }, {
     "url" : "https://{host}/{basePath}",
     "variables" : {
       "host" : {
@@ -22,11 +20,22 @@
     }
   } ],
   "paths" : {
-    "/stakeholders/standin/cache/schemas/v1" : {
+    "/cache" : {
       "get" : {
         "tags" : [ "Cache" ],
-        "summary" : "Get selected key of cache v1 config",
-        "operationId" : "cache",
+        "summary" : "Get in memory cache,full or only the supplied keys",
+        "operationId" : "get",
+        "parameters" : [ {
+          "name" : "keys",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        } ],
         "responses" : {
           "400" : {
             "description" : "Bad Request",
@@ -38,12 +47,6 @@
               }
             }
           },
-          "401" : {
-            "description" : "Unauthorized"
-          },
-          "403" : {
-            "description" : "Forbidden"
-          },
           "500" : {
             "description" : "Service unavailable",
             "content" : {
@@ -53,9 +56,6 @@
                 }
               }
             }
-          },
-          "429" : {
-            "description" : "Too many requests"
           },
           "200" : {
             "description" : "OK",
@@ -66,6 +66,15 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "429" : {
+            "description" : "Too many requests"
+          },
+          "403" : {
+            "description" : "Forbidden"
           }
         },
         "security" : [ {
@@ -73,11 +82,11 @@
         } ]
       }
     },
-    "/stakeholders/standin/cache/schemas/v1/id" : {
+    "/cache/xlsx" : {
       "get" : {
         "tags" : [ "Cache" ],
-        "summary" : "Get last v1 cache version",
-        "operationId" : "idV1",
+        "summary" : "Get xlsx of full chache",
+        "operationId" : "xls",
         "responses" : {
           "400" : {
             "description" : "Bad Request",
@@ -89,14 +98,52 @@
               }
             }
           },
+          "500" : {
+            "description" : "Service unavailable",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemJson"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : { }
+            }
+          },
           "401" : {
             "description" : "Unauthorized"
           },
+          "429" : {
+            "description" : "Too many requests"
+          },
           "403" : {
             "description" : "Forbidden"
-          },
-          "404" : {
-            "description" : "Not Found"
+          }
+        },
+        "security" : [ {
+          "ApiKey" : [ ]
+        } ]
+      }
+    },
+    "/cache/refresh" : {
+      "get" : {
+        "tags" : [ "Cache" ],
+        "summary" : "Refresh in memory full chache",
+        "operationId" : "refresh",
+        "responses" : {
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemJson"
+                }
+              }
+            }
           },
           "500" : {
             "description" : "Service unavailable",
@@ -108,8 +155,93 @@
               }
             }
           },
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : { }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
           "429" : {
             "description" : "Too many requests"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        },
+        "security" : [ {
+          "ApiKey" : [ ]
+        } ]
+      }
+    },
+    "/cache/keys" : {
+      "get" : {
+        "tags" : [ "Cache" ],
+        "summary" : "Get the list of available cache keys",
+        "operationId" : "getKeys",
+        "responses" : {
+          "500" : {
+            "description" : "Service unavailable",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemJson"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "429" : {
+            "description" : "Too many requests"
+          },
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        },
+        "security" : [ {
+          "ApiKey" : [ ]
+        } ]
+      }
+    },
+    "/cache/id" : {
+      "get" : {
+        "tags" : [ "Cache" ],
+        "summary" : "Get in memory full cache id",
+        "operationId" : "id",
+        "responses" : {
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemJson"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Service unavailable",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemJson"
+                }
+              }
+            }
           },
           "200" : {
             "description" : "OK",
@@ -120,6 +252,15 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "429" : {
+            "description" : "Too many requests"
+          },
+          "403" : {
+            "description" : "Forbidden"
           }
         },
         "security" : [ {

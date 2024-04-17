@@ -13,7 +13,7 @@
 
     <groupId>it.gov.pagopa</groupId>
     <artifactId>wisp-converter</artifactId>
-    <version>0.0.12</version>
+    <version>0.0.14</version>
     <name>pagoPA WISP Converter</name>
     <description>A service that permits to handle nodoInviaRPT and nodoInviaCarrelloRPT request from WISP, converting them in NMU payments.</description>
 
@@ -24,6 +24,8 @@
         <java-ecs-logging.version>1.6.0</java-ecs-logging.version>
         <aspectjrt.version>1.9.20.1</aspectjrt.version>
         <azure-sdk-bom.version>1.2.21</azure-sdk-bom.version>
+        <azure-messaging.version>5.18.2</azure-messaging.version>
+        <azure-blob.version>1.19.2</azure-blob.version>
         <netty.version>4.1.101.Final</netty.version>
         <cosmos-data-version>5.10.0</cosmos-data-version>
         <spring-cloud.version>2023.0.0</spring-cloud.version>
@@ -66,6 +68,11 @@
             <artifactId>spring-boot-starter-web-services</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-cache</artifactId>
+        </dependency>
+
 
         <!-- Spring utils-->
         <dependency>
@@ -95,6 +102,16 @@
             <artifactId>azure-spring-data-cosmos</artifactId>
             <version>${cosmos-data-version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.azure</groupId>
+            <artifactId>azure-messaging-eventhubs</artifactId>
+            <version>${azure-messaging.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.azure</groupId>
+            <artifactId>azure-messaging-eventhubs-checkpointstore-blob</artifactId>
+            <version>${azure-blob.version}</version>
+        </dependency>
 
         <!-- Swagger/OpenAPI -->
         <dependency>
@@ -118,6 +135,10 @@
             <groupId>com.google.code.findbugs</groupId>
             <artifactId>jsr305</artifactId>
             <version>${jsr305.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>wsdl4j</groupId>
+            <artifactId>wsdl4j</artifactId>
         </dependency>
 
         <dependency>
@@ -234,7 +255,38 @@
                                 <wsdlOption>
                                     <wsdl>${basedir}/src/main/resources/wsdl/NodoPerPa.wsdl</wsdl>
                                     <wsdlLocation>classpath:wsdl/NodoPerPa.wsdl</wsdlLocation>
+                                    <packagenames>
+                                        <packagename>http://ws.pagamenti.telematici.gov/ppthead=gov.telematici.pagamenti.ws.nodoperpa.ppthead</packagename>
+                                        <packagename>http://ws.pagamenti.telematici.gov/=gov.telematici.pagamenti.ws.nodoperpa</packagename>
+                                        <packagename>http://www.digitpa.gov.it/schemas/2011/Pagamenti/=gov.telematici.pagamenti.ws.nodoperpa.pagamenti</packagename>
+                                    </packagenames>
                                 </wsdlOption>
+                                <wsdlOption>
+                                    <wsdl>${basedir}/src/main/resources/wsdl/PaPerNodo.wsdl</wsdl>
+                                    <wsdlLocation>classpath:wsdl/PaPerNodo.wsdl</wsdlLocation>
+                                    <packagenames>
+                                        <packagename>http://ws.pagamenti.telematici.gov/ppthead=gov.telematici.pagamenti.ws.papernodo.ppthead</packagename>
+                                        <packagename>http://ws.pagamenti.telematici.gov/=gov.telematici.pagamenti.ws.papernodo</packagename>
+                                        <packagename>http://www.digitpa.gov.it/schemas/2011/Pagamenti/=gov.telematici.pagamenti.ws.papernodo.pagamenti</packagename>
+                                    </packagenames>
+                                </wsdlOption>
+                                <wsdlOption>
+                                    <wsdl>${basedir}/src/main/resources/wsdl/paForNode.wsdl</wsdl>
+                                    <wsdlLocation>classpath:wsdl/paForNode.wsdl</wsdlLocation>
+                                    <packagenames>
+                                        <packagename>http://pagopa-api.pagopa.gov.it/paForNode=gov.telematici.pagamenti.ws.pafornode</packagename>
+                                        <packagename>http://pagopa-api.pagopa.gov.it/pa/paForNode.xsd=gov.telematici.pagamenti.ws.pafornode</packagename>
+                                        <packagename>http://ws.pagamenti.telematici.gov/=gov.telematici.pagamenti.ws.pafornode.common</packagename>
+                                    </packagenames>
+                                </wsdlOption>
+                                <!--                                <wsdlOption>-->
+                                <!--                                    <wsdl>${basedir}/src/main/resources/wsdl/PaPerNodo.wsdl</wsdl>-->
+                                <!--                                    <wsdlLocation>classpath:wsdl/PaPerNodo.wsdl</wsdlLocation>-->
+                                <!--                                </wsdlOption>-->
+                                <!--                                <wsdlOption>-->
+                                <!--                                    <wsdl>${basedir}/src/main/resources/wsdl/paForNode.wsdl</wsdl>-->
+                                <!--                                    <wsdlLocation>classpath:wsdl/paForNode.wsdl</wsdlLocation>-->
+                                <!--                                </wsdlOption>-->
                             </wsdlOptions>
                         </configuration>
                         <goals>
@@ -318,7 +370,7 @@
                             <goal>generate</goal>
                         </goals>
                         <configuration>
-                            <inputSpec>${project.basedir}/openapi-client/apiconfig-cache/openapi.json</inputSpec>
+                            <inputSpec>${project.basedir}/openapi-client/apiconfig-cache/openapi_cache.json</inputSpec>
                             <generatorName>java</generatorName>
                             <modelNameSuffix>Dto</modelNameSuffix>
                             <generateApiTests>false</generateApiTests>

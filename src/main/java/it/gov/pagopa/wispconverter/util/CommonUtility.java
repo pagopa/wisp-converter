@@ -1,9 +1,12 @@
 package it.gov.pagopa.wispconverter.util;
 
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
+import it.gov.pagopa.wispconverter.exception.AppException;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
+import java.net.URI;
+import java.util.Map;
 import java.util.Optional;
 
 
@@ -47,5 +50,33 @@ public class CommonUtility {
 
     public static String getAppCode(AppErrorCodeMessageEnum error) {
         return String.format("%s-%s", Constants.SERVICE_CODE_APP, error.getCode());
+    }
+
+    public static String constructUrl(String protocol, String hostname, int port, String path, String query, String fragment) {
+        try {
+            String pathMod = null;
+            if( null != path ) {
+                pathMod = path.startsWith("/") ? path : ("/" + path);
+            }
+
+            return new URI(
+                    protocol.toLowerCase(),
+                    null,
+                    hostname,
+                    port,
+                    pathMod,
+                    query,
+                    fragment).toString();
+        } catch (Exception e) {
+            throw new AppException(AppErrorCodeMessageEnum.PARSING_GENERIC_ERROR);
+        }
+    }
+
+    public static String getConfigKeyValueCache(Map<String, it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigurationKeyDto> configurations, String key) {
+        try {
+            return configurations.get(key).getValue();
+        } catch ( NullPointerException e) {
+            throw new AppException(AppErrorCodeMessageEnum.ERROR, "ConfigurationKey '" + key + "' not found in cache");
+        }
     }
 }

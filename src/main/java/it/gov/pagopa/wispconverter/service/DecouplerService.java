@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class CacheService {
+public class DecouplerService {
 
     private static final String CACHING_KEY_TEMPLATE = "wisp_%s_%s";
 

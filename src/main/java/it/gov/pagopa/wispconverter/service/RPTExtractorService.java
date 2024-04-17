@@ -1,10 +1,10 @@
 package it.gov.pagopa.wispconverter.service;
 
-import gov.telematici.pagamenti.ws.NodoInviaCarrelloRPT;
-import gov.telematici.pagamenti.ws.NodoInviaRPT;
-import gov.telematici.pagamenti.ws.TipoElementoListaRPT;
-import gov.telematici.pagamenti.ws.ppthead.IntestazioneCarrelloPPT;
-import gov.telematici.pagamenti.ws.ppthead.IntestazionePPT;
+import gov.telematici.pagamenti.ws.nodoperpa.NodoInviaCarrelloRPT;
+import gov.telematici.pagamenti.ws.nodoperpa.NodoInviaRPT;
+import gov.telematici.pagamenti.ws.nodoperpa.TipoElementoListaRPT;
+import gov.telematici.pagamenti.ws.nodoperpa.ppthead.IntestazioneCarrelloPPT;
+import gov.telematici.pagamenti.ws.nodoperpa.ppthead.IntestazionePPT;
 import it.gov.digitpa.schemas._2011.pagamenti.CtRichiestaPagamentoTelematico;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
@@ -14,17 +14,15 @@ import it.gov.pagopa.wispconverter.service.model.RPTContentDTO;
 import it.gov.pagopa.wispconverter.service.model.paymentrequest.PaymentRequestDTO;
 import it.gov.pagopa.wispconverter.util.JaxbElementUtil;
 import it.gov.pagopa.wispconverter.util.ZipUtil;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.w3c.dom.Element;
-import org.xmlsoap.schemas.soap.envelope.Envelope;
-
+import jakarta.xml.soap.SOAPMessage;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
@@ -37,27 +35,26 @@ public class RPTExtractorService {
 
     public CommonRPTFieldsDTO extractRPTContentDTOs(String primitive, String payload) {
 
-        Envelope envelope;
+        SOAPMessage soapMessage;
         try {
             byte[] payloadUnzipped = ZipUtil.unzip(ZipUtil.base64Decode(payload));
-            Element envelopeElement = this.jaxbElementUtil.convertToEnvelopeElement(payloadUnzipped);
-            envelope = this.jaxbElementUtil.convertToBean(envelopeElement, Envelope.class);
+            soapMessage = this.jaxbElementUtil.getMessage(payloadUnzipped);
         } catch (IOException e) {
             throw new AppException(AppErrorCodeMessageEnum.PARSING_INVALID_ZIPPED_PAYLOAD);
         }
 
         CommonRPTFieldsDTO commonRPTFieldsDTO;
         switch (primitive) {
-            case "nodoInviaRPT" -> commonRPTFieldsDTO = extractRPTContentDTOsFromNodoInviaRPT(envelope);
-            case "nodoInviaCarrelloRPT" -> commonRPTFieldsDTO = extractRPTContentDTOsFromNodoInviaCarrelloRPT(envelope);
+            case "nodoInviaRPT" -> commonRPTFieldsDTO = extractRPTContentDTOsFromNodoInviaRPT(soapMessage);
+            case "nodoInviaCarrelloRPT" -> commonRPTFieldsDTO = extractRPTContentDTOsFromNodoInviaCarrelloRPT(soapMessage);
             default -> throw new AppException(AppErrorCodeMessageEnum.PARSING_PRIMITIVE_NOT_VALID);
         }
         return commonRPTFieldsDTO;
     }
 
-    private CommonRPTFieldsDTO extractRPTContentDTOsFromNodoInviaRPT(Envelope envelope) {
-        IntestazionePPT soapHeader = this.jaxbElementUtil.getSoapHeader(envelope, IntestazionePPT.class);
-        NodoInviaRPT soapBody = this.jaxbElementUtil.getSoapBody(envelope, NodoInviaRPT.class);
+    private CommonRPTFieldsDTO extractRPTContentDTOsFromNodoInviaRPT(SOAPMessage soapMessage) {
+        IntestazionePPT soapHeader = this.jaxbElementUtil.getHeader(soapMessage, IntestazionePPT.class);
+        NodoInviaRPT soapBody = this.jaxbElementUtil.getBody(soapMessage, NodoInviaRPT.class);
 
         String creditorInstitutionId = soapHeader.getIdentificativoDominio();
         PaymentRequestDTO rpt = extractRPT(soapBody.getRpt());
@@ -92,9 +89,9 @@ public class RPTExtractorService {
                 .build();
     }
 
-    private CommonRPTFieldsDTO extractRPTContentDTOsFromNodoInviaCarrelloRPT(Envelope envelope) {
-        IntestazioneCarrelloPPT soapHeader = this.jaxbElementUtil.getSoapHeader(envelope, IntestazioneCarrelloPPT.class);
-        NodoInviaCarrelloRPT soapBody = this.jaxbElementUtil.getSoapBody(envelope, NodoInviaCarrelloRPT.class);
+    private CommonRPTFieldsDTO extractRPTContentDTOsFromNodoInviaCarrelloRPT(SOAPMessage soapMessage) {
+        IntestazioneCarrelloPPT soapHeader = this.jaxbElementUtil.getHeader(soapMessage, IntestazioneCarrelloPPT.class);
+        NodoInviaCarrelloRPT soapBody = this.jaxbElementUtil.getBody(soapMessage, NodoInviaCarrelloRPT.class);
 
         // initializing common fields
         boolean isMultibeneficiary = soapBody.isMultiBeneficiario() != null && soapBody.isMultiBeneficiario();
@@ -168,7 +165,7 @@ public class RPTExtractorService {
     }
 
     private PaymentRequestDTO extractRPT(byte[] rptBytes) {
-        Element rptElement = this.jaxbElementUtil.convertToRPTElement(rptBytes);
-        return mapper.toPaymentRequestDTO(this.jaxbElementUtil.convertToBean(rptElement, CtRichiestaPagamentoTelematico.class));
+        CtRichiestaPagamentoTelematico rptElement = this.jaxbElementUtil.convertToBean(rptBytes,CtRichiestaPagamentoTelematico.class);
+        return mapper.toPaymentRequestDTO(rptElement);
     }
 }

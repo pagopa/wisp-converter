@@ -1,26 +1,12 @@
 package it.gov.pagopa.wispconverter.util.interceptor;
 
 import it.gov.pagopa.wispconverter.util.Constants;
-import it.gov.pagopa.wispconverter.util.client.ServerLoggingProperties;
+import it.gov.pagopa.wispconverter.util.Trace;
+import it.gov.pagopa.wispconverter.util.client.RequestResponseLoggingProperties;
 import it.gov.pagopa.wispconverter.util.filter.RepeatableContentCachingRequestWrapper;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
-import org.slf4j.MDC;
-import org.springframework.http.HttpHeaders;
-import org.springframework.util.AntPathMatcher;
-import org.springframework.util.MultiValueMap;
-import org.springframework.util.StreamUtils;
-import org.springframework.util.StringUtils;
-import org.springframework.web.filter.OncePerRequestFilter;
-import org.springframework.web.servlet.HandlerInterceptor;
-import org.springframework.web.util.ContentCachingResponseWrapper;
-import org.springframework.web.util.WebUtils;
-
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.Enumeration;
@@ -28,23 +14,36 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Predicate;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
+import org.springframework.http.HttpHeaders;
+import org.springframework.util.MultiValueMap;
+import org.springframework.util.StreamUtils;
+import org.springframework.util.StringUtils;
+import org.springframework.web.method.HandlerMethod;
+import org.springframework.web.servlet.HandlerInterceptor;
+import org.springframework.web.util.ContentCachingResponseWrapper;
+import org.springframework.web.util.WebUtils;
 
 @Slf4j
 public abstract class AbstractAppServerLoggingInterceptor implements HandlerInterceptor {
 
-  public AbstractAppServerLoggingInterceptor(ServerLoggingProperties serverLoggingProperties) {
+  public AbstractAppServerLoggingInterceptor(RequestResponseLoggingProperties serverLoggingProperties) {
     if(serverLoggingProperties!=null){
-      ServerLoggingProperties.Request request = serverLoggingProperties.getRequest();
+      RequestResponseLoggingProperties.Request request = serverLoggingProperties.getRequest();
       if(request!=null){
         this.requestIncludeHeaders = request.isIncludeHeaders();
         this.requestIncludePayload = request.isIncludePayload();
         this.requestMaxPayloadLength = request.getMaxPayloadLength() != null ? request.getMaxPayloadLength() : REQUEST_DEFAULT_MAX_PAYLOAD_LENGTH;
         this.requestHeaderPredicate = s -> !s.equals(request.getMaskHeaderName());
         this.requestPretty = request.isPretty();
+        this.requestIncludeClientInfo = request.isIncludeClientInfo();
       }
-      ServerLoggingProperties.Response response = serverLoggingProperties.getResponse();
+      RequestResponseLoggingProperties.Response response = serverLoggingProperties.getResponse();
       if(response!=null){
         this.responseIncludeHeaders = response.isIncludeHeaders();
         this.responseIncludePayload = response.isIncludePayload();
@@ -61,6 +60,7 @@ public abstract class AbstractAppServerLoggingInterceptor implements HandlerInte
   public static final String RESPONSE_DEFAULT_MESSAGE_PREFIX = "<= SERVER Response OPERATION_ID=%s - ";
   private static final int REQUEST_DEFAULT_MAX_PAYLOAD_LENGTH = 50;
   private static final int RESPONSE_DEFAULT_MAX_PAYLOAD_LENGTH = 50;
+  private static final Collector<CharSequence, ?, String> JOINCOLLECTOR = Collectors.joining("\", \"","\"","\"");
 
   private static final String SPACE = " ";
   private static final String PRETTY_IN = "\n=> *";
@@ -93,54 +93,34 @@ public abstract class AbstractAppServerLoggingInterceptor implements HandlerInte
 
   @Override
   public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-    String operationId = UUID.randomUUID().toString();
-    MDC.put(Constants.MDC_START_TIME, String.valueOf(System.currentTimeMillis()));
-    MDC.put(Constants.MDC_OPERATION_ID, operationId);
+    if(handler instanceof HandlerMethod){
+      Trace trace = ((HandlerMethod) handler).getMethod().getAnnotation(Trace.class);
+      if(trace !=null){
+        String operationId = UUID.randomUUID().toString();
+        MDC.put(Constants.MDC_START_TIME, String.valueOf(System.currentTimeMillis()));
+        MDC.put(Constants.MDC_OPERATION_ID, operationId);
 
-    request(operationId, request);
+        String businessProcess = trace.businessProcess();
+        MDC.put(Constants.MDC_BUSINESS_PROCESS, businessProcess);
+
+        request(operationId, request);
+      }
+    }
+
     return true;
   }
 
   @Override
   public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
-    String operationId = MDC.get(Constants.MDC_OPERATION_ID);
-    String executionTime = MDC.get(Constants.MDC_EXECUTION_TIME);
-    MDC.put(Constants.MDC_EXECUTION_TIME, executionTime);
-    response(operationId, executionTime, request, response);
-  }
-
-//  @Override
-//  protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-//    try {
-//      String operationId = UUID.randomUUID().toString();
-//      MDC.put(Constants.MDC_START_TIME, String.valueOf(System.currentTimeMillis()));
-//      MDC.put(Constants.MDC_OPERATION_ID, operationId);
-//
-//      request(operationId, request);
-//      filterChain.doFilter(request, response);
-//    } finally {
-//      String operationId = MDC.get(Constants.MDC_OPERATION_ID);
-//      String executionTime = MDC.get(Constants.MDC_EXECUTION_TIME);
-//      MDC.put(Constants.MDC_EXECUTION_TIME, executionTime);
-//      response(operationId, executionTime, request, response);
-//    }
-//  }
-//
-//  @Override
-//  protected boolean shouldNotFilter(HttpServletRequest request) {
-//    AntPathMatcher pathMatcher = new AntPathMatcher();
-//    return excludeUrlPatterns
-//            .stream()
-//            .anyMatch(p -> pathMatcher.match(p, request.getServletPath()));
-//  }
-
-  private static String getExecutionTime(String startTime) {
-    if (startTime != null) {
-      long endTime = System.currentTimeMillis();
-      long executionTime = endTime - Long.parseLong(startTime);
-      return String.valueOf(executionTime);
+    if(handler instanceof HandlerMethod) {
+      Trace trace = ((HandlerMethod) handler).getMethod().getAnnotation(Trace.class);
+      if (trace != null) {
+        String operationId = MDC.get(Constants.MDC_OPERATION_ID);
+        String executionTime = MDC.get(Constants.MDC_EXECUTION_TIME);
+        MDC.put(Constants.MDC_EXECUTION_TIME, executionTime);
+        response(operationId, executionTime, request, response);
+      }
     }
-    return "-";
   }
 
 
@@ -363,10 +343,10 @@ public abstract class AbstractAppServerLoggingInterceptor implements HandlerInte
     Stream<String> stream = headers.entrySet().stream()
             .map((entry) -> {
               if(this.requestPretty){
-                String values = entry.getValue().stream().collect(Collectors.joining("\", \"","\"","\""));
+                String values = entry.getValue().stream().collect(JOINCOLLECTOR);
                 return PRETTY_IN +"*\t"+entry.getKey() + ": [" + values + "]";
               } else {
-                String values = entry.getValue().stream().collect(Collectors.joining("\", \"","\"","\""));
+                String values = entry.getValue().stream().collect(JOINCOLLECTOR);
                 return entry.getKey() + ": [" + values + "]";
               }
             });
@@ -381,10 +361,10 @@ public abstract class AbstractAppServerLoggingInterceptor implements HandlerInte
     Stream<String> stream = headers.entrySet().stream()
             .map((entry) -> {
               if(this.responsePretty){
-                String values = entry.getValue().stream().collect(Collectors.joining("\", \"","\"","\""));
+                String values = entry.getValue().stream().collect(JOINCOLLECTOR);
                 return PRETTY_OUT +"*\t"+entry.getKey().toLowerCase() + ": [" + values + "]";
               } else {
-                String values = entry.getValue().stream().collect(Collectors.joining("\", \"","\"","\""));
+                String values = entry.getValue().stream().collect(JOINCOLLECTOR);
                 return entry.getKey().toLowerCase() + ": [" + values + "]";
               }
             });

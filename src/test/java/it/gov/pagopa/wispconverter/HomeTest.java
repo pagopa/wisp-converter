@@ -1,10 +1,13 @@
 package it.gov.pagopa.wispconverter;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.wispconverter.controller.model.AppInfoResponse;
 import it.gov.pagopa.wispconverter.repository.CacheRepository;
 import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
-import it.gov.pagopa.wispconverter.service.ConfigCacheService;
+import it.gov.pagopa.wispconverter.repository.RTRequestRepository;
+import it.gov.pagopa.wispconverter.repository.ReEventRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,20 +37,15 @@ class HomeTest {
     private String environment;
     @Autowired
     private MockMvc mvc;
-    @Autowired
-    private ConfigCacheService configCacheService;
 
-    //    @MockBean private CosmosStationRepository cosmosStationRepository;
-//    @MockBean private CosmosEventsRepository cosmosEventsRepository;
-//    @MockBean private DatabaseStationsRepository databaseStationsRepository;
-//    @MockBean private EntityManagerFactory entityManagerFactory;
-//    @MockBean private EntityManager entityManager;
-//    @MockBean private DataSource dataSource;
-//    @MockBean private CosmosClient cosmosClient;
     @MockBean
     private RPTRequestRepository rptRequestRepository;
     @MockBean
+    private RTRequestRepository rtRequestRepository;
+    @MockBean
     private CacheRepository cacheRepository;
+    @MockBean
+    private ReEventRepository reEventRepository;
 
     @Test
     void slash() throws Exception {

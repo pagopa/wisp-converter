@@ -1,9 +1,10 @@
 package it.gov.pagopa.wispconverter.config.client;
 
 import it.gov.pagopa.wispconverter.service.ReService;
-import it.gov.pagopa.wispconverter.util.client.ClientLoggingProperties;
+import it.gov.pagopa.wispconverter.util.client.RequestResponseLoggingProperties;
 import it.gov.pagopa.wispconverter.util.client.iuvgenerator.IuvGeneratorClientLoggingInterceptor;
 import it.gov.pagopa.wispconverter.util.client.iuvgenerator.IuvGeneratorClientResponseErrorHandler;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,8 +17,6 @@ import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.DefaultUriBuilderFactory;
-
-import java.util.List;
 
 @Configuration
 @Slf4j
@@ -41,14 +40,14 @@ public class IuvGeneratorClientConfig {
 
     @Bean
     @ConfigurationProperties(prefix = "log.client.iuvgenerator")
-    public ClientLoggingProperties iuvGeneratorClientLoggingProperties() {
-        return new ClientLoggingProperties();
+    public RequestResponseLoggingProperties iuvGeneratorClientLoggingProperties() {
+        return new RequestResponseLoggingProperties();
     }
 
 
     @Bean
     public it.gov.pagopa.gen.wispconverter.client.iuvgenerator.invoker.ApiClient iuvGeneratorClient() {
-        ClientLoggingProperties clientLoggingProperties = iuvGeneratorClientLoggingProperties();
+        RequestResponseLoggingProperties clientLoggingProperties = iuvGeneratorClientLoggingProperties();
 
         IuvGeneratorClientLoggingInterceptor clientLogging = new IuvGeneratorClientLoggingInterceptor(clientLoggingProperties, reService);
 
