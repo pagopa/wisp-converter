@@ -4,15 +4,13 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
 
 @Data
-@Builder(toBuilder = true)
+@Builder
 @NoArgsConstructor
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@AllArgsConstructor
 @ToString
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class PaymentNoticeContentDTO {
+public class CachedKeysMapping {
 
-    private String iuv;
-    private String noticeNumber;
     private String fiscalCode;
-    private Long amount;
+    private String iuv;
 }

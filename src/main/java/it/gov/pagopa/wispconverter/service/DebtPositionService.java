@@ -114,6 +114,7 @@ public class DebtPositionService {
 
         // update payment notices to be used for communication with Checkout
         commonRPTFieldsDTO.getPaymentNotices().add(PaymentNoticeContentDTO.builder()
+                .iuv(paymentOption.getIuv())
                 .noticeNumber(noticeNumber)
                 .fiscalCode(firstRPTContentDTO.getRpt().getDomain().getDomainId())
                 .amount(amount)
@@ -158,6 +159,7 @@ public class DebtPositionService {
 
             // update payment notices to be used for communication with Checkout
             paymentNotices.add(PaymentNoticeContentDTO.builder()
+                    .iuv(paymentOption.getIuv())
                     .noticeNumber(noticeNumber)
                     .fiscalCode(paymentRequestDTO.getDomain().getDomainId())
                     .amount(amount)
