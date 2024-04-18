@@ -11,6 +11,7 @@ let values = {
         payerName: "Mario Rossi",
         payeeFiscalCode: "11111111117",
         payerName: "Enel",
+        payerEmail: "mario.rossi@mail.com",
         transfers: [
             {
                 totalAmount: "100.00",
@@ -79,8 +80,8 @@ function getRPT() {
                        <pay_i:codiceIdentificativoUnivoco>${values.payerFiscalCode}</pay_i:codiceIdentificativoUnivoco>
                    </pay_i:identificativoUnivocoVersante>
                    <pay_i:anagraficaVersante>${values.payerName}</pay_i:anagraficaVersante>
+                   <!-- <pay_i:e-mailVersante>${values.payerEmail}</pay_i:e-mailVersante> -->
                    <pay_i:indirizzoVersante>via Roma</pay_i:indirizzoVersante>
-		           <pay_i:e-mailVersante>${values.payerEmail}</pay_i:e-mailVersante>
                    <pay_i:civicoVersante>1</pay_i:civicoVersante>
                    <pay_i:capVersante>00186</pay_i:capVersante>
                    <pay_i:localitaVersante>Roma</pay_i:localitaVersante>
@@ -94,7 +95,7 @@ function getRPT() {
                    </pay_i:identificativoUnivocoPagatore>
                    <pay_i:anagraficaPagatore>${values.payerName}</pay_i:anagraficaPagatore>
                    <pay_i:indirizzoPagatore>via Roma</pay_i:indirizzoPagatore>
-		           <pay_i:e-mailPagatore>${values.payerEmail}</pay_i:e-mailPagatore>
+		           <!-- <pay_i:e-mailPagatore>${values.payerEmail}</pay_i:e-mailPagatore> -->
                    <pay_i:civicoPagatore>1</pay_i:civicoPagatore>
                    <pay_i:capPagatore>00186</pay_i:capPagatore>
                    <pay_i:localitaPagatore>Roma</pay_i:localitaPagatore>
