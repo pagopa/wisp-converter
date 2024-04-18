@@ -1,18 +1,10 @@
 package it.gov.pagopa.wispconverter.util.client;
 
 import it.gov.pagopa.wispconverter.service.ReService;
-import it.gov.pagopa.wispconverter.service.model.re.EsitoEnum;
-import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
+import it.gov.pagopa.wispconverter.service.model.re.*;
 import it.gov.pagopa.wispconverter.util.CommonUtility;
 import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.ReUtil;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.UUID;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.MDC;
@@ -23,6 +15,14 @@ import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StreamUtils;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.UUID;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j
 public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpRequestInterceptor {
@@ -105,15 +105,21 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
       String executionClientTime = CommonUtility.getExecutionTime(startClient);
       MDC.put(Constants.MDC_CLIENT_EXECUTION_TIME, executionClientTime);
 
+      MDC.put(Constants.MDC_CALL_TYPE, CallTypeEnum.CLIENT.name());
+      MDC.put(Constants.MDC_EVENT_CATEGORY, CategoriaEventoEnum.INTERFACCIA.name());
+
+      MDC.put(Constants.MDC_EVENT_SUB_CATEGORY, SottoTipoEventoEnum.REQ.name());
       log.debug("[intercept] add RE CLIENT OUT - Sent");
       ReEventDto reEventDtoClientIN = ReUtil.createReClientInterfaceRequest(request, body, EsitoEnum.INVIATA);
       reService.addRe(reEventDtoClientIN);
 
       if(response.getStatusCode().is2xxSuccessful()){
+        MDC.put(Constants.MDC_EVENT_SUB_CATEGORY, SottoTipoEventoEnum.RESP.name());
         log.debug("[intercept] add RE CLIENT IN - Sent - RICEVUTA");
         ReEventDto reEventDtoClientOUT = ReUtil.createReClientInterfaceResponse(request, response, EsitoEnum.RICEVUTA);
         reService.addRe(reEventDtoClientOUT);
       } else {
+        MDC.put(Constants.MDC_EVENT_SUB_CATEGORY, SottoTipoEventoEnum.RESP.name());
         log.debug("[intercept] add RE CLIENT IN - Sent - RICEVUTA_KO");
         ReEventDto reEventDtoClientOUT = ReUtil.createReClientInterfaceResponse(request, response, EsitoEnum.RICEVUTA_KO);
         reService.addRe(reEventDtoClientOUT);
@@ -126,10 +132,12 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
       String executionClientTime = CommonUtility.getExecutionTime(startClient);
       MDC.put(Constants.MDC_CLIENT_EXECUTION_TIME, executionClientTime);
 
+      MDC.put(Constants.MDC_EVENT_SUB_CATEGORY, SottoTipoEventoEnum.REQ.name());
       log.debug("[intercept] add RE CLIENT OUT - NOT Sent");
       ReEventDto reEventDtoClientIN = ReUtil.createReClientInterfaceRequest(request, body, EsitoEnum.INVIATA_KO);
       reService.addRe(reEventDtoClientIN);
 
+      MDC.put(Constants.MDC_EVENT_SUB_CATEGORY, SottoTipoEventoEnum.RESP.name());
       log.debug("[intercept] add RE CLIENT IN - NOT Sent - NO_RICEVUTA");
       ReEventDto reEventDtoClientOUT = ReUtil.createReClientInterfaceResponse(request, null, EsitoEnum.NO_RICEVUTA);
       reService.addRe(reEventDtoClientOUT);
@@ -140,6 +148,9 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
     } finally {
       MDC.remove(Constants.MDC_CLIENT_OPERATION_ID);
       MDC.remove(Constants.MDC_CLIENT_EXECUTION_TIME);
+      MDC.remove(Constants.MDC_EVENT_SUB_CATEGORY);
+      MDC.remove(Constants.MDC_CALL_TYPE);
+      MDC.remove(Constants.MDC_EVENT_CATEGORY);
     }
 
     return response;
