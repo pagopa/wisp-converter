@@ -117,6 +117,8 @@ public class DebtPositionService {
                 .iuv(paymentOption.getIuv())
                 .noticeNumber(noticeNumber)
                 .fiscalCode(firstRPTContentDTO.getRpt().getDomain().getDomainId())
+                .companyName(firstRPTContentDTO.getRpt().getPayeeInstitution().getName())
+                .description("") //
                 .amount(amount)
                 .build());
 

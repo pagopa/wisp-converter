@@ -1,19 +1,17 @@
 package it.gov.pagopa.wispconverter.service;
 
+import it.gov.pagopa.gen.wispconverter.client.checkout.model.CartResponseDto;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.service.mapper.CartMapper;
 import it.gov.pagopa.wispconverter.service.model.CommonRPTFieldsDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatusCode;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Collection;
 import java.util.Map;
 
 @Service
@@ -41,18 +39,9 @@ public class CheckoutService {
             returnUrls.setReturnErrorUrl(new URI(stationRedirectURL + "/error.html"));
             cart.setReturnUrls(returnUrls);
 
-            it.gov.pagopa.gen.wispconverter.client.checkout.api.PaymentRequestsApi apiInstance = new it.gov.pagopa.gen.wispconverter.client.checkout.api.PaymentRequestsApi(checkoutClient);
-            ResponseEntity<Void> response = apiInstance.postCartsWithHttpInfo(cart);
-
-            HttpStatusCode status = response.getStatusCode();
-            if (status.value() != 302) {
-                throw new AppException(AppErrorCodeMessageEnum.CLIENT_CHECKOUT, "The response retrieved from Checkout is not '302 Found'.");
-            }
-            Collection<String> locationHeader = response.getHeaders().get("location");
-            if (locationHeader == null) {
-                throw new AppException(AppErrorCodeMessageEnum.CLIENT_CHECKOUT_NO_REDIRECT_LOCATION);
-            }
-            location = locationHeader.stream().findFirst().orElseThrow(() -> new AppException(AppErrorCodeMessageEnum.CLIENT_CHECKOUT_INVALID_REDIRECT_LOCATION));
+            it.gov.pagopa.gen.wispconverter.client.checkout.api.DefaultApi apiInstance = new it.gov.pagopa.gen.wispconverter.client.checkout.api.DefaultApi(checkoutClient);
+            CartResponseDto response = apiInstance.postCarts(cart);
+            location = response.getCheckoutRedirectUrl().toString();
 
         } catch (RestClientException e) {
             throw new AppException(AppErrorCodeMessageEnum.CLIENT_CHECKOUT,

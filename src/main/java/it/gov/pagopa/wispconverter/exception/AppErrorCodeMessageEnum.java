@@ -32,9 +32,6 @@ public enum AppErrorCodeMessageEnum {
     CLIENT_IUVGENERATOR(3002, "IUV Generator client error", "Error while communicating with IUV Generator service. {0}", HttpStatus.EXPECTATION_FAILED),
     CLIENT_DECOUPLER_CACHING(3003, "Decoupler caching client error", "Error while communicating with decoupler caching API. {0}", HttpStatus.EXPECTATION_FAILED),
     CLIENT_CHECKOUT(3004, "Checkout error", "Error while communicating with Checkout service. {0}", HttpStatus.EXPECTATION_FAILED),
-    CLIENT_CHECKOUT_NO_REDIRECT_LOCATION(3005, "Checkout redirect error", "Error while communicating with Checkout service. No valid 'Location' header was found,", HttpStatus.EXPECTATION_FAILED),
-    CLIENT_CHECKOUT_INVALID_REDIRECT_LOCATION(3006, "Checkout redirect error", "Error while communicating with Checkout service. An empty 'Location' header was found.", HttpStatus.EXPECTATION_FAILED),
-
     ;
 
     private final Integer code;
