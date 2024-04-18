@@ -89,6 +89,7 @@ microservice-chart:
     CLIENT_CHECKOUT_HOST: 'https://api.uat.platform.pagopa.it/checkout/ec/v1/'
     CLIENT_DECOUPLERCACHING_HOST: 'https://api.uat.platform.pagopa.it/wisp-converter/caching/api/v1'
     CLIENT_CACHE_HOST: 'https://api.uat.platform.pagopa.it/api-config-cache/o/v1'
+    SPRING_PROFILES_ACTIVE: "default,jsonLog"
   secretProvider:
     create: true
     envSecrets:
