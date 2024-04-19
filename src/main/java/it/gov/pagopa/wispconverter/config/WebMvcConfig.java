@@ -3,10 +3,10 @@ package it.gov.pagopa.wispconverter.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.wispconverter.config.model.AppCors;
 import it.gov.pagopa.wispconverter.service.ReService;
-import it.gov.pagopa.wispconverter.util.interceptor.MDCEnrichInterceptor;
-import it.gov.pagopa.wispconverter.util.interceptor.ReInterceptor;
 import it.gov.pagopa.wispconverter.util.client.RequestResponseLoggingProperties;
 import it.gov.pagopa.wispconverter.util.interceptor.AppServerLoggingInterceptor;
+import it.gov.pagopa.wispconverter.util.interceptor.MDCEnrichInterceptor;
+import it.gov.pagopa.wispconverter.util.interceptor.ReInterceptor;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,6 +19,7 @@ import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 import org.springframework.web.servlet.LocaleResolver;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.i18n.AcceptHeaderLocaleResolver;
 
@@ -58,6 +59,12 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 .allowedMethods(appCors.getMethods());
     }
 
+    @Override
+    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        registry
+                .addResourceHandler("/resources/**")
+                .addResourceLocations("/resources/");
+    }
 
     @Bean
     public LocaleResolver localeResolver() {
@@ -70,7 +77,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     @Bean
     public ResourceBundleMessageSource messageSource() {
-        var resourceBundleMessageSource=new ResourceBundleMessageSource();
+        var resourceBundleMessageSource = new ResourceBundleMessageSource();
         resourceBundleMessageSource.setBasename("i18n/messages"); // directory with messages_XX.properties
         resourceBundleMessageSource.setDefaultLocale(Locale.ENGLISH);
         resourceBundleMessageSource.setDefaultEncoding(StandardCharsets.UTF_8.name());
