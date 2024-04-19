@@ -5,14 +5,21 @@ import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.service.mapper.CartMapper;
 import it.gov.pagopa.wispconverter.service.model.CommonRPTFieldsDTO;
+import it.gov.pagopa.wispconverter.service.model.re.EntityStatusEnum;
+import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
+import it.gov.pagopa.wispconverter.util.Constants;
+import it.gov.pagopa.wispconverter.util.ReUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
 
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Map;
+
+import static it.gov.pagopa.wispconverter.util.Constants.NODO_DEI_PAGAMENTI_SPC;
 
 @Service
 @Slf4j
@@ -22,6 +29,8 @@ public class CheckoutService {
     private final it.gov.pagopa.gen.wispconverter.client.checkout.invoker.ApiClient checkoutClient;
 
     private final ConfigCacheService configCacheService;
+
+    private final ReService reService;
 
     private final CartMapper mapper;
 
@@ -42,6 +51,9 @@ public class CheckoutService {
             it.gov.pagopa.gen.wispconverter.client.checkout.api.DefaultApi apiInstance = new it.gov.pagopa.gen.wispconverter.client.checkout.api.DefaultApi(checkoutClient);
             CartResponseDto response = apiInstance.postCarts(cart);
             location = response.getCheckoutRedirectUrl().toString();
+
+            // generate and save re events internal for change status
+            reService.addRe(generateRE(location));
 
         } catch (RestClientException e) {
             throw new AppException(AppErrorCodeMessageEnum.CLIENT_CHECKOUT,
@@ -69,5 +81,15 @@ public class CheckoutService {
         url = url.replace("//", "/");
 
         return protocol + "://" + url;
+    }
+
+    private ReEventDto generateRE(String redirectUrl) {
+        return ReUtil.createBaseReInternal()
+                .status(EntityStatusEnum.REDIRECT_DA_CHECKOUT_OK.name())
+                .erogatore(NODO_DEI_PAGAMENTI_SPC)
+                .erogatoreDescr(NODO_DEI_PAGAMENTI_SPC)
+                .sessionIdOriginal(MDC.get(Constants.MDC_SESSION_ID))
+                .info(String.format("Redirect URL = [%s]", redirectUrl))
+                .build();
     }
 }

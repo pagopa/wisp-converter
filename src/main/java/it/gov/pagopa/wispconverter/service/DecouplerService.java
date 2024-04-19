@@ -6,7 +6,10 @@ import it.gov.pagopa.wispconverter.repository.CacheRepository;
 import it.gov.pagopa.wispconverter.service.model.CachedKeysMapping;
 import it.gov.pagopa.wispconverter.service.model.CommonRPTFieldsDTO;
 import it.gov.pagopa.wispconverter.service.model.PaymentNoticeContentDTO;
+import it.gov.pagopa.wispconverter.service.model.re.EntityStatusEnum;
+import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import it.gov.pagopa.wispconverter.util.Constants;
+import it.gov.pagopa.wispconverter.util.ReUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
@@ -16,6 +19,8 @@ import org.springframework.web.client.RestClientException;
 
 import java.util.List;
 
+import static it.gov.pagopa.wispconverter.util.Constants.NODO_DEI_PAGAMENTI_SPC;
+
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -23,7 +28,9 @@ public class DecouplerService {
 
     private static final String CACHING_KEY_TEMPLATE = "wisp_%s_%s";
 
-    private static final String MAP_CACHING_KEY_TEMPLATE = "wisp_map_%s_%s";
+    private static final String MAP_CACHING_KEY_TEMPLATE = "wisp_nav2iuv_%s_%s";
+
+    private final ReService reService;
 
     private final it.gov.pagopa.gen.wispconverter.client.decouplercaching.invoker.ApiClient decouplerCachingClient;
 
@@ -55,6 +62,9 @@ public class DecouplerService {
                 this.cacheRepository.insert(navToIuvMappingForRTHandling, requestIDForRTHandling, this.requestIDMappingTTL);
             }
 
+            // generate and save re events internal for change status
+            reService.addRe(generateRE());
+
         } catch (RestClientException e) {
             throw new AppException(AppErrorCodeMessageEnum.CLIENT_DECOUPLER_CACHING, String.format("RestClientException ERROR [%s] - %s", e.getCause().getClass().getCanonicalName(), e.getMessage()));
         }
@@ -82,6 +92,15 @@ public class DecouplerService {
         return CachedKeysMapping.builder()
                 .fiscalCode(splitKey[1])
                 .iuv(splitKey[2])
+                .build();
+    }
+
+    private ReEventDto generateRE() {
+        return ReUtil.createBaseReInternal()
+                .status(EntityStatusEnum.RPT_CACHE_PER_DECOUPLER_GENERATA.name())
+                .erogatore(NODO_DEI_PAGAMENTI_SPC)
+                .erogatoreDescr(NODO_DEI_PAGAMENTI_SPC)
+                .sessionIdOriginal(MDC.get(Constants.MDC_SESSION_ID))
                 .build();
     }
 }

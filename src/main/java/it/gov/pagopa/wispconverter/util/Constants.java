@@ -38,7 +38,5 @@ public class Constants {
     public static final String MDC_EROGATORE = "erogatore";
     public static final String MDC_EROGATORE_DESCR = "erogatoreDescr";
 
-
-
-
+    public static final String MDC_SESSION_ID = "sessionId";
 }

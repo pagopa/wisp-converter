@@ -1,11 +1,15 @@
 package it.gov.pagopa.wispconverter.service;
 
+import it.gov.pagopa.gen.wispconverter.client.gpd.model.PaymentOptionModelDto;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.service.mapper.DebtPositionMapper;
 import it.gov.pagopa.wispconverter.service.model.*;
 import it.gov.pagopa.wispconverter.service.model.paymentrequest.PaymentRequestDTO;
+import it.gov.pagopa.wispconverter.service.model.re.EntityStatusEnum;
+import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import it.gov.pagopa.wispconverter.util.Constants;
+import it.gov.pagopa.wispconverter.util.ReUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
@@ -21,6 +25,8 @@ import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static it.gov.pagopa.wispconverter.util.Constants.NODO_DEI_PAGAMENTI_SPC;
+
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -29,6 +35,8 @@ public class DebtPositionService {
     private final it.gov.pagopa.gen.wispconverter.client.gpd.invoker.ApiClient gpdClient;
 
     private final it.gov.pagopa.gen.wispconverter.client.iuvgenerator.invoker.ApiClient iuvGeneratorClient;
+
+    private final ReService reService;
 
     private final DebtPositionMapper mapper;
 
@@ -53,6 +61,9 @@ public class DebtPositionService {
             it.gov.pagopa.gen.wispconverter.client.gpd.api.DebtPositionsApiApi apiInstance = new it.gov.pagopa.gen.wispconverter.client.gpd.api.DebtPositionsApiApi(gpdClient);
             apiInstance.createMultiplePositions1(rptContentDTOs.getCreditorInstitutionId(), multiplePaymentPositions, MDC.get(Constants.MDC_REQUEST_ID), true);
 
+            // generate and save re events internal for change status
+            multiplePaymentPositions.getPaymentPositions().forEach(paymentPositionModelDto -> reService.addRe(generateRE(paymentPositionModelDto, rptContentDTOs, EntityStatusEnum.PD_CREATA.name())));
+
         } catch (RestClientException e) {
             throw new AppException(AppErrorCodeMessageEnum.CLIENT_GPD,
                     String.format("RestClientException ERROR [%s] - %s", e.getCause().getClass().getCanonicalName(), e.getMessage()));
@@ -61,15 +72,22 @@ public class DebtPositionService {
 
     private it.gov.pagopa.gen.wispconverter.client.gpd.model.MultiplePaymentPositionModelDto extractPaymentPositions(CommonRPTFieldsDTO commonRPTFieldsDTO) {
 
+        String operationStatus;
         List<it.gov.pagopa.gen.wispconverter.client.gpd.model.PaymentPositionModelDto> paymentPositions;
         if (Boolean.TRUE.equals(commonRPTFieldsDTO.getIsMultibeneficiary())) {
             paymentPositions = extractPaymentPositionsForMultibeneficiary(commonRPTFieldsDTO);
+            operationStatus = EntityStatusEnum.PD_MULTIBENEFICIARIO_ESTRATTA.name();
         } else {
             paymentPositions = extractPaymentPositionsForNonMultibeneficiary(commonRPTFieldsDTO);
+            operationStatus = EntityStatusEnum.PD_NON_MULTIBENEFICIARIO_ESTRATTA.name();
         }
 
         it.gov.pagopa.gen.wispconverter.client.gpd.model.MultiplePaymentPositionModelDto multiplePaymentPosition = new it.gov.pagopa.gen.wispconverter.client.gpd.model.MultiplePaymentPositionModelDto();
         multiplePaymentPosition.setPaymentPositions(paymentPositions);
+
+        // generate and save re events internal for change status
+        multiplePaymentPosition.getPaymentPositions().forEach(paymentPositionModelDto -> reService.addRe(generateRE(paymentPositionModelDto, commonRPTFieldsDTO, operationStatus)));
+
         return multiplePaymentPosition;
     }
 
@@ -244,5 +262,26 @@ public class DebtPositionService {
 
     private String calculateIUPD(String creditorInstitutionBroker) {
         return "wisp_" + creditorInstitutionBroker + "_" + UUID.randomUUID();
+    }
+
+    private ReEventDto generateRE(it.gov.pagopa.gen.wispconverter.client.gpd.model.PaymentPositionModelDto paymentPosition, CommonRPTFieldsDTO commonRPTFieldsDTO, String status) {
+        ReEventDto reEventDto = ReUtil.createBaseReInternal()
+                .status(status)
+                .erogatore(NODO_DEI_PAGAMENTI_SPC)
+                .erogatoreDescr(NODO_DEI_PAGAMENTI_SPC)
+                .sessionIdOriginal(MDC.get(Constants.MDC_SESSION_ID))
+                .iupd(paymentPosition.getIupd())
+                .idDominio(commonRPTFieldsDTO.getCreditorInstitutionId())
+                .stazione(commonRPTFieldsDTO.getStationId())
+                .build();
+
+        List<PaymentOptionModelDto> paymentOptions = paymentPosition.getPaymentOption();
+        if (paymentOptions != null && !paymentOptions.isEmpty()) {
+            PaymentOptionModelDto paymentOption = paymentOptions.get(0);
+            reEventDto.setNoticeNumber(paymentOption.getNav());
+            reEventDto.setIuv(paymentOption.getIuv());
+        }
+
+        return reEventDto;
     }
 }

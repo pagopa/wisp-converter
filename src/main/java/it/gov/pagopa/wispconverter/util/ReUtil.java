@@ -30,34 +30,28 @@ public class ReUtil {
     private static final String UNZIP_ERROR = "Unzip error";
 
     private static ReEventDto.ReEventDtoBuilder createBaseReInterface(CategoriaEventoEnum categoriaEvento, SottoTipoEventoEnum sottoTipoEvento, EsitoEnum esitoEnum, String erogatore, String erogatoreDescr, String fruitore, String fruitoreDescr,
-                                              String httpMethod, String httpUri, String httpHeaders, String httpCallRemoteAddress, String compressedPayload, Integer compressedPayloadLength,
-                                              CallTypeEnum callTypeEnum) {
-
+                                                                      String httpMethod, String httpUri, String httpHeaders, String httpCallRemoteAddress, String compressedPayload, Integer compressedPayloadLength,
+                                                                      CallTypeEnum callTypeEnum) {
 
         return createBaseReBuilder()
-
                 .categoriaEvento(categoriaEvento)
                 .sottoTipoEvento(sottoTipoEvento)
-
                 .callType(callTypeEnum)
                 .fruitore(fruitore)
                 .fruitoreDescr(fruitoreDescr)
                 .erogatore(erogatore)
                 .erogatoreDescr(erogatoreDescr)
-
                 .esito(esitoEnum)
-
                 .httpMethod(httpMethod)
                 .httpUri(httpUri)
                 .httpHeaders(httpHeaders)
                 .httpCallRemoteAddress(httpCallRemoteAddress)
-
                 .compressedPayload(compressedPayload)
                 .compressedPayloadLength(compressedPayloadLength);
     }
 
-    private static ReEventDto.ReEventDtoBuilder createBaseReBuilder(){
-        Instant mdcStartTime = MDC.get(Constants.MDC_START_TIME) == null ? null: Instant.ofEpochMilli(Long.parseLong(MDC.get(Constants.MDC_START_TIME)));
+    private static ReEventDto.ReEventDtoBuilder createBaseReBuilder() {
+        Instant mdcStartTime = MDC.get(Constants.MDC_START_TIME) == null ? null : Instant.ofEpochMilli(Long.parseLong(MDC.get(Constants.MDC_START_TIME)));
         return ReEventDto.builder()
                 .id(UUID.randomUUID().toString())
                 .requestId(MDC.get(Constants.MDC_REQUEST_ID))
@@ -68,14 +62,14 @@ public class ReUtil {
                 .businessProcess(MDC.get(Constants.MDC_BUSINESS_PROCESS));
     }
 
-    public static ReEventDto.ReEventDtoBuilder createBaseReInternal(){
+    public static ReEventDto.ReEventDtoBuilder createBaseReInternal() {
         return createBaseReBuilder()
                 .categoriaEvento(CategoriaEventoEnum.INTERNO)
                 .sottoTipoEvento(SottoTipoEventoEnum.INTERN);
     }
 
 
-    public static ReEventDto createReServerInterfaceRequest(HttpServletRequest request){
+    public static ReEventDto createReServerInterfaceRequest(HttpServletRequest request) {
         String httpMethod = request.getMethod();
 
         StringBuilder msg = new StringBuilder(request.getRequestURI());
@@ -91,7 +85,7 @@ public class ReUtil {
         Integer compressedPayloadLength = null;
         try {
             String payload = getRequestMessagePayload(request);
-            if(payload!=null){
+            if (payload != null) {
                 compressedPayload = AppBase64Util.base64Encode(ZipUtil.zip(payload));
                 compressedPayloadLength = compressedPayload.length();
             }
@@ -110,14 +104,15 @@ public class ReUtil {
                 CallTypeEnum.SERVER)
                 .build();
     }
-    public static ReEventDto createReServerInterfaceResponse(HttpServletRequest request, HttpServletResponse response){
+
+    public static ReEventDto createReServerInterfaceResponse(HttpServletRequest request, HttpServletResponse response) {
 
         String httpHeaders = formatServerResponseHeaders(response);
         String compressedPayload = null;
         Integer compressedPayloadLength = null;
         try {
             String payload = getResponseMessagePayload(response);
-            if(payload!=null) {
+            if (payload != null) {
                 compressedPayload = AppBase64Util.base64Encode(ZipUtil.zip(payload));
                 compressedPayloadLength = compressedPayload.length();
             }
@@ -156,7 +151,7 @@ public class ReUtil {
         return target.build();
     }
 
-    public static ReEventDto createReClientInterfaceRequest(HttpRequest request, byte[] reqBody, EsitoEnum esitoEnum){
+    public static ReEventDto createReClientInterfaceRequest(HttpRequest request, byte[] reqBody, EsitoEnum esitoEnum) {
         String httpMethod = request.getMethod().toString();
         String httpUri = request.getURI().toString();
         String httpHeaders = formatClientHeaders(request.getHeaders());
@@ -165,7 +160,7 @@ public class ReUtil {
         Integer compressedPayloadPayloadLength = null;
         try {
             String payload = new String(reqBody, StandardCharsets.UTF_8);
-            if(!payload.isBlank()) {
+            if (!payload.isBlank()) {
                 compressedPayload = AppBase64Util.base64Encode(ZipUtil.zip(payload));
                 compressedPayloadPayloadLength = compressedPayload.length();
             }
@@ -187,16 +182,16 @@ public class ReUtil {
                 .build();
     }
 
-    public static ReEventDto createReClientInterfaceResponse(HttpRequest request, ClientHttpResponse response, EsitoEnum esitoEnum){
+    public static ReEventDto createReClientInterfaceResponse(HttpRequest request, ClientHttpResponse response, EsitoEnum esitoEnum) {
         String httpHeaders = null;
         String compressedPayload = null;
         Integer compressedPayloadPayloadLength = null;
         Integer status = null;
-        if(response != null){
+        if (response != null) {
             httpHeaders = formatClientHeaders(response.getHeaders());
             try {
                 String payload = bodyToString(response.getBody());
-                if(!payload.isBlank()) {
+                if (!payload.isBlank()) {
                     compressedPayload = AppBase64Util.base64Encode(ZipUtil.zip(payload));
                     compressedPayloadPayloadLength = compressedPayload.length();
                 }
@@ -234,8 +229,8 @@ public class ReUtil {
     }
 
     private static String formatClientHeaders(HttpHeaders headers) {
-        headers.forEach((s,h)->{
-            headers.add(s, StringUtils.join(h,","));
+        headers.forEach((s, h) -> {
+            headers.add(s, StringUtils.join(h, ","));
         });
 
         return formatHeaders(headers);
@@ -257,7 +252,7 @@ public class ReUtil {
 
     private static String formatServerResponseHeaders(HttpServletResponse response) {
         HttpHeaders headers = new HttpHeaders();
-        for(String headerName : response.getHeaderNames()){
+        for (String headerName : response.getHeaderNames()) {
             headers.addAll(headerName, response.getHeaders(headerName).stream().toList());
         }
 
@@ -267,7 +262,7 @@ public class ReUtil {
     private static String formatHeaders(HttpHeaders headers) {
         Stream<String> stream = headers.entrySet().stream()
                 .map((entry) -> {
-                    String values = entry.getValue().stream().collect(Collectors.joining("\", \"","\"","\""));
+                    String values = entry.getValue().stream().collect(Collectors.joining("\", \"", "\"", "\""));
                     return entry.getKey() + ": [" + values + "]";
                 });
         return stream.collect(Collectors.joining(", "));
