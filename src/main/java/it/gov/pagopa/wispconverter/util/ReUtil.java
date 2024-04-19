@@ -47,7 +47,8 @@ public class ReUtil {
                 .httpHeaders(httpHeaders)
                 .httpCallRemoteAddress(httpCallRemoteAddress)
                 .compressedPayload(compressedPayload)
-                .compressedPayloadLength(compressedPayloadLength);
+                .compressedPayloadLength(compressedPayloadLength)
+                .sessionIdOriginal(MDC.get(Constants.MDC_SESSION_ID));
     }
 
     private static ReEventDto.ReEventDtoBuilder createBaseReBuilder() {
@@ -148,7 +149,6 @@ public class ReUtil {
         target.operationErrorTitle(MDC.get(Constants.MDC_ERROR_TITLE));
         target.operationErrorDetail(MDC.get(Constants.MDC_ERROR_DETAIL));
         target.operationErrorCode(MDC.get(Constants.MDC_ERROR_CODE));
-        target.sessionIdOriginal(MDC.get(Constants.MDC_SESSION_ID));
         return target.build();
     }
 
