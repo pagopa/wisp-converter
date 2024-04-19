@@ -29,8 +29,11 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
 
   private final ReService reService;
 
-  public AbstractAppClientLoggingInterceptor(RequestResponseLoggingProperties clientLoggingProperties, ReService reService) {
+  protected ClientServiceEnum clientServiceEnum;
+
+  public AbstractAppClientLoggingInterceptor(RequestResponseLoggingProperties clientLoggingProperties, ReService reService, ClientServiceEnum clientServiceEnum) {
     this.reService = reService;
+    this.clientServiceEnum = clientServiceEnum;
 
     if(clientLoggingProperties!=null){
       RequestResponseLoggingProperties.Request request = clientLoggingProperties.getRequest();
@@ -90,6 +93,7 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
     String startClient = String.valueOf(System.currentTimeMillis());
     String clientOperationId = UUID.randomUUID().toString();
     MDC.put(Constants.MDC_CLIENT_OPERATION_ID, clientOperationId);
+    MDC.put(Constants.MDC_CLIENT_SERVICE_ID, clientServiceEnum.label);
     String operationId = MDC.get(Constants.MDC_OPERATION_ID);
     request(clientOperationId, operationId, request, body);
 
@@ -105,6 +109,7 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
       String executionClientTime = CommonUtility.getExecutionTime(startClient);
       MDC.put(Constants.MDC_CLIENT_EXECUTION_TIME, executionClientTime);
 
+      MDC.put(Constants.MDC_STATUS_CODE, String.valueOf(response.getStatusCode().value()));
       MDC.put(Constants.MDC_CALL_TYPE, CallTypeEnum.CLIENT.name());
       MDC.put(Constants.MDC_EVENT_CATEGORY, CategoriaEventoEnum.INTERFACCIA.name());
 
@@ -151,6 +156,7 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
       MDC.remove(Constants.MDC_EVENT_SUB_CATEGORY);
       MDC.remove(Constants.MDC_CALL_TYPE);
       MDC.remove(Constants.MDC_EVENT_CATEGORY);
+      MDC.remove(Constants.MDC_STATUS_CODE);
     }
 
     return response;
