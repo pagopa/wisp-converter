@@ -71,7 +71,6 @@ public class ReEventDto {
     private String parametriSpecificiInterfaccia;
     private String status;
     private String info;
-    private String iupd;
 
     private String pspDescr;
     private String noticeNumber;

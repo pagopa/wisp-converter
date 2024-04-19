@@ -270,7 +270,7 @@ public class DebtPositionService {
                 .erogatore(NODO_DEI_PAGAMENTI_SPC)
                 .erogatoreDescr(NODO_DEI_PAGAMENTI_SPC)
                 .sessionIdOriginal(MDC.get(Constants.MDC_SESSION_ID))
-                .iupd(paymentPosition.getIupd())
+                .info(String.format("IUPD = [%s]", paymentPosition.getIupd()))
                 .idDominio(commonRPTFieldsDTO.getCreditorInstitutionId())
                 .stazione(commonRPTFieldsDTO.getStationId())
                 .build();

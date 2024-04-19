@@ -148,6 +148,7 @@ public class ReUtil {
         target.operationErrorTitle(MDC.get(Constants.MDC_ERROR_TITLE));
         target.operationErrorDetail(MDC.get(Constants.MDC_ERROR_DETAIL));
         target.operationErrorCode(MDC.get(Constants.MDC_ERROR_CODE));
+        target.sessionIdOriginal(MDC.get(Constants.MDC_SESSION_ID));
         return target.build();
     }
 
