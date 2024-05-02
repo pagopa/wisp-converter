@@ -25,19 +25,16 @@ import java.util.List;
 public class CheckoutClientConfig {
 
     private final ReService reService;
-
+    @Value("${client.checkout.api-key}")
+    private final String apiKey;
+    @Value("${client.checkout.use-blue-deployment}")
+    private final Boolean useBlueDeployment;
     @Value("${client.checkout.read-timeout}")
     private Integer readTimeout;
-
     @Value("${client.checkout.connect-timeout}")
     private Integer connectTimeout;
-
     @Value("${client.checkout.base-path}")
     private String basePath;
-
-    @Value("${client.checkout.api-key}")
-    private String apiKey;
-
 
     @Bean
     @ConfigurationProperties(prefix = "log.client.checkout")
@@ -62,6 +59,9 @@ public class CheckoutClientConfig {
         it.gov.pagopa.gen.wispconverter.client.checkout.invoker.ApiClient client = new it.gov.pagopa.gen.wispconverter.client.checkout.invoker.ApiClient(restTemplate);
         client.setBasePath(basePath);
         client.setApiKey(apiKey);
+        if (Boolean.TRUE.equals(useBlueDeployment)) {
+            client.addDefaultHeader("deployment", "blue");
+        }
 
         return client;
     }
