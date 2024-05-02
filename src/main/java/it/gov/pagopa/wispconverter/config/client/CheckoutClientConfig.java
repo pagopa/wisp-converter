@@ -59,9 +59,7 @@ public class CheckoutClientConfig {
         it.gov.pagopa.gen.wispconverter.client.checkout.invoker.ApiClient client = new it.gov.pagopa.gen.wispconverter.client.checkout.invoker.ApiClient(restTemplate);
         client.setBasePath(basePath);
         client.setApiKey(apiKey);
-        if (Boolean.TRUE.equals(useBlueDeployment)) {
-            client.addDefaultHeader("deployment", "blue");
-        }
+        client.addDefaultHeader("deployment", "blue");
 
         return client;
     }
