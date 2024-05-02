@@ -26,7 +26,7 @@ public class CheckoutClientConfig {
 
     private final ReService reService;
     @Value("${client.checkout.api-key}")
-    private final String apiKey;
+    private String apiKey;
     @Value("${client.checkout.read-timeout}")
     private Integer readTimeout;
     @Value("${client.checkout.connect-timeout}")
