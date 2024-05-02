@@ -36,7 +36,7 @@ async function main() {
 
     // logging response
     console.log('### Response ###');
-    console.log('Status: [', responseFromSOAPConverter.status, ']);
+    console.log('Status: [', responseFromSOAPConverter.status, ']');
     console.log('Content: ', responseFromSOAPConverter.data);
 
     // extract outcome from WISP SOAP converter's response
@@ -69,7 +69,7 @@ async function main() {
 
 
     console.log('### Response ###');
-    console.log('Status: [', responseFromConverter.status, ']);
+    console.log('Status: [', responseFromConverter.status, ']');
     console.log('Content: ', responseFromConverter.data);
     if (responseFromConverter.status !== 200) {
         console.log(responseFromConverter.data);
@@ -101,7 +101,7 @@ async function callWispSoapConverter(request) {
     }
 
     console.log('### Request ###');
-    console.log('URL: [ POST ', url, ']);
+    console.log('URL: [ POST ', url, ']');
     console.log('Content: ', request[1]);
     console.log('\n');
     return await call("POST", process.env.wisp_converter_soap_host, request[1], headers);
