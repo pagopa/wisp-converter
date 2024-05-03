@@ -1,9 +1,9 @@
 const {getCurrentDate, getCurrentDateTime, makeNumericalString} = require("../../lib/util");
 
 let values = {
-        creditorInstitutionBroker: "66666666666",
-        creditorInstitution: "66666666666",
-        station: "66666666666_05",
+        creditorInstitutionBroker: "15376371009",
+        creditorInstitution: "77777777777",
+        station: "15376371009_48",
         psp: "AGID_01",
         pspBroker: "97735020584",
         channel: "97735020584_03",
