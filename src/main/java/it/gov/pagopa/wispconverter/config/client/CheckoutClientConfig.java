@@ -4,7 +4,6 @@ import it.gov.pagopa.wispconverter.service.ReService;
 import it.gov.pagopa.wispconverter.util.client.RequestResponseLoggingProperties;
 import it.gov.pagopa.wispconverter.util.client.checkout.CheckoutClientLoggingInterceptor;
 import it.gov.pagopa.wispconverter.util.client.checkout.CheckoutClientResponseErrorHandler;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,25 +17,22 @@ import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.DefaultUriBuilderFactory;
 
+import java.util.List;
+
 @Configuration
 @Slf4j
 @RequiredArgsConstructor
 public class CheckoutClientConfig {
 
     private final ReService reService;
-
-    @Value("${client.checkout.read-timeout}")
-    private Integer readTimeout;
-
-    @Value("${client.checkout.connect-timeout}")
-    private Integer connectTimeout;
-
-    @Value("${client.checkout.base-path}")
-    private String basePath;
-
     @Value("${client.checkout.api-key}")
     private String apiKey;
-
+    @Value("${client.checkout.read-timeout}")
+    private Integer readTimeout;
+    @Value("${client.checkout.connect-timeout}")
+    private Integer connectTimeout;
+    @Value("${client.checkout.base-path}")
+    private String basePath;
 
     @Bean
     @ConfigurationProperties(prefix = "log.client.checkout")
@@ -60,6 +56,7 @@ public class CheckoutClientConfig {
 
         it.gov.pagopa.gen.wispconverter.client.checkout.invoker.ApiClient client = new it.gov.pagopa.gen.wispconverter.client.checkout.invoker.ApiClient(restTemplate);
         client.setBasePath(basePath);
+        client.setApiKey(apiKey);
 
         return client;
     }

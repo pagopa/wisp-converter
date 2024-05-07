@@ -2,5 +2,12 @@ package it.gov.pagopa.wispconverter.service.model.re;
 
 public enum EntityStatusEnum {
 
+    RPT_TROVATA,
+    DATI_RPT_ESTRATTI,
+    PD_MULTIBENEFICIARIO_ESTRATTA,
+    PD_NON_MULTIBENEFICIARIO_ESTRATTA,
+    PD_CREATA,
+    RPT_CACHE_PER_DECOUPLER_GENERATA,
+    REDIRECT_DA_CHECKOUT_OK,
     RT_GENERATA
 }

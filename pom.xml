@@ -433,7 +433,7 @@
                             <goal>generate</goal>
                         </goals>
                         <configuration>
-                            <inputSpec>${project.basedir}/openapi-client/checkout/openapi.yaml</inputSpec>
+                            <inputSpec>${project.basedir}/openapi-client/checkout/openapi.json</inputSpec>
                             <generatorName>java</generatorName>
                             <modelNameSuffix>Dto</modelNameSuffix>
                             <generateApiTests>false</generateApiTests>

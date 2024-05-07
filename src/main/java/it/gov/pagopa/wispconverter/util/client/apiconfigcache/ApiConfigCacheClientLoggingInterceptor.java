@@ -2,6 +2,7 @@ package it.gov.pagopa.wispconverter.util.client.apiconfigcache;
 
 import it.gov.pagopa.wispconverter.service.ReService;
 import it.gov.pagopa.wispconverter.util.client.AbstractAppClientLoggingInterceptor;
+import it.gov.pagopa.wispconverter.util.client.ClientServiceEnum;
 import it.gov.pagopa.wispconverter.util.client.RequestResponseLoggingProperties;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -12,7 +13,7 @@ import org.springframework.http.client.ClientHttpResponse;
 public class ApiConfigCacheClientLoggingInterceptor extends AbstractAppClientLoggingInterceptor {
 
     public ApiConfigCacheClientLoggingInterceptor(RequestResponseLoggingProperties clientLoggingProperties, ReService reService){
-        super(clientLoggingProperties, reService);
+        super(clientLoggingProperties, reService, ClientServiceEnum.API_CONFIG_CACHE);
     }
 
     @Override

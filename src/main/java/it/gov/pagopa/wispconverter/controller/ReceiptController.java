@@ -27,10 +27,9 @@ import java.io.IOException;
 @Tag(name = "Receipt", description = "Convert sendPaymentResultV2, closePaymentV2 or paSendRTV2 into paaInviaRT to EC")
 public class ReceiptController {
 
-    private final ReceiptService receiptService;
-
     private static final String BP_RECEIPT_OK = "receipt-ok";
     private static final String BP_RECEIPT_KO = "receipt-ko";
+    private final ReceiptService receiptService;
 
     @Operation(summary = "", description = "", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"Receipt"})
     @ApiResponses(value = {
@@ -41,7 +40,7 @@ public class ReceiptController {
             produces = MediaType.APPLICATION_JSON_VALUE,
             consumes = MediaType.APPLICATION_JSON_VALUE
     )
-    @Trace(businessProcess=BP_RECEIPT_KO, reEnabled = true)
+    @Trace(businessProcess = BP_RECEIPT_KO, reEnabled = true)
     public void receiptKo(@RequestBody ReceiptRequest request) throws IOException {
 
         receiptService.paaInviaRTKo(request.getContent());
@@ -56,7 +55,7 @@ public class ReceiptController {
             produces = MediaType.APPLICATION_JSON_VALUE,
             consumes = MediaType.APPLICATION_JSON_VALUE
     )
-    @Trace(businessProcess=BP_RECEIPT_OK, reEnabled = true)
+    @Trace(businessProcess = BP_RECEIPT_OK, reEnabled = true)
     public void receiptOk(@RequestBody ReceiptRequest request) throws IOException {
 
         receiptService.paaInviaRTOk(request.getContent());

@@ -2,8 +2,10 @@ package it.gov.pagopa.wispconverter.service;
 
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
 import it.gov.pagopa.wispconverter.service.model.CommonRPTFieldsDTO;
+import it.gov.pagopa.wispconverter.util.Constants;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -21,11 +23,10 @@ public class ConverterService {
 
     private final RptCosmosService rptCosmosService;
 
-    private final ReService reService;
-
     public String convert(String sessionId) {
 
-
+        // set sessionId in thread context
+        MDC.put(Constants.MDC_SESSION_ID, sessionId);
 
         // get RPT request entity from database
         RPTRequestEntity rptRequestEntity = rptCosmosService.getRPTRequestEntity(sessionId);

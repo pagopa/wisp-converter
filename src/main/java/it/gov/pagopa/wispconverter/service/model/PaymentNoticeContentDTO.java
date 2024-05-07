@@ -11,7 +11,10 @@ import lombok.*;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class PaymentNoticeContentDTO {
 
+    private String iuv;
     private String noticeNumber;
     private String fiscalCode;
+    private String companyName;
+    private String description;
     private Long amount;
 }

@@ -12,22 +12,32 @@ import it.gov.pagopa.wispconverter.service.mapper.RPTMapper;
 import it.gov.pagopa.wispconverter.service.model.CommonRPTFieldsDTO;
 import it.gov.pagopa.wispconverter.service.model.RPTContentDTO;
 import it.gov.pagopa.wispconverter.service.model.paymentrequest.PaymentRequestDTO;
+import it.gov.pagopa.wispconverter.service.model.re.EntityStatusEnum;
+import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
+import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.JaxbElementUtil;
+import it.gov.pagopa.wispconverter.util.ReUtil;
 import it.gov.pagopa.wispconverter.util.ZipUtil;
 import jakarta.xml.soap.SOAPMessage;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
+import org.springframework.stereotype.Service;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
+
+import static it.gov.pagopa.wispconverter.util.Constants.NODO_DEI_PAGAMENTI_SPC;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class RPTExtractorService {
+
+    private final ReService reService;
 
     private final JaxbElementUtil jaxbElementUtil;
 
@@ -46,9 +56,14 @@ public class RPTExtractorService {
         CommonRPTFieldsDTO commonRPTFieldsDTO;
         switch (primitive) {
             case "nodoInviaRPT" -> commonRPTFieldsDTO = extractRPTContentDTOsFromNodoInviaRPT(soapMessage);
-            case "nodoInviaCarrelloRPT" -> commonRPTFieldsDTO = extractRPTContentDTOsFromNodoInviaCarrelloRPT(soapMessage);
+            case "nodoInviaCarrelloRPT" ->
+                    commonRPTFieldsDTO = extractRPTContentDTOsFromNodoInviaCarrelloRPT(soapMessage);
             default -> throw new AppException(AppErrorCodeMessageEnum.PARSING_PRIMITIVE_NOT_VALID);
         }
+
+        //generate and save re event internal for change status
+        reService.addRe(generateRE());
+
         return commonRPTFieldsDTO;
     }
 
@@ -165,7 +180,16 @@ public class RPTExtractorService {
     }
 
     private PaymentRequestDTO extractRPT(byte[] rptBytes) {
-        CtRichiestaPagamentoTelematico rptElement = this.jaxbElementUtil.convertToBean(rptBytes,CtRichiestaPagamentoTelematico.class);
+        CtRichiestaPagamentoTelematico rptElement = this.jaxbElementUtil.convertToBean(rptBytes, CtRichiestaPagamentoTelematico.class);
         return mapper.toPaymentRequestDTO(rptElement);
+    }
+
+    private ReEventDto generateRE() {
+        return ReUtil.createBaseReInternal()
+                .status(EntityStatusEnum.DATI_RPT_ESTRATTI.name())
+                .erogatore(NODO_DEI_PAGAMENTI_SPC)
+                .erogatoreDescr(NODO_DEI_PAGAMENTI_SPC)
+                .sessionIdOriginal(MDC.get(Constants.MDC_SESSION_ID))
+                .build();
     }
 }

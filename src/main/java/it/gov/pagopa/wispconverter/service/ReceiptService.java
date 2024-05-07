@@ -15,6 +15,7 @@ import it.gov.pagopa.wispconverter.repository.RTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
 import it.gov.pagopa.wispconverter.repository.model.RTRequestEntity;
 import it.gov.pagopa.wispconverter.service.mapper.RTMapper;
+import it.gov.pagopa.wispconverter.service.model.CachedKeysMapping;
 import it.gov.pagopa.wispconverter.service.model.CommonRPTFieldsDTO;
 import it.gov.pagopa.wispconverter.service.model.RPTContentDTO;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
@@ -69,20 +70,23 @@ public class ReceiptService {
             Map<String, StationDto> stations = configCacheService.getConfigData().getStations();
 
             receiptDtos.forEach(receipt -> {
-                String cachedSessionId = decouplerService.getCachedSessionId(receipt.getIdentificativoDominio(), receipt.getIdentificativoUnivocoVersamento());
+
+                // retrieve the NAV-based-key-to-IUV-based-key-map keys from Redis, then use the result for retrieve the IUV-based key
+                CachedKeysMapping cachedMapping = decouplerService.getCachedMappingFromNavToIuv(receipt.getFiscalCode(), receipt.getNoticeNumber());
+                String cachedSessionId = decouplerService.getCachedSessionId(cachedMapping.getFiscalCode(), cachedMapping.getIuv());
 
                 RPTRequestEntity rptRequestEntity = rptCosmosService.getRPTRequestEntity(cachedSessionId);
 
                 CommonRPTFieldsDTO commonRPTFieldsDTO = this.rptExtractorService.extractRPTContentDTOs(rptRequestEntity.getPrimitive(), rptRequestEntity.getPayload());
 
                 IntestazionePPT intestazionePPT = generateIntestazionePPT(
-                        receipt.getIdentificativoDominio(),
-                        receipt.getIdentificativoUnivocoVersamento(),
+                        cachedMapping.getFiscalCode(),
+                        cachedMapping.getIuv(),
                         receipt.getPaymentToken(),
                         commonRPTFieldsDTO.getCreditorInstitutionBrokerId(),
                         commonRPTFieldsDTO.getStationId());
 
-                commonRPTFieldsDTO.getRpts().forEach(rpt ->  {
+                commonRPTFieldsDTO.getRpts().forEach(rpt -> {
                     StationDto stationDto = stations.get(commonRPTFieldsDTO.getStationId());
 
                     Instant now = Instant.now();
@@ -93,7 +97,7 @@ public class ReceiptService {
                     PaymentServiceProviderDto psp = psps.get(rpt.getRpt().getPayeeInstitution().getSubjectUniqueIdentifier().getCode());
 
                     //generate and save re event internal for change status
-                    ReEventDto reEventDto = generateReInternal(rptRequestEntity, rpt, receipt.getIdentificativoUnivocoVersamento(), receipt.getPaymentToken(), stationDto, psp);
+                    ReEventDto reEventDto = generateReInternal(rptRequestEntity, rpt, cachedMapping.getIuv(), receipt.getPaymentToken(), stationDto, psp);
                     reService.addRe(reEventDto);
                 });
             });
@@ -125,7 +129,7 @@ public class ReceiptService {
 
             gov.telematici.pagamenti.ws.papernodo.ObjectFactory objectFactory = new gov.telematici.pagamenti.ws.papernodo.ObjectFactory();
 
-            commonRPTFieldsDTO.getRpts().forEach(rpt ->  {
+            commonRPTFieldsDTO.getRpts().forEach(rpt -> {
                 Instant now = Instant.now();
 
                 IntestazionePPT intestazionePPT = generateIntestazionePPT(
@@ -236,7 +240,7 @@ public class ReceiptService {
         try {
             return RTRequestEntity
                     .builder()
-                    .id(brokerPa+"_"+UUID.randomUUID())
+                    .id(brokerPa + "_" + UUID.randomUUID())
                     .primitive(PA_INVIA_RT)
                     .partitionKey(LocalDate.ofInstant(now, ZoneId.systemDefault()).toString())
                     .payload(AppBase64Util.base64Encode(ZipUtil.zip(payload)))
@@ -266,21 +270,21 @@ public class ReceiptService {
                 .noticeNumber(noticeNumber)
                 .paymentToken(paymentToken);
 
-        if( psp != null ) {
+        if (psp != null) {
             reEventDtoBuilder.psp(psp.getPspCode());
             reEventDtoBuilder.pspDescr(psp.getDescription());
         }
-        if( station != null ) {
+        if (station != null) {
             reEventDtoBuilder.stazione(station.getStationCode());
         }
         return reEventDtoBuilder.build();
     }
 
     private void generatePaaInviaRTAndTrace(IntestazionePPT intestazionePPT,
-                                           JAXBElement<CtRicevutaTelematica> rt,
-                                           gov.telematici.pagamenti.ws.papernodo.ObjectFactory objectFactory,
-                                           StationDto stationDto,
-                                           Instant instant) {
+                                            JAXBElement<CtRicevutaTelematica> rt,
+                                            gov.telematici.pagamenti.ws.papernodo.ObjectFactory objectFactory,
+                                            StationDto stationDto,
+                                            Instant instant) {
         String xmlString = jaxbElementUtil.objectToString(rt);
 
         PaaInviaRT paaInviaRT = objectFactory.createPaaInviaRT();

@@ -25,7 +25,9 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.ErrorResponse;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @Controller
 @RequestMapping
@@ -45,7 +47,7 @@ public class RedirectController {
             @ApiResponse(responseCode = "302", description = "Redirect to Checkout service.", content = @Content(schema = @Schema()))
     })
     @GetMapping(value = "/payments")
-    @Trace(businessProcess=BP_REDIRECT, reEnabled = true)
+    @Trace(businessProcess = BP_REDIRECT, reEnabled = true)
     public String redirect(@Parameter(description = "", example = "identificativoIntermediarioPA_sessionId")
                            @NotBlank(message = "{redirect.session-id.not-blank}")
                            @RequestParam("sessionId") String sessionId,

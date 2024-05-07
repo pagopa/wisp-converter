@@ -4,28 +4,52 @@ import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
+import it.gov.pagopa.wispconverter.service.model.re.EntityStatusEnum;
+import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
+import it.gov.pagopa.wispconverter.util.Constants;
+import it.gov.pagopa.wispconverter.util.ReUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
+
+import static it.gov.pagopa.wispconverter.util.Constants.NODO_DEI_PAGAMENTI_SPC;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class RptCosmosService {
 
+    private final ReService reService;
+
     private final RPTRequestRepository rptRequestRepository;
 
     public RPTRequestEntity getRPTRequestEntity(String sessionId) {
         Optional<RPTRequestEntity> optRPTReqEntity = this.rptRequestRepository.findById(sessionId);
-        return optRPTReqEntity.orElseThrow(() -> new AppException(AppErrorCodeMessageEnum.PERSISTENCE_RPT_NOT_FOUND, sessionId));
-        // TODO RE
+        RPTRequestEntity rptRequestEntity = optRPTReqEntity.orElseThrow(() -> new AppException(AppErrorCodeMessageEnum.PERSISTENCE_RPT_NOT_FOUND, sessionId));
+
+        //generate and save re event internal for change status
+        reService.addRe(generateRE(rptRequestEntity.getPayload(), EntityStatusEnum.RPT_TROVATA.name()));
+
+        return rptRequestEntity;
     }
 
     @Transactional
     public void saveRPTRequestEntity(RPTRequestEntity rptRequestEntity) {
         rptRequestRepository.save(rptRequestEntity);
+    }
+
+    private ReEventDto generateRE(String status, String payload) {
+        return ReUtil.createBaseReInternal()
+                .status(status)
+                .erogatore(NODO_DEI_PAGAMENTI_SPC)
+                .erogatoreDescr(NODO_DEI_PAGAMENTI_SPC)
+                .sessionIdOriginal(MDC.get(Constants.MDC_SESSION_ID))
+                .compressedPayload(payload)
+                .compressedPayload(String.valueOf(payload != null ? payload.length() : 0))
+                .build();
     }
 }

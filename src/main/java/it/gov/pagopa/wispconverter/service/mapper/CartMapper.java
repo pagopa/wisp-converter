@@ -12,13 +12,8 @@ public interface CartMapper {
     @Mapping(source = "cartId", target = "idCart")
     @Mapping(source = "payerEmail", target = "emailNotice")
     @Mapping(target = "allCCP", constant = "false")
-        //@Mapping(source = "stationId", target = "stationId") TODO to be added on new API version
     it.gov.pagopa.gen.wispconverter.client.checkout.model.CartRequestDto toCart(CommonRPTFieldsDTO commonRPTFieldsDTO);
 
-    @Mapping(source = "noticeNumber", target = "noticeNumber")
-    @Mapping(source = "fiscalCode", target = "fiscalCode")
-    @Mapping(source = "amount", target = "amount")
-    @Mapping(target = "companyName", constant = "null")
-    @Mapping(target = "description", constant = "null")
+
     it.gov.pagopa.gen.wispconverter.client.checkout.model.PaymentNoticeDto toPaymentNotice(PaymentNoticeContentDTO paymentNoticeContentDTO);
 }
