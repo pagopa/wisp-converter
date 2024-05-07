@@ -77,6 +77,7 @@ microservice-chart:
     REDIS_HOST: "pagopa-u-redis.redis.cache.windows.net"
     REDIS_PORT: "6380"
     COSMOS_URI: "https://pagopa-u-weu-nodo-wispconv-cosmos-account.documents.azure.com:443/"
+    PAAINVIART_EH_NAME: ""
     CACHED_REQUESTID_MAPPING_TTL_MINUTES: "1440"
     CACHE_REFRESH_CRON: "0 */60 * * * *"
     CLIENT_GPD_READ_TIMEOUT: '5000'
@@ -95,6 +96,7 @@ microservice-chart:
     envSecrets:
       # required
       APPLICATIONINSIGHTS_CONNECTION_STRING: 'ai-u-connection-string'
+      PAAINVIART_EH_CONNECTION_STRING: 'paainviart-eh-connection-string'
       OTEL_EXPORTER_OTLP_HEADERS: elastic-apm-secret-token
       REDIS_PASSWORD: 'redis-primary-key'
       COSMOS_KEY: 'cosmosdb-wisp-converter-account-key'

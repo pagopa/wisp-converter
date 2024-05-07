@@ -1,5 +1,6 @@
 package it.gov.pagopa.wispconverter.service;
 
+import com.azure.messaging.eventhubs.EventData;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.telematici.pagamenti.ws.nodoperpa.ppthead.IntestazionePPT;
@@ -11,6 +12,7 @@ import it.gov.pagopa.gen.wispconverter.client.cache.model.PaymentServiceProvider
 import it.gov.pagopa.gen.wispconverter.client.cache.model.StationDto;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
+import it.gov.pagopa.wispconverter.queue.PaaInviaRTEventPublisher;
 import it.gov.pagopa.wispconverter.repository.RTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
 import it.gov.pagopa.wispconverter.repository.model.RTRequestEntity;
@@ -33,6 +35,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -54,6 +57,8 @@ public class ReceiptService {
     private final RPTExtractorService rptExtractorService;
     private final ReService reService;
     private final DecouplerService decouplerService;
+
+    private final PaaInviaRTEventPublisher paaInviaRTEventPublisher;
 
     private final RTRequestRepository rtRequestRepository;
 
@@ -92,10 +97,13 @@ public class ReceiptService {
                     Instant now = Instant.now();
                     JAXBElement<CtRicevutaTelematica> rt = new it.gov.digitpa.schemas._2011.pagamenti.ObjectFactory().createRT(generateCtRicevutaTelematica(rpt, configurations, now));
 
-                    generatePaaInviaRTAndTrace(intestazionePPT, rt, objectFactory, stationDto, now);
+                    String xmlString = jaxbElementUtil.objectToString(rt);
+
+                    generatePaaInviaRTAndTrace(intestazionePPT, xmlString, objectFactory, stationDto, now);
+
+                    paaInviaRTEventPublisher.publishEvents(List.of(new EventData(xmlString)));
 
                     PaymentServiceProviderDto psp = psps.get(rpt.getRpt().getPayeeInstitution().getSubjectUniqueIdentifier().getCode());
-
                     //generate and save re event internal for change status
                     ReEventDto reEventDto = generateReInternal(rptRequestEntity, rpt, cachedMapping.getIuv(), receipt.getPaymentToken(), stationDto, psp);
                     reService.addRe(reEventDto);
@@ -141,10 +149,13 @@ public class ReceiptService {
 
                 JAXBElement<CtRicevutaTelematica> rt = new it.gov.digitpa.schemas._2011.pagamenti.ObjectFactory().createRT(generateCtRicevutaTelematica(rpt, paSendRTV2Request));
 
-                generatePaaInviaRTAndTrace(intestazionePPT, rt, objectFactory, stationDto, now);
+                String xmlString = jaxbElementUtil.objectToString(rt);
+
+                generatePaaInviaRTAndTrace(intestazionePPT, xmlString, objectFactory, stationDto, now);
+
+                paaInviaRTEventPublisher.publishEvents(List.of(new EventData(xmlString)));
 
                 PaymentServiceProviderDto psp = psps.get(rpt.getRpt().getPayeeInstitution().getSubjectUniqueIdentifier().getCode());
-
                 //generate and save re event internal for change status
                 ReEventDto reEventDto = generateReInternal(rptRequestEntity,
                         rpt,
@@ -281,12 +292,10 @@ public class ReceiptService {
     }
 
     private void generatePaaInviaRTAndTrace(IntestazionePPT intestazionePPT,
-                                            JAXBElement<CtRicevutaTelematica> rt,
+                                            String xmlString,
                                             gov.telematici.pagamenti.ws.papernodo.ObjectFactory objectFactory,
                                             StationDto stationDto,
                                             Instant instant) {
-        String xmlString = jaxbElementUtil.objectToString(rt);
-
         PaaInviaRT paaInviaRT = objectFactory.createPaaInviaRT();
         paaInviaRT.setRt(AppBase64Util.base64Encode(xmlString.getBytes(StandardCharsets.UTF_8)).getBytes(StandardCharsets.UTF_8));
         JAXBElement<PaaInviaRT> paaInviaRTJaxb = objectFactory.createPaaInviaRT(paaInviaRT);
