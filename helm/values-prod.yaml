@@ -4,7 +4,7 @@ microservice-chart:
   fullnameOverride: ""
   image:
     repository: ghcr.io/pagopa/pagopa-wisp-converter
-    tag: "0.0.15-2-NOD-890-dismissione-wisp-arricchimento-event-in-re"
+    tag: "0.0.15-3-NOD-890-dismissione-wisp-arricchimento-event-in-re"
     pullPolicy: Always
   livenessProbe:
     httpGet:
