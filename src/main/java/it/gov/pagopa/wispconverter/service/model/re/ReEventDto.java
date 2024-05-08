@@ -61,7 +61,9 @@ public class ReEventDto {
 
     //// START FIELD FOR INTERN CHANGE
     private String idDominio;
+    private String cartId;
     private String iuv;
+    private String noticeNumber;
     private String ccp;
     private String psp;
     private String tipoVersamento;
@@ -73,7 +75,6 @@ public class ReEventDto {
     private String info;
 
     private String pspDescr;
-    private String noticeNumber;
     private String creditorReferenceId;
     private String paymentToken;
     private String sessionIdOriginal;
