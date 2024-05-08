@@ -35,10 +35,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 import static it.gov.pagopa.wispconverter.util.Constants.NODO_DEI_PAGAMENTI_SPC;
 import static it.gov.pagopa.wispconverter.util.Constants.PA_INVIA_RT;
@@ -99,9 +96,9 @@ public class ReceiptService {
 
                     String xmlString = jaxbElementUtil.objectToString(rt);
 
-                    generatePaaInviaRTAndTrace(intestazionePPT, xmlString, objectFactory, stationDto, now);
+                    String paaInviaRTXmlString = generatePaaInviaRTAndTrace(intestazionePPT, xmlString, objectFactory, stationDto, now);
 
-                    paaInviaRTEventPublisher.publishEvents(List.of(new EventData(xmlString)));
+                    paaInviaRTEventPublisher.publishEvents(List.of(new EventData(paaInviaRTXmlString)));
 
                     PaymentServiceProviderDto psp = psps.get(rpt.getRpt().getPayeeInstitution().getSubjectUniqueIdentifier().getCode());
                     //generate and save re event internal for change status
@@ -151,9 +148,9 @@ public class ReceiptService {
 
                 String xmlString = jaxbElementUtil.objectToString(rt);
 
-                generatePaaInviaRTAndTrace(intestazionePPT, xmlString, objectFactory, stationDto, now);
+                String paaInviaRTXmlString = generatePaaInviaRTAndTrace(intestazionePPT, xmlString, objectFactory, stationDto, now);
 
-                paaInviaRTEventPublisher.publishEvents(List.of(new EventData(xmlString)));
+                paaInviaRTEventPublisher.publishEvents(List.of(new EventData(paaInviaRTXmlString)));
 
                 PaymentServiceProviderDto psp = psps.get(rpt.getRpt().getPayeeInstitution().getSubjectUniqueIdentifier().getCode());
                 //generate and save re event internal for change status
@@ -291,7 +288,7 @@ public class ReceiptService {
         return reEventDtoBuilder.build();
     }
 
-    private void generatePaaInviaRTAndTrace(IntestazionePPT intestazionePPT,
+    private String generatePaaInviaRTAndTrace(IntestazionePPT intestazionePPT,
                                             String xmlString,
                                             gov.telematici.pagamenti.ws.papernodo.ObjectFactory objectFactory,
                                             StationDto stationDto,
@@ -313,8 +310,11 @@ public class ReceiptService {
                 null
         );
 
-        RTRequestEntity rtRequestEntity = generateRTEntity(stationDto.getBrokerCode(), instant, jaxbElementUtil.toString(message), url);
+        String paaInviaRTXmlString = jaxbElementUtil.toString(message);
+
+        RTRequestEntity rtRequestEntity = generateRTEntity(stationDto.getBrokerCode(), instant, paaInviaRTXmlString, url);
         rtRequestRepository.save(rtRequestEntity);
+        return paaInviaRTXmlString;
     }
 
 }

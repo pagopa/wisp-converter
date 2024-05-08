@@ -16,10 +16,10 @@ import java.util.List;
 @Component
 public class PaaInviaRTEventPublisher {
 
-    @Value("${spring.paaInviaRT.eh.connectionString}")
+    @Value("${azure.paaInviaRT.eh.connectionString}")
     private String connectionString;
 
-    @Value("${spring.paaInviaRT.eh.name}")
+    @Value("${azure.paaInviaRT.eh.name}")
     private String eventHubName;
 
     public void publishEvents(List<EventData> eventDataList) {
