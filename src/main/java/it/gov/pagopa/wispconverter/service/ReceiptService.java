@@ -272,7 +272,6 @@ public class ReceiptService {
 
         if (psp != null) {
             reEventDtoBuilder.psp(psp.getPspCode());
-            reEventDtoBuilder.pspDescr(psp.getDescription());
         }
         if (station != null) {
             reEventDtoBuilder.stazione(station.getStationCode());

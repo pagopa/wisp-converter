@@ -61,23 +61,24 @@ public class ReEventDto {
 
     //// START FIELD FOR INTERN CHANGE
     private String idDominio;
+    private String cartId;
     private String iuv;
+    private String noticeNumber;
     private String ccp;
     private String psp;
-    private String tipoVersamento;
+    //private String tipoVersamento; TODO remove this comment
     private String tipoEvento;
     private String stazione;
     private String canale;
-    private String parametriSpecificiInterfaccia;
+    //private String parametriSpecificiInterfaccia; TODO remove this comment
     private String status;
     private String info;
 
-    private String pspDescr;
-    private String noticeNumber;
-    private String creditorReferenceId;
+    //private String pspDescr; TODO remove this comment
+    //private String creditorReferenceId; TODO remove this comment
     private String paymentToken;
     private String sessionIdOriginal;
-    private Boolean standIn;
+    // private Boolean standIn; TODO remove this comment
     //// END FIELD FOR INTERN CHANGE
 
 }

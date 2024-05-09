@@ -270,16 +270,24 @@ public class DebtPositionService {
                 .erogatore(NODO_DEI_PAGAMENTI_SPC)
                 .erogatoreDescr(NODO_DEI_PAGAMENTI_SPC)
                 .sessionIdOriginal(MDC.get(Constants.MDC_SESSION_ID))
+                .tipoEvento(MDC.get(Constants.MDC_EVENT_TYPE))
+                .cartId(MDC.get(Constants.MDC_CART_ID))
+                .idDominio(MDC.get(Constants.MDC_DOMAIN_ID))
+                .stazione(MDC.get(Constants.MDC_STATION_ID))
                 .info(String.format("IUPD = [%s]", paymentPosition.getIupd()))
-                .idDominio(commonRPTFieldsDTO.getCreditorInstitutionId())
-                .stazione(commonRPTFieldsDTO.getStationId())
                 .build();
 
         List<PaymentOptionModelDto> paymentOptions = paymentPosition.getPaymentOption();
         if (paymentOptions != null && !paymentOptions.isEmpty()) {
             PaymentOptionModelDto paymentOption = paymentOptions.get(0);
-            reEventDto.setNoticeNumber(paymentOption.getNav());
-            reEventDto.setIuv(paymentOption.getIuv());
+            String nav = paymentOption.getNav();
+            reEventDto.setNoticeNumber(nav);
+            String iuv = paymentOption.getIuv();
+            reEventDto.setIuv(iuv);
+            if (Constants.NODO_INVIA_RPT.equals(MDC.get(Constants.MDC_EVENT_TYPE))) {
+                MDC.put(Constants.MDC_IUV, iuv);
+                MDC.put(Constants.MDC_NOTICE_NUMBER, nav);
+            }
         }
 
         return reEventDto;

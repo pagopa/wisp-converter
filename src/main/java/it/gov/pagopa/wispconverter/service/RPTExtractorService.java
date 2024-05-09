@@ -55,13 +55,17 @@ public class RPTExtractorService {
 
         CommonRPTFieldsDTO commonRPTFieldsDTO;
         switch (primitive) {
-            case "nodoInviaRPT" -> commonRPTFieldsDTO = extractRPTContentDTOsFromNodoInviaRPT(soapMessage);
-            case "nodoInviaCarrelloRPT" ->
+            case Constants.NODO_INVIA_RPT -> commonRPTFieldsDTO = extractRPTContentDTOsFromNodoInviaRPT(soapMessage);
+            case Constants.NODO_INVIA_CARRELLO_RPT ->
                     commonRPTFieldsDTO = extractRPTContentDTOsFromNodoInviaCarrelloRPT(soapMessage);
             default -> throw new AppException(AppErrorCodeMessageEnum.PARSING_PRIMITIVE_NOT_VALID);
         }
 
         //generate and save re event internal for change status
+        MDC.put(Constants.MDC_EVENT_TYPE, primitive);
+        MDC.put(Constants.MDC_CART_ID, commonRPTFieldsDTO.getCartId());
+        MDC.put(Constants.MDC_DOMAIN_ID, commonRPTFieldsDTO.getCreditorInstitutionId());
+        MDC.put(Constants.MDC_STATION_ID, commonRPTFieldsDTO.getStationId());
         reService.addRe(generateRE());
 
         return commonRPTFieldsDTO;
@@ -190,6 +194,10 @@ public class RPTExtractorService {
                 .erogatore(NODO_DEI_PAGAMENTI_SPC)
                 .erogatoreDescr(NODO_DEI_PAGAMENTI_SPC)
                 .sessionIdOriginal(MDC.get(Constants.MDC_SESSION_ID))
+                .tipoEvento(MDC.get(Constants.MDC_EVENT_TYPE))
+                .cartId(MDC.get(Constants.MDC_CART_ID))
+                .idDominio(MDC.get(Constants.MDC_DOMAIN_ID))
+                .stazione(MDC.get(Constants.MDC_STATION_ID))
                 .build();
     }
 }
