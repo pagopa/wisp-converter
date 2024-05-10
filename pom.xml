@@ -31,6 +31,8 @@
         <spring-cloud.version>2023.0.0</spring-cloud.version>
         <jsr305.version>3.0.2</jsr305.version>
         <openfeign-version>4.1.0</openfeign-version>
+        <azure-messaging-servicebus-version>7.13.3</azure-messaging-servicebus-version>
+        <azure-identity-version>1.8.0</azure-identity-version>
     </properties>
 
     <dependencyManagement>
@@ -90,6 +92,13 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
+        </dependency>
+
+        <!-- Azure Service bus -->
+        <dependency>
+            <groupId>com.azure</groupId>
+            <artifactId>azure-messaging-servicebus</artifactId>
+            <version>${azure-messaging-servicebus-version}</version>
         </dependency>
 
         <!-- Data persistence -->

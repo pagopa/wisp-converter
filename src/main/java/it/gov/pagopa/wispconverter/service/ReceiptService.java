@@ -1,6 +1,5 @@
 package it.gov.pagopa.wispconverter.service;
 
-import com.azure.messaging.eventhubs.EventData;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.telematici.pagamenti.ws.nodoperpa.ppthead.IntestazionePPT;
@@ -12,7 +11,6 @@ import it.gov.pagopa.gen.wispconverter.client.cache.model.PaymentServiceProvider
 import it.gov.pagopa.gen.wispconverter.client.cache.model.StationDto;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
-import it.gov.pagopa.wispconverter.queue.PaaInviaRTEventPublisher;
 import it.gov.pagopa.wispconverter.repository.RTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
 import it.gov.pagopa.wispconverter.repository.model.RTRequestEntity;
@@ -35,7 +33,9 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 import static it.gov.pagopa.wispconverter.util.Constants.NODO_DEI_PAGAMENTI_SPC;
 import static it.gov.pagopa.wispconverter.util.Constants.PA_INVIA_RT;
@@ -55,7 +55,7 @@ public class ReceiptService {
     private final ReService reService;
     private final DecouplerService decouplerService;
 
-    private final PaaInviaRTEventPublisher paaInviaRTEventPublisher;
+    private final PaaInviaRTServiceBusService paaInviaRTServiceBusService;
 
     private final RTRequestRepository rtRequestRepository;
 
@@ -98,7 +98,7 @@ public class ReceiptService {
 
                     String paaInviaRTXmlString = generatePaaInviaRTAndTrace(intestazionePPT, xmlString, objectFactory, stationDto, now);
 
-                    paaInviaRTEventPublisher.publishEvents(List.of(new EventData(paaInviaRTXmlString)));
+                    paaInviaRTServiceBusService.sendMessage(paaInviaRTXmlString, stationDto.getStationCode());
 
                     PaymentServiceProviderDto psp = psps.get(rpt.getRpt().getPayeeInstitution().getSubjectUniqueIdentifier().getCode());
                     //generate and save re event internal for change status
@@ -150,7 +150,7 @@ public class ReceiptService {
 
                 String paaInviaRTXmlString = generatePaaInviaRTAndTrace(intestazionePPT, xmlString, objectFactory, stationDto, now);
 
-                paaInviaRTEventPublisher.publishEvents(List.of(new EventData(paaInviaRTXmlString)));
+                paaInviaRTServiceBusService.sendMessage(paaInviaRTXmlString, stationDto.getStationCode());
 
                 PaymentServiceProviderDto psp = psps.get(rpt.getRpt().getPayeeInstitution().getSubjectUniqueIdentifier().getCode());
                 //generate and save re event internal for change status
