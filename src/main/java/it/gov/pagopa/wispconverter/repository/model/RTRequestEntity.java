@@ -8,7 +8,7 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import org.springframework.data.annotation.Id;
 
-@Container(containerName = "data")
+@Container(containerName = "receipt")
 @Data
 @ToString(exclude = "payload")
 @EqualsAndHashCode(exclude = "payload")
