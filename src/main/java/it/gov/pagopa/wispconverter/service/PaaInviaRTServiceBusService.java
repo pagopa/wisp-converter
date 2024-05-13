@@ -19,7 +19,7 @@ public class PaaInviaRTServiceBusService {
     @Value("${azure.sb.paaInviaRT.name}")
     private String queueName;
 
-    public void sendMessage(String messageId) {
+    public void sendMessage(String message) {
         // create a token using the default Azure credential
         ServiceBusSenderClient senderClient = new ServiceBusClientBuilder()
                 .connectionString(connectionString)
@@ -28,10 +28,9 @@ public class PaaInviaRTServiceBusService {
                 .buildClient();
 
         // send one message to the queue
-        ServiceBusMessage serviceBusMessage = new ServiceBusMessage("");
-        serviceBusMessage.setMessageId(messageId);
-        log.debug("Sending message {} to the queue: {}", messageId, queueName);
+        ServiceBusMessage serviceBusMessage = new ServiceBusMessage(message);
+        log.debug("Sending message {} to the queue: {}", message, queueName);
         senderClient.sendMessage(serviceBusMessage);
-        log.debug("Sent message {} to the queue: {}", messageId, queueName);
+        log.debug("Sent message {} to the queue: {}", message, queueName);
     }
 }
