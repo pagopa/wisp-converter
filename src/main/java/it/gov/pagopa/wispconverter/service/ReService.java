@@ -1,7 +1,5 @@
 package it.gov.pagopa.wispconverter.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.wispconverter.repository.ReEventRepository;
 import it.gov.pagopa.wispconverter.repository.model.ReEventEntity;
 import it.gov.pagopa.wispconverter.service.mapper.ReEventMapper;

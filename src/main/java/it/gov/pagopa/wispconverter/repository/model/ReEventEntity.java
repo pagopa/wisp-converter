@@ -2,10 +2,10 @@ package it.gov.pagopa.wispconverter.repository.model;
 
 import com.azure.spring.data.cosmos.core.mapping.Container;
 import com.azure.spring.data.cosmos.core.mapping.PartitionKey;
-
-import lombok.*;
-import org.springframework.data.annotation.Id;
 import it.gov.pagopa.wispconverter.repository.model.enumz.*;
+import lombok.Builder;
+import lombok.Data;
+import org.springframework.data.annotation.Id;
 
 import java.time.Instant;
 

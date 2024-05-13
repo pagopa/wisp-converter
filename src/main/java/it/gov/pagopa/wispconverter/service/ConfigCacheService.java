@@ -3,7 +3,6 @@ package it.gov.pagopa.wispconverter.service;
 import it.gov.pagopa.gen.wispconverter.client.cache.model.CacheVersionDto;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
-import java.util.List;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -11,6 +10,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
+
+import java.util.List;
 
 @Service
 @CacheConfig(cacheNames="cache")
