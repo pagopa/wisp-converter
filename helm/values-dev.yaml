@@ -74,7 +74,6 @@ microservice-chart:
     OTEL_METRICS_EXPORTER: otlp
     OTEL_LOGS_EXPORTER: none
     OTEL_TRACES_SAMPLER: "always_on"
-    REDIS_HOST: "pagopa-d-redis.redis.cache.windows.net"
     REDIS_PORT: "6380"
     COSMOS_URI: "https://pagopa-d-weu-nodo-wispconv-cosmos-account.documents.azure.com:443/"
     CACHED_REQUESTID_MAPPING_TTL_MINUTES: "1440"
@@ -98,6 +97,7 @@ microservice-chart:
       APPLICATIONINSIGHTS_CONNECTION_STRING: 'ai-d-connection-string'
       OTEL_EXPORTER_OTLP_HEADERS: elastic-apm-secret-token
       REDIS_PASSWORD: 'redis-primary-key'
+      REDIS_HOST: 'redis-hostname'
       COSMOS_KEY: 'cosmosdb-wisp-converter-account-key'
       CLIENT_GPD_SUBKEY: 'gpd-pagopa-v1-subscription-key'
       CLIENT_IUVGENERATOR_SUBKEY: 'iuv-generator-subscription-key'
