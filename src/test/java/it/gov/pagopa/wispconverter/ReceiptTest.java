@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import com.azure.cosmos.CosmosClientBuilder;
+import com.azure.messaging.servicebus.ServiceBusSenderClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.wispconverter.controller.model.ReceiptRequest;
 import it.gov.pagopa.wispconverter.repository.CacheRepository;
@@ -13,6 +14,8 @@ import it.gov.pagopa.wispconverter.repository.RTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.ReEventRepository;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
 import it.gov.pagopa.wispconverter.service.ConfigCacheService;
+import it.gov.pagopa.wispconverter.service.PaaInviaRTService;
+import it.gov.pagopa.wispconverter.service.PaaInviaRTServiceBusService;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
 import it.gov.pagopa.wispconverter.utils.TestUtils;
 import java.io.ByteArrayOutputStream;
@@ -21,6 +24,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.zip.GZIPOutputStream;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -57,6 +61,10 @@ class ReceiptTest {
     @MockBean private it.gov.pagopa.gen.wispconverter.client.checkout.invoker.ApiClient checkoutClient;
     @MockBean private it.gov.pagopa.gen.wispconverter.client.cache.invoker.ApiClient cacheClient;
     @MockBean private it.gov.pagopa.gen.wispconverter.client.decouplercaching.invoker.ApiClient decouplerCachingClient;
+    @MockBean private PaaInviaRTService paaInviaRTService;
+    @MockBean private PaaInviaRTServiceBusService paaInviaRTServiceBusService;
+    @MockBean private ServiceBusSenderClient serviceBusSenderClient;
+
     @MockBean private CosmosClientBuilder cosmosClientBuilder;
     @Qualifier("redisSimpleTemplate")
     @MockBean private RedisTemplate<String, Object> redisSimpleTemplate;
