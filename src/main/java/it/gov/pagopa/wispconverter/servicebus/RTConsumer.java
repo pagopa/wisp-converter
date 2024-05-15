@@ -84,7 +84,7 @@ public class RTConsumer {
             byId.ifPresent(receipt->{
 
                 if(receipt.getRetry()>=48){
-                    log.debug("Max retry reached for message {}", cosmosId);
+                    log.warn("Max retry reached for message {}", cosmosId);
                 }else{
                     log.debug("Sending message {},retry: {}", cosmosId,receipt.getRetry());
                     Map<String, it.gov.pagopa.gen.wispconverter.client.cache.model.StationDto> stations = configCacheService.getConfigData().getStations();
