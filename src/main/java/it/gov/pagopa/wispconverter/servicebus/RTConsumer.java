@@ -44,19 +44,24 @@ public class RTConsumer {
 
     @EventListener(ApplicationReadyEvent.class)
     public void refreshCache() {
-        log.info("[Scheduled] Starting RTConsumer {}", ZonedDateTime.now());
-        receiverClient.start();
+        if(receiverClient!=null){
+            log.info("[Scheduled] Starting RTConsumer {}", ZonedDateTime.now());
+            receiverClient.start();
+        }
     }
 
     @PostConstruct
     public void post(){
-        receiverClient = new ServiceBusClientBuilder()
-                .connectionString(connectionString)
-                .processor()
-                .queueName(queueName)
-                .processMessage(context -> processMessage(context))
-                .processError(context -> processError(context))
-                .buildProcessorClient();
+    if (connectionString != null && !connectionString.equals("-")) {
+      receiverClient =
+          new ServiceBusClientBuilder()
+              .connectionString(connectionString)
+              .processor()
+              .queueName(queueName)
+              .processMessage(context -> processMessage(context))
+              .processError(context -> processError(context))
+              .buildProcessorClient();
+        }
 
     }
 
@@ -72,12 +77,12 @@ public class RTConsumer {
             String station = message.getSubject();
             String[] idparts = cosmosId.split("_");
             String pk = idparts[0];
-            String id = idparts[1]+"_"+idparts[2];
-            Optional<RTRequestEntity> byId = rtRequestRepository.findById(id,new PartitionKey(pk));
+            String receiptId = idparts[1]+"_"+idparts[2];
+            Optional<RTRequestEntity> byId = rtRequestRepository.findById(receiptId,new PartitionKey(pk));
             log.debug(byId.toString());
             byId.ifPresent(receipt->{
 
-                if(receipt.getRetry()>48){
+                if(receipt.getRetry()>=48){
                     log.debug("Max retry reached for message {}", cosmosId);
                 }else{
                     log.debug("Sending message {},retry: {}", cosmosId,receipt.getRetry());
@@ -94,20 +99,25 @@ public class RTConsumer {
 
                     Boolean ok = false;
                     try{
+                        log.debug("[{}]Sending receipt",receiptId);
                         paaInviaRTService.send(url,receipt.getPayload());
                         ok = true;
                     } catch (AppException appe){
+                        log.error("[{}]error while sending receipt:{}",receipt,appe.toString());
                         ok = false;
                     }
                     if(ok){
-
+                        log.info("[{}]Removing sent receipt",receiptId);
+                        rtRequestRepository.delete(receipt);
                     }else{
+                        log.debug("[{}]Increasing retry and saving", receiptId);
                         receipt.setRetry(receipt.getRetry()+1);
                         rtRequestRepository.save(receipt);
                         ServiceBusMessage serviceBusMessage = new ServiceBusMessage(message.getBody());
-                        serviceBusMessage.setScheduledEnqueueTime(ZonedDateTime.now().plusSeconds(10).toOffsetDateTime());
+                        serviceBusMessage.setScheduledEnqueueTime(ZonedDateTime.now().plusHours(1).toOffsetDateTime());
+                        log.debug("[{}]Rescheduling receipt at {}", receiptId,serviceBusMessage.getScheduledEnqueueTime());
                         serviceBusSenderClient.sendMessage(serviceBusMessage);
-                        log.debug("Rescheduled receipt {} at {}", cosmosId,serviceBusMessage.getScheduledEnqueueTime());
+                        log.debug("[{}]Rescheduled receipt at {}", receiptId,serviceBusMessage.getScheduledEnqueueTime());
                     }
                 }
             });
