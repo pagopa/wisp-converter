@@ -1,6 +1,7 @@
 package it.gov.pagopa.wispconverter;
 
 import com.azure.messaging.servicebus.*;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -21,11 +22,14 @@ public class Application {
 
     @Bean
     public ServiceBusSenderClient senderClient(){
-        return new ServiceBusClientBuilder()
-                .connectionString(connectionString)
-                .sender()
-                .queueName(queueName)
-                .buildClient();
+        if (StringUtils.isNotBlank(connectionString) && !connectionString.equals("-")) {
+            return new ServiceBusClientBuilder()
+                    .connectionString(connectionString)
+                    .sender()
+                    .queueName(queueName)
+                    .buildClient();
+        }
+        return null;
     }
 
 }

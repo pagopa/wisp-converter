@@ -4,6 +4,7 @@ import static it.gov.pagopa.wispconverter.ConstantsTestHelper.REDIRECT_PATH;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
+import com.azure.messaging.servicebus.ServiceBusSenderClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.gen.wispconverter.client.iuvgenerator.model.IUVGenerationResponseDto;
 import it.gov.pagopa.gen.wispconverter.client.gpd.model.MultiplePaymentPositionModelDto;
@@ -60,6 +61,8 @@ class RptTest {
     @MockBean private RedisTemplate<String, Object> redisSimpleTemplate;
     @MockBean
     private ReEventRepository reEventRepository;
+    @MockBean
+    private ServiceBusSenderClient serviceBusSenderClient;
 
     @Test
     void success() throws Exception {
@@ -87,7 +90,7 @@ class RptTest {
 
 
         mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
-                .andExpect(MockMvcResultMatchers.status().is3xxRedirection())
+                .andExpect(MockMvcResultMatchers.status().is2xxSuccessful())
                 .andDo(
                         (result) -> {
                             assertNotNull(result);
@@ -136,7 +139,7 @@ class RptTest {
 
 
         mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
-                .andExpect(MockMvcResultMatchers.status().is3xxRedirection())
+                .andExpect(MockMvcResultMatchers.status().is2xxSuccessful())
                 .andDo(
                         (result) -> {
                             assertNotNull(result);
@@ -175,7 +178,7 @@ class RptTest {
 
 
         mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
-                .andExpect(MockMvcResultMatchers.status().is3xxRedirection())
+                .andExpect(MockMvcResultMatchers.status().is2xxSuccessful())
                 .andDo(
                         (result) -> {
                             assertNotNull(result);

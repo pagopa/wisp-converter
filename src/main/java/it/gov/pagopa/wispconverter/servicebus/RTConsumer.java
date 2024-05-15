@@ -15,6 +15,7 @@ import java.util.concurrent.TimeUnit;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -52,7 +53,7 @@ public class RTConsumer {
 
     @PostConstruct
     public void post(){
-    if (connectionString != null && !connectionString.equals("-")) {
+    if (StringUtils.isNotBlank(connectionString) && !connectionString.equals("-")) {
       receiverClient =
           new ServiceBusClientBuilder()
               .connectionString(connectionString)
