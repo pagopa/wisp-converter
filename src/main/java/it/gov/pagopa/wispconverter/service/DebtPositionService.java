@@ -1,5 +1,7 @@
 package it.gov.pagopa.wispconverter.service;
 
+import static it.gov.pagopa.wispconverter.util.Constants.NODO_DEI_PAGAMENTI_SPC;
+
 import it.gov.pagopa.gen.wispconverter.client.gpd.model.PaymentOptionModelDto;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
@@ -10,13 +12,6 @@ import it.gov.pagopa.wispconverter.service.model.re.EntityStatusEnum;
 import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.ReUtil;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.slf4j.MDC;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClientException;
-
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -24,8 +19,12 @@ import java.util.List;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import static it.gov.pagopa.wispconverter.util.Constants.NODO_DEI_PAGAMENTI_SPC;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
 
 @Service
 @Slf4j
@@ -62,7 +61,7 @@ public class DebtPositionService {
             apiInstance.createMultiplePositions1(rptContentDTOs.getCreditorInstitutionId(), multiplePaymentPositions, MDC.get(Constants.MDC_REQUEST_ID), true);
 
             // generate and save re events internal for change status
-            multiplePaymentPositions.getPaymentPositions().forEach(paymentPositionModelDto -> reService.addRe(generateRE(paymentPositionModelDto, rptContentDTOs, EntityStatusEnum.PD_CREATA.name())));
+            multiplePaymentPositions.getPaymentPositions().forEach(paymentPositionModelDto -> reService.addRe(generateRE(paymentPositionModelDto, EntityStatusEnum.PD_CREATA.name())));
 
         } catch (RestClientException e) {
             throw new AppException(AppErrorCodeMessageEnum.CLIENT_GPD,
@@ -86,7 +85,7 @@ public class DebtPositionService {
         multiplePaymentPosition.setPaymentPositions(paymentPositions);
 
         // generate and save re events internal for change status
-        multiplePaymentPosition.getPaymentPositions().forEach(paymentPositionModelDto -> reService.addRe(generateRE(paymentPositionModelDto, commonRPTFieldsDTO, operationStatus)));
+        multiplePaymentPosition.getPaymentPositions().forEach(paymentPositionModelDto -> reService.addRe(generateRE(paymentPositionModelDto, operationStatus)));
 
         return multiplePaymentPosition;
     }
@@ -264,7 +263,7 @@ public class DebtPositionService {
         return "wisp_" + creditorInstitutionBroker + "_" + UUID.randomUUID();
     }
 
-    private ReEventDto generateRE(it.gov.pagopa.gen.wispconverter.client.gpd.model.PaymentPositionModelDto paymentPosition, CommonRPTFieldsDTO commonRPTFieldsDTO, String status) {
+    private ReEventDto generateRE(it.gov.pagopa.gen.wispconverter.client.gpd.model.PaymentPositionModelDto paymentPosition, String status) {
         ReEventDto reEventDto = ReUtil.createBaseReInternal()
                 .status(status)
                 .erogatore(NODO_DEI_PAGAMENTI_SPC)

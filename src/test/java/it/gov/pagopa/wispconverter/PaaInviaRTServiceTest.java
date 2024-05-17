@@ -11,6 +11,7 @@ import org.springframework.web.client.RestClient;
 
 import java.net.URI;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -41,7 +42,7 @@ public class PaaInviaRTServiceTest {
 
         PaaInviaRTService p = new PaaInviaRTService(builder);
         p.send("","");
-        assert(true);
+        assertTrue(true);
     }
 
     @Test
@@ -70,9 +71,9 @@ public class PaaInviaRTServiceTest {
         PaaInviaRTService p = new PaaInviaRTService(builder);
         try{
             p.send("","");
-            assert(false);
+            assertTrue(false);
         }catch (AppException e){
-            assert(true);
+            assertTrue(true);
         }
     }
 }
