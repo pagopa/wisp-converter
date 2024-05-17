@@ -15,6 +15,8 @@ import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
 import it.gov.pagopa.wispconverter.service.ConfigCacheService;
 import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import it.gov.pagopa.wispconverter.utils.TestUtils;
+
+import java.net.URI;
 import java.util.*;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -70,7 +72,9 @@ class RptTest {
         org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configData",TestUtils.configData(station));
         HttpHeaders headers = new HttpHeaders();
         headers.add("location","locationheader");
-        TestUtils.setMock(checkoutClient, ResponseEntity.status(HttpStatus.FOUND).headers(headers).build());
+        it.gov.pagopa.gen.wispconverter.client.checkout.model.CartResponseDto cartResponseDto = new it.gov.pagopa.gen.wispconverter.client.checkout.model.CartResponseDto();
+        cartResponseDto.setCheckoutRedirectUrl(URI.create("http://www.google.com"));
+        TestUtils.setMock(checkoutClient, ResponseEntity.status(HttpStatus.FOUND).headers(headers).body(cartResponseDto));
 
         it.gov.pagopa.gen.wispconverter.client.iuvgenerator.model.IUVGenerationResponseDto iuvGenerationModelResponseDto = new IUVGenerationResponseDto();
         iuvGenerationModelResponseDto.setIuv("00000000");
@@ -87,10 +91,8 @@ class RptTest {
         );
         when(redisSimpleTemplate.opsForValue()).thenReturn(mock(ValueOperations.class));
 
-
-
         mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
-                .andExpect(MockMvcResultMatchers.status().is2xxSuccessful())
+                .andExpect(MockMvcResultMatchers.status().is(HttpStatus.FOUND.value()))
                 .andDo(
                         (result) -> {
                             assertNotNull(result);
@@ -109,7 +111,7 @@ class RptTest {
         assertEquals("TTTTTT11T11T123T", value.getPaymentPositions().get(0).getFiscalCode());
 
         ArgumentCaptor<ReEventDto> reevents = ArgumentCaptor.forClass(ReEventDto.class);
-        verify(reEventRepository,times(2)).save(any());
+        verify(reEventRepository,times(8)).save(any());
         reevents.getAllValues();
     }
 

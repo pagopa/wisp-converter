@@ -14,10 +14,6 @@ public class Constants {
     public static final String NODO_DEI_PAGAMENTI_SPC = "NodoDeiPagamentiSPC";
 
     public static final String PA_INVIA_RT = "paaInviaRT";
-    public static final String SEND_PAYMENT_RESULT_V2 = "sendPaymentResultV2";
-    public static final String NODO_INVIA_RPT = "nodoInviaRPT";
-    public static final String NODO_INVIA_CARRELLO_RPT = "nodoInviaCarrelloRPT";
-    public static final String CLOSE_PAYMENT_V2 = "closePaymentV2";
 
     public static final String MDC_START_TIME = "startTime";
     public static final String MDC_CALL_TYPE = "callType";

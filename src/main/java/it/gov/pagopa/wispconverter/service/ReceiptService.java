@@ -312,7 +312,7 @@ public class ReceiptService {
                       it.gov.pagopa.gen.wispconverter.client.cache.model.PaymentServiceProviderDto psp) {
         try {
             paaInviaRTService.send(url, payload);
-        } catch (AppException appException) {
+        } catch (Exception e) {
             ReEventDto reEventDtoKo = rtCosmosService.generateRE(rptRequestEntity,
                     rptContentDTO,
                     noticeNumber,

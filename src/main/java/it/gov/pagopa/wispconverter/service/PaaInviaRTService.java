@@ -7,25 +7,24 @@ import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.exception.PaaInviaRTException;
 import it.gov.pagopa.wispconverter.util.Constants;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
+
+import java.net.URI;
 
 @Service
 @RequiredArgsConstructor
 public class PaaInviaRTService {
 
+    private final RestClient.Builder restClientBuilder;
+
     public void send(String url, String payload) {
         try {
-            RestClient restClient = RestClient.builder()
-                    .requestFactory(new HttpComponentsClientHttpRequestFactory())
-                    .baseUrl(url)
-                    .build();
-
+            RestClient restClient = restClientBuilder.build();
             ResponseEntity<PaaInviaRTRisposta> response = restClient
                     .post()
+                    .uri(URI.create(url))
                     .body(payload)
                     .retrieve()
                     .toEntity(PaaInviaRTRisposta.class);
