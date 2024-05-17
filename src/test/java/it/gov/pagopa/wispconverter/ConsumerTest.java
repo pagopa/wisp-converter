@@ -4,10 +4,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 import static org.mockito.Mockito.doThrow;
 
+import com.azure.core.amqp.exception.AmqpErrorCondition;
+import com.azure.core.amqp.exception.AmqpException;
 import com.azure.core.util.BinaryData;
-import com.azure.messaging.servicebus.ServiceBusReceivedMessage;
-import com.azure.messaging.servicebus.ServiceBusReceivedMessageContext;
-import com.azure.messaging.servicebus.ServiceBusSenderClient;
+import com.azure.messaging.servicebus.*;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.RTRequestRepository;
@@ -117,6 +117,47 @@ class ConsumerTest {
         verify(rtRequestRepository,times(1)).save(receipt);
         verify(serviceBusSenderClient,times(1)).sendMessage(any());
 
+    }
+    @Test
+    public void testprocesserror(){
+        ServiceBusErrorContext serviceBusErrorContext = mock(ServiceBusErrorContext.class);
+    when(serviceBusErrorContext.getException())
+        .thenReturn(new ServiceBusException(new RuntimeException(),ServiceBusErrorSource.UNKNOWN));
+        when(serviceBusErrorContext.getErrorSource()).thenReturn(ServiceBusErrorSource.COMPLETE);
+        new RTConsumer().processError(serviceBusErrorContext);
+    }
+    @Test
+    public void testprocesserror2(){
+        ServiceBusErrorContext serviceBusErrorContext = mock(ServiceBusErrorContext.class);
+        when(serviceBusErrorContext.getException())
+                .thenReturn(new ServiceBusException(new AmqpException(true, AmqpErrorCondition.MESSAGE_LOCK_LOST,"",null),ServiceBusErrorSource.UNKNOWN));
+        when(serviceBusErrorContext.getErrorSource()).thenReturn(ServiceBusErrorSource.COMPLETE);
+        new RTConsumer().processError(serviceBusErrorContext);
+    }
+    @Test
+    public void testprocesserror3(){
+        ServiceBusErrorContext serviceBusErrorContext = mock(ServiceBusErrorContext.class);
+        when(serviceBusErrorContext.getException())
+                .thenReturn(new ServiceBusException(new AmqpException(true, AmqpErrorCondition.UNAUTHORIZED_ACCESS,"",null),ServiceBusErrorSource.UNKNOWN));
+        when(serviceBusErrorContext.getErrorSource()).thenReturn(ServiceBusErrorSource.COMPLETE);
+        new RTConsumer().processError(serviceBusErrorContext);
+    }
+    @Test
+    public void testprocesserror4(){
+        ServiceBusErrorContext serviceBusErrorContext = mock(ServiceBusErrorContext.class);
+        when(serviceBusErrorContext.getException())
+                .thenReturn(new ServiceBusException(new AmqpException(true, AmqpErrorCondition.SERVER_BUSY_ERROR,"",null),ServiceBusErrorSource.UNKNOWN));
+        when(serviceBusErrorContext.getErrorSource()).thenReturn(ServiceBusErrorSource.COMPLETE);
+        new RTConsumer().processError(serviceBusErrorContext);
+    }
+    @Test
+    public void testprocesserror5(){
+        ServiceBusErrorContext serviceBusErrorContext = mock(ServiceBusErrorContext.class);
+    when(serviceBusErrorContext.getException())
+        .thenReturn(
+            new RuntimeException());
+        when(serviceBusErrorContext.getErrorSource()).thenReturn(ServiceBusErrorSource.COMPLETE);
+        new RTConsumer().processError(serviceBusErrorContext);
     }
      
 }

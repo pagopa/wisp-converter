@@ -128,11 +128,8 @@ public class RTConsumer {
     }
 
     public void processError(ServiceBusErrorContext context) {
-        System.out.printf("Error when receiving messages from namespace: '%s'. Entity: '%s'%n",
-                context.getFullyQualifiedNamespace(), context.getEntityPath());
-
         if (!(context.getException() instanceof ServiceBusException)) {
-            System.out.printf("Non-ServiceBusException occurred: %s%n", context.getException());
+            log.error("Non-ServiceBusException occurred", context.getException());
             return;
         }
 
@@ -142,20 +139,20 @@ public class RTConsumer {
         if (reason == ServiceBusFailureReason.MESSAGING_ENTITY_DISABLED
                 || reason == ServiceBusFailureReason.MESSAGING_ENTITY_NOT_FOUND
                 || reason == ServiceBusFailureReason.UNAUTHORIZED) {
-            System.out.printf("An unrecoverable error occurred. Stopping processing with reason %s: %s%n",
+            log.error("An unrecoverable error occurred. Stopping processing with reason {}:{}",
                     reason, exception.getMessage());
         } else if (reason == ServiceBusFailureReason.MESSAGE_LOCK_LOST) {
-            System.out.printf("Message lock lost for message: %s%n", context.getException());
+            log.error("Message lock lost for message: %s%n", context.getException());
         } else if (reason == ServiceBusFailureReason.SERVICE_BUSY) {
             try {
                 // Choosing an arbitrary amount of time to wait until trying again.
                 TimeUnit.SECONDS.sleep(1);
             } catch (InterruptedException e) {
-                System.err.println("Unable to sleep for period of time");
+                log.error("Unable to sleep for period of time");
             }
         } else {
-            System.out.printf("Error source %s, reason %s, message: %s%n", context.getErrorSource(),
-                    reason, context.getException());
+            log.error("Error source {}, reason {}, message: {}", context.getErrorSource(),
+                    reason, context.getException().toString());
         }
     }
 }
