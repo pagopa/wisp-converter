@@ -33,18 +33,20 @@ public class PaaInviaRTService {
                 throw new AppException(AppErrorCodeMessageEnum.CLIENT_PAAINVIART, "Error response: " + response.getStatusCode().value());
             }
 
-            if( response.getBody() != null && response.getBody().getPaaInviaRTRisposta() != null) {
-                EsitoPaaInviaRT esitoPaaInviaRT = response.getBody().getPaaInviaRTRisposta();
-                if( esitoPaaInviaRT.getEsito() != null &&
-                        esitoPaaInviaRT.getEsito().equals(Constants.KO) &&
-                        esitoPaaInviaRT.getFault() != null ) {
-                    throw new PaaInviaRTException(
-                            esitoPaaInviaRT.getFault().getFaultCode(),
-                            esitoPaaInviaRT.getFault().getFaultString(),
-                            esitoPaaInviaRT.getFault().getDescription());
-                }
-            } else {
+            if(response.getBody()==null){
                 throw new AppException(AppErrorCodeMessageEnum.CLIENT_PAAINVIART, "Error response: body null");
+            }
+            if(response.getBody().getPaaInviaRTRisposta()==null){
+                throw new AppException(AppErrorCodeMessageEnum.CLIENT_PAAINVIART, "Error response: paaInviaRTRisposta null");
+            }
+            EsitoPaaInviaRT esitoPaaInviaRT = response.getBody().getPaaInviaRTRisposta();
+            if( esitoPaaInviaRT.getEsito() != null &&
+                    esitoPaaInviaRT.getEsito().equals(Constants.KO) &&
+                    esitoPaaInviaRT.getFault() != null ) {
+                throw new PaaInviaRTException(
+                        esitoPaaInviaRT.getFault().getFaultCode(),
+                        esitoPaaInviaRT.getFault().getFaultString(),
+                        esitoPaaInviaRT.getFault().getDescription());
             }
         } catch (PaaInviaRTException paaInviaRTException) {
             throw new AppException(AppErrorCodeMessageEnum.CLIENT_PAAINVIART, "Error response: " + paaInviaRTException.getErrorMessage());
