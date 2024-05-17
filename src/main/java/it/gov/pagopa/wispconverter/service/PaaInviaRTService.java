@@ -40,7 +40,7 @@ public class PaaInviaRTService {
             if(body.getPaaInviaRTRisposta() == null){
                 throw new AppException(AppErrorCodeMessageEnum.CLIENT_PAAINVIART, "Error response: paaInviaRTRisposta null");
             }
-            EsitoPaaInviaRT esitoPaaInviaRT = response.getBody().getPaaInviaRTRisposta();
+            EsitoPaaInviaRT esitoPaaInviaRT = body.getPaaInviaRTRisposta();
             if( esitoPaaInviaRT.getEsito() != null &&
                     esitoPaaInviaRT.getEsito().equals(Constants.KO) &&
                     esitoPaaInviaRT.getFault() != null ) {
