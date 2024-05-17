@@ -6,12 +6,11 @@ import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.exception.PaaInviaRTException;
 import it.gov.pagopa.wispconverter.util.Constants;
+import java.net.URI;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
-
-import java.net.URI;
 
 @Service
 @RequiredArgsConstructor
@@ -33,10 +32,12 @@ public class PaaInviaRTService {
                 throw new AppException(AppErrorCodeMessageEnum.CLIENT_PAAINVIART, "Error response: " + response.getStatusCode().value());
             }
 
-            if(response.getBody()==null){
+            PaaInviaRTRisposta body = response.getBody();
+
+            if(body == null){
                 throw new AppException(AppErrorCodeMessageEnum.CLIENT_PAAINVIART, "Error response: body null");
             }
-            if(response.getBody().getPaaInviaRTRisposta()==null){
+            if(body.getPaaInviaRTRisposta() == null){
                 throw new AppException(AppErrorCodeMessageEnum.CLIENT_PAAINVIART, "Error response: paaInviaRTRisposta null");
             }
             EsitoPaaInviaRT esitoPaaInviaRT = response.getBody().getPaaInviaRTRisposta();
