@@ -33,7 +33,7 @@ public class PaaInviaRTService {
                 throw new AppException(AppErrorCodeMessageEnum.CLIENT_PAAINVIART, "Error response: " + response.getStatusCode().value());
             }
 
-            if( response.getBody() != null ) {
+            if( response.getBody() != null && response.getBody().getPaaInviaRTRisposta() != null) {
                 EsitoPaaInviaRT esitoPaaInviaRT = response.getBody().getPaaInviaRTRisposta();
                 if( esitoPaaInviaRT.getEsito() != null &&
                         esitoPaaInviaRT.getEsito().equals(Constants.KO) &&
