@@ -38,4 +38,10 @@ public class Constants {
     public static final String MDC_EROGATORE_DESCR = "erogatoreDescr";
 
     public static final String MDC_SESSION_ID = "sessionId";
+    public static final String MDC_EVENT_TYPE = "eventType";
+    public static final String MDC_IUV = "iuv";
+    public static final String MDC_NOTICE_NUMBER = "noticeNumber";
+    public static final String MDC_CART_ID = "cartId";
+    public static final String MDC_DOMAIN_ID = "domainId";
+    public static final String MDC_STATION_ID = "stationId";
 }

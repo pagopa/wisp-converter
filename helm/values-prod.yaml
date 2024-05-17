@@ -4,7 +4,7 @@ microservice-chart:
   fullnameOverride: ""
   image:
     repository: ghcr.io/pagopa/pagopa-wisp-converter
-    tag: "0.0.16"
+    tag: "0.0.18"
     pullPolicy: Always
   livenessProbe:
     httpGet:
@@ -74,7 +74,6 @@ microservice-chart:
     OTEL_METRICS_EXPORTER: otlp
     OTEL_LOGS_EXPORTER: none
     OTEL_TRACES_SAMPLER: "always_on"
-    REDIS_HOST: "pagopa-p-redis.redis.cache.windows.net"
     REDIS_PORT: "6380"
     COSMOS_URI: "https://pagopa-p-weu-nodo-wispconv-cosmos-account.documents.azure.com:443/"
     PAAINVIART_SERVICE_BUS_NAME: ""
@@ -99,6 +98,7 @@ microservice-chart:
       SERVICE_BUS_CONNECTION_STRING: 'wisp-converter-sb-connection-string'
       OTEL_EXPORTER_OTLP_HEADERS: elastic-apm-secret-token
       REDIS_PASSWORD: 'redis-primary-key'
+      REDIS_HOST: 'redis-hostname'
       COSMOS_KEY: 'cosmosdb-wisp-converter-account-key'
       CLIENT_GPD_SUBKEY: 'gpd-pagopa-v1-subscription-key'
       CLIENT_IUVGENERATOR_SUBKEY: 'iuv-generator-subscription-key'

@@ -101,6 +101,12 @@ public class DecouplerService {
                 .erogatore(NODO_DEI_PAGAMENTI_SPC)
                 .erogatoreDescr(NODO_DEI_PAGAMENTI_SPC)
                 .sessionIdOriginal(MDC.get(Constants.MDC_SESSION_ID))
+                .tipoEvento(MDC.get(Constants.MDC_EVENT_TYPE))
+                .cartId(MDC.get(Constants.MDC_CART_ID))
+                .idDominio(MDC.get(Constants.MDC_DOMAIN_ID))
+                .stazione(MDC.get(Constants.MDC_STATION_ID))
+                .iuv(MDC.get(Constants.MDC_IUV)) // null if nodoInviaCarrelloRPT
+                .noticeNumber(MDC.get(Constants.MDC_NOTICE_NUMBER)) // null if nodoInviaCarrelloRPT
                 .build();
     }
 }
