@@ -44,7 +44,7 @@ public class RTConsumer {
     private ServiceBusProcessorClient receiverClient;
 
     @EventListener(ApplicationReadyEvent.class)
-    public void refreshCache() {
+    public void initializeClient() {
         if(receiverClient!=null){
             log.info("[Scheduled] Starting RTConsumer {}", ZonedDateTime.now());
             receiverClient.start();
@@ -73,6 +73,7 @@ public class RTConsumer {
 
     public void processMessage(ServiceBusReceivedMessageContext context) {
         ServiceBusReceivedMessage message = context.getMessage();
+        log.info("Processing "+message.getMessageId());
         try{
             String cosmosId = new String(message.getBody().toBytes());
             String station = message.getSubject();
