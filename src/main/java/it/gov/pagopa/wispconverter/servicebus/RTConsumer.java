@@ -149,6 +149,7 @@ public class RTConsumer {
                 TimeUnit.SECONDS.sleep(1);
             } catch (InterruptedException e) {
                 log.error("Unable to sleep for period of time");
+                Thread.currentThread().interrupt();
             }
         } else {
             log.error("Error source {}, reason {}, message: {}", context.getErrorSource(),
