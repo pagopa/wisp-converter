@@ -1,7 +1,5 @@
 package it.gov.pagopa.wispconverter.service;
 
-import static it.gov.pagopa.wispconverter.util.Constants.NODO_DEI_PAGAMENTI_SPC;
-
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.CacheRepository;
@@ -12,13 +10,16 @@ import it.gov.pagopa.wispconverter.service.model.re.EntityStatusEnum;
 import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.ReUtil;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
+
+import java.util.List;
+
+import static it.gov.pagopa.wispconverter.util.Constants.NODO_DEI_PAGAMENTI_SPC;
 
 @Service
 @Slf4j
@@ -54,7 +55,7 @@ public class DecouplerService {
             // save in Redis cache the mapping of the request identifier needed for RT generation in next steps
             for (PaymentNoticeContentDTO paymentNoticeContentDTO : commonRPTFieldsDTO.getPaymentNotices()) {
                 // save the IUV-based key that contains the session identifier
-                String requestIDForRTHandling = String.format(CACHING_KEY_TEMPLATE, creditorInstitutionId, paymentNoticeContentDTO.getNoticeNumber());
+                String requestIDForRTHandling = String.format(CACHING_KEY_TEMPLATE, creditorInstitutionId, paymentNoticeContentDTO.getIuv());
                 this.cacheRepository.insert(requestIDForRTHandling, sessionId, this.requestIDMappingTTL);
                 // save the mapping that permits to convert a NAV-based key in a IUV-based one
                 String navToIuvMappingForRTHandling = String.format(MAP_CACHING_KEY_TEMPLATE, creditorInstitutionId, paymentNoticeContentDTO.getNoticeNumber());
