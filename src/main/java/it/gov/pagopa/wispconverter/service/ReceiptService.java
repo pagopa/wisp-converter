@@ -1,5 +1,7 @@
 package it.gov.pagopa.wispconverter.service;
 
+import static it.gov.pagopa.wispconverter.util.Constants.PA_INVIA_RT;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.telematici.pagamenti.ws.nodoperpa.ppthead.IntestazionePPT;
@@ -26,11 +28,6 @@ import it.gov.pagopa.wispconverter.util.JaxbElementUtil;
 import it.gov.pagopa.wispconverter.util.ZipUtil;
 import jakarta.xml.bind.JAXBElement;
 import jakarta.xml.soap.SOAPMessage;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -38,8 +35,10 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-
-import static it.gov.pagopa.wispconverter.util.Constants.PA_INVIA_RT;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
@@ -138,7 +137,8 @@ public class ReceiptService {
             SOAPMessage envelopeElement = jaxbElementUtil.getMessage(payload);
             PaSendRTV2Request paSendRTV2Request = jaxbElementUtil.getBody(envelopeElement, PaSendRTV2Request.class);
 
-            String cachedSessionId = decouplerService.getCachedSessionId(paSendRTV2Request.getIdPA(), paSendRTV2Request.getReceipt().getNoticeNumber());
+            CachedKeysMapping cachedMapping = decouplerService.getCachedMappingFromNavToIuv(paSendRTV2Request.getIdPA(), paSendRTV2Request.getReceipt().getNoticeNumber());
+            String cachedSessionId = decouplerService.getCachedSessionId(cachedMapping.getFiscalCode(), cachedMapping.getIuv());
 
             RPTRequestEntity rptRequestEntity = rptCosmosService.getRPTRequestEntity(cachedSessionId);
 
