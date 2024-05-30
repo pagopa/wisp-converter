@@ -1,7 +1,7 @@
 package it.gov.pagopa.wispconverter.service.mapper;
 
-import it.gov.pagopa.wispconverter.service.model.CommonRPTFieldsDTO;
-import it.gov.pagopa.wispconverter.service.model.PaymentNoticeContentDTO;
+import it.gov.pagopa.wispconverter.service.model.session.PaymentNoticeContentDTO;
+import it.gov.pagopa.wispconverter.service.model.session.SessionDataDTO;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
@@ -9,10 +9,11 @@ import org.mapstruct.ReportingPolicy;
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface CartMapper {
 
-    @Mapping(source = "cartId", target = "idCart")
-    @Mapping(source = "payerEmail", target = "emailNotice")
+    @Mapping(source = "commonFields.cartId", target = "idCart")
+    @Mapping(source = "commonFields.payerEmail", target = "emailNotice")
     @Mapping(target = "allCCP", constant = "false")
-    it.gov.pagopa.gen.wispconverter.client.checkout.model.CartRequestDto toCart(CommonRPTFieldsDTO commonRPTFieldsDTO);
+    @Mapping(target = "paymentNotices", ignore = true)
+    it.gov.pagopa.gen.wispconverter.client.checkout.model.CartRequestDto toCart(SessionDataDTO sessionData);
 
 
     it.gov.pagopa.gen.wispconverter.client.checkout.model.PaymentNoticeDto toPaymentNotice(PaymentNoticeContentDTO paymentNoticeContentDTO);

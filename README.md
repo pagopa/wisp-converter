@@ -35,7 +35,7 @@ the [OpenApi 3 here.](https://editor.swagger.io/?url=https://raw.githubuserconte
 ### Before the first run
 
 In order to get the latest updated sources and to correctly execute the application, it is necessary to
-generate the source classes from WSDL and XSD definition. For doing so, move in `script` folder and
+generate the source classes from WSDL and XSD definition. For doing so, move in `scripts` folder and
 execute the following command:
 
 `sh update-specs.sh`

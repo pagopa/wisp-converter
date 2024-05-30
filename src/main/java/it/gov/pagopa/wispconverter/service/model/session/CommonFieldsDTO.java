@@ -1,9 +1,7 @@
-package it.gov.pagopa.wispconverter.service.model;
+package it.gov.pagopa.wispconverter.service.model.session;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
-
-import java.util.List;
 
 @Data
 @Builder(toBuilder = true)
@@ -11,7 +9,7 @@ import java.util.List;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @ToString
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class CommonRPTFieldsDTO {
+public class CommonFieldsDTO {
 
     private String cartId;
     private String creditorInstitutionId;
@@ -29,6 +27,4 @@ public class CommonRPTFieldsDTO {
     private String payerEmail;
     private Boolean isMultibeneficiary;
     private Boolean containsDigitalStamp;
-    private List<PaymentNoticeContentDTO> paymentNotices;
-    private List<RPTContentDTO> rpts;
 }

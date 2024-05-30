@@ -9,11 +9,11 @@ import it.gov.digitpa.schemas._2011.pagamenti.CtRichiestaPagamentoTelematico;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.service.mapper.RPTMapper;
-import it.gov.pagopa.wispconverter.service.model.CommonRPTFieldsDTO;
-import it.gov.pagopa.wispconverter.service.model.RPTContentDTO;
 import it.gov.pagopa.wispconverter.service.model.paymentrequest.PaymentRequestDTO;
 import it.gov.pagopa.wispconverter.service.model.re.EntityStatusEnum;
-import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
+import it.gov.pagopa.wispconverter.service.model.session.CommonFieldsDTO;
+import it.gov.pagopa.wispconverter.service.model.session.RPTContentDTO;
+import it.gov.pagopa.wispconverter.service.model.session.SessionDataDTO;
 import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.JaxbElementUtil;
 import it.gov.pagopa.wispconverter.util.ReUtil;
@@ -25,10 +25,12 @@ import org.slf4j.MDC;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static it.gov.pagopa.wispconverter.util.Constants.NODO_DEI_PAGAMENTI_SPC;
 
@@ -43,8 +45,9 @@ public class RPTExtractorService {
 
     private final RPTMapper mapper;
 
-    public CommonRPTFieldsDTO extractRPTContentDTOs(String primitive, String payload) {
+    public SessionDataDTO extractSessionData(String primitive, String payload) {
 
+        // extracting body from SOAP Envelope body
         SOAPMessage soapMessage;
         try {
             byte[] payloadUnzipped = ZipUtil.unzip(ZipUtil.base64Decode(payload));
@@ -53,62 +56,69 @@ public class RPTExtractorService {
             throw new AppException(AppErrorCodeMessageEnum.PARSING_INVALID_ZIPPED_PAYLOAD);
         }
 
-        CommonRPTFieldsDTO commonRPTFieldsDTO;
+        // extracting session data
+        SessionDataDTO sessionData;
         switch (primitive) {
-            case Constants.NODO_INVIA_RPT -> commonRPTFieldsDTO = extractRPTContentDTOsFromNodoInviaRPT(soapMessage);
+            case Constants.NODO_INVIA_RPT -> sessionData = extractSessionDataFromNodoInviaRPT(soapMessage);
             case Constants.NODO_INVIA_CARRELLO_RPT ->
-                    commonRPTFieldsDTO = extractRPTContentDTOsFromNodoInviaCarrelloRPT(soapMessage);
+                    sessionData = extractSessionDataFromNodoInviaCarrelloRPT(soapMessage);
             default -> throw new AppException(AppErrorCodeMessageEnum.PARSING_PRIMITIVE_NOT_VALID);
         }
 
-        //generate and save re event internal for change status
-        MDC.put(Constants.MDC_EVENT_TYPE, primitive);
-        MDC.put(Constants.MDC_CART_ID, commonRPTFieldsDTO.getCartId());
-        MDC.put(Constants.MDC_DOMAIN_ID, commonRPTFieldsDTO.getCreditorInstitutionId());
-        MDC.put(Constants.MDC_STATION_ID, commonRPTFieldsDTO.getStationId());
-        reService.addRe(generateRE());
+        // generate and save RE event internal for change status
+        generateRE(sessionData, primitive);
 
-        return commonRPTFieldsDTO;
+        return sessionData;
     }
 
-    private CommonRPTFieldsDTO extractRPTContentDTOsFromNodoInviaRPT(SOAPMessage soapMessage) {
+    private SessionDataDTO extractSessionDataFromNodoInviaRPT(SOAPMessage soapMessage) {
+
+        // extracting header and body from SOAP envelope
         IntestazionePPT soapHeader = this.jaxbElementUtil.getHeader(soapMessage, IntestazionePPT.class);
         NodoInviaRPT soapBody = this.jaxbElementUtil.getBody(soapMessage, NodoInviaRPT.class);
 
+        // initializing common fields
         String creditorInstitutionId = soapHeader.getIdentificativoDominio();
         PaymentRequestDTO rpt = extractRPT(soapBody.getRpt());
         boolean containsDigitalStamp = rpt.getTransferData().getTransfer().stream().anyMatch(transfer -> transfer.getDigitalStamp() != null);
 
-        return CommonRPTFieldsDTO.builder()
-                .creditorInstitutionId(creditorInstitutionId)
-                .creditorInstitutionBrokerId(soapHeader.getIdentificativoIntermediarioPA())
-                .stationId(soapHeader.getIdentificativoStazioneIntermediarioPA())
-                .payerType(rpt.getPayer().getSubjectUniqueIdentifier().getType())
-                .payerFiscalCode(rpt.getPayer().getSubjectUniqueIdentifier().getCode())
-                .payerFullName(rpt.getPayer().getName())
-                .payerType(rpt.getPayer().getSubjectUniqueIdentifier().getType())
-                .payerFiscalCode(rpt.getPayer().getSubjectUniqueIdentifier().getCode())
-                .payerFullName(rpt.getPayer().getName())
-                .payerAddressStreetName(rpt.getPayer().getAddress())
-                .payerAddressStreetNumber(rpt.getPayer().getStreetNumber())
-                .payerAddressPostalCode(rpt.getPayer().getPostalCode())
-                .payerAddressCity(rpt.getPayer().getCity())
-                .payerAddressProvince(rpt.getPayer().getProvince())
-                .payerAddressNation(rpt.getPayer().getNation())
-                .payerEmail(rpt.getPayer().getEmail())
-                .isMultibeneficiary(false)
-                .containsDigitalStamp(containsDigitalStamp)
-                .paymentNotices(new ArrayList<>())
-                .rpts(Collections.singletonList(RPTContentDTO.builder()
+        // finally, generate session data
+        return SessionDataDTO.builder()
+                .commonFields(CommonFieldsDTO.builder()
+                        .creditorInstitutionId(creditorInstitutionId)
+                        .creditorInstitutionBrokerId(soapHeader.getIdentificativoIntermediarioPA())
+                        .stationId(soapHeader.getIdentificativoStazioneIntermediarioPA())
+                        .payerType(rpt.getPayer().getSubjectUniqueIdentifier().getType())
+                        .payerFiscalCode(rpt.getPayer().getSubjectUniqueIdentifier().getCode())
+                        .payerFullName(rpt.getPayer().getName())
+                        .payerType(rpt.getPayer().getSubjectUniqueIdentifier().getType())
+                        .payerFiscalCode(rpt.getPayer().getSubjectUniqueIdentifier().getCode())
+                        .payerFullName(rpt.getPayer().getName())
+                        .payerAddressStreetName(rpt.getPayer().getAddress())
+                        .payerAddressStreetNumber(rpt.getPayer().getStreetNumber())
+                        .payerAddressPostalCode(rpt.getPayer().getPostalCode())
+                        .payerAddressCity(rpt.getPayer().getCity())
+                        .payerAddressProvince(rpt.getPayer().getProvince())
+                        .payerAddressNation(rpt.getPayer().getNation())
+                        .payerEmail(rpt.getPayer().getEmail())
+                        .isMultibeneficiary(false)
+                        .containsDigitalStamp(containsDigitalStamp)
+                        .build())
+                .paymentNotices(new HashMap<>())
+                .rpts(Collections.singletonMap(rpt.getTransferData().getIuv(), RPTContentDTO.builder()
                         .iupd(soapHeader.getIdentificativoIntermediarioPA() + soapHeader.getIdentificativoUnivocoVersamento())
                         .iuv(rpt.getTransferData().getIuv())
                         .rpt(rpt)
+                        .ccp(rpt.getTransferData().getCcp())
+                        .index(1)
                         .containsDigitalStamp(containsDigitalStamp)
                         .build()))
                 .build();
     }
 
-    private CommonRPTFieldsDTO extractRPTContentDTOsFromNodoInviaCarrelloRPT(SOAPMessage soapMessage) {
+    private SessionDataDTO extractSessionDataFromNodoInviaCarrelloRPT(SOAPMessage soapMessage) {
+
+        // extracting header and body from SOAP envelope
         IntestazioneCarrelloPPT soapHeader = this.jaxbElementUtil.getHeader(soapMessage, IntestazioneCarrelloPPT.class);
         NodoInviaCarrelloRPT soapBody = this.jaxbElementUtil.getBody(soapMessage, NodoInviaCarrelloRPT.class);
 
@@ -126,12 +136,20 @@ public class RPTExtractorService {
         String nation = null;
         String email = null;
 
-        List<RPTContentDTO> rptContentDTOs = new LinkedList<>();
+        // extracting
+        List<RPTContentDTO> rptContents = new LinkedList<>();
+        int rptIndex = 1;
         for (TipoElementoListaRPT elementoListaRPT : soapBody.getListaRPT().getElementoListaRPT()) {
 
             // generating RPT
             PaymentRequestDTO rpt = extractRPT(elementoListaRPT.getRpt());
-            // validating common fields
+
+            /*
+              Validating common fields.
+              These fields will be equals for each RPT, so it could be set from 0-index element.
+              But this strategy is used to check the uniqueness of these fields for each RPT and if this is
+              not true, an exception is thrown.
+             */
             creditorInstitutionId = isMultibeneficiary ?
                     soapHeader.getIdentificativoCarrello().substring(0, 11) :
                     checkUniqueness(creditorInstitutionId, rpt.getDomain().getDomainId(), AppErrorCodeMessageEnum.VALIDATION_INVALID_CREDITOR_INSTITUTION);
@@ -145,38 +163,48 @@ public class RPTExtractorService {
             province = checkUniqueness(province, rpt.getPayer().getProvince(), AppErrorCodeMessageEnum.VALIDATION_INVALID_DEBTOR);
             nation = checkUniqueness(nation, rpt.getPayer().getNation(), AppErrorCodeMessageEnum.VALIDATION_INVALID_DEBTOR);
             email = checkUniqueness(email, rpt.getPayer().getEmail(), AppErrorCodeMessageEnum.VALIDATION_INVALID_DEBTOR);
-            // generating RPT content DTO
-            rptContentDTOs.add(RPTContentDTO.builder()
+
+            // generating content for RPT
+            rptContents.add(RPTContentDTO.builder()
                     .iupd(soapHeader.getIdentificativoIntermediarioPA() + soapHeader.getIdentificativoCarrello())
                     .iuv(rpt.getTransferData().getIuv())
+                    .ccp(rpt.getTransferData().getCcp())
                     .containsDigitalStamp(rpt.getTransferData().getTransfer().stream().anyMatch(transfer -> transfer.getDigitalStamp() != null))
                     .rpt(rpt)
+                    .index(rptIndex)
                     .build());
+
+            // increment RPT index
+            rptIndex++;
         }
 
-        return CommonRPTFieldsDTO.builder()
-                .cartId(soapHeader.getIdentificativoCarrello())
-                .creditorInstitutionId(creditorInstitutionId)
-                .creditorInstitutionBrokerId(soapHeader.getIdentificativoIntermediarioPA())
-                .stationId(soapHeader.getIdentificativoStazioneIntermediarioPA())
-                .payerType(payerType)
-                .payerFiscalCode(payerFiscalCode)
-                .payerFullName(fullName)
-                .payerAddressStreetName(streetName)
-                .payerAddressStreetNumber(streetNumber)
-                .payerAddressPostalCode(postalCode)
-                .payerAddressCity(city)
-                .payerAddressProvince(province)
-                .payerAddressNation(nation)
-                .payerEmail(email)
-                .isMultibeneficiary(isMultibeneficiary)
-                .containsDigitalStamp(rptContentDTOs.stream().anyMatch(RPTContentDTO::getContainsDigitalStamp))
-                .paymentNotices(new ArrayList<>())
-                .rpts(rptContentDTOs)
+        // finally, generate session data
+        return SessionDataDTO.builder()
+                .commonFields(CommonFieldsDTO.builder()
+                        .cartId(soapHeader.getIdentificativoCarrello())
+                        .creditorInstitutionId(creditorInstitutionId)
+                        .creditorInstitutionBrokerId(soapHeader.getIdentificativoIntermediarioPA())
+                        .stationId(soapHeader.getIdentificativoStazioneIntermediarioPA())
+                        .payerType(payerType)
+                        .payerFiscalCode(payerFiscalCode)
+                        .payerFullName(fullName)
+                        .payerAddressStreetName(streetName)
+                        .payerAddressStreetNumber(streetNumber)
+                        .payerAddressPostalCode(postalCode)
+                        .payerAddressCity(city)
+                        .payerAddressProvince(province)
+                        .payerAddressNation(nation)
+                        .payerEmail(email)
+                        .isMultibeneficiary(isMultibeneficiary)
+                        .containsDigitalStamp(rptContents.stream().anyMatch(RPTContentDTO::getContainsDigitalStamp))
+                        .build())
+                .paymentNotices(new HashMap<>())
+                .rpts(rptContents.stream().collect(Collectors.toMap(RPTContentDTO::getIuv, Function.identity())))
                 .build();
     }
 
     private <T> T checkUniqueness(T existingValue, T newValue, AppErrorCodeMessageEnum error) {
+
         if (existingValue != null && !existingValue.equals(newValue)) {
             throw new AppException(error);
         }
@@ -184,12 +212,22 @@ public class RPTExtractorService {
     }
 
     private PaymentRequestDTO extractRPT(byte[] rptBytes) {
+
         CtRichiestaPagamentoTelematico rptElement = this.jaxbElementUtil.convertToBean(rptBytes, CtRichiestaPagamentoTelematico.class);
         return mapper.toPaymentRequestDTO(rptElement);
     }
 
-    private ReEventDto generateRE() {
-        return ReUtil.createBaseReInternal()
+    private void generateRE(SessionDataDTO sessionData, String primitive) {
+
+        // setting data in MDC for next use
+        CommonFieldsDTO commonFields = sessionData.getCommonFields();
+        MDC.put(Constants.MDC_EVENT_TYPE, primitive);
+        MDC.put(Constants.MDC_CART_ID, commonFields.getCartId());
+        MDC.put(Constants.MDC_DOMAIN_ID, commonFields.getCreditorInstitutionId());
+        MDC.put(Constants.MDC_STATION_ID, commonFields.getStationId());
+
+        // creating event to be persisted for RE
+        reService.addRe(ReUtil.createBaseReInternal()
                 .status(EntityStatusEnum.DATI_RPT_ESTRATTI.name())
                 .erogatore(NODO_DEI_PAGAMENTI_SPC)
                 .erogatoreDescr(NODO_DEI_PAGAMENTI_SPC)
@@ -198,6 +236,6 @@ public class RPTExtractorService {
                 .cartId(MDC.get(Constants.MDC_CART_ID))
                 .idDominio(MDC.get(Constants.MDC_DOMAIN_ID))
                 .stazione(MDC.get(Constants.MDC_STATION_ID))
-                .build();
+                .build());
     }
 }

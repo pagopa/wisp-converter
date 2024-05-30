@@ -1,7 +1,7 @@
 package it.gov.pagopa.wispconverter.service;
 
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
-import it.gov.pagopa.wispconverter.service.model.CommonRPTFieldsDTO;
+import it.gov.pagopa.wispconverter.service.model.session.SessionDataDTO;
 import it.gov.pagopa.wispconverter.util.Constants;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,17 +31,17 @@ public class ConverterService {
         // get RPT request entity from database
         RPTRequestEntity rptRequestEntity = rptCosmosService.getRPTRequestEntity(sessionId);
 
-        // unmarshalling and mapping RPT content from request entity
-        CommonRPTFieldsDTO commonRPTFieldsDTO = this.rptExtractorService.extractRPTContentDTOs(rptRequestEntity.getPrimitive(), rptRequestEntity.getPayload());
+        // unmarshalling and mapping RPT content from request entity, generating session data
+        SessionDataDTO sessionData = this.rptExtractorService.extractSessionData(rptRequestEntity.getPrimitive(), rptRequestEntity.getPayload());
 
         // calling GPD creation API in order to generate the debt position associated to RPTs
-        this.debtPositionService.createDebtPositions(commonRPTFieldsDTO);
+        this.debtPositionService.createDebtPositions(sessionData);
 
         // call APIM policy for save key for decoupler and save in Redis cache the mapping of the request identifier needed for RT generation in next steps
-        this.decouplerService.storeRequestMappingInCache(commonRPTFieldsDTO, sessionId);
+        this.decouplerService.storeRequestMappingInCache(sessionData, sessionId);
 
         // execute communication with Checkout service and set the redirection URI as response
-        return this.checkoutService.executeCall(commonRPTFieldsDTO);
+        return this.checkoutService.executeCall(sessionData);
     }
 
 }

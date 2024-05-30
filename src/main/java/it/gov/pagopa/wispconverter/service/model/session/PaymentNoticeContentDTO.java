@@ -1,4 +1,4 @@
-package it.gov.pagopa.wispconverter.service.model;
+package it.gov.pagopa.wispconverter.service.model.session;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
@@ -14,6 +14,7 @@ public class PaymentNoticeContentDTO {
     private String iuv;
     private String noticeNumber;
     private String fiscalCode;
+    private String ccp;
     private String companyName;
     private String description;
     private Long amount;

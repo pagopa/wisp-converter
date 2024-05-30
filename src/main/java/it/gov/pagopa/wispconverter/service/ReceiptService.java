@@ -16,11 +16,12 @@ import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
 import it.gov.pagopa.wispconverter.repository.model.RTRequestEntity;
 import it.gov.pagopa.wispconverter.service.mapper.RTMapper;
 import it.gov.pagopa.wispconverter.service.model.CachedKeysMapping;
-import it.gov.pagopa.wispconverter.service.model.CommonRPTFieldsDTO;
-import it.gov.pagopa.wispconverter.service.model.RPTContentDTO;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
 import it.gov.pagopa.wispconverter.service.model.re.EntityStatusEnum;
 import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
+import it.gov.pagopa.wispconverter.service.model.session.CommonFieldsDTO;
+import it.gov.pagopa.wispconverter.service.model.session.RPTContentDTO;
+import it.gov.pagopa.wispconverter.service.model.session.SessionDataDTO;
 import it.gov.pagopa.wispconverter.util.*;
 import jakarta.xml.bind.JAXBElement;
 import jakarta.xml.soap.SOAPMessage;
@@ -77,17 +78,18 @@ public class ReceiptService {
 
                 RPTRequestEntity rptRequestEntity = rptCosmosService.getRPTRequestEntity(cachedSessionId);
 
-                CommonRPTFieldsDTO commonRPTFieldsDTO = this.rptExtractorService.extractRPTContentDTOs(rptRequestEntity.getPrimitive(), rptRequestEntity.getPayload());
+                SessionDataDTO sessionData = this.rptExtractorService.extractSessionData(rptRequestEntity.getPrimitive(), rptRequestEntity.getPayload());
+                CommonFieldsDTO commonFields = sessionData.getCommonFields();
 
                 IntestazionePPT intestazionePPT = generateIntestazionePPT(
                         cachedMapping.getFiscalCode(),
                         cachedMapping.getIuv(),
                         receipt.getPaymentToken(),
-                        commonRPTFieldsDTO.getCreditorInstitutionBrokerId(),
-                        commonRPTFieldsDTO.getStationId());
+                        commonFields.getCreditorInstitutionBrokerId(),
+                        commonFields.getStationId());
 
-                commonRPTFieldsDTO.getRpts().forEach(rpt -> {
-                    StationDto stationDto = stations.get(commonRPTFieldsDTO.getStationId());
+                sessionData.getRpts().forEach((iuv, rpt) -> {
+                    StationDto stationDto = stations.get(commonFields.getStationId());
 
                     Instant now = Instant.now();
                     JAXBElement<CtRicevutaTelematica> rt = new it.gov.digitpa.schemas._2011.pagamenti.ObjectFactory().createRT(generateCtRicevutaTelematica(rpt, configurations, now));
@@ -123,21 +125,22 @@ public class ReceiptService {
 
             RPTRequestEntity rptRequestEntity = rptCosmosService.getRPTRequestEntity(cachedSessionId);
 
-            CommonRPTFieldsDTO commonRPTFieldsDTO = this.rptExtractorService.extractRPTContentDTOs(rptRequestEntity.getPrimitive(), rptRequestEntity.getPayload());
+            SessionDataDTO sessionData = this.rptExtractorService.extractSessionData(rptRequestEntity.getPrimitive(), rptRequestEntity.getPayload());
+            CommonFieldsDTO commonFields = sessionData.getCommonFields();
 
             StationDto stationDto = stations.get(paSendRTV2Request.getIdStation());
 
             gov.telematici.pagamenti.ws.papernodo.ObjectFactory objectFactory = new gov.telematici.pagamenti.ws.papernodo.ObjectFactory();
 
-            commonRPTFieldsDTO.getRpts().forEach(rpt -> {
+            sessionData.getRpts().forEach((iuv, rpt) -> {
                 Instant now = Instant.now();
 
                 IntestazionePPT intestazionePPT = generateIntestazionePPT(
                         paSendRTV2Request.getReceipt().getFiscalCode(),
                         paSendRTV2Request.getReceipt().getCreditorReferenceId(),
                         rpt.getRpt().getTransferData().getCcp(),
-                        commonRPTFieldsDTO.getCreditorInstitutionBrokerId(),
-                        commonRPTFieldsDTO.getStationId());
+                        commonFields.getCreditorInstitutionBrokerId(),
+                        commonFields.getStationId());
 
                 JAXBElement<CtRicevutaTelematica> rt = new it.gov.digitpa.schemas._2011.pagamenti.ObjectFactory().createRT(generateCtRicevutaTelematica(rpt, paSendRTV2Request));
 

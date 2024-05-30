@@ -1,12 +1,12 @@
 package it.gov.pagopa.wispconverter.service;
 
+import it.gov.pagopa.gen.wispconverter.client.checkout.model.CartRequestDto;
 import it.gov.pagopa.gen.wispconverter.client.checkout.model.CartResponseDto;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.service.mapper.CartMapper;
-import it.gov.pagopa.wispconverter.service.model.CommonRPTFieldsDTO;
 import it.gov.pagopa.wispconverter.service.model.re.EntityStatusEnum;
-import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
+import it.gov.pagopa.wispconverter.service.model.session.SessionDataDTO;
 import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.ReUtil;
 import lombok.RequiredArgsConstructor;
@@ -34,26 +34,21 @@ public class CheckoutService {
 
     private final CartMapper mapper;
 
-    public String executeCall(CommonRPTFieldsDTO commonRPTFieldsDTO) {
+    public String executeCall(SessionDataDTO sessionData) {
 
         String location;
 
         try {
             // execute mapping for Checkout carts invocation
-            it.gov.pagopa.gen.wispconverter.client.checkout.model.CartRequestDto cart = mapper.toCart(commonRPTFieldsDTO);
-            String stationRedirectURL = getRedirectURL(commonRPTFieldsDTO.getStationId());
-            it.gov.pagopa.gen.wispconverter.client.checkout.model.CartRequestReturnUrlsDto returnUrls = new it.gov.pagopa.gen.wispconverter.client.checkout.model.CartRequestReturnUrlsDto();
-            returnUrls.setReturnOkUrl(new URI(stationRedirectURL + "/success.html"));
-            returnUrls.setReturnCancelUrl(new URI(stationRedirectURL + "/cancel.html"));
-            returnUrls.setReturnErrorUrl(new URI(stationRedirectURL + "/error.html"));
-            cart.setReturnUrls(returnUrls);
+            CartRequestDto cart = extractCart(sessionData);
 
+            // communicating with Checkout for cart creation and retrieving location from response
             it.gov.pagopa.gen.wispconverter.client.checkout.api.DefaultApi apiInstance = new it.gov.pagopa.gen.wispconverter.client.checkout.api.DefaultApi(checkoutClient);
             CartResponseDto response = apiInstance.postCarts(cart);
             location = response.getCheckoutRedirectUrl().toString();
 
             // generate and save re events internal for change status
-            reService.addRe(generateRE(location));
+            generateRE(location);
 
         } catch (RestClientException e) {
             throw new AppException(AppErrorCodeMessageEnum.CLIENT_CHECKOUT,
@@ -65,16 +60,43 @@ public class CheckoutService {
         return location;
     }
 
+    private CartRequestDto extractCart(SessionDataDTO sessionData) throws URISyntaxException {
+
+        // execute main mapping for the cart to be sent to Checkout
+        CartRequestDto cart = mapper.toCart(sessionData);
+        cart.setPaymentNotices(sessionData.getAllPaymentNotices().stream()
+                .map(mapper::toPaymentNotice)
+                .toList());
+
+        // retrieving URL for redirect from station
+        String stationRedirectURL = getRedirectURL(sessionData.getCommonFields().getStationId());
+
+        // explicitly set all URLs for object
+        it.gov.pagopa.gen.wispconverter.client.checkout.model.CartRequestReturnUrlsDto returnUrls = new it.gov.pagopa.gen.wispconverter.client.checkout.model.CartRequestReturnUrlsDto();
+        returnUrls.setReturnOkUrl(new URI(stationRedirectURL + "/success.html"));
+        returnUrls.setReturnCancelUrl(new URI(stationRedirectURL + "/cancel.html"));
+        returnUrls.setReturnErrorUrl(new URI(stationRedirectURL + "/error.html"));
+        cart.setReturnUrls(returnUrls);
+
+        return cart;
+    }
+
     private String getRedirectURL(String stationId) {
+
+        // get cached data
         it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigDataV1Dto cache = configCacheService.getConfigData();
         if (cache == null) {
             throw new AppException(AppErrorCodeMessageEnum.CONFIGURATION_INVALID_CACHE);
         }
+
+        // retrieving station by station identifier
         Map<String, it.gov.pagopa.gen.wispconverter.client.cache.model.StationDto> stations = cache.getStations();
         it.gov.pagopa.gen.wispconverter.client.cache.model.StationDto station = stations.get(stationId);
         if (station == null) {
             throw new AppException(AppErrorCodeMessageEnum.CONFIGURATION_INVALID_STATION, stationId);
         }
+
+        // extracting redirect URL using protocol, IP and path
         it.gov.pagopa.gen.wispconverter.client.cache.model.RedirectDto redirect = station.getRedirect();
         String protocol = redirect.getProtocol() == null ? "http" : redirect.getProtocol().getValue().toLowerCase();
         String url = redirect.getIp() + "/" + redirect.getPath();
@@ -83,8 +105,9 @@ public class CheckoutService {
         return protocol + "://" + url;
     }
 
-    private ReEventDto generateRE(String redirectUrl) {
-        return ReUtil.createBaseReInternal()
+    private void generateRE(String redirectUrl) {
+
+        reService.addRe(ReUtil.createBaseReInternal()
                 .status(EntityStatusEnum.REDIRECT_DA_CHECKOUT_OK.name())
                 .erogatore(NODO_DEI_PAGAMENTI_SPC)
                 .erogatoreDescr(NODO_DEI_PAGAMENTI_SPC)
@@ -96,6 +119,6 @@ public class CheckoutService {
                 .iuv(MDC.get(Constants.MDC_IUV)) // null if nodoInviaCarrelloRPT
                 .noticeNumber(MDC.get(Constants.MDC_NOTICE_NUMBER)) // null if nodoInviaCarrelloRPT
                 .info(String.format("Redirect URL = [%s]", redirectUrl))
-                .build();
+                .build());
     }
 }
