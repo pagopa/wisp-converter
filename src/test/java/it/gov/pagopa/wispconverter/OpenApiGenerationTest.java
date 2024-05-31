@@ -1,6 +1,7 @@
 package it.gov.pagopa.wispconverter;
 
 import com.azure.cosmos.CosmosAsyncClient;
+import com.azure.messaging.servicebus.ServiceBusSenderClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.wispconverter.controller.RedirectController;
 import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
@@ -49,6 +50,9 @@ class OpenApiGenerationTest {
 
     @MockBean
     private ReEventRepository reEventRepository;
+
+    @MockBean
+    private ServiceBusSenderClient serviceBusSenderClient;
 
     @Test
     void swaggerSpringPlugin() throws Exception {

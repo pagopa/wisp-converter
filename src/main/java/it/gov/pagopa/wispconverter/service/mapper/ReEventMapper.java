@@ -1,16 +1,15 @@
 package it.gov.pagopa.wispconverter.service.mapper;
 
 import it.gov.pagopa.wispconverter.repository.model.ReEventEntity;
-import it.gov.pagopa.wispconverter.service.model.CommonRPTFieldsDTO;
-import it.gov.pagopa.wispconverter.service.model.PaymentNoticeContentDTO;
 import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
-import org.mapstruct.*;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.Named;
+import org.mapstruct.ReportingPolicy;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.TimeZone;
 
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface ReEventMapper {

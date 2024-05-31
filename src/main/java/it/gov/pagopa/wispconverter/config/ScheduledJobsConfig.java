@@ -1,7 +1,6 @@
 package it.gov.pagopa.wispconverter.config;
 
 import it.gov.pagopa.wispconverter.service.ConfigCacheService;
-import java.time.ZonedDateTime;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -9,6 +8,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
+
+import java.time.ZonedDateTime;
 
 @Configuration
 @Slf4j
