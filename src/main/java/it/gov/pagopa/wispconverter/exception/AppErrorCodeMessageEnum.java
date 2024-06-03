@@ -25,6 +25,7 @@ public enum AppErrorCodeMessageEnum {
     CONFIGURATION_INVALID_CACHE(1202, "Cache not valid", "Error while reading configuration cache. No valid cached configuration found.", HttpStatus.NOT_FOUND),
     PAYMENT_POSITION_NOT_IN_PAYABLE_STATE(1300, "Existing payment position not in payable state", "Error while generating payment position. One or more of the payment position(s) associated to IUV(s) [{0}] exists but are not in a payable state. All the payments are declared invalid.", HttpStatus.CONFLICT),
     PAYMENT_POSITION_IN_INVALID_STATE(1301, "Existing payment position in invalid state", "Error while generating payment position. There is a payment position associated to IUV [{0}] but it is in an invalid state or it corrupted.", HttpStatus.CONFLICT),
+    PAYMENT_POSITION_NOT_VALID(1301, "Existing payment position not valid", "Error while generating payment position. The payment position associated to IUV [{0}] is not valid.", HttpStatus.BAD_REQUEST),
     // --- DB and storage interaction errors ---
     PERSISTENCE_RPT_NOT_FOUND(2000, "RPT not found", "Error while retrieving RPT. RPT with sessionId [{0}] not found.", HttpStatus.NOT_FOUND),
     PERSISTENCE_REQUESTID_CACHING_ERROR(2001, "RequestID caching error", "Error while reading cached RequestID. No valid value found for key [{0}].", HttpStatus.UNPROCESSABLE_ENTITY),

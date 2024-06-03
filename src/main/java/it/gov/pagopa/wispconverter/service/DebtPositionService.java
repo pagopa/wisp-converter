@@ -7,6 +7,7 @@ import it.gov.pagopa.gen.wispconverter.client.iuvgenerator.model.IUVGenerationRe
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.service.mapper.DebtPositionMapper;
+import it.gov.pagopa.wispconverter.service.mapper.DebtPositionUpdateMapper;
 import it.gov.pagopa.wispconverter.service.model.DigitalStampDTO;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
 import it.gov.pagopa.wispconverter.service.model.TransferDTO;
@@ -50,6 +51,8 @@ public class DebtPositionService {
     private final ReceiptService receiptService;
 
     private final DebtPositionMapper mapper;
+
+    private final DebtPositionUpdateMapper mapperForUpdate;
 
     private final Pattern taxonomyPattern = Pattern.compile("([^/]++/[^/]++)/?");
 
@@ -345,7 +348,6 @@ public class DebtPositionService {
             generateReForInvalidPaymentPosition(sessionData, paymentNotice.getIuv());
         }
 
-
         // finally, throw an exception for notify the error, including all the IUVs
         String invalidIuvs = sessionData.getAllPaymentNotices().stream()
                 .map(PaymentNoticeContentDTO::getIuv)
@@ -353,20 +355,16 @@ public class DebtPositionService {
         throw new AppException(AppErrorCodeMessageEnum.PAYMENT_POSITION_NOT_IN_PAYABLE_STATE, invalidIuvs);
     }
 
-    private void generateKoReceiptForPaymentPosition(String creditorInstitutionId, String nav, String ccp) {
-
-    }
-
-    private void handleValidPaymentPosition(DebtPositionsApiApi gpdClientInstance, SessionDataDTO sessionData, PaymentPositionModelDto extractedPaymentPosition, PaymentPositionModelBaseResponseDto response, String iuv) {
+    private void handleValidPaymentPosition(DebtPositionsApiApi gpdClientInstance, SessionDataDTO sessionData, PaymentPositionModelDto extractedPaymentPosition, PaymentPositionModelBaseResponseDto paymentPositionFromGPD, String iuv) {
 
         String creditorInstitutionId = sessionData.getCommonFields().getCreditorInstitutionId();
         try {
 
             // merge the information of extracted payment position with the data from existing payment position, retrieved from GPD
-            updateExtractedPaymentPositionWithExistingData(response, extractedPaymentPosition);
+            PaymentPositionModelDto updatedPaymentPosition = updateExtractedPaymentPositionWithExistingData(iuv, sessionData, paymentPositionFromGPD, extractedPaymentPosition);
 
             // communicating with GPD service in order to update the existing payment position
-            gpdClientInstance.updatePosition(creditorInstitutionId, extractedPaymentPosition.getIupd(), extractedPaymentPosition, MDC.get(Constants.MDC_REQUEST_ID), true);
+            gpdClientInstance.updatePosition(creditorInstitutionId, updatedPaymentPosition.getIupd(), updatedPaymentPosition, MDC.get(Constants.MDC_REQUEST_ID), true);
 
             // generate and save events in RE for trace the update of the existing payment position
             generateReForUpdatedPaymentPosition(sessionData, iuv);
@@ -376,8 +374,51 @@ public class DebtPositionService {
         }
     }
 
-    private void updateExtractedPaymentPositionWithExistingData(PaymentPositionModelBaseResponseDto second, PaymentPositionModelDto extractedPaymentPosition) {
-        // TODO
+    private PaymentPositionModelDto updateExtractedPaymentPositionWithExistingData(String iuv, SessionDataDTO sessionData, PaymentPositionModelBaseResponseDto paymentPositionFromGPD, PaymentPositionModelDto extractedPaymentPosition) {
+
+        // executing a first mapping of the payment position using the one retrieved from GPD as blueprint
+        PaymentPositionModelDto updatedPaymentPosition = mapperForUpdate.toPaymentPosition(paymentPositionFromGPD);
+
+        // setting missing fields on payment position that was mapped from retrieved one
+        updatedPaymentPosition.payStandIn(extractedPaymentPosition.getPayStandIn())
+                .fiscalCode(extractedPaymentPosition.getFiscalCode())
+                .fullName(extractedPaymentPosition.getFullName())
+                .streetName(extractedPaymentPosition.getStreetName())
+                .civicNumber(extractedPaymentPosition.getCivicNumber())
+                .postalCode(extractedPaymentPosition.getPostalCode())
+                .city(extractedPaymentPosition.getCity())
+                .province(extractedPaymentPosition.getProvince())
+                .region(extractedPaymentPosition.getRegion())
+                .country(extractedPaymentPosition.getCountry())
+                .email(extractedPaymentPosition.getEmail())
+                .phone(extractedPaymentPosition.getPhone())
+                .switchToExpired(extractedPaymentPosition.getSwitchToExpired());
+
+        if (updatedPaymentPosition.getPaymentOption() != null && extractedPaymentPosition.getPaymentOption() != null) {
+
+            /*
+               From the list of payment options of updated and extracted payment options, get the one that has the same
+               IUV that is used in the evaluation. If no payment option is found, throw and exception.
+             */
+            PaymentOptionModelDto updatedPaymentOption = updatedPaymentPosition.getPaymentOption().stream()
+                    .filter(paymentOption -> paymentOption.getIuv().equals(iuv))
+                    .findFirst()
+                    .orElseThrow(() -> new AppException(AppErrorCodeMessageEnum.PAYMENT_POSITION_NOT_VALID, iuv));
+            PaymentOptionModelDto extractedPaymentOption = extractedPaymentPosition.getPaymentOption().stream()
+                    .filter(paymentOption -> paymentOption.getIuv().equals(iuv))
+                    .findFirst()
+                    .orElseThrow(() -> new AppException(AppErrorCodeMessageEnum.PAYMENT_POSITION_NOT_VALID, iuv));
+
+            // now, update the field on which is required to change info about the payment
+            updatedPaymentOption.setAmount(extractedPaymentOption.getAmount());
+            updatedPaymentOption.setDescription(extractedPaymentOption.getDescription());
+            updatedPaymentOption.setTransfer(extractedPaymentOption.getTransfer());
+
+            // finally, update the payment notice to be used for Checkout with the existing NAV code.
+            sessionData.getPaymentNoticeByIUV(iuv).setNoticeNumber(updatedPaymentOption.getNav());
+        }
+
+        return updatedPaymentPosition;
     }
 
     private void handleNewPaymentPosition(SessionDataDTO sessionData, PaymentPositionModelDto extractedPaymentPosition, List<String> iuvToSaveInBulkOperation, String iuv) {
@@ -537,118 +578,5 @@ public class DebtPositionService {
             MDC.put(Constants.MDC_NOTICE_NUMBER, noticeNumber);
         }
     }
-
-
-
-    /*
-    public void createDebtPositions_(SessionDataDTO sessionData) {
-
-        try {
-
-            // instantiating client for GPD-core service
-            it.gov.pagopa.gen.wispconverter.client.gpd.api.DebtPositionsApiApi apiInstance = new it.gov.pagopa.gen.wispconverter.client.gpd.api.DebtPositionsApiApi(gpdClient);
-
-            *//*
-              Before check the existence of each IUV in GDP, the object will be extracted from common sessionData bean
-              because there is a different handling between multibeneficiary and not-multibeneficiary payments.
-              So, after the extraction, we have all the debt positions that eventually will be created, and we can check
-              if some of them already exists in GPD.
-             *//*
-            List<it.gov.pagopa.gen.wispconverter.client.gpd.model.PaymentPositionModelDto> paymentPositions = extractPaymentPositions(sessionData);
-
-            String creditorInstitutionId = sessionData.getCommonFields().getCreditorInstitutionId();
-
-
-
-
-
-            Set<String> iuvsToInsertInBulk = new HashSet<>();
-            for (it.gov.pagopa.gen.wispconverter.client.gpd.model.PaymentPositionModelDto paymentPosition : paymentPositions) {
-
-                String iuv = paymentPosition.getPaymentOption().get(0).getIuv();
-
-                ResponseEntity<PaymentPositionModelBaseResponseDto> response = apiInstance.getDebtPositionByIUVWithHttpInfo(creditorInstitutionId, iuv, MDC.get(Constants.MDC_REQUEST_ID));
-                int statusCode = response.getStatusCode().value();
-                if (statusCode == 200) {
-                    PaymentPositionModelBaseResponseDto debtPosition = response.getBody();
-                    if (PaymentPositionModelBaseResponseDto.StatusEnum.VALID.equals(debtPosition.getStatus())) {
-                        it.gov.pagopa.gen.wispconverter.client.gpd.model.PaymentPositionModelDto updatedPaymentPosition = updatePaymentPosition(debtPosition, paymentPosition);
-                        apiInstance.updatePosition(creditorInstitutionId, debtPosition.getIupd(), updatedPaymentPosition, MDC.get(Constants.MDC_REQUEST_ID), true);
-
-                        sessionData.getPaymentNoticeByIUV(iuv).setNoticeNumber(debtPosition.getPaymentOption().get(0).getNav());
-                    } else {
-                        // create rt-
-                        throw new AppException(AppErrorCodeMessageEnum.DEBT_POSITION_NOT_IN_PAYABLE_STATE, iuv);
-                    }
-                } else if (statusCode == 404) {
-                    iuvsToInsertInBulk.add(iuv);
-                } else {
-                    throw new RestClientException(String.format("An error occurred during communication with GPD: error code [%s]", statusCode));
-                }
-            }
-
-            if (!iuvsToInsertInBulk.isEmpty()) {
-
-                // retrieve the list of payment positions to be created, assigning NAVs generated by IUV generator
-                List<it.gov.pagopa.gen.wispconverter.client.gpd.model.PaymentPositionModelDto> paymentPositionsToBeCreated = getUpdatedPaymentNotice(sessionData, iuvsToInsertInBulk, paymentPositions);
-
-                // generate request and communicating with GPD-core service in order to execute the bulk insertion
-                it.gov.pagopa.gen.wispconverter.client.gpd.model.MultiplePaymentPositionModelDto multiplePaymentPositions = new MultiplePaymentPositionModelDto();
-                multiplePaymentPositions.setPaymentPositions(paymentPositionsToBeCreated);
-                apiInstance.createMultiplePositions(creditorInstitutionId, multiplePaymentPositions, MDC.get(Constants.MDC_REQUEST_ID), true);
-
-                // generate and save re events internal for change status
-                generateRE(paymentPositionsToBeCreated);
-            }
-
-
-
-
-
-        } catch (RestClientException e) {
-            throw new AppException(AppErrorCodeMessageEnum.CLIENT_GPD,
-                    String.format("RestClientException ERROR [%s] - %s", e.getCause().getClass().getCanonicalName(), e.getMessage()));
-        }
-    }
-
-    private List<PaymentPositionModelDto> getUpdatedPaymentNotice(SessionDataDTO sessionData, Set<String> iuvsToInsertInBulk, List<PaymentPositionModelDto> paymentPositions) {
-
-        List<PaymentPositionModelDto> paymentPositionsToBeCreated = new LinkedList<>();
-        String creditorInstitutionId = sessionData.getCommonFields().getCreditorInstitutionId();
-        *//*for (String iuv : iuvsToInsertInBulk) {
-
-            // generating notice number and add to common RPT fields
-            String noticeNumber = getNAVCodeFromIUVGenerator(creditorInstitutionId);
-
-            // extracting only the payment
-            PaymentPositionModelDto paymentPosition = paymentPositions.stream()
-                    .filter(pp -> pp.getPaymentOption() != null && iuv.equals(pp.getPaymentOption().get(0).getIuv()))
-                    .findFirst()
-                    .orElse(null);
-
-            if (paymentPosition != null) {
-                paymentPositionsToBeCreated.add(paymentPosition);
-                sessionData.getPaymentNoticeByIUV(iuv).setNoticeNumber(noticeNumber);
-            }
-        }*//*
-        for (PaymentPositionModelDto paymentPosition : paymentPositions) {
-
-            List<PaymentOptionModelDto> paymentOptions = paymentPosition.getPaymentOption();
-            if (paymentOptions != null && !paymentOptions.isEmpty()) {
-                if (iuvsToInsertInBulk.contains(paymentPosition.getPaymentOption().get(0).getIuv()) {
-
-                }
-            }
-        }
-
-        return paymentPositionsToBeCreated;
-    }
-
-
-
-
-    private PaymentPositionModelDto updatePaymentPosition(PaymentPositionModelBaseResponseDto debtPosition, PaymentPositionModelDto paymentPosition) {
-        return null; //TODO
-    }
-    }*/
+    
 }
