@@ -25,8 +25,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.util.Pair;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClientException;
 
 import java.math.BigDecimal;
@@ -283,44 +283,41 @@ public class DebtPositionService {
         Optional<PaymentPositionModelBaseResponseDto> body = Optional.empty();
 
         try {
-            // communicate with GPD in order to retrieve
-            ResponseEntity<PaymentPositionModelBaseResponseDto> response = gpdClientInstance.getDebtPositionByIUVWithHttpInfo(creditorInstitutionId, iuv, MDC.get(Constants.MDC_REQUEST_ID));
 
-            // check result status code in order to provide the correct result
-            int statusCode = response.getStatusCode().value();
-            switch (statusCode) {
+            // communicate with GPD in order to retrieve the debt position
+            PaymentPositionModelBaseResponseDto debtPosition = gpdClientInstance.getDebtPositionByIUV(creditorInstitutionId, iuv, MDC.get(Constants.MDC_REQUEST_ID));
 
-                // if status code is 200, a check on payment position status is required in order to choose the next step
-                case 200 -> {
-
-                    // the absence of response body is an error, so throw an exception
-                    PaymentPositionModelBaseResponseDto debtPosition = response.getBody();
-                    if (debtPosition == null || debtPosition.getStatus() == null) {
-                        throw new AppException(AppErrorCodeMessageEnum.PAYMENT_POSITION_IN_INVALID_STATE, iuv);
-                    }
-
-                /*
-                  If the payment position is in a state from which can be paid, the returned response is a positive state
-                  and a request body associated. If not, the returned state is negative and must provide dedicated action.
-                 */
-                    if (paymentPositionValidStatuses.contains(debtPosition.getStatus().getValue())) {
-                        status = PaymentPositionExistence.EXISTS_VALID;
-                        body = Optional.of(debtPosition);
-                    } else {
-                        status = PaymentPositionExistence.EXISTS_INVALID;
-                    }
-                }
-
-                // if status code is 404, no valid payment position exists. So, a new one can be freely created
-                case 404 -> status = PaymentPositionExistence.NOT_EXISTS;
-
-                // any other status code is an error, so throw an exception
-                default ->
-                        throw new RestClientException(String.format("An error occurred during communication with GPD: error code [%s]", statusCode));
+            /*
+              If status code is 200, a check on payment position status is required in order to choose the next step.
+              The absence of response body is an error, so throw an exception.
+             */
+            if (debtPosition == null || debtPosition.getStatus() == null) {
+                throw new AppException(AppErrorCodeMessageEnum.PAYMENT_POSITION_IN_INVALID_STATE, iuv);
             }
 
-        } catch (RestClientException e) {
-            throw new AppException(AppErrorCodeMessageEnum.CLIENT_GPD, String.format("RestClientException ERROR [%s] - %s", e.getCause().getClass().getCanonicalName(), e.getMessage()));
+            /*
+              If the payment position is in a state from which can be paid, the returned response is a positive state
+              and a request body associated. If not, the returned state is negative and must provide dedicated action.
+             */
+            if (paymentPositionValidStatuses.contains(debtPosition.getStatus().getValue())) {
+                status = PaymentPositionExistence.EXISTS_VALID;
+                body = Optional.of(debtPosition);
+            } else {
+                status = PaymentPositionExistence.EXISTS_INVALID;
+            }
+
+        } catch (AppException e) {
+
+            // if status code is 404, no valid payment position exists. So, a new one can be freely created
+            HttpClientErrorException clientError = (HttpClientErrorException) e.getCause();
+            if (clientError != null && clientError.getStatusCode().value() == 404) {
+                status = PaymentPositionExistence.NOT_EXISTS;
+            }
+
+            // any other status code is an error, so throw an exception
+            else {
+                throw new AppException(AppErrorCodeMessageEnum.CLIENT_GPD, String.format("Unable to read payment position with IUV [%s].", iuv));
+            }
         }
 
         return Pair.of(status, body);
@@ -578,5 +575,5 @@ public class DebtPositionService {
             MDC.put(Constants.MDC_NOTICE_NUMBER, noticeNumber);
         }
     }
-    
+
 }

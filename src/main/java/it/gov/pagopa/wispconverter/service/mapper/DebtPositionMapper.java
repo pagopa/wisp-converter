@@ -23,8 +23,9 @@ public interface DebtPositionMapper {
     @Mapping(source = "commonFields.payerAddressNation", target = "country")
     @Mapping(source = "commonFields.payerEmail", target = "email")
     @Mapping(source = "commonFields.payerFullName", target = "companyName")
-    @Mapping(target = "commonFields.validityDate", expression = "java(null)")
-    @Mapping(target = "commonFields.switchToExpired", constant = "true")
+    @Mapping(target = "validityDate", expression = "java(null)")
+    @Mapping(target = "switchToExpired", constant = "true")
+    @Mapping(target = "payStandIn", constant = "false")
     it.gov.pagopa.gen.wispconverter.client.gpd.model.PaymentPositionModelDto toPaymentPosition(SessionDataDTO sessionData);
 
     @Mapping(source = "iuv", target = "iuv")
