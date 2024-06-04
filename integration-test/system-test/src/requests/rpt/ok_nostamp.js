@@ -26,7 +26,7 @@ let values = {
                         creditorBic: "ARTIITM1050",
                         creditorIban: "IT45R0760103200000000001016",
                         creditorBic2: "ARTIITM1050",
-                        creditorIban2: "IT45R0760103200000000001017",
+                        creditorIban2: "IT45R0760103200000000001016",
                         payerInfo: "CP1.1",
                         paymentDescription: "Donazione casa di cura comunale",
                         taxonomy: "9/0301109AP"
