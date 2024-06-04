@@ -14,17 +14,17 @@ import java.time.format.DateTimeFormatter;
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface ReEventMapper {
 
-    static final String PATTERN_FORMAT = "yyyy-MM-dd";
-
-    @Mapping(source = "insertedTimestamp", target = "partitionKey", qualifiedByName = "partitionKeyFromInstant")
-    ReEventEntity toReEventEntity(ReEventDto reEventDto);
+    String PATTERN_FORMAT = "yyyy-MM-dd";
 
     @Named("partitionKeyFromInstant")
-    public static String partitionKeyFromInstant(Instant insertedTimestamp) {
+    static String partitionKeyFromInstant(Instant insertedTimestamp) {
         return insertedTimestamp == null ? null : DateTimeFormatter
                 .ofPattern(PATTERN_FORMAT)
                 .withZone(ZoneId.systemDefault())
                 .format(insertedTimestamp);
     }
+
+    @Mapping(source = "insertedTimestamp", target = "partitionKey", qualifiedByName = "partitionKeyFromInstant")
+    ReEventEntity toReEventEntity(ReEventDto reEventDto);
 
 }

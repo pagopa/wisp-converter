@@ -73,7 +73,7 @@ public abstract class RTMapper {
 
     @Mapping(source = "domainId", target = "identificativoDominio")
     @Mapping(source = "stationId", target = "identificativoStazioneRichiedente")
-    public abstract void toCtDominio(@MappingTarget CtDominio ctDominio, PaymentRequestDomainDTO domainDTO );
+    public abstract void toCtDominio(@MappingTarget CtDominio ctDominio, PaymentRequestDomainDTO domainDTO);
 
     @Mapping(source = "subjectUniqueIdentifier", target = "identificativoUnivocoBeneficiario")
     @Mapping(source = "name", target = "denominazioneBeneficiario")

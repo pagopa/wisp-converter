@@ -1,7 +1,5 @@
 package it.gov.pagopa.wispconverter.service;
 
-import static it.gov.pagopa.wispconverter.util.Constants.PA_INVIA_RT;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.telematici.pagamenti.ws.nodoperpa.ppthead.IntestazionePPT;
@@ -17,17 +15,23 @@ import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
 import it.gov.pagopa.wispconverter.repository.model.RTRequestEntity;
 import it.gov.pagopa.wispconverter.service.mapper.RTMapper;
 import it.gov.pagopa.wispconverter.service.model.CachedKeysMapping;
-import it.gov.pagopa.wispconverter.service.model.CommonRPTFieldsDTO;
-import it.gov.pagopa.wispconverter.service.model.RPTContentDTO;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
 import it.gov.pagopa.wispconverter.service.model.re.EntityStatusEnum;
 import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
+import it.gov.pagopa.wispconverter.service.model.session.CommonFieldsDTO;
+import it.gov.pagopa.wispconverter.service.model.session.RPTContentDTO;
+import it.gov.pagopa.wispconverter.service.model.session.SessionDataDTO;
 import it.gov.pagopa.wispconverter.util.AppBase64Util;
 import it.gov.pagopa.wispconverter.util.CommonUtility;
 import it.gov.pagopa.wispconverter.util.JaxbElementUtil;
 import it.gov.pagopa.wispconverter.util.ZipUtil;
 import jakarta.xml.bind.JAXBElement;
 import jakarta.xml.soap.SOAPMessage;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -35,10 +39,8 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+
+import static it.gov.pagopa.wispconverter.util.Constants.PA_INVIA_RT;
 
 @Service
 @Slf4j
@@ -79,17 +81,18 @@ public class ReceiptService {
 
                 RPTRequestEntity rptRequestEntity = rptCosmosService.getRPTRequestEntity(cachedSessionId);
 
-                CommonRPTFieldsDTO commonRPTFieldsDTO = this.rptExtractorService.extractRPTContentDTOs(rptRequestEntity.getPrimitive(), rptRequestEntity.getPayload());
+                SessionDataDTO sessionData = this.rptExtractorService.extractSessionData(rptRequestEntity.getPrimitive(), rptRequestEntity.getPayload());
+                CommonFieldsDTO commonFields = sessionData.getCommonFields();
 
                 IntestazionePPT intestazionePPT = generateIntestazionePPT(
                         cachedMapping.getFiscalCode(),
                         cachedMapping.getIuv(),
                         receipt.getPaymentToken(),
-                        commonRPTFieldsDTO.getCreditorInstitutionBrokerId(),
-                        commonRPTFieldsDTO.getStationId());
+                        commonFields.getCreditorInstitutionBrokerId(),
+                        commonFields.getStationId());
 
-                commonRPTFieldsDTO.getRpts().forEach(rpt -> {
-                    StationDto stationDto = stations.get(commonRPTFieldsDTO.getStationId());
+                sessionData.getAllRPTs().forEach(rpt -> {
+                    StationDto stationDto = stations.get(commonFields.getStationId());
                     PaymentServiceProviderDto psp = psps.get(rpt.getRpt().getPayeeInstitution().getSubjectUniqueIdentifier().getCode());
 
                     Instant now = Instant.now();
@@ -142,13 +145,14 @@ public class ReceiptService {
 
             RPTRequestEntity rptRequestEntity = rptCosmosService.getRPTRequestEntity(cachedSessionId);
 
-            CommonRPTFieldsDTO commonRPTFieldsDTO = this.rptExtractorService.extractRPTContentDTOs(rptRequestEntity.getPrimitive(), rptRequestEntity.getPayload());
+            SessionDataDTO sessionData = this.rptExtractorService.extractSessionData(rptRequestEntity.getPrimitive(), rptRequestEntity.getPayload());
+            CommonFieldsDTO commonFields = sessionData.getCommonFields();
 
             StationDto stationDto = stations.get(paSendRTV2Request.getIdStation());
 
             gov.telematici.pagamenti.ws.papernodo.ObjectFactory objectFactory = new gov.telematici.pagamenti.ws.papernodo.ObjectFactory();
 
-            commonRPTFieldsDTO.getRpts().forEach(rpt -> {
+            sessionData.getAllRPTs().forEach(rpt -> {
                 Instant now = Instant.now();
                 PaymentServiceProviderDto psp = psps.get(rpt.getRpt().getPayeeInstitution().getSubjectUniqueIdentifier().getCode());
 
@@ -156,8 +160,8 @@ public class ReceiptService {
                         paSendRTV2Request.getReceipt().getFiscalCode(),
                         paSendRTV2Request.getReceipt().getCreditorReferenceId(),
                         rpt.getRpt().getTransferData().getCcp(),
-                        commonRPTFieldsDTO.getCreditorInstitutionBrokerId(),
-                        commonRPTFieldsDTO.getStationId());
+                        commonFields.getCreditorInstitutionBrokerId(),
+                        commonFields.getStationId());
 
                 JAXBElement<CtRicevutaTelematica> rt = new it.gov.digitpa.schemas._2011.pagamenti.ObjectFactory().createRT(generateCtRicevutaTelematica(rpt, paSendRTV2Request));
 
@@ -290,8 +294,8 @@ public class ReceiptService {
     }
 
     private String generatePaaInviaRTAndTrace(IntestazionePPT intestazionePPT,
-                                            String xmlString,
-                                            gov.telematici.pagamenti.ws.papernodo.ObjectFactory objectFactory) {
+                                              String xmlString,
+                                              gov.telematici.pagamenti.ws.papernodo.ObjectFactory objectFactory) {
         PaaInviaRT paaInviaRT = objectFactory.createPaaInviaRT();
         paaInviaRT.setRt(AppBase64Util.base64Encode(xmlString.getBytes(StandardCharsets.UTF_8)).getBytes(StandardCharsets.UTF_8));
         JAXBElement<PaaInviaRT> paaInviaRTJaxb = objectFactory.createPaaInviaRT(paaInviaRT);
@@ -303,7 +307,7 @@ public class ReceiptService {
         return jaxbElementUtil.toString(message);
     }
 
-    private void send(String url , String payload,
+    private void send(String url, String payload,
                       RPTRequestEntity rptRequestEntity,
                       RPTContentDTO rptContentDTO,
                       String noticeNumber,

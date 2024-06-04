@@ -3,8 +3,8 @@ package it.gov.pagopa.wispconverter.service;
 import it.gov.pagopa.wispconverter.repository.RTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
 import it.gov.pagopa.wispconverter.repository.model.RTRequestEntity;
-import it.gov.pagopa.wispconverter.service.model.RPTContentDTO;
 import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
+import it.gov.pagopa.wispconverter.service.model.session.RPTContentDTO;
 import it.gov.pagopa.wispconverter.util.ReUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,13 +26,13 @@ public class RTCosmosService {
     }
 
     public ReEventDto generateRE(RPTRequestEntity rptRequestEntity,
-                                  RPTContentDTO rptContentDTO,
-                                  String noticeNumber,
-                                  String paymentToken,
-                                  String stationCode,
-                                  it.gov.pagopa.gen.wispconverter.client.cache.model.PaymentServiceProviderDto psp,
+                                 RPTContentDTO rptContentDTO,
+                                 String noticeNumber,
+                                 String paymentToken,
+                                 String stationCode,
+                                 it.gov.pagopa.gen.wispconverter.client.cache.model.PaymentServiceProviderDto psp,
                                  String entityStatusName
-                                 ) {
+    ) {
         ReEventDto.ReEventDtoBuilder reEventDtoBuilder = ReUtil.createBaseReInternal()
                 .status(entityStatusName)
                 .erogatore(NODO_DEI_PAGAMENTI_SPC)

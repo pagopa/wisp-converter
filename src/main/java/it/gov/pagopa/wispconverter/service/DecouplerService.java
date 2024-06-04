@@ -1,13 +1,13 @@
 package it.gov.pagopa.wispconverter.service;
 
+import it.gov.pagopa.gen.wispconverter.client.decouplercaching.model.DecouplerCachingKeysDto;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.CacheRepository;
 import it.gov.pagopa.wispconverter.service.model.CachedKeysMapping;
-import it.gov.pagopa.wispconverter.service.model.CommonRPTFieldsDTO;
-import it.gov.pagopa.wispconverter.service.model.PaymentNoticeContentDTO;
 import it.gov.pagopa.wispconverter.service.model.re.EntityStatusEnum;
-import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
+import it.gov.pagopa.wispconverter.service.model.session.PaymentNoticeContentDTO;
+import it.gov.pagopa.wispconverter.service.model.session.SessionDataDTO;
 import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.ReUtil;
 import lombok.RequiredArgsConstructor;
@@ -16,8 +16,6 @@ import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
-
-import java.util.List;
 
 import static it.gov.pagopa.wispconverter.util.Constants.NODO_DEI_PAGAMENTI_SPC;
 
@@ -39,31 +37,19 @@ public class DecouplerService {
     @Value("${wisp-converter.cached-requestid-mapping.ttl.minutes}")
     private Long requestIDMappingTTL;
 
-    public void storeRequestMappingInCache(CommonRPTFieldsDTO commonRPTFieldsDTO, String sessionId) {
+    public void storeRequestMappingInCache(SessionDataDTO sessionData, String sessionId) {
+
         try {
-            String creditorInstitutionId = commonRPTFieldsDTO.getCreditorInstitutionId();
-            List<String> noticeNumbers = commonRPTFieldsDTO.getPaymentNotices().stream()
-                    .map(PaymentNoticeContentDTO::getNoticeNumber)
-                    .toList();
+            String creditorInstitutionId = sessionData.getCommonFields().getCreditorInstitutionId();
 
-            // communicating with APIM policy for caching data for decoupler. The stored data are internal to APIM and cannot be retrieved
-            it.gov.pagopa.gen.wispconverter.client.decouplercaching.model.DecouplerCachingKeysDto decouplerCachingKeys = new it.gov.pagopa.gen.wispconverter.client.decouplercaching.model.DecouplerCachingKeysDto();
-            noticeNumbers.forEach(noticeNumber -> decouplerCachingKeys.addKeysItem(String.format(CACHING_KEY_TEMPLATE, creditorInstitutionId, noticeNumber)));
-            it.gov.pagopa.gen.wispconverter.client.decouplercaching.api.DefaultApi apiInstance = new it.gov.pagopa.gen.wispconverter.client.decouplercaching.api.DefaultApi(decouplerCachingClient);
-            apiInstance.saveMapping(decouplerCachingKeys, MDC.get(Constants.MDC_REQUEST_ID));
+            // call APIM endpoint (formed only by a policy) in order to store mapped NAVs in APIM-internal cache
+            saveMappedKeyForDecoupler(sessionData, creditorInstitutionId);
 
-            // save in Redis cache the mapping of the request identifier needed for RT generation in next steps
-            for (PaymentNoticeContentDTO paymentNoticeContentDTO : commonRPTFieldsDTO.getPaymentNotices()) {
-                // save the IUV-based key that contains the session identifier
-                String requestIDForRTHandling = String.format(CACHING_KEY_TEMPLATE, creditorInstitutionId, paymentNoticeContentDTO.getIuv());
-                this.cacheRepository.insert(requestIDForRTHandling, sessionId, this.requestIDMappingTTL);
-                // save the mapping that permits to convert a NAV-based key in a IUV-based one
-                String navToIuvMappingForRTHandling = String.format(MAP_CACHING_KEY_TEMPLATE, creditorInstitutionId, paymentNoticeContentDTO.getNoticeNumber());
-                this.cacheRepository.insert(navToIuvMappingForRTHandling, requestIDForRTHandling, this.requestIDMappingTTL);
-            }
+            // save in Redis cache (accessible for this app) the mapping of the request identifier needed for RT generation in next steps
+            saveMappedKeyForReceiptGeneration(sessionId, sessionData, creditorInstitutionId);
 
             // generate and save re events internal for change status
-            reService.addRe(generateRE());
+            generateRE();
 
         } catch (RestClientException e) {
             throw new AppException(AppErrorCodeMessageEnum.CLIENT_DECOUPLER_CACHING, String.format("RestClientException ERROR [%s] - %s", e.getCause().getClass().getCanonicalName(), e.getMessage()));
@@ -71,6 +57,7 @@ public class DecouplerService {
     }
 
     public String getCachedSessionId(String creditorInstitutionId, String iuv) {
+
         String cachedKey = String.format(CACHING_KEY_TEMPLATE, creditorInstitutionId, iuv);
         String sessionId = this.cacheRepository.read(cachedKey, String.class);
         if (sessionId == null) {
@@ -80,23 +67,59 @@ public class DecouplerService {
     }
 
     public CachedKeysMapping getCachedMappingFromNavToIuv(String creditorInstitutionId, String nav) {
+
         String mappingKey = String.format(MAP_CACHING_KEY_TEMPLATE, creditorInstitutionId, nav);
+
+        // retrieving mapped key from Redis cache
         String keyWithIUV = this.cacheRepository.read(mappingKey, String.class);
         if (keyWithIUV == null) {
             throw new AppException(AppErrorCodeMessageEnum.PERSISTENCE_REQUESTID_CACHING_ERROR, mappingKey);
         }
+
+        // trying to split key on underscore character
         String[] splitKey = keyWithIUV.split("_");
         if (splitKey.length != 3) {
             throw new AppException(AppErrorCodeMessageEnum.PERSISTENCE_MAPPING_NAV_TO_IUV_ERROR, mappingKey);
         }
+
+        // returning the key, correctly split
         return CachedKeysMapping.builder()
                 .fiscalCode(splitKey[1])
                 .iuv(splitKey[2])
                 .build();
     }
 
-    private ReEventDto generateRE() {
-        return ReUtil.createBaseReInternal()
+    private void saveMappedKeyForDecoupler(SessionDataDTO sessionData, String creditorInstitutionId) {
+
+        // generate client instance for APIM endpoint
+        it.gov.pagopa.gen.wispconverter.client.decouplercaching.api.DefaultApi apiInstance = new it.gov.pagopa.gen.wispconverter.client.decouplercaching.api.DefaultApi(decouplerCachingClient);
+
+        /*
+          Communicating with APIM policy for caching data for decoupler.
+          The stored data are internal to APIM and cannot be retrieved from this app.
+         */
+        DecouplerCachingKeysDto decouplerCachingKeys = new DecouplerCachingKeysDto();
+        sessionData.getNAVs().forEach(noticeNumber -> decouplerCachingKeys.addKeysItem(String.format(CACHING_KEY_TEMPLATE, creditorInstitutionId, noticeNumber)));
+        apiInstance.saveMapping(decouplerCachingKeys, MDC.get(Constants.MDC_REQUEST_ID));
+    }
+
+    private void saveMappedKeyForReceiptGeneration(String sessionId, SessionDataDTO sessionData, String creditorInstitutionId) {
+
+        for (PaymentNoticeContentDTO paymentNoticeContentDTO : sessionData.getAllPaymentNotices()) {
+
+            // save the IUV-based key that contains the session identifier
+            String requestIDForRTHandling = String.format(CACHING_KEY_TEMPLATE, creditorInstitutionId, paymentNoticeContentDTO.getIuv());
+            this.cacheRepository.insert(requestIDForRTHandling, sessionId, this.requestIDMappingTTL);
+
+            // save the mapping that permits to convert a NAV-based key in a IUV-based one
+            String navToIuvMappingForRTHandling = String.format(MAP_CACHING_KEY_TEMPLATE, creditorInstitutionId, paymentNoticeContentDTO.getNoticeNumber());
+            this.cacheRepository.insert(navToIuvMappingForRTHandling, requestIDForRTHandling, this.requestIDMappingTTL);
+        }
+    }
+
+    private void generateRE() {
+
+        reService.addRe(ReUtil.createBaseReInternal()
                 .status(EntityStatusEnum.RPT_CACHE_PER_DECOUPLER_GENERATA.name())
                 .erogatore(NODO_DEI_PAGAMENTI_SPC)
                 .erogatoreDescr(NODO_DEI_PAGAMENTI_SPC)
@@ -107,6 +130,6 @@ public class DecouplerService {
                 .stazione(MDC.get(Constants.MDC_STATION_ID))
                 .iuv(MDC.get(Constants.MDC_IUV)) // null if nodoInviaCarrelloRPT
                 .noticeNumber(MDC.get(Constants.MDC_NOTICE_NUMBER)) // null if nodoInviaCarrelloRPT
-                .build();
+                .build());
     }
 }
