@@ -10,8 +10,8 @@ let values = {
         payerFiscalCode: "RSSMRA70A01H501Z",
         payerName: "Mario Rossi",
         payeeFiscalCode: "11111111117",
-        payerName: "Enel",
         payerEmail: "mario.rossi@mail.com",
+        payeeName: "Villa Paradiso",
         transfers: [
             {
                 totalAmount: "100.00",
@@ -26,7 +26,7 @@ let values = {
                         creditorBic: "ARTIITM1050",
                         creditorIban: "IT45R0760103200000000001016",
                         creditorBic2: "ARTIITM1050",
-                        creditorIban2: "IT45R0760103200000000001016",
+                        creditorIban2: "IT45R0760103200000000001017",
                         payerInfo: "CP1.1",
                         paymentDescription: "Donazione casa di cura comunale",
                         taxonomy: "9/0301109AP"
@@ -80,13 +80,13 @@ function getRPT() {
                        <pay_i:codiceIdentificativoUnivoco>${values.payerFiscalCode}</pay_i:codiceIdentificativoUnivoco>
                    </pay_i:identificativoUnivocoVersante>
                    <pay_i:anagraficaVersante>${values.payerName}</pay_i:anagraficaVersante>
-                   <!-- <pay_i:e-mailVersante>${values.payerEmail}</pay_i:e-mailVersante> -->
                    <pay_i:indirizzoVersante>via Roma</pay_i:indirizzoVersante>
                    <pay_i:civicoVersante>1</pay_i:civicoVersante>
                    <pay_i:capVersante>00186</pay_i:capVersante>
                    <pay_i:localitaVersante>Roma</pay_i:localitaVersante>
                    <pay_i:provinciaVersante>RM</pay_i:provinciaVersante>
                    <pay_i:nazioneVersante>IT</pay_i:nazioneVersante>
+                   <pay_i:e-mailVersante>${values.payerEmail}</pay_i:e-mailVersante>
                </pay_i:soggettoVersante>
                <pay_i:soggettoPagatore>
                    <pay_i:identificativoUnivocoPagatore>
@@ -95,12 +95,12 @@ function getRPT() {
                    </pay_i:identificativoUnivocoPagatore>
                    <pay_i:anagraficaPagatore>${values.payerName}</pay_i:anagraficaPagatore>
                    <pay_i:indirizzoPagatore>via Roma</pay_i:indirizzoPagatore>
-		           <!-- <pay_i:e-mailPagatore>${values.payerEmail}</pay_i:e-mailPagatore> -->
                    <pay_i:civicoPagatore>1</pay_i:civicoPagatore>
                    <pay_i:capPagatore>00186</pay_i:capPagatore>
                    <pay_i:localitaPagatore>Roma</pay_i:localitaPagatore>
                    <pay_i:provinciaPagatore>RM</pay_i:provinciaPagatore>
                    <pay_i:nazionePagatore>IT</pay_i:nazionePagatore>
+		           <pay_i:e-mailPagatore>${values.payerEmail}</pay_i:e-mailPagatore>
                </pay_i:soggettoPagatore>
                <pay_i:enteBeneficiario>
                    <pay_i:identificativoUnivocoBeneficiario>
