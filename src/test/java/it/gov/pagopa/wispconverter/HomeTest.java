@@ -2,6 +2,7 @@ package it.gov.pagopa.wispconverter;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.azure.messaging.servicebus.ServiceBusSenderClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.wispconverter.controller.model.AppInfoResponse;
 import it.gov.pagopa.wispconverter.repository.CacheRepository;
@@ -46,6 +47,8 @@ class HomeTest {
     private CacheRepository cacheRepository;
     @MockBean
     private ReEventRepository reEventRepository;
+    @MockBean
+    private ServiceBusSenderClient serviceBusSenderClient;
 
     @Test
     void slash() throws Exception {

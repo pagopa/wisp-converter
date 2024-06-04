@@ -5,7 +5,6 @@ import it.gov.pagopa.wispconverter.service.model.re.CallTypeEnum;
 import it.gov.pagopa.wispconverter.service.model.re.CategoriaEventoEnum;
 import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import it.gov.pagopa.wispconverter.service.model.re.SottoTipoEventoEnum;
-import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.ReUtil;
 import it.gov.pagopa.wispconverter.util.Trace;
 import jakarta.servlet.http.HttpServletRequest;
