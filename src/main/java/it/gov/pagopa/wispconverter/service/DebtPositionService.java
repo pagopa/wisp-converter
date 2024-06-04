@@ -30,6 +30,7 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClientException;
 
 import java.math.BigDecimal;
+import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -377,7 +378,8 @@ public class DebtPositionService {
         PaymentPositionModelDto updatedPaymentPosition = mapperForUpdate.toPaymentPosition(paymentPositionFromGPD);
 
         // setting missing fields on payment position that was mapped from retrieved one
-        updatedPaymentPosition.payStandIn(extractedPaymentPosition.getPayStandIn())
+        updatedPaymentPosition.validityDate(null)
+                .payStandIn(extractedPaymentPosition.getPayStandIn())
                 .fiscalCode(extractedPaymentPosition.getFiscalCode())
                 .fullName(extractedPaymentPosition.getFullName())
                 .streetName(extractedPaymentPosition.getStreetName())
@@ -410,6 +412,9 @@ public class DebtPositionService {
             updatedPaymentOption.setAmount(extractedPaymentOption.getAmount());
             updatedPaymentOption.setDescription(extractedPaymentOption.getDescription());
             updatedPaymentOption.setTransfer(extractedPaymentOption.getTransfer());
+            if (updatedPaymentOption.getDueDate().isBefore(OffsetDateTime.now())) {
+                updatedPaymentOption.setDueDate(OffsetDateTime.now().plusDays(1));
+            }
 
             // finally, update the payment notice to be used for Checkout with the existing NAV code.
             sessionData.getPaymentNoticeByIUV(iuv).setNoticeNumber(updatedPaymentOption.getNav());

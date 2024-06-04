@@ -1,9 +1,8 @@
 package it.gov.pagopa.wispconverter.config.client;
 
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import it.gov.pagopa.wispconverter.service.ReService;
@@ -26,7 +25,9 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.DefaultUriBuilderFactory;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
@@ -83,11 +84,35 @@ public class GpdClientConfig {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
         SimpleModule module = new SimpleModule();
+        /*
+        module.addSerializer(LocalDateTime.class, new JsonSerializer<>() {
+            @Override
+            public void serialize(LocalDateTime date, JsonGenerator jsonGenerator, SerializerProvider provider) throws IOException {
+                String formattedDate = date.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+                jsonGenerator.writeString(formattedDate);
+            }
+        });
+        module.addDeserializer(LocalDateTime.class, new JsonDeserializer<>() {
+            @Override
+            public LocalDateTime deserialize(JsonParser parser, DeserializationContext context) throws IOException {
+                String date = parser.getText();
+                return LocalDateTime.parse(date, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+            }
+        });
+        */
         module.addSerializer(OffsetDateTime.class, new JsonSerializer<>() {
             @Override
             public void serialize(OffsetDateTime date, JsonGenerator jsonGenerator, SerializerProvider provider) throws IOException {
-                String formattedDate = date.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+                LocalDateTime localDateTime = date.toLocalDateTime();
+                String formattedDate = localDateTime.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
                 jsonGenerator.writeString(formattedDate);
+            }
+        });
+        module.addDeserializer(OffsetDateTime.class, new JsonDeserializer<>() {
+            @Override
+            public OffsetDateTime deserialize(JsonParser parser, DeserializationContext context) throws IOException {
+                String date = parser.getText();
+                return LocalDateTime.parse(date, DateTimeFormatter.ISO_LOCAL_DATE_TIME).atOffset(ZoneOffset.UTC);
             }
         });
         objectMapper.registerModule(module);
