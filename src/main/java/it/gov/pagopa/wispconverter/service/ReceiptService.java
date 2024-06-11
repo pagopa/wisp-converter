@@ -123,7 +123,7 @@ public class ReceiptService {
                 });
             });
         } catch (JsonProcessingException e) {
-            throw new AppException(AppErrorCodeMessageEnum.PARSING_INVALID_BODY);
+            throw new AppException(AppErrorCodeMessageEnum.PARSING_INVALID_BODY, e.getMessage());
         } catch (AppException appEx) {
             throw appEx;
         } catch (Exception e) {

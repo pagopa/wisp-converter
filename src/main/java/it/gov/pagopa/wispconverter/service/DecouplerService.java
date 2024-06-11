@@ -103,7 +103,7 @@ public class DecouplerService {
         apiInstance.saveMapping(decouplerCachingKeys, MDC.get(Constants.MDC_REQUEST_ID));
     }
 
-    private void saveMappedKeyForReceiptGeneration(String sessionId, SessionDataDTO sessionData, String creditorInstitutionId) {
+    public void saveMappedKeyForReceiptGeneration(String sessionId, SessionDataDTO sessionData, String creditorInstitutionId) {
 
         for (PaymentNoticeContentDTO paymentNoticeContentDTO : sessionData.getAllPaymentNotices()) {
 

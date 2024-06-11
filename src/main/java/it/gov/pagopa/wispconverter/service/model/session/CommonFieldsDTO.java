@@ -11,6 +11,7 @@ import lombok.*;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class CommonFieldsDTO {
 
+    private String sessionId;
     private String cartId;
     private String creditorInstitutionId;
     private String creditorInstitutionBrokerId;

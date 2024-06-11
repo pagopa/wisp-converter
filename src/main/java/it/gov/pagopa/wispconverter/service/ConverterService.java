@@ -33,6 +33,7 @@ public class ConverterService {
 
         // unmarshalling and mapping RPT content from request entity, generating session data
         SessionDataDTO sessionData = this.rptExtractorService.extractSessionData(rptRequestEntity.getPrimitive(), rptRequestEntity.getPayload());
+        sessionData.getCommonFields().setSessionId(sessionId);
 
         // calling GPD creation API in order to generate the debt position associated to RPTs
         this.debtPositionService.createDebtPositions(sessionData);

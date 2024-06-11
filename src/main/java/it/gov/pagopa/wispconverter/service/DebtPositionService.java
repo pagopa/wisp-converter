@@ -51,6 +51,8 @@ public class DebtPositionService {
 
     private final ReceiptService receiptService;
 
+    private final DecouplerService decouplerService;
+
     private final DebtPositionMapper mapper;
 
     private final DebtPositionUpdateMapper mapperForUpdate;
@@ -99,7 +101,8 @@ public class DebtPositionService {
             Pair<PaymentPositionExistence, Optional<PaymentPositionModelBaseResponseDto>> response = checkPaymentPositionExistenceInGPD(gpdClientInstance, creditorInstitutionId, iuv);
             switch (response.getFirst()) {
 
-                case EXISTS_INVALID -> handleInvalidPaymentPositions(sessionData);
+                case EXISTS_INVALID ->
+                        handleInvalidPaymentPositions(gpdClientInstance, sessionData, response.getSecond().orElse(null));
                 case EXISTS_VALID ->
                         handleValidPaymentPosition(gpdClientInstance, sessionData, extractedPaymentPosition, response.getSecond().orElse(null), iuv);
                 case NOT_EXISTS ->
@@ -155,10 +158,10 @@ public class DebtPositionService {
         PaymentOptionModelDto paymentOption = mapper.toPaymentOption(firstRPTContent);
 
         // updating the newly generated payment option with the data related to the extracted transfers
-        Long amount = sessionData.getAllRPTs().stream()
+        Long amount = (long) (sessionData.getAllRPTs().stream()
                 .map(rptContentDTO -> rptContentDTO.getRpt().getTransferData().getTotalAmount())
                 .reduce(BigDecimal.valueOf(0L), BigDecimal::add)
-                .longValue() * 100;
+                .doubleValue() * 100);
         paymentOption.setAmount(amount);
         paymentOption.setTransfer(transfers);
 
@@ -205,7 +208,7 @@ public class DebtPositionService {
             }
 
             // generate a single payment option from the single RPT with the data related to the extracted transfers
-            Long amount = paymentExtractedFromRPT.getTransferData().getTotalAmount().longValue() * 100;
+            Long amount = (long) (paymentExtractedFromRPT.getTransferData().getTotalAmount().doubleValue() * 100);
             PaymentOptionModelDto paymentOption = mapper.toPaymentOption(rptContent);
             paymentOption.setAmount(amount);
             paymentOption.setTransfer(transfers);
@@ -239,7 +242,7 @@ public class DebtPositionService {
         // populating the transfer with the data extracted from RPT
         TransferModelDto transfer = new TransferModelDto();
         transfer.setIdTransfer(TransferModelDto.IdTransferEnum.fromValue(String.valueOf(transferIdCounter)));
-        transfer.setAmount(transferDTO.getAmount().longValue() * 100);
+        transfer.setAmount((long) (transferDTO.getAmount().doubleValue() * 100));
         transfer.setRemittanceInformation(transferDTO.getRemittanceInformation());
         transfer.setCategory(getTaxonomy(transferDTO));
         transfer.setTransferMetadata(List.of(transferMetadata));
@@ -302,10 +305,10 @@ public class DebtPositionService {
              */
             if (paymentPositionValidStatuses.contains(debtPosition.getStatus().getValue())) {
                 status = PaymentPositionExistence.EXISTS_VALID;
-                body = Optional.of(debtPosition);
             } else {
                 status = PaymentPositionExistence.EXISTS_INVALID;
             }
+            body = Optional.of(debtPosition);
 
         } catch (AppException e) {
 
@@ -324,14 +327,37 @@ public class DebtPositionService {
         return Pair.of(status, body);
     }
 
-    private void handleInvalidPaymentPositions(SessionDataDTO sessionData) {
+    private void handleInvalidPaymentPositions(DebtPositionsApiApi gpdClientInstance, SessionDataDTO sessionData, PaymentPositionModelBaseResponseDto retrievedPaymentPosition) {
+
+        String creditorInstitutionId = sessionData.getCommonFields().getCreditorInstitutionId();
+
+        // check if retrieved payment is correct, otherwise throw an exception
+        if (retrievedPaymentPosition == null || retrievedPaymentPosition.getPaymentOption() == null || retrievedPaymentPosition.getPaymentOption().isEmpty()) {
+            throw new AppException(AppErrorCodeMessageEnum.PAYMENT_POSITION_NOT_EXTRACTABLE);
+        }
+        String iuvFromRetrievedPaymentPosition = retrievedPaymentPosition.getPaymentOption().get(0).getIuv();
 
         /*
            Generate a KO receipt (RT-) for the extracted payment positions.
            In this case, the operation is made on ALL the payment position because the payment position insert operation
            must be executed atomically.
          */
+        List<ReceiptDto> receiptsToSend = new LinkedList<>();
         for (PaymentNoticeContentDTO paymentNotice : sessionData.getAllPaymentNotices()) {
+
+            String iuv = paymentNotice.getIuv();
+
+            // communicate with GPD in order to retrieve the debt position
+            PaymentPositionModelBaseResponseDto debtPosition = retrievedPaymentPosition;
+            if (!iuv.equals(iuvFromRetrievedPaymentPosition)) {
+                debtPosition = gpdClientInstance.getDebtPositionByIUV(creditorInstitutionId, iuv, MDC.get(Constants.MDC_REQUEST_ID));
+                if (debtPosition.getPaymentOption() == null || debtPosition.getPaymentOption().isEmpty()) {
+                    throw new AppException(AppErrorCodeMessageEnum.PAYMENT_POSITION_NOT_VALID, iuvFromRetrievedPaymentPosition);
+                }
+            }
+
+            // update the payment notice, setting the NAV code from the retrieved existing payment position
+            paymentNotice.setNoticeNumber(debtPosition.getPaymentOption().get(0).getNav());
 
             // first, generating receipt essential data to be used for generate receipt
             ReceiptDto receipt = new ReceiptDto();
@@ -339,11 +365,30 @@ public class DebtPositionService {
             receipt.setNoticeNumber(paymentNotice.getNoticeNumber());
             receipt.setPaymentToken(paymentNotice.getCcp());
 
-            // then, call the implementation of generator in order to correctly execute the send
-            receiptService.paaInviaRTKo(receipt.toString());
-
             // last, generate and save events in RE for trace the error due to invalid payment position status
-            generateReForInvalidPaymentPosition(sessionData, paymentNotice.getIuv());
+            generateReForInvalidPaymentPosition(sessionData, iuv);
+            receiptsToSend.add(receipt);
+        }
+
+        /*
+          In order to send the KO receipts for the analyzed payments, it is required to save mapped keys in cache.
+          The mapped keys permits to map a NAV code to a starting IUV code.
+         */
+        try {
+
+            // save the mapped keys in the Redis cache for receipt generation
+            decouplerService.saveMappedKeyForReceiptGeneration(sessionData.getCommonFields().getSessionId(), sessionData, creditorInstitutionId);
+
+            // generate and send the KO receipts to creditor institution via configured station
+            receiptService.paaInviaRTKo(receiptsToSend.toString());
+
+            // TODO log in RE
+
+        } catch (AppException e) {
+
+            // TODO log in RE
+
+            throw new AppException(AppErrorCodeMessageEnum.RECEIPT_KO_NOT_GENERATED, e);
         }
 
         // finally, throw an exception for notify the error, including all the IUVs
@@ -391,7 +436,7 @@ public class DebtPositionService {
                 .country(extractedPaymentPosition.getCountry())
                 .email(extractedPaymentPosition.getEmail())
                 .phone(extractedPaymentPosition.getPhone())
-                .switchToExpired(extractedPaymentPosition.getSwitchToExpired());
+                .switchToExpired(false);
 
         if (updatedPaymentPosition.getPaymentOption() != null && extractedPaymentPosition.getPaymentOption() != null) {
 
@@ -412,9 +457,7 @@ public class DebtPositionService {
             updatedPaymentOption.setAmount(extractedPaymentOption.getAmount());
             updatedPaymentOption.setDescription(extractedPaymentOption.getDescription());
             updatedPaymentOption.setTransfer(extractedPaymentOption.getTransfer());
-            if (updatedPaymentOption.getDueDate().isBefore(OffsetDateTime.now())) {
-                updatedPaymentOption.setDueDate(OffsetDateTime.now().plusDays(1));
-            }
+            updatedPaymentOption.setDueDate(OffsetDateTime.now().plusDays(1));
 
             // finally, update the payment notice to be used for Checkout with the existing NAV code.
             sessionData.getPaymentNoticeByIUV(iuv).setNoticeNumber(updatedPaymentOption.getNav());
