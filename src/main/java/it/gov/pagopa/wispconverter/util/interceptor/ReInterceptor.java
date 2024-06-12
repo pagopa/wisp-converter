@@ -1,10 +1,10 @@
 package it.gov.pagopa.wispconverter.util.interceptor;
 
+import it.gov.pagopa.wispconverter.repository.model.enumz.CallTypeEnum;
+import it.gov.pagopa.wispconverter.repository.model.enumz.EventCategoryEnum;
+import it.gov.pagopa.wispconverter.repository.model.enumz.EventSubcategoryEnum;
 import it.gov.pagopa.wispconverter.service.ReService;
-import it.gov.pagopa.wispconverter.service.model.re.CallTypeEnum;
-import it.gov.pagopa.wispconverter.service.model.re.CategoriaEventoEnum;
 import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
-import it.gov.pagopa.wispconverter.service.model.re.SottoTipoEventoEnum;
 import it.gov.pagopa.wispconverter.util.ReUtil;
 import it.gov.pagopa.wispconverter.util.Trace;
 import jakarta.servlet.http.HttpServletRequest;
@@ -22,17 +22,18 @@ import static it.gov.pagopa.wispconverter.util.Constants.*;
 public class ReInterceptor implements HandlerInterceptor {
 
     private final ReService reService;
+
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        if(handler instanceof HandlerMethod){
+        if (handler instanceof HandlerMethod) {
             Trace trace = ((HandlerMethod) handler).getMethod().getAnnotation(Trace.class);
-            if(trace !=null){
-                if(trace.reEnabled()){
+            if (trace != null) {
+                if (trace.reEnabled()) {
                     String businessProcess = trace.businessProcess();
                     log.debug("[preHandle] trace RE SERVER IN businessProcess = [{}]", businessProcess);
                     MDC.put(MDC_CALL_TYPE, CallTypeEnum.SERVER.name());
-                    MDC.put(MDC_EVENT_CATEGORY, CategoriaEventoEnum.INTERFACCIA.name());
-                    MDC.put(MDC_EVENT_SUB_CATEGORY, SottoTipoEventoEnum.REQ.name());
+                    MDC.put(MDC_EVENT_CATEGORY, EventCategoryEnum.INTERFACE.name());
+                    MDC.put(MDC_EVENT_SUB_CATEGORY, EventSubcategoryEnum.REQ.name());
                     ReEventDto reEventDtoServerIN = ReUtil.createReServerInterfaceRequest(request);
                     reService.addRe(reEventDtoServerIN);
                 }
@@ -43,15 +44,15 @@ public class ReInterceptor implements HandlerInterceptor {
 
     @Override
     public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
-        if(handler instanceof HandlerMethod){
+        if (handler instanceof HandlerMethod) {
             Trace trace = ((HandlerMethod) handler).getMethod().getAnnotation(Trace.class);
-            if(trace !=null){
-                if(trace.reEnabled()){
+            if (trace != null) {
+                if (trace.reEnabled()) {
                     String businessProcess = trace.businessProcess();
                     log.debug("[afterCompletion] trace RE SERVER OUT businessProcess = [{}]", businessProcess);
                     MDC.put(MDC_CALL_TYPE, CallTypeEnum.SERVER.name());
-                    MDC.put(MDC_EVENT_CATEGORY, CategoriaEventoEnum.INTERFACCIA.name());
-                    MDC.put(MDC_EVENT_SUB_CATEGORY, SottoTipoEventoEnum.RESP.name());
+                    MDC.put(MDC_EVENT_CATEGORY, EventCategoryEnum.INTERFACE.name());
+                    MDC.put(MDC_EVENT_SUB_CATEGORY, EventSubcategoryEnum.RESP.name());
                     ReEventDto reEventDtoServerOUT = ReUtil.createReServerInterfaceResponse(request, response);
                     reService.addRe(reEventDtoServerOUT);
                 }

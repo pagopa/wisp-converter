@@ -4,7 +4,7 @@ import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
-import it.gov.pagopa.wispconverter.service.model.re.EntityStatusEnum;
+import it.gov.pagopa.wispconverter.repository.model.enumz.EntityStatusEnum;
 import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.ReUtil;
 import lombok.RequiredArgsConstructor;
@@ -48,9 +48,8 @@ public class RptCosmosService {
         // creating event to be persisted for RE
         reService.addRe(ReUtil.createBaseReInternal()
                 .status(status)
-                .erogatore(NODO_DEI_PAGAMENTI_SPC)
-                .erogatoreDescr(NODO_DEI_PAGAMENTI_SPC)
-                .sessionIdOriginal(MDC.get(Constants.MDC_SESSION_ID))
+                .provider(NODO_DEI_PAGAMENTI_SPC)
+                .sessionId(MDC.get(Constants.MDC_SESSION_ID))
                 .compressedPayload(payload)
                 .compressedPayload(String.valueOf(payload != null ? payload.length() : 0))
                 .build());

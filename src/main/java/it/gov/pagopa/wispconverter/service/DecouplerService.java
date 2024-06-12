@@ -4,8 +4,8 @@ import it.gov.pagopa.gen.wispconverter.client.decouplercaching.model.DecouplerCa
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.CacheRepository;
+import it.gov.pagopa.wispconverter.repository.model.enumz.EntityStatusEnum;
 import it.gov.pagopa.wispconverter.service.model.CachedKeysMapping;
-import it.gov.pagopa.wispconverter.service.model.re.EntityStatusEnum;
 import it.gov.pagopa.wispconverter.service.model.session.PaymentNoticeContentDTO;
 import it.gov.pagopa.wispconverter.service.model.session.SessionDataDTO;
 import it.gov.pagopa.wispconverter.util.Constants;
@@ -121,13 +121,12 @@ public class DecouplerService {
 
         reService.addRe(ReUtil.createBaseReInternal()
                 .status(EntityStatusEnum.RPT_CACHE_PER_DECOUPLER_GENERATA.name())
-                .erogatore(NODO_DEI_PAGAMENTI_SPC)
-                .erogatoreDescr(NODO_DEI_PAGAMENTI_SPC)
-                .sessionIdOriginal(MDC.get(Constants.MDC_SESSION_ID))
-                .tipoEvento(MDC.get(Constants.MDC_EVENT_TYPE))
+                .provider(NODO_DEI_PAGAMENTI_SPC)
+                .sessionId(MDC.get(Constants.MDC_SESSION_ID))
+                .primitive(MDC.get(Constants.MDC_PRIMITIVE))
                 .cartId(MDC.get(Constants.MDC_CART_ID))
-                .idDominio(MDC.get(Constants.MDC_DOMAIN_ID))
-                .stazione(MDC.get(Constants.MDC_STATION_ID))
+                .domainId(MDC.get(Constants.MDC_DOMAIN_ID))
+                .station(MDC.get(Constants.MDC_STATION_ID))
                 .iuv(MDC.get(Constants.MDC_IUV)) // null if nodoInviaCarrelloRPT
                 .noticeNumber(MDC.get(Constants.MDC_NOTICE_NUMBER)) // null if nodoInviaCarrelloRPT
                 .build());

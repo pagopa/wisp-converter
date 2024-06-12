@@ -8,9 +8,9 @@ import gov.telematici.pagamenti.ws.nodoperpa.ppthead.IntestazionePPT;
 import it.gov.digitpa.schemas._2011.pagamenti.CtRichiestaPagamentoTelematico;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
+import it.gov.pagopa.wispconverter.repository.model.enumz.EntityStatusEnum;
 import it.gov.pagopa.wispconverter.service.mapper.RPTMapper;
 import it.gov.pagopa.wispconverter.service.model.paymentrequest.PaymentRequestDTO;
-import it.gov.pagopa.wispconverter.service.model.re.EntityStatusEnum;
 import it.gov.pagopa.wispconverter.service.model.session.CommonFieldsDTO;
 import it.gov.pagopa.wispconverter.service.model.session.RPTContentDTO;
 import it.gov.pagopa.wispconverter.service.model.session.SessionDataDTO;
@@ -62,7 +62,7 @@ public class RPTExtractorService {
             case Constants.NODO_INVIA_RPT -> sessionData = extractSessionDataFromNodoInviaRPT(soapMessage);
             case Constants.NODO_INVIA_CARRELLO_RPT ->
                     sessionData = extractSessionDataFromNodoInviaCarrelloRPT(soapMessage);
-            default -> throw new AppException(AppErrorCodeMessageEnum.PARSING_PRIMITIVE_NOT_VALID);
+            default -> throw new AppException(AppErrorCodeMessageEnum.PARSING_RPT_PRIMITIVE_NOT_VALID);
         }
 
         // generate and save RE event internal for change status
@@ -221,7 +221,7 @@ public class RPTExtractorService {
 
         // setting data in MDC for next use
         CommonFieldsDTO commonFields = sessionData.getCommonFields();
-        MDC.put(Constants.MDC_EVENT_TYPE, primitive);
+        MDC.put(Constants.MDC_PRIMITIVE, primitive);
         MDC.put(Constants.MDC_CART_ID, commonFields.getCartId());
         MDC.put(Constants.MDC_DOMAIN_ID, commonFields.getCreditorInstitutionId());
         MDC.put(Constants.MDC_STATION_ID, commonFields.getStationId());
@@ -229,13 +229,12 @@ public class RPTExtractorService {
         // creating event to be persisted for RE
         reService.addRe(ReUtil.createBaseReInternal()
                 .status(EntityStatusEnum.DATI_RPT_ESTRATTI.name())
-                .erogatore(NODO_DEI_PAGAMENTI_SPC)
-                .erogatoreDescr(NODO_DEI_PAGAMENTI_SPC)
-                .sessionIdOriginal(MDC.get(Constants.MDC_SESSION_ID))
-                .tipoEvento(MDC.get(Constants.MDC_EVENT_TYPE))
+                .provider(NODO_DEI_PAGAMENTI_SPC)
+                .sessionId(MDC.get(Constants.MDC_SESSION_ID))
+                .primitive(MDC.get(Constants.MDC_PRIMITIVE))
                 .cartId(MDC.get(Constants.MDC_CART_ID))
-                .idDominio(MDC.get(Constants.MDC_DOMAIN_ID))
-                .stazione(MDC.get(Constants.MDC_STATION_ID))
+                .domainId(MDC.get(Constants.MDC_DOMAIN_ID))
+                .station(MDC.get(Constants.MDC_STATION_ID))
                 .build());
     }
 }

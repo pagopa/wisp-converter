@@ -35,21 +35,19 @@ public class RTCosmosService {
     ) {
         ReEventDto.ReEventDtoBuilder reEventDtoBuilder = ReUtil.createBaseReInternal()
                 .status(entityStatusName)
-                .erogatore(NODO_DEI_PAGAMENTI_SPC)
-                .erogatoreDescr(NODO_DEI_PAGAMENTI_SPC)
-                .sessionIdOriginal(rptRequestEntity.getId())
+                .provider(NODO_DEI_PAGAMENTI_SPC)
+                .sessionId(rptRequestEntity.getId())
                 .ccp(rptContentDTO.getRpt().getTransferData().getCcp())
-                .idDominio(rptContentDTO.getRpt().getDomain().getDomainId())
+                .domainId(rptContentDTO.getRpt().getDomain().getDomainId())
                 .iuv(rptContentDTO.getIuv())
                 .noticeNumber(noticeNumber)
                 .paymentToken(paymentToken);
 
         if (psp != null) {
             reEventDtoBuilder.psp(psp.getPspCode());
-            reEventDtoBuilder.pspDescr(psp.getDescription());
         }
         if (stationCode != null) {
-            reEventDtoBuilder.stazione(stationCode);
+            reEventDtoBuilder.station(stationCode);
         }
         return reEventDtoBuilder.build();
     }

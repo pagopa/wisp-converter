@@ -8,13 +8,13 @@ import it.gov.pagopa.gen.wispconverter.client.iuvgenerator.api.GenerationApi;
 import it.gov.pagopa.gen.wispconverter.client.iuvgenerator.model.IUVGenerationResponseDto;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
+import it.gov.pagopa.wispconverter.repository.model.enumz.EntityStatusEnum;
 import it.gov.pagopa.wispconverter.service.mapper.DebtPositionMapper;
 import it.gov.pagopa.wispconverter.service.mapper.DebtPositionUpdateMapper;
 import it.gov.pagopa.wispconverter.service.model.DigitalStampDTO;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
 import it.gov.pagopa.wispconverter.service.model.TransferDTO;
 import it.gov.pagopa.wispconverter.service.model.paymentrequest.PaymentRequestDTO;
-import it.gov.pagopa.wispconverter.service.model.re.EntityStatusEnum;
 import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import it.gov.pagopa.wispconverter.service.model.session.PaymentNoticeContentDTO;
 import it.gov.pagopa.wispconverter.service.model.session.PaymentPositionExistence;
@@ -628,13 +628,12 @@ public class DebtPositionService {
             // setting data in MDC for next use
             ReEventDto reEventDto = ReUtil.createBaseReInternal()
                     .status(status)
-                    .erogatore(NODO_DEI_PAGAMENTI_SPC)
-                    .erogatoreDescr(NODO_DEI_PAGAMENTI_SPC)
-                    .sessionIdOriginal(MDC.get(Constants.MDC_SESSION_ID))
-                    .tipoEvento(MDC.get(Constants.MDC_EVENT_TYPE))
+                    .provider(NODO_DEI_PAGAMENTI_SPC)
+                    .sessionId(MDC.get(Constants.MDC_SESSION_ID))
+                    .primitive(MDC.get(Constants.MDC_PRIMITIVE))
                     .cartId(MDC.get(Constants.MDC_CART_ID))
-                    .idDominio(MDC.get(Constants.MDC_DOMAIN_ID))
-                    .stazione(MDC.get(Constants.MDC_STATION_ID))
+                    .domainId(MDC.get(Constants.MDC_DOMAIN_ID))
+                    .station(MDC.get(Constants.MDC_STATION_ID))
                     .info(String.format("IUPD = [%s]", paymentPosition.getIupd()))
                     .build();
 
@@ -646,7 +645,7 @@ public class DebtPositionService {
                 reEventDto.setNoticeNumber(nav);
                 String iuv = paymentOption.getIuv();
                 reEventDto.setIuv(iuv);
-                if (Constants.NODO_INVIA_RPT.equals(MDC.get(Constants.MDC_EVENT_TYPE))) {
+                if (Constants.NODO_INVIA_RPT.equals(MDC.get(Constants.MDC_PRIMITIVE))) {
                     MDC.put(Constants.MDC_IUV, iuv);
                     MDC.put(Constants.MDC_NOTICE_NUMBER, nav);
                 }
@@ -684,19 +683,18 @@ public class DebtPositionService {
         // setting data in MDC for next use
         reService.addRe(ReUtil.createBaseReInternal()
                 .status(status.name())
-                .erogatore(NODO_DEI_PAGAMENTI_SPC)
-                .erogatoreDescr(NODO_DEI_PAGAMENTI_SPC)
-                .sessionIdOriginal(MDC.get(Constants.MDC_SESSION_ID))
-                .tipoEvento(MDC.get(Constants.MDC_EVENT_TYPE))
+                .provider(NODO_DEI_PAGAMENTI_SPC)
+                .sessionId(MDC.get(Constants.MDC_SESSION_ID))
+                .primitive(MDC.get(Constants.MDC_PRIMITIVE))
                 .cartId(MDC.get(Constants.MDC_CART_ID))
-                .idDominio(MDC.get(Constants.MDC_DOMAIN_ID))
-                .stazione(MDC.get(Constants.MDC_STATION_ID))
+                .domainId(MDC.get(Constants.MDC_DOMAIN_ID))
+                .station(MDC.get(Constants.MDC_STATION_ID))
                 .iuv(iuv)
                 .noticeNumber(noticeNumber)
                 .build());
 
         // set IUV and NAV as MDC constants only if request is on NodoInviaRPT
-        if (Constants.NODO_INVIA_RPT.equals(MDC.get(Constants.MDC_EVENT_TYPE))) {
+        if (Constants.NODO_INVIA_RPT.equals(MDC.get(Constants.MDC_PRIMITIVE))) {
             MDC.put(Constants.MDC_IUV, iuv);
             MDC.put(Constants.MDC_NOTICE_NUMBER, noticeNumber);
         }
