@@ -389,22 +389,26 @@ public class DebtPositionService {
         /*
           In order to send the KO receipts for the analyzed payments, it is required to save mapped keys in cache.
           The mapped keys permits to map a NAV code to a starting IUV code.
+          The receipt send is executed only if there are analyzed receipts in the list, otherwise skip this step.
          */
-        try {
+        if (!receiptsToSend.isEmpty()) {
+            try {
 
-            // save the mapped keys in the Redis cache for receipt generation
-            decouplerService.saveMappedKeyForReceiptGeneration(sessionData.getCommonFields().getSessionId(), sessionData, creditorInstitutionId);
+                // save the mapped keys in the Redis cache for receipt generation
+                decouplerService.saveMappedKeyForReceiptGeneration(sessionData.getCommonFields().getSessionId(), sessionData, creditorInstitutionId);
 
-            // generate and send the KO receipts to creditor institution via configured station
-            receiptService.paaInviaRTKo(receiptsToSend.toString()); // TODO explicitely set fault code (but how??)
+                // generate and send the KO receipts to creditor institution via configured station
+                receiptService.paaInviaRTKo(receiptsToSend.toString()); // TODO explicitely set fault code (but how??)
 
-            // TODO log in RE
+                // TODO log in RE
 
-        } catch (AppException e) {
+            } catch (AppException e) {
 
-            // TODO log in RE
+                // TODO log in RE
 
-            throw new AppException(AppErrorCodeMessageEnum.RECEIPT_KO_NOT_GENERATED, e);
+                generateReForNotGeneratedRT();
+                throw new AppException(AppErrorCodeMessageEnum.RECEIPT_KO_NOT_GENERATED, e);
+            }
         }
 
         // finally, throw an exception for notify the error, including all the IUVs
@@ -662,6 +666,11 @@ public class DebtPositionService {
 
         PaymentNoticeContentDTO paymentNotice = sessionDataDTO.getPaymentNoticeByIUV(iuv);
         generateRE(EntityStatusEnum.RT_NEGATIVA_NON_GENERABILE, iuv, paymentNotice.getNoticeNumber());
+    }
+
+    private void generateReForNotGeneratedRT() {
+
+        generateRE(EntityStatusEnum.RT_NEGATIVA_NON_GENERATA, null, null);
     }
 
     private void generateReForUpdatedPaymentPosition(SessionDataDTO sessionDataDTO, String iuv) {
