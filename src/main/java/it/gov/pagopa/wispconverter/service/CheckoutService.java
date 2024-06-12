@@ -5,7 +5,7 @@ import it.gov.pagopa.gen.wispconverter.client.checkout.model.CartRequestDto;
 import it.gov.pagopa.gen.wispconverter.client.checkout.model.CartResponseDto;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
-import it.gov.pagopa.wispconverter.repository.model.enumz.EntityStatusEnum;
+import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
 import it.gov.pagopa.wispconverter.service.mapper.CartMapper;
 import it.gov.pagopa.wispconverter.service.model.session.SessionDataDTO;
 import it.gov.pagopa.wispconverter.util.Constants;
@@ -98,7 +98,7 @@ public class CheckoutService {
     private void generateRE(String redirectUrl) {
 
         reService.addRe(ReUtil.createBaseReInternal()
-                .status(EntityStatusEnum.REDIRECT_DA_CHECKOUT_OK.name())
+                .status(InternalStepStatus.RECEIVED_REDIRECT_URL_FROM_CHECKOUT)
                 .provider(NODO_DEI_PAGAMENTI_SPC)
                 .sessionId(MDC.get(Constants.MDC_SESSION_ID))
                 .primitive(MDC.get(Constants.MDC_PRIMITIVE))

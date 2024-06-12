@@ -4,7 +4,7 @@ import it.gov.pagopa.gen.wispconverter.client.decouplercaching.model.DecouplerCa
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.CacheRepository;
-import it.gov.pagopa.wispconverter.repository.model.enumz.EntityStatusEnum;
+import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
 import it.gov.pagopa.wispconverter.service.model.CachedKeysMapping;
 import it.gov.pagopa.wispconverter.service.model.session.PaymentNoticeContentDTO;
 import it.gov.pagopa.wispconverter.service.model.session.SessionDataDTO;
@@ -120,7 +120,7 @@ public class DecouplerService {
     private void generateRE() {
 
         reService.addRe(ReUtil.createBaseReInternal()
-                .status(EntityStatusEnum.RPT_CACHE_PER_DECOUPLER_GENERATA.name())
+                .status(InternalStepStatus.GENERATED_CACHE_FOR_DECOUPLER_ABOUT_RPT)
                 .provider(NODO_DEI_PAGAMENTI_SPC)
                 .sessionId(MDC.get(Constants.MDC_SESSION_ID))
                 .primitive(MDC.get(Constants.MDC_PRIMITIVE))

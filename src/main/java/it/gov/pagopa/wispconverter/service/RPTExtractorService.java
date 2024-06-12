@@ -8,7 +8,7 @@ import gov.telematici.pagamenti.ws.nodoperpa.ppthead.IntestazionePPT;
 import it.gov.digitpa.schemas._2011.pagamenti.CtRichiestaPagamentoTelematico;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
-import it.gov.pagopa.wispconverter.repository.model.enumz.EntityStatusEnum;
+import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
 import it.gov.pagopa.wispconverter.service.mapper.RPTMapper;
 import it.gov.pagopa.wispconverter.service.model.paymentrequest.PaymentRequestDTO;
 import it.gov.pagopa.wispconverter.service.model.session.CommonFieldsDTO;
@@ -228,7 +228,7 @@ public class RPTExtractorService {
 
         // creating event to be persisted for RE
         reService.addRe(ReUtil.createBaseReInternal()
-                .status(EntityStatusEnum.DATI_RPT_ESTRATTI.name())
+                .status(InternalStepStatus.EXTRACTED_DATA_FROM_RPT)
                 .provider(NODO_DEI_PAGAMENTI_SPC)
                 .sessionId(MDC.get(Constants.MDC_SESSION_ID))
                 .primitive(MDC.get(Constants.MDC_PRIMITIVE))

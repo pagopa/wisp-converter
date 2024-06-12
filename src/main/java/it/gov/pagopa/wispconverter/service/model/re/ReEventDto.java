@@ -2,7 +2,6 @@ package it.gov.pagopa.wispconverter.service.model.re;
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.swagger.v3.oas.annotations.media.Schema;
-import it.gov.pagopa.wispconverter.repository.model.enumz.CallTypeEnum;
 import it.gov.pagopa.wispconverter.repository.model.enumz.*;
 import lombok.*;
 
@@ -120,7 +119,7 @@ public class ReEventDto {
     private String channel;
 
     @Schema(title = "INTERNAL", description = "The state of the internal step executed.")
-    private String status;
+    private InternalStepStatus status;
 
     @Schema(title = "INTERNAL", description = "The other information that can be inserted for the tracing.")
     private String info;

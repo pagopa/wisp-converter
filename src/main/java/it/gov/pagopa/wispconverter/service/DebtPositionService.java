@@ -8,7 +8,7 @@ import it.gov.pagopa.gen.wispconverter.client.iuvgenerator.api.GenerationApi;
 import it.gov.pagopa.gen.wispconverter.client.iuvgenerator.model.IUVGenerationResponseDto;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
-import it.gov.pagopa.wispconverter.repository.model.enumz.EntityStatusEnum;
+import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
 import it.gov.pagopa.wispconverter.service.mapper.DebtPositionMapper;
 import it.gov.pagopa.wispconverter.service.mapper.DebtPositionUpdateMapper;
 import it.gov.pagopa.wispconverter.service.model.DigitalStampDTO;
@@ -622,12 +622,11 @@ public class DebtPositionService {
 
     private void generateReForBulkInsert(List<PaymentPositionModelDto> paymentPositions) {
 
-        String status = EntityStatusEnum.PD_CREATA.name();
         for (PaymentPositionModelDto paymentPosition : paymentPositions) {
 
             // setting data in MDC for next use
             ReEventDto reEventDto = ReUtil.createBaseReInternal()
-                    .status(status)
+                    .status(InternalStepStatus.CREATED_NEW_PAYMENT_POSITION_IN_GPD)
                     .provider(NODO_DEI_PAGAMENTI_SPC)
                     .sessionId(MDC.get(Constants.MDC_SESSION_ID))
                     .primitive(MDC.get(Constants.MDC_PRIMITIVE))
@@ -658,31 +657,31 @@ public class DebtPositionService {
     private void generateReForInvalidPaymentPosition(SessionDataDTO sessionDataDTO, String iuv) {
 
         PaymentNoticeContentDTO paymentNotice = sessionDataDTO.getPaymentNoticeByIUV(iuv);
-        generateRE(EntityStatusEnum.PD_ESISTENTE_IN_GPD_NON_VALIDA, iuv, paymentNotice.getNoticeNumber());
+        generateRE(InternalStepStatus.FOUND_INVALID_PAYMENT_POSITION_IN_GPD, iuv, paymentNotice.getNoticeNumber());
     }
 
     private void generateReForNotGenerableRT(SessionDataDTO sessionDataDTO, String iuv) {
 
         PaymentNoticeContentDTO paymentNotice = sessionDataDTO.getPaymentNoticeByIUV(iuv);
-        generateRE(EntityStatusEnum.RT_NEGATIVA_NON_GENERABILE, iuv, paymentNotice.getNoticeNumber());
+        generateRE(InternalStepStatus.NEGATIVE_RT_NOT_GENERABLE, iuv, paymentNotice.getNoticeNumber());
     }
 
     private void generateReForNotGeneratedRT() {
 
-        generateRE(EntityStatusEnum.RT_NEGATIVA_NON_GENERATA, null, null);
+        generateRE(InternalStepStatus.NEGATIVE_RT_GENERATION_SKIPPED, null, null);
     }
 
     private void generateReForUpdatedPaymentPosition(SessionDataDTO sessionDataDTO, String iuv) {
 
         PaymentNoticeContentDTO paymentNotice = sessionDataDTO.getPaymentNoticeByIUV(iuv);
-        generateRE(EntityStatusEnum.PD_ESISTENTE_IN_GPD_AGGIORNATA, iuv, paymentNotice.getNoticeNumber());
+        generateRE(InternalStepStatus.UPDATED_EXISTING_PAYMENT_POSITION_IN_GPD, iuv, paymentNotice.getNoticeNumber());
     }
 
-    private void generateRE(EntityStatusEnum status, String iuv, String noticeNumber) {
+    private void generateRE(InternalStepStatus status, String iuv, String noticeNumber) {
 
         // setting data in MDC for next use
         reService.addRe(ReUtil.createBaseReInternal()
-                .status(status.name())
+                .status(status)
                 .provider(NODO_DEI_PAGAMENTI_SPC)
                 .sessionId(MDC.get(Constants.MDC_SESSION_ID))
                 .primitive(MDC.get(Constants.MDC_PRIMITIVE))

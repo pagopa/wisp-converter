@@ -4,7 +4,7 @@ import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
-import it.gov.pagopa.wispconverter.repository.model.enumz.EntityStatusEnum;
+import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
 import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.ReUtil;
 import lombok.RequiredArgsConstructor;
@@ -33,7 +33,7 @@ public class RptCosmosService {
         RPTRequestEntity rptRequestEntity = optRPTReqEntity.orElseThrow(() -> new AppException(AppErrorCodeMessageEnum.PERSISTENCE_RPT_NOT_FOUND, sessionId));
 
         // generate and save RE event internal for change status
-        generateRE(rptRequestEntity.getPayload(), EntityStatusEnum.RPT_TROVATA.name());
+        generateRE(rptRequestEntity.getPayload());
 
         return rptRequestEntity;
     }
@@ -43,11 +43,11 @@ public class RptCosmosService {
         rptRequestRepository.save(rptRequestEntity);
     }
 
-    private void generateRE(String status, String payload) {
+    private void generateRE(String payload) {
 
         // creating event to be persisted for RE
         reService.addRe(ReUtil.createBaseReInternal()
-                .status(status)
+                .status(InternalStepStatus.FOUND_RPT_IN_STORAGE)
                 .provider(NODO_DEI_PAGAMENTI_SPC)
                 .sessionId(MDC.get(Constants.MDC_SESSION_ID))
                 .compressedPayload(payload)
