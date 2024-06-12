@@ -28,6 +28,7 @@ public class PaaInviaRTServiceTest {
         when(client.post()).thenReturn(requestBodyUriSpec);
         RestClient.RequestBodySpec requestBodySpec = mock(RestClient.RequestBodySpec.class);
         when(requestBodyUriSpec.uri(any(URI.class))).thenReturn(requestBodySpec);
+        when(requestBodySpec.header(anyString(), anyString())).thenReturn(requestBodySpec);
         when(requestBodySpec.body(anyString())).thenReturn(requestBodySpec);
 
         RestClient.ResponseSpec responseSpec = mock(RestClient.ResponseSpec.class);
