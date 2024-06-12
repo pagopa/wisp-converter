@@ -6,11 +6,12 @@ import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.exception.PaaInviaRTException;
 import it.gov.pagopa.wispconverter.util.Constants;
-import java.net.URI;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
+
+import java.net.URI;
 
 @Service
 @RequiredArgsConstructor
@@ -24,26 +25,27 @@ public class PaaInviaRTService {
             ResponseEntity<PaaInviaRTRisposta> response = restClient
                     .post()
                     .uri(URI.create(url))
+                    .header("SOAPAction", "paaInviaRT")
                     .body(payload)
                     .retrieve()
                     .toEntity(PaaInviaRTRisposta.class);
 
-            if( response.getStatusCode().is4xxClientError() || response.getStatusCode().is5xxServerError() ) {
+            if (response.getStatusCode().is4xxClientError() || response.getStatusCode().is5xxServerError()) {
                 throw new AppException(AppErrorCodeMessageEnum.CLIENT_PAAINVIART, "Error response: " + response.getStatusCode().value());
             }
 
             PaaInviaRTRisposta body = response.getBody();
 
-            if(body == null){
+            if (body == null) {
                 throw new AppException(AppErrorCodeMessageEnum.CLIENT_PAAINVIART, "Error response: body null");
             }
-            if(body.getPaaInviaRTRisposta() == null){
+            if (body.getPaaInviaRTRisposta() == null) {
                 throw new AppException(AppErrorCodeMessageEnum.CLIENT_PAAINVIART, "Error response: paaInviaRTRisposta null");
             }
             EsitoPaaInviaRT esitoPaaInviaRT = body.getPaaInviaRTRisposta();
-            if( esitoPaaInviaRT.getEsito() != null &&
+            if (esitoPaaInviaRT.getEsito() != null &&
                     esitoPaaInviaRT.getEsito().equals(Constants.KO) &&
-                    esitoPaaInviaRT.getFault() != null ) {
+                    esitoPaaInviaRT.getFault() != null) {
                 throw new PaaInviaRTException(
                         esitoPaaInviaRT.getFault().getFaultCode(),
                         esitoPaaInviaRT.getFault().getFaultString(),
