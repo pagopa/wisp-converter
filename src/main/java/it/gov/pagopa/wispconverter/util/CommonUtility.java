@@ -1,5 +1,9 @@
 package it.gov.pagopa.wispconverter.util;
 
+import it.gov.pagopa.gen.wispconverter.client.gpd.model.PaymentOptionModelDto;
+import it.gov.pagopa.gen.wispconverter.client.gpd.model.PaymentOptionModelResponseDto;
+import it.gov.pagopa.gen.wispconverter.client.gpd.model.PaymentPositionModelBaseResponseDto;
+import it.gov.pagopa.gen.wispconverter.client.gpd.model.PaymentPositionModelDto;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import lombok.AccessLevel;
@@ -55,7 +59,7 @@ public class CommonUtility {
     public static String constructUrl(String protocol, String hostname, int port, String path, String query, String fragment) {
         try {
             String pathMod = null;
-            if( null != path ) {
+            if (null != path) {
                 pathMod = path.startsWith("/") ? path : ("/" + path);
             }
 
@@ -75,8 +79,30 @@ public class CommonUtility {
     public static String getConfigKeyValueCache(Map<String, it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigurationKeyDto> configurations, String key) {
         try {
             return configurations.get(key).getValue();
-        } catch ( NullPointerException e) {
+        } catch (NullPointerException e) {
             throw new AppException(AppErrorCodeMessageEnum.ERROR, "ConfigurationKey '" + key + "' not found in cache");
         }
+    }
+
+    public static PaymentOptionModelDto getSinglePaymentOption(PaymentPositionModelDto paymentPosition) {
+        if (paymentPosition == null || paymentPosition.getPaymentOption() == null || paymentPosition.getPaymentOption().isEmpty()) {
+            throw new AppException(AppErrorCodeMessageEnum.PAYMENT_POSITION_NOT_EXTRACTABLE);
+        }
+        PaymentOptionModelDto paymentOption = paymentPosition.getPaymentOption().get(0);
+        if (paymentOption == null) {
+            throw new AppException(AppErrorCodeMessageEnum.PAYMENT_OPTION_NOT_EXTRACTABLE);
+        }
+        return paymentOption;
+    }
+
+    public static PaymentOptionModelResponseDto getSinglePaymentOption(PaymentPositionModelBaseResponseDto paymentPosition) {
+        if (paymentPosition == null || paymentPosition.getPaymentOption() == null || paymentPosition.getPaymentOption().isEmpty()) {
+            throw new AppException(AppErrorCodeMessageEnum.PAYMENT_POSITION_NOT_EXTRACTABLE);
+        }
+        PaymentOptionModelResponseDto paymentOption = paymentPosition.getPaymentOption().get(0);
+        if (paymentOption == null) {
+            throw new AppException(AppErrorCodeMessageEnum.PAYMENT_OPTION_NOT_EXTRACTABLE);
+        }
+        return paymentOption;
     }
 }

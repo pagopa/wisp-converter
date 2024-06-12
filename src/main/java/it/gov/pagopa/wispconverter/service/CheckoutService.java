@@ -1,5 +1,6 @@
 package it.gov.pagopa.wispconverter.service;
 
+import it.gov.pagopa.gen.wispconverter.client.cache.model.StationDto;
 import it.gov.pagopa.gen.wispconverter.client.checkout.model.CartRequestDto;
 import it.gov.pagopa.gen.wispconverter.client.checkout.model.CartResponseDto;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
@@ -17,7 +18,6 @@ import org.springframework.web.client.RestClientException;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Map;
 
 import static it.gov.pagopa.wispconverter.util.Constants.NODO_DEI_PAGAMENTI_SPC;
 
@@ -83,18 +83,8 @@ public class CheckoutService {
 
     private String getRedirectURL(String stationId) {
 
-        // get cached data
-        it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigDataV1Dto cache = configCacheService.getConfigData();
-        if (cache == null) {
-            throw new AppException(AppErrorCodeMessageEnum.CONFIGURATION_INVALID_CACHE);
-        }
-
         // retrieving station by station identifier
-        Map<String, it.gov.pagopa.gen.wispconverter.client.cache.model.StationDto> stations = cache.getStations();
-        it.gov.pagopa.gen.wispconverter.client.cache.model.StationDto station = stations.get(stationId);
-        if (station == null) {
-            throw new AppException(AppErrorCodeMessageEnum.CONFIGURATION_INVALID_STATION, stationId);
-        }
+        StationDto station = configCacheService.getStationByIdFromCache(stationId);
 
         // extracting redirect URL using protocol, IP and path
         it.gov.pagopa.gen.wispconverter.client.cache.model.RedirectDto redirect = station.getRedirect();
