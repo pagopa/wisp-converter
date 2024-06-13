@@ -38,6 +38,9 @@ public class DecouplerService {
     @Value("${wisp-converter.cached-requestid-mapping.ttl.minutes}")
     private Long requestIDMappingTTL;
 
+    @Value("${wisp-converter.re-tracing.internal.decouplercaching.enabled}")
+    private Boolean isRETracingEnabled;
+
     public void storeRequestMappingInCache(SessionDataDTO sessionData, String sessionId) {
 
         try {
@@ -117,7 +120,7 @@ public class DecouplerService {
             this.cacheRepository.insert(navToIuvMappingForRTHandling, requestIDForRTHandling, this.requestIDMappingTTL);
 
             // generate and save re events internal for change status
-            String infoAboutCachedKey = "Main key = [(" + requestIDForRTHandling + "," + sessionId + ")], Mapping key = [(" + navToIuvMappingForRTHandling + "," + requestIDForRTHandling + ")]";
+            String infoAboutCachedKey = "Main key = [(key:" + requestIDForRTHandling + "; value:" + sessionId + ")], Mapping key = [(key:" + navToIuvMappingForRTHandling + "; value:" + requestIDForRTHandling + ")]";
             generateREForSavedMappingForRTGeneration(paymentNoticeContentDTO, infoAboutCachedKey);
         }
     }
@@ -128,7 +131,7 @@ public class DecouplerService {
             String[] splitKey = key.split("_");
             if (splitKey.length == 3) {
                 PaymentNoticeContentDTO paymentNotice = sessionData.getPaymentNoticeByNoticeNumber(splitKey[2]);
-                String infoAboutCachedKey = "Decoupler key = [(" + key + ",<baseNodeId>)]";
+                String infoAboutCachedKey = "Decoupler key = [(key:" + key + "; value:<baseNodeId>)]";
                 generateRE(InternalStepStatus.GENERATED_CACHE_ABOUT_RPT_FOR_DECOUPLER, paymentNotice.getIuv(), paymentNotice.getNoticeNumber(), paymentNotice.getCcp(), infoAboutCachedKey);
             }
         }

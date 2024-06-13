@@ -243,7 +243,6 @@ public class RPTExtractorService {
 
         CommonFieldsDTO commonFields = sessionData.getCommonFields();
         MDC.put(Constants.MDC_PRIMITIVE, primitive);
-        MDC.put(Constants.MDC_SESSION_ID, commonFields.getSessionId());
         MDC.put(Constants.MDC_CART_ID, commonFields.getCartId());
         MDC.put(Constants.MDC_DOMAIN_ID, commonFields.getCreditorInstitutionId());
         MDC.put(Constants.MDC_STATION_ID, commonFields.getStationId());
