@@ -3,16 +3,17 @@ package it.gov.pagopa.wispconverter.service;
 import it.gov.pagopa.gen.wispconverter.client.cache.model.StationDto;
 import it.gov.pagopa.gen.wispconverter.client.checkout.model.CartRequestDto;
 import it.gov.pagopa.gen.wispconverter.client.checkout.model.CartResponseDto;
+import it.gov.pagopa.gen.wispconverter.client.checkout.model.PaymentNoticeDto;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
 import it.gov.pagopa.wispconverter.service.mapper.CartMapper;
+import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
+import it.gov.pagopa.wispconverter.service.model.session.PaymentNoticeContentDTO;
 import it.gov.pagopa.wispconverter.service.model.session.SessionDataDTO;
-import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.ReUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.MDC;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
 
@@ -48,7 +49,7 @@ public class CheckoutService {
             location = response.getCheckoutRedirectUrl().toString();
 
             // generate and save re events internal for change status
-            generateRE(location);
+            generateRE(sessionData, cart, location);
 
         } catch (RestClientException e) {
             throw new AppException(AppErrorCodeMessageEnum.CLIENT_CHECKOUT,
@@ -95,19 +96,19 @@ public class CheckoutService {
         return protocol + "://" + url;
     }
 
-    private void generateRE(String redirectUrl) {
+    private void generateRE(SessionDataDTO sessionData, CartRequestDto cartRequest, String redirectUrl) {
 
-        reService.addRe(ReUtil.getREBuilder()
-                .status(InternalStepStatus.RECEIVED_REDIRECT_URL_FROM_CHECKOUT)
-                .provider(NODO_DEI_PAGAMENTI_SPC)
-                .sessionId(MDC.get(Constants.MDC_SESSION_ID))
-                .primitive(MDC.get(Constants.MDC_PRIMITIVE))
-                .cartId(MDC.get(Constants.MDC_CART_ID))
-                .domainId(MDC.get(Constants.MDC_DOMAIN_ID))
-                .station(MDC.get(Constants.MDC_STATION_ID))
-                .iuv(MDC.get(Constants.MDC_IUV)) // null if nodoInviaCarrelloRPT
-                .noticeNumber(MDC.get(Constants.MDC_NOTICE_NUMBER)) // null if nodoInviaCarrelloRPT
-                .info(String.format("Redirect URL = [%s]", redirectUrl))
-                .build());
+        for (PaymentNoticeDto paymentNoticeFromCart : cartRequest.getPaymentNotices()) {
+            PaymentNoticeContentDTO paymentNotice = sessionData.getPaymentNoticeByNoticeNumber(paymentNoticeFromCart.getNoticeNumber());
+            ReEventDto reEvent = ReUtil.getREBuilder()
+                    .status(InternalStepStatus.SAVED_RPT_IN_CART_RECEIVED_REDIRECT_URL_FROM_CHECKOUT)
+                    .provider(NODO_DEI_PAGAMENTI_SPC)
+                    .iuv(paymentNotice.getIuv())
+                    .noticeNumber(paymentNotice.getNoticeNumber())
+                    .ccp(paymentNotice.getCcp())
+                    .info(String.format("Redirect URL = [%s]", redirectUrl))
+                    .build();
+            reService.addRe(reEvent);
+        }
     }
 }
