@@ -23,10 +23,10 @@ import it.gov.pagopa.gen.wispconverter.client.gpd.model.PaymentOptionModelDto;
 import it.gov.pagopa.gen.wispconverter.client.gpd.model.PaymentOptionModelResponseDto;
 import it.gov.pagopa.gen.wispconverter.client.gpd.model.PaymentPositionModelBaseResponseDto;
 import it.gov.pagopa.gen.wispconverter.client.gpd.model.PaymentPositionModelDto;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
+import it.gov.pagopa.wispconverter.exception.AppException;
+import org.springframework.http.*;
+import org.springframework.web.client.HttpClientErrorException;
 
 public class TestUtils {
 
@@ -141,12 +141,17 @@ public class TestUtils {
         when(client.selectHeaderContentType(any())).thenReturn(MediaType.APPLICATION_JSON);
     }
 
-    public static void setMockGet(it.gov.pagopa.gen.wispconverter.client.gpd.invoker.ApiClient client,ResponseEntity response){
+    public static void setMockGet(it.gov.pagopa.gen.wispconverter.client.gpd.invoker.ApiClient client, ResponseEntity response){
         when(client.invokeAPI(any(),eq(HttpMethod.GET),any(),any(),any(),any(),any(),any(),any(),any(),any(),any())).thenReturn(response);
         when(client.parameterToMultiValueMap(any(),any(),any())).thenReturn(new HttpHeaders());
         when(client.parameterToString(any())).thenReturn("");
         when(client.selectHeaderAccept(any())).thenReturn(Arrays.asList());
         when(client.selectHeaderContentType(any())).thenReturn(MediaType.APPLICATION_JSON);
+    }
+
+    public static void setMockGetException(it.gov.pagopa.gen.wispconverter.client.gpd.invoker.ApiClient client){
+        when(client.invokeAPI(any(),eq(HttpMethod.GET),any(),any(),any(),any(),any(),any(),any(),any(),any(),any()))
+                .thenThrow(new AppException(new HttpClientErrorException(HttpStatus.NOT_FOUND), AppErrorCodeMessageEnum.CLIENT_GPD_DEBT_POSITION_NOT_FOUND));
     }
 
     public static void setMockPut(it.gov.pagopa.gen.wispconverter.client.gpd.invoker.ApiClient client,ResponseEntity response){
@@ -156,6 +161,15 @@ public class TestUtils {
         when(client.selectHeaderAccept(any())).thenReturn(Arrays.asList());
         when(client.selectHeaderContentType(any())).thenReturn(MediaType.APPLICATION_JSON);
     }
+
+    public static void setMockPost(it.gov.pagopa.gen.wispconverter.client.gpd.invoker.ApiClient client,ResponseEntity response){
+        when(client.invokeAPI(any(),eq(HttpMethod.POST),any(),any(),any(),any(),any(),any(),any(),any(),any(),any())).thenReturn(response);
+        when(client.parameterToMultiValueMap(any(),any(),any())).thenReturn(new HttpHeaders());
+        when(client.parameterToString(any())).thenReturn("");
+        when(client.selectHeaderAccept(any())).thenReturn(Arrays.asList());
+        when(client.selectHeaderContentType(any())).thenReturn(MediaType.APPLICATION_JSON);
+    }
+
     public static void setMock(it.gov.pagopa.gen.wispconverter.client.checkout.invoker.ApiClient client,ResponseEntity response){
         when(client.invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any())).thenReturn(response);
         when(client.parameterToMultiValueMap(any(),any(),any())).thenReturn(new HttpHeaders());

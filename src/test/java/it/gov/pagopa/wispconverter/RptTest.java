@@ -58,7 +58,7 @@ class RptTest {
 
     @MockBean
     private RTRequestRepository rtRequestRepository;
-    @MockBean private it.gov.pagopa.gen.wispconverter.client.iuvgenerator.invoker.ApiClient iuveneratorClient;
+    @MockBean private it.gov.pagopa.gen.wispconverter.client.iuvgenerator.invoker.ApiClient iuvGeneratorClient;
     @MockBean private it.gov.pagopa.gen.wispconverter.client.gpd.invoker.ApiClient gpdClient;
     @MockBean private it.gov.pagopa.gen.wispconverter.client.checkout.invoker.ApiClient checkoutClient;
     @MockBean private it.gov.pagopa.gen.wispconverter.client.cache.invoker.ApiClient cacheClient;
@@ -71,7 +71,7 @@ class RptTest {
     private ServiceBusSenderClient serviceBusSenderClient;
 
     @Test
-    void success_paymentPositionUpdate() throws Exception {
+    void success_debtPositionUpdate() throws Exception {
         String station = "mystation";
         StationCreditorInstitutionDto stationCreditorInstitutionDto = new StationCreditorInstitutionDto();
         stationCreditorInstitutionDto.setCreditorInstitutionCode("{pa}");
@@ -121,7 +121,7 @@ class RptTest {
     }
 
     @Test
-    void success_tassonomia() throws Exception {
+    void success_debtPositionCreate() throws Exception {
         String station = "mystation";
         org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configData",TestUtils.configData(station));
         HttpHeaders headers = new HttpHeaders();
@@ -129,9 +129,10 @@ class RptTest {
         TestUtils.setMock(checkoutClient, ResponseEntity.status(HttpStatus.FOUND).headers(headers).build());
 
         IUVGenerationResponseDto iuvGenerationModelResponseDto = new IUVGenerationResponseDto();
-        iuvGenerationModelResponseDto.setIuv("00000000");
-        TestUtils.setMock(iuveneratorClient,ResponseEntity.ok().body(iuvGenerationModelResponseDto));
-        TestUtils.setMock(gpdClient,ResponseEntity.ok().build());
+        iuvGenerationModelResponseDto.setIuv("123456IUVMOCK2");
+        TestUtils.setMock(iuvGeneratorClient,ResponseEntity.ok().body(iuvGenerationModelResponseDto));
+        TestUtils.setMockGetException(gpdClient);
+        TestUtils.setMockPost(gpdClient,ResponseEntity.ok().body(getPaymentPositionModelDto()));
         TestUtils.setMock(decouplerCachingClient,ResponseEntity.ok().build());
         when(rptRequestRepository.findById(any())).thenReturn(
                 Optional.of(
@@ -154,8 +155,8 @@ class RptTest {
                         });
 
         verify(checkoutClient,times(1)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
-        verify(iuveneratorClient,times(1)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
-        verify(gpdClient,times(1)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
+        verify(iuvGeneratorClient,times(1)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
+        verify(gpdClient,times(2)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
         verify(decouplerCachingClient,times(1)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
     }
 
@@ -169,8 +170,9 @@ class RptTest {
 
         IUVGenerationResponseDto iuvGenerationModelResponseDto = new IUVGenerationResponseDto();
         iuvGenerationModelResponseDto.setIuv("00000000");
-        TestUtils.setMock(iuveneratorClient,ResponseEntity.ok().body(iuvGenerationModelResponseDto));
-        TestUtils.setMock(gpdClient,ResponseEntity.ok().build());
+        TestUtils.setMock(iuvGeneratorClient,ResponseEntity.ok().body(iuvGenerationModelResponseDto));
+        TestUtils.setMockGetException(gpdClient);
+        TestUtils.setMockPost(gpdClient,ResponseEntity.ok().body(getPaymentPositionModelDto()));
         TestUtils.setMock(decouplerCachingClient,ResponseEntity.ok().build());
         when(rptRequestRepository.findById(any())).thenReturn(
                 Optional.of(
@@ -193,28 +195,13 @@ class RptTest {
                         });
 
         verify(checkoutClient,times(1)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
-        verify(iuveneratorClient,times(1)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
-        verify(gpdClient,times(1)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
+        verify(iuvGeneratorClient,times(1)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
+        verify(gpdClient,times(2)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
         verify(decouplerCachingClient,times(1)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
     }
 
     @Test
-    void fail_rpt_not_exists() throws Exception {
-        String station = "mystation";
-        org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configData",TestUtils.configData(station));
-        HttpHeaders headers = new HttpHeaders();
-        headers.add("location","locationheader");
-        TestUtils.setMock(checkoutClient, ResponseEntity.status(HttpStatus.FOUND).headers(headers).build());
-
-        IUVGenerationResponseDto iuvGenerationModelResponseDto = new IUVGenerationResponseDto();
-        iuvGenerationModelResponseDto.setIuv("00000000");
-        doThrow(new RestClientException("fail", new RuntimeException("this test must fail")))
-                .when(iuveneratorClient).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
-        TestUtils.setMock(gpdClient,ResponseEntity.ok().build());
-        TestUtils.setMock(decouplerCachingClient,ResponseEntity.ok().build());
-        when(redisSimpleTemplate.opsForValue()).thenReturn(mock(ValueOperations.class));
-
-
+    void fail_rptNotFound() throws Exception {
         MvcResult resultActions = mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.status().is2xxSuccessful()).andDo(
                         (result) -> {
@@ -240,7 +227,7 @@ class RptTest {
         IUVGenerationResponseDto iuvGenerationModelResponseDto = new IUVGenerationResponseDto();
         iuvGenerationModelResponseDto.setIuv("00000000");
         doThrow(new RestClientException("fail", new RuntimeException("this test must fail")))
-                .when(iuveneratorClient).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
+                .when(iuvGeneratorClient).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
         TestUtils.setMock(gpdClient,ResponseEntity.ok().build());
         TestUtils.setMock(decouplerCachingClient,ResponseEntity.ok().build());
         when(redisSimpleTemplate.opsForValue()).thenReturn(mock(ValueOperations.class));
@@ -271,7 +258,7 @@ class RptTest {
         IUVGenerationResponseDto iuvGenerationModelResponseDto = new IUVGenerationResponseDto();
         iuvGenerationModelResponseDto.setIuv("00000000");
         doThrow(new RestClientException("fail", new RuntimeException("this test must fail")))
-                .when(iuveneratorClient).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
+                .when(iuvGeneratorClient).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
         TestUtils.setMock(gpdClient,ResponseEntity.ok().build());
         TestUtils.setMock(decouplerCachingClient,ResponseEntity.ok().build());
         when(rptRequestRepository.findById(any())).thenReturn(
@@ -294,7 +281,7 @@ class RptTest {
     }
 
     @Test
-    void fail_createDebtPositions() throws Exception {
+    void fail_debtPositionCreate() throws Exception {
         String station = "mystation";
         org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configData",TestUtils.configData(station));
         HttpHeaders headers = new HttpHeaders();
@@ -303,7 +290,7 @@ class RptTest {
 
         IUVGenerationResponseDto iuvGenerationModelResponseDto = new IUVGenerationResponseDto();
         iuvGenerationModelResponseDto.setIuv("00000000");
-        TestUtils.setMock(iuveneratorClient,ResponseEntity.ok().body(iuvGenerationModelResponseDto));
+        TestUtils.setMock(iuvGeneratorClient,ResponseEntity.ok().body(iuvGenerationModelResponseDto));
         doThrow(new RestClientException("fail", new RuntimeException("this test must fail")))
                 .when(gpdClient).parameterToMultiValueMap(any(),any(),any());
         TestUtils.setMock(decouplerCachingClient,ResponseEntity.ok().build());
@@ -322,7 +309,7 @@ class RptTest {
         mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.status().is2xxSuccessful());
 
-        verify(iuveneratorClient,times(1)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
+        verify(iuvGeneratorClient,times(1)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
         verify(gpdClient,times(0)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
         verify(decouplerCachingClient,times(0)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
         verify(checkoutClient,times(0)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
@@ -338,7 +325,7 @@ class RptTest {
 
         IUVGenerationResponseDto iuvGenerationModelResponseDto = new IUVGenerationResponseDto();
         iuvGenerationModelResponseDto.setIuv("00000000");
-        TestUtils.setMock(iuveneratorClient,ResponseEntity.ok().body(iuvGenerationModelResponseDto));
+        TestUtils.setMock(iuvGeneratorClient,ResponseEntity.ok().body(iuvGenerationModelResponseDto));
         TestUtils.setMock(gpdClient,ResponseEntity.ok().build());
     doThrow(new RestClientException("fail", new RuntimeException("this test must fail")))
         .when(decouplerCachingClient)
@@ -357,7 +344,7 @@ class RptTest {
         mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.status().is2xxSuccessful());
 
-        verify(iuveneratorClient,times(1)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
+        verify(iuvGeneratorClient,times(1)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
         verify(gpdClient,times(1)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
         verify(checkoutClient,times(0)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
 
@@ -375,7 +362,7 @@ class RptTest {
 
         IUVGenerationResponseDto iuvGenerationModelResponseDto = new IUVGenerationResponseDto();
         iuvGenerationModelResponseDto.setIuv("00000000");
-        TestUtils.setMock(iuveneratorClient,ResponseEntity.ok().body(iuvGenerationModelResponseDto));
+        TestUtils.setMock(iuvGeneratorClient,ResponseEntity.ok().body(iuvGenerationModelResponseDto));
         TestUtils.setMock(gpdClient,ResponseEntity.ok().build());
         TestUtils.setMock(decouplerCachingClient,ResponseEntity.ok().build());
         when(rptRequestRepository.findById(any())).thenReturn(
@@ -393,7 +380,7 @@ class RptTest {
         mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.status().is2xxSuccessful());
 
-        verify(iuveneratorClient,times(1)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
+        verify(iuvGeneratorClient,times(1)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
         verify(gpdClient,times(1)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
         verify(decouplerCachingClient,times(1)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
 

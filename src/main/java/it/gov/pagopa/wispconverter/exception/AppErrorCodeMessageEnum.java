@@ -39,6 +39,7 @@ public enum AppErrorCodeMessageEnum {
     // --- Client errors ---
     CLIENT_APICONFIGCACHE(3000, "APIConfig cache client error", "Error while communicating with APIConfig cache service. {0}", HttpStatus.EXPECTATION_FAILED, ""),
     CLIENT_GPD(3001, "GPD client error", "Error while communicating with GPD service. {0}", HttpStatus.EXPECTATION_FAILED, ""),
+    CLIENT_GPD_DEBT_POSITION_NOT_FOUND(404, "Debt position not found", "Debt position not found", HttpStatus.NOT_FOUND, "Debt position not found"),
     CLIENT_IUVGENERATOR(3002, "IUV Generator client error", "Error while communicating with IUV Generator service. {0}", HttpStatus.EXPECTATION_FAILED, ""),
     CLIENT_DECOUPLER_CACHING(3003, "Decoupler caching client error", "Error while communicating with decoupler caching API. {0}", HttpStatus.EXPECTATION_FAILED, ""),
     CLIENT_CHECKOUT(3004, "Checkout error", "Error while communicating with Checkout service. {0}", HttpStatus.EXPECTATION_FAILED, ""),
