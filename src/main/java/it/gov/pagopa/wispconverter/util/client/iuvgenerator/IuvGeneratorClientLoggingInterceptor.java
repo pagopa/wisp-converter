@@ -6,15 +6,25 @@ import it.gov.pagopa.wispconverter.util.client.ClientServiceEnum;
 import it.gov.pagopa.wispconverter.util.client.RequestResponseLoggingProperties;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpRequest;
 import org.springframework.http.client.ClientHttpResponse;
 
 @Slf4j
 public class IuvGeneratorClientLoggingInterceptor extends AbstractAppClientLoggingInterceptor {
 
-    public IuvGeneratorClientLoggingInterceptor(RequestResponseLoggingProperties clientLoggingProperties, ReService reService){
+    @Value("${wisp-converter.re-tracing.interface.iuv-generator.enabled}")
+    private Boolean isTracingOfClientOnREEnabled;
+
+    public IuvGeneratorClientLoggingInterceptor(RequestResponseLoggingProperties clientLoggingProperties, ReService reService) {
         super(clientLoggingProperties, reService, ClientServiceEnum.IUV_GENERATOR);
+
+        // avoiding persistence of client invocation on RE
+        if (Boolean.FALSE.equals(isTracingOfClientOnREEnabled)) {
+            avoidEventPersistenceOnRE();
+        }
     }
+
     @Override
     protected void request(String clientOperationId, String operationId, HttpRequest request, byte[] reqBody) {
         if (log.isDebugEnabled()) {

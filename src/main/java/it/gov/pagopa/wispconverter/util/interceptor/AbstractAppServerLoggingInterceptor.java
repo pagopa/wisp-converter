@@ -26,6 +26,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Predicate;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -41,6 +43,7 @@ public abstract class AbstractAppServerLoggingInterceptor implements HandlerInte
     private static final String SPACE = " ";
     private static final String PRETTY_IN = "\n=> *";
     private static final String PRETTY_OUT = "\n<= *";
+    private final Pattern sessionIdPattern;
     private boolean requestIncludeClientInfo = false;
     private boolean requestIncludeHeaders = false;
     private boolean responseIncludeHeaders = false;
@@ -75,7 +78,7 @@ public abstract class AbstractAppServerLoggingInterceptor implements HandlerInte
                 this.responsePretty = response.isPretty();
             }
         }
-
+        this.sessionIdPattern = Pattern.compile("sessionId=([a-zA-Z0-9_-]+)");
     }
 
     @Override
@@ -83,11 +86,8 @@ public abstract class AbstractAppServerLoggingInterceptor implements HandlerInte
         if (handler instanceof HandlerMethod handlerMethod) {
             Trace trace = handlerMethod.getMethod().getAnnotation(Trace.class);
             if (trace != null) {
-                String operationId = UUID.randomUUID().toString();
-                MDC.put(Constants.MDC_START_TIME, String.valueOf(System.currentTimeMillis()));
-                MDC.put(Constants.MDC_OPERATION_ID, operationId);
-                MDC.put(Constants.MDC_BUSINESS_PROCESS, trace.businessProcess());
-                request(operationId, request);
+                handleMDCSessionContent(request, trace);
+                request(MDC.get(Constants.MDC_OPERATION_ID), request);
             }
         }
 
@@ -356,6 +356,21 @@ public abstract class AbstractAppServerLoggingInterceptor implements HandlerInte
             return stream.collect(Collectors.joining(""));
         } else {
             return stream.collect(Collectors.joining(", "));
+        }
+    }
+
+    private void handleMDCSessionContent(HttpServletRequest request, Trace trace) {
+        String operationId = UUID.randomUUID().toString();
+        MDC.put(Constants.MDC_START_TIME, String.valueOf(System.currentTimeMillis()));
+        MDC.put(Constants.MDC_OPERATION_ID, operationId);
+        MDC.put(Constants.MDC_BUSINESS_PROCESS, trace.businessProcess());
+
+        String queryString = request.getQueryString();
+
+        // include sessionID in MDC
+        Matcher sessionIdMatcher = this.sessionIdPattern.matcher(queryString);
+        if (sessionIdMatcher.find()) {
+            MDC.put(Constants.MDC_SESSION_ID, sessionIdMatcher.group(1));
         }
     }
 }
