@@ -34,6 +34,9 @@ public class CheckoutClientConfig {
     @Value("${client.checkout.base-path}")
     private String basePath;
 
+    @Value("${wisp-converter.re-tracing.interface.checkout-interaction.enabled}")
+    private Boolean isTracingOfClientOnREEnabled;
+
     @Bean
     @ConfigurationProperties(prefix = "log.client.checkout")
     public RequestResponseLoggingProperties checkoutClientLoggingProperties() {
@@ -44,7 +47,7 @@ public class CheckoutClientConfig {
     public it.gov.pagopa.gen.wispconverter.client.checkout.invoker.ApiClient checkoutClient() {
         RequestResponseLoggingProperties clientLoggingProperties = checkoutClientLoggingProperties();
 
-        CheckoutClientLoggingInterceptor clientLogging = new CheckoutClientLoggingInterceptor(clientLoggingProperties, reService);
+        CheckoutClientLoggingInterceptor clientLogging = new CheckoutClientLoggingInterceptor(clientLoggingProperties, reService, isTracingOfClientOnREEnabled);
 
         RestTemplate restTemplate = restTemplate();
 

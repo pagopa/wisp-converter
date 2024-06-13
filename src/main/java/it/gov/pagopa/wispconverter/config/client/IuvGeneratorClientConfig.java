@@ -38,6 +38,8 @@ public class IuvGeneratorClientConfig {
     @Value("${client.iuvgenerator.api-key}")
     private String apiKey;
 
+    @Value("${wisp-converter.re-tracing.interface.iuv-generator.enabled}")
+    private Boolean isTracingOfClientOnREEnabled;
 
     @Bean
     @ConfigurationProperties(prefix = "log.client.iuvgenerator")
@@ -50,7 +52,7 @@ public class IuvGeneratorClientConfig {
     public it.gov.pagopa.gen.wispconverter.client.iuvgenerator.invoker.ApiClient iuvGeneratorClient() {
         RequestResponseLoggingProperties clientLoggingProperties = iuvGeneratorClientLoggingProperties();
 
-        IuvGeneratorClientLoggingInterceptor clientLogging = new IuvGeneratorClientLoggingInterceptor(clientLoggingProperties, reService);
+        IuvGeneratorClientLoggingInterceptor clientLogging = new IuvGeneratorClientLoggingInterceptor(clientLoggingProperties, reService, isTracingOfClientOnREEnabled);
 
         RestTemplate restTemplate = restTemplate();
 

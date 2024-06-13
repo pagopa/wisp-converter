@@ -6,17 +6,13 @@ import it.gov.pagopa.wispconverter.util.client.ClientServiceEnum;
 import it.gov.pagopa.wispconverter.util.client.RequestResponseLoggingProperties;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpRequest;
 import org.springframework.http.client.ClientHttpResponse;
 
 @Slf4j
 public class GpdClientLoggingInterceptor extends AbstractAppClientLoggingInterceptor {
 
-    @Value("${wisp-converter.re-tracing.interface.payment-position-analysis.enabled}")
-    private Boolean isTracingOfClientOnREEnabled;
-
-    public GpdClientLoggingInterceptor(RequestResponseLoggingProperties clientLoggingProperties, ReService reService) {
+    public GpdClientLoggingInterceptor(RequestResponseLoggingProperties clientLoggingProperties, ReService reService, Boolean isTracingOfClientOnREEnabled) {
         super(clientLoggingProperties, reService, ClientServiceEnum.GPD);
 
         // avoiding persistence of client invocation on RE
