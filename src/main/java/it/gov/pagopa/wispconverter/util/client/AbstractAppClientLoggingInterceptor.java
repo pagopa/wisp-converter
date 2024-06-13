@@ -50,10 +50,12 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
     private int responseMaxPayloadLength = RESPONSE_DEFAULT_MAX_PAYLOAD_LENGTH;
     private boolean requestPretty;
     private boolean responsePretty;
+    private boolean mustPersistEventOnRE;
 
     public AbstractAppClientLoggingInterceptor(RequestResponseLoggingProperties clientLoggingProperties, ReService reService, ClientServiceEnum clientServiceEnum) {
         this.reService = reService;
         this.clientServiceEnum = clientServiceEnum;
+        this.mustPersistEventOnRE = true;
 
         if (clientLoggingProperties != null) {
             RequestResponseLoggingProperties.Request request = clientLoggingProperties.getRequest();
@@ -105,18 +107,18 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
             MDC.put(Constants.MDC_EVENT_SUB_CATEGORY, EventSubcategoryEnum.REQ.name());
             log.debug("[intercept] add RE CLIENT OUT - Sent");
             ReEventDto reEventDtoClientIN = ReUtil.createREForClientInterfaceInRequestEvent(request, body, OutcomeEnum.SEND);
-            reService.addRe(reEventDtoClientIN);
+            persistInterfaceEventInRE(reEventDtoClientIN);
 
             if (response.getStatusCode().is2xxSuccessful()) {
                 MDC.put(Constants.MDC_EVENT_SUB_CATEGORY, EventSubcategoryEnum.RESP.name());
                 log.debug("[intercept] add RE CLIENT IN - Sent - RECEIVED");
                 ReEventDto reEventDtoClientOUT = ReUtil.createREForClientInterfaceInResponseEvent(request, response, OutcomeEnum.RECEIVED);
-                reService.addRe(reEventDtoClientOUT);
+                persistInterfaceEventInRE(reEventDtoClientOUT);
             } else {
                 MDC.put(Constants.MDC_EVENT_SUB_CATEGORY, EventSubcategoryEnum.RESP.name());
                 log.debug("[intercept] add RE CLIENT IN - Sent - RECEIVED_FAILURE");
                 ReEventDto reEventDtoClientOUT = ReUtil.createREForClientInterfaceInResponseEvent(request, response, OutcomeEnum.RECEIVED_FAILURE);
-                reService.addRe(reEventDtoClientOUT);
+                persistInterfaceEventInRE(reEventDtoClientOUT);
             }
 
 
@@ -129,12 +131,12 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
             MDC.put(Constants.MDC_EVENT_SUB_CATEGORY, EventSubcategoryEnum.REQ.name());
             log.debug("[intercept] add RE CLIENT OUT - NOT Sent");
             ReEventDto reEventDtoClientIN = ReUtil.createREForClientInterfaceInRequestEvent(request, body, OutcomeEnum.SEND_FAILURE);
-            reService.addRe(reEventDtoClientIN);
+            persistInterfaceEventInRE(reEventDtoClientIN);
 
             MDC.put(Constants.MDC_EVENT_SUB_CATEGORY, EventSubcategoryEnum.RESP.name());
             log.debug("[intercept] add RE CLIENT IN - NOT Sent - NEVER_RECEIVED");
             ReEventDto reEventDtoClientOUT = ReUtil.createREForClientInterfaceInResponseEvent(request, null, OutcomeEnum.NEVER_RECEIVED);
-            reService.addRe(reEventDtoClientOUT);
+            persistInterfaceEventInRE(reEventDtoClientOUT);
 
             response(clientOperationId, operationId, executionClientTime, request, null);
 
@@ -321,4 +323,13 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
         return StreamUtils.copyToString(body, StandardCharsets.UTF_8);
     }
 
+    private void persistInterfaceEventInRE(ReEventDto reEvent) {
+        if (this.mustPersistEventOnRE) {
+            reService.addRe(reEvent);
+        }
+    }
+
+    protected void avoidEventPersistenceOnRE() {
+        this.mustPersistEventOnRE = false;
+    }
 }
