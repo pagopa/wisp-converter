@@ -295,7 +295,7 @@ public class DebtPositionService {
               The absence of response body is an error, so throw an exception.
              */
             if (debtPosition == null || debtPosition.getStatus() == null) {
-                throw new AppException(AppErrorCodeMessageEnum.PAYMENT_POSITION_IN_INVALID_STATE, iuv);
+                throw new AppException(AppErrorCodeMessageEnum.PAYMENT_POSITION_IN_INCONSISTENT_STATE, iuv);
             }
 
             /*
@@ -347,7 +347,7 @@ public class DebtPositionService {
             if (!iuv.equals(iuvFromRetrievedPaymentPosition)) {
                 paymentPosition = gpdClientInstance.getDebtPositionByIUV(creditorInstitutionId, iuv, MDC.get(Constants.MDC_REQUEST_ID));
                 if (paymentPosition.getPaymentOption() == null || paymentPosition.getPaymentOption().isEmpty()) {
-                    throw new AppException(AppErrorCodeMessageEnum.PAYMENT_POSITION_NOT_VALID, iuvFromRetrievedPaymentPosition);
+                    throw new AppException(AppErrorCodeMessageEnum.PAYMENT_OPTION_NOT_EXTRACTABLE, iuvFromRetrievedPaymentPosition);
                 }
             }
 
@@ -470,11 +470,11 @@ public class DebtPositionService {
             PaymentOptionModelDto updatedPaymentOption = updatedPaymentPosition.getPaymentOption().stream()
                     .filter(paymentOption -> paymentOption.getIuv().equals(iuv))
                     .findFirst()
-                    .orElseThrow(() -> new AppException(AppErrorCodeMessageEnum.PAYMENT_POSITION_NOT_VALID, iuv));
+                    .orElseThrow(() -> new AppException(AppErrorCodeMessageEnum.PAYMENT_POSITION_NOT_VALID, iuv, "The IUV is not associated to a payment option in the payment position retrieved from GPD."));
             PaymentOptionModelDto extractedPaymentOption = extractedPaymentPosition.getPaymentOption().stream()
                     .filter(paymentOption -> paymentOption.getIuv().equals(iuv))
                     .findFirst()
-                    .orElseThrow(() -> new AppException(AppErrorCodeMessageEnum.PAYMENT_POSITION_NOT_VALID, iuv));
+                    .orElseThrow(() -> new AppException(AppErrorCodeMessageEnum.PAYMENT_POSITION_NOT_VALID, iuv, "The IUV is not associated to a payment option in the payment position generated from RPT"));
 
             // now, update the field on which is required to change info about the payment
             updatedPaymentOption.setAmount(extractedPaymentOption.getAmount());
@@ -499,7 +499,7 @@ public class DebtPositionService {
         // update the payment option to be used in bulk insert with the newly generated NAV code
         List<PaymentOptionModelDto> paymentOptions = extractedPaymentPosition.getPaymentOption();
         if (paymentOptions == null || paymentOptions.isEmpty()) {
-            throw new AppException(AppErrorCodeMessageEnum.VALIDATION_INVALID_RPT);
+            throw new AppException(AppErrorCodeMessageEnum.PAYMENT_OPTION_NOT_EXTRACTABLE);
         }
         paymentOptions.get(0).setNav(nav);
 
@@ -579,7 +579,7 @@ public class DebtPositionService {
 
         // extracting segregation code from notice number
         if (noticeNumber == null) {
-            throw new AppException(AppErrorCodeMessageEnum.PAYMENT_POSITION_NOT_VALID);
+            throw new AppException(AppErrorCodeMessageEnum.PAYMENT_POSITION_NOT_VALID, "In order to check the station validity is required a notice number from which the segregation code must be extracted, but it is not correctly set in the payment position.");
         }
         Long segregationCodeFromNoticeNumber = Long.parseLong(noticeNumber.substring(1, 3));
 
@@ -597,7 +597,7 @@ public class DebtPositionService {
 
         // extracting segregation code from notice number
         if (noticeNumber == null) {
-            throw new AppException(AppErrorCodeMessageEnum.PAYMENT_POSITION_NOT_VALID);
+            throw new AppException(AppErrorCodeMessageEnum.PAYMENT_POSITION_NOT_VALID, "In order to check the station validity is required a notice number from which the segregation code must be extracted, but it is not correctly set in the payment position.");
         }
         Long segregationCodeFromNoticeNumber = Long.parseLong(noticeNumber.substring(1, 3));
 
