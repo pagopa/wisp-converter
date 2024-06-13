@@ -23,6 +23,13 @@ public class SessionDataDTO {
         return this.paymentNotices.get(iuv);
     }
 
+    public PaymentNoticeContentDTO getPaymentNoticeByNoticeNumber(String noticeNumber) {
+        return this.paymentNotices.values().stream()
+                .filter(paymentNotice -> noticeNumber.equals(paymentNotice.getNoticeNumber()))
+                .findFirst()
+                .orElse(null);
+    }
+
     public Collection<PaymentNoticeContentDTO> getAllPaymentNotices() {
         return this.paymentNotices.values();
     }

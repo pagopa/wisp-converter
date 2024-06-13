@@ -35,10 +35,10 @@ public class ConverterService {
         SessionDataDTO sessionData = this.rptExtractorService.extractSessionData(rptRequestEntity.getPrimitive(), rptRequestEntity.getPayload());
 
         // calling GPD creation API in order to generate the debt position associated to RPTs
-        this.debtPositionService.createDebtPositions(sessionData); // TODO <--------- QUI
+        this.debtPositionService.createDebtPositions(sessionData);
 
         // call APIM policy for save key for decoupler and save in Redis cache the mapping of the request identifier needed for RT generation in next steps
-        this.decouplerService.storeRequestMappingInCache(sessionData, sessionId); // TODO <--------- QUI
+        this.decouplerService.storeRequestMappingInCache(sessionData, sessionId);
 
         // execute communication with Checkout service and set the redirection URI as response
         return this.checkoutService.executeCall(sessionData); // TODO <--------- QUI

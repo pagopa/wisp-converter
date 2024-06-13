@@ -377,12 +377,12 @@ public class DebtPositionService {
                   point to a custom endpoint of the creditor institution services, the ‘non-generability’ of the negative RT
                   must be logged on the Registro Eventi in order to permit error tracing.
                  */
-                generateReForNotGenerableRT(sessionData, iuv);
+                generateREForNotGenerableRT(sessionData, iuv);
 
             } finally {
 
                 // no matter how the RG generation goes, save event in RE for trace the error due to invalid payment position status
-                generateReForInvalidPaymentPosition(sessionData, iuv);
+                generateREForInvalidPaymentPosition(sessionData, iuv);
             }
         }
 
@@ -398,15 +398,15 @@ public class DebtPositionService {
                 decouplerService.saveMappedKeyForReceiptGeneration(sessionData.getCommonFields().getSessionId(), sessionData, creditorInstitutionId);
 
                 // generate and send the KO receipts to creditor institution via configured station
-                receiptService.paaInviaRTKo(receiptsToSend.toString()); // TODO explicitely set fault code (but how??)
+                receiptService.paaInviaRTKo(receiptsToSend.toString());
 
-                // TODO log in RE
+                // finally, generate event in Registro Eventi for each sent receipt
+                generateREForGeneratedRT(sessionData, receiptsToSend);
 
             } catch (AppException e) {
 
-                // TODO log in RE
-
-                generateReForNotGeneratedRT();
+                // finally, generate event in Registro Eventi for each receipt (not sent)
+                generateREForNotGeneratedRT(sessionData, receiptsToSend);
                 throw new AppException(AppErrorCodeMessageEnum.RECEIPT_KO_NOT_GENERATED, e);
             }
         }
@@ -433,7 +433,7 @@ public class DebtPositionService {
             gpdClientInstance.updatePosition(creditorInstitutionId, updatedPaymentPosition.getIupd(), updatedPaymentPosition, MDC.get(Constants.MDC_REQUEST_ID), true);
 
             // generate and save events in RE for trace the update of the existing payment position
-            generateReForUpdatedPaymentPosition(sessionData, iuv);
+            generateREForUpdatedPaymentPosition(sessionData, iuv);
 
         } catch (RestClientException e) {
             throw new AppException(AppErrorCodeMessageEnum.CLIENT_GPD, String.format("RestClientException ERROR [%s] - %s", e.getCause().getClass().getCanonicalName(), e.getMessage()));
@@ -495,6 +495,7 @@ public class DebtPositionService {
 
         // generate a new NAV code calling IUVGenerator
         String nav = generateNavCodeFromIuvGenerator(creditorInstitutionId);
+        generateREForCreatedNAV(sessionData, iuv, nav);
 
         // update the payment option to be used in bulk insert with the newly generated NAV code
         List<PaymentOptionModelDto> paymentOptions = extractedPaymentPosition.getPaymentOption();
@@ -534,7 +535,7 @@ public class DebtPositionService {
 
     private void handlePaymentPositionInsertion(DebtPositionsApiApi gpdClientInstance, SessionDataDTO sessionData, List<PaymentPositionModelDto> extractedPaymentPositions, List<String> iuvToSaveInBulkOperation) {
 
-        // execute the handle if and only if there is at least one paymento position to be added
+        // execute the handle if and only if there is at least one payment position to be added
         if (!iuvToSaveInBulkOperation.isEmpty()) {
 
             try {
@@ -549,7 +550,7 @@ public class DebtPositionService {
                 gpdClientInstance.createMultiplePositions(creditorInstitutionId, multiplePaymentPositions, MDC.get(Constants.MDC_REQUEST_ID), true);
 
                 // generate and save events in RE for trace the bulk insertion of payment positions
-                generateReForBulkInsert(extractedPaymentPositions);
+                generateREForBulkInsert(extractedPaymentPositions);
 
             } catch (RestClientException e) {
                 throw new AppException(AppErrorCodeMessageEnum.CLIENT_GPD, String.format("RestClientException ERROR [%s] - %s", e.getCause().getClass().getCanonicalName(), e.getMessage()));
@@ -620,83 +621,84 @@ public class DebtPositionService {
     }
 
 
-    private void generateReForBulkInsert(List<PaymentPositionModelDto> paymentPositions) {
+    private void generateREForBulkInsert(List<PaymentPositionModelDto> paymentPositions) {
 
         for (PaymentPositionModelDto paymentPosition : paymentPositions) {
-
-            // setting data in MDC for next use
-            ReEventDto reEventDto = ReUtil.getREBuilder()
-                    .status(InternalStepStatus.CREATED_NEW_PAYMENT_POSITION_IN_GPD)
-                    .provider(NODO_DEI_PAGAMENTI_SPC)
-                    .sessionId(MDC.get(Constants.MDC_SESSION_ID))
-                    .primitive(MDC.get(Constants.MDC_PRIMITIVE))
-                    .cartId(MDC.get(Constants.MDC_CART_ID))
-                    .domainId(MDC.get(Constants.MDC_DOMAIN_ID))
-                    .station(MDC.get(Constants.MDC_STATION_ID))
-                    .info(String.format("IUPD = [%s]", paymentPosition.getIupd()))
-                    .build();
 
             // creating event to be persisted for RE
             List<PaymentOptionModelDto> paymentOptions = paymentPosition.getPaymentOption();
             if (paymentOptions != null && !paymentOptions.isEmpty()) {
                 PaymentOptionModelDto paymentOption = paymentOptions.get(0);
-                String nav = paymentOption.getNav();
-                reEventDto.setNoticeNumber(nav);
-                String iuv = paymentOption.getIuv();
-                reEventDto.setIuv(iuv);
-                if (Constants.NODO_INVIA_RPT.equals(MDC.get(Constants.MDC_PRIMITIVE))) {
-                    MDC.put(Constants.MDC_IUV, iuv);
-                    MDC.put(Constants.MDC_NOTICE_NUMBER, nav);
-                }
+                ReEventDto reEventDto = ReUtil.getREBuilder()
+                        .status(InternalStepStatus.CREATED_NEW_PAYMENT_POSITION_IN_GPD)
+                        .provider(NODO_DEI_PAGAMENTI_SPC)
+                        .iuv(paymentOption.getIuv())
+                        .ccp(null)
+                        .noticeNumber(paymentOption.getNav())
+                        .info(String.format("Generated by bulk creation. IUPD = [%s]", paymentPosition.getIupd()))
+                        .build();
+                reService.addRe(reEventDto);
             }
 
-            reService.addRe(reEventDto);
         }
     }
 
-    private void generateReForInvalidPaymentPosition(SessionDataDTO sessionDataDTO, String iuv) {
+    private void generateREForInvalidPaymentPosition(SessionDataDTO sessionDataDTO, String iuv) {
 
         PaymentNoticeContentDTO paymentNotice = sessionDataDTO.getPaymentNoticeByIUV(iuv);
-        generateRE(InternalStepStatus.FOUND_INVALID_PAYMENT_POSITION_IN_GPD, iuv, paymentNotice.getNoticeNumber());
+        generateRE(InternalStepStatus.FOUND_INVALID_PAYMENT_POSITION_IN_GPD, iuv, paymentNotice.getNoticeNumber(), paymentNotice.getCcp(), null);
     }
 
-    private void generateReForNotGenerableRT(SessionDataDTO sessionDataDTO, String iuv) {
+    private void generateREForCreatedNAV(SessionDataDTO sessionDataDTO, String iuv, String nav) {
 
         PaymentNoticeContentDTO paymentNotice = sessionDataDTO.getPaymentNoticeByIUV(iuv);
-        generateRE(InternalStepStatus.NEGATIVE_RT_NOT_GENERABLE, iuv, paymentNotice.getNoticeNumber());
+        generateRE(InternalStepStatus.GENERATED_NAV_FOR_NEW_PAYMENT_POSITION, iuv, nav, paymentNotice.getCcp(), null);
     }
 
-    private void generateReForNotGeneratedRT() {
-
-        generateRE(InternalStepStatus.NEGATIVE_RT_GENERATION_SKIPPED, null, null);
-    }
-
-    private void generateReForUpdatedPaymentPosition(SessionDataDTO sessionDataDTO, String iuv) {
+    private void generateREForNotGenerableRT(SessionDataDTO sessionDataDTO, String iuv) {
 
         PaymentNoticeContentDTO paymentNotice = sessionDataDTO.getPaymentNoticeByIUV(iuv);
-        generateRE(InternalStepStatus.UPDATED_EXISTING_PAYMENT_POSITION_IN_GPD, iuv, paymentNotice.getNoticeNumber());
+        generateRE(InternalStepStatus.NEGATIVE_RT_NOT_GENERABLE, iuv, paymentNotice.getNoticeNumber(), paymentNotice.getCcp(), null);
     }
 
-    private void generateRE(InternalStepStatus status, String iuv, String noticeNumber) {
+    private void generateREForGeneratedRT(SessionDataDTO sessionDataDTO, List<ReceiptDto> receipts) {
+
+        for (ReceiptDto receipt : receipts) {
+
+            String receiptInfo = "Receipt from: " + receipt.toString();
+            PaymentNoticeContentDTO paymentNotice = sessionDataDTO.getPaymentNoticeByNoticeNumber(receipt.getNoticeNumber());
+            generateRE(InternalStepStatus.NEGATIVE_RT_GENERATION_SUCCESS, paymentNotice.getIuv(), paymentNotice.getNoticeNumber(), paymentNotice.getCcp(), receiptInfo);
+        }
+    }
+
+    private void generateREForNotGeneratedRT(SessionDataDTO sessionDataDTO, List<ReceiptDto> receipts) {
+
+        for (ReceiptDto receipt : receipts) {
+
+            String receiptInfo = "Receipt from: " + receipt.toString();
+            PaymentNoticeContentDTO paymentNotice = sessionDataDTO.getPaymentNoticeByNoticeNumber(receipt.getNoticeNumber());
+            generateRE(InternalStepStatus.NEGATIVE_RT_GENERATION_SKIPPED, paymentNotice.getIuv(), paymentNotice.getNoticeNumber(), paymentNotice.getCcp(), receiptInfo);
+        }
+    }
+
+    private void generateREForUpdatedPaymentPosition(SessionDataDTO sessionDataDTO, String iuv) {
+
+        PaymentNoticeContentDTO paymentNotice = sessionDataDTO.getPaymentNoticeByIUV(iuv);
+        generateRE(InternalStepStatus.UPDATED_EXISTING_PAYMENT_POSITION_IN_GPD, iuv, paymentNotice.getNoticeNumber(), paymentNotice.getCcp(), null);
+    }
+
+    private void generateRE(InternalStepStatus status, String iuv, String noticeNumber, String ccp, String otherInfo) {
 
         // setting data in MDC for next use
-        reService.addRe(ReUtil.getREBuilder()
+        ReEventDto reEvent = ReUtil.getREBuilder()
                 .status(status)
                 .provider(NODO_DEI_PAGAMENTI_SPC)
-                .sessionId(MDC.get(Constants.MDC_SESSION_ID))
-                .primitive(MDC.get(Constants.MDC_PRIMITIVE))
-                .cartId(MDC.get(Constants.MDC_CART_ID))
-                .domainId(MDC.get(Constants.MDC_DOMAIN_ID))
-                .station(MDC.get(Constants.MDC_STATION_ID))
                 .iuv(iuv)
+                .ccp(ccp)
                 .noticeNumber(noticeNumber)
-                .build());
-
-        // set IUV and NAV as MDC constants only if request is on NodoInviaRPT
-        if (Constants.NODO_INVIA_RPT.equals(MDC.get(Constants.MDC_PRIMITIVE))) {
-            MDC.put(Constants.MDC_IUV, iuv);
-            MDC.put(Constants.MDC_NOTICE_NUMBER, noticeNumber);
-        }
+                .info(otherInfo)
+                .build();
+        reService.addRe(reEvent);
     }
 
 }

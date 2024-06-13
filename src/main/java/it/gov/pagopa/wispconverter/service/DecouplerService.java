@@ -6,6 +6,7 @@ import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.CacheRepository;
 import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
 import it.gov.pagopa.wispconverter.service.model.CachedKeysMapping;
+import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import it.gov.pagopa.wispconverter.service.model.session.PaymentNoticeContentDTO;
 import it.gov.pagopa.wispconverter.service.model.session.SessionDataDTO;
 import it.gov.pagopa.wispconverter.util.Constants;
@@ -47,9 +48,6 @@ public class DecouplerService {
 
             // save in Redis cache (accessible for this app) the mapping of the request identifier needed for RT generation in next steps
             saveMappedKeyForReceiptGeneration(sessionId, sessionData, creditorInstitutionId);
-
-            // generate and save re events internal for change status
-            generateRE();
 
         } catch (RestClientException e) {
             throw new AppException(AppErrorCodeMessageEnum.CLIENT_DECOUPLER_CACHING, String.format("RestClientException ERROR [%s] - %s", e.getCause().getClass().getCanonicalName(), e.getMessage()));
@@ -101,6 +99,9 @@ public class DecouplerService {
         DecouplerCachingKeysDto decouplerCachingKeys = new DecouplerCachingKeysDto();
         sessionData.getNAVs().forEach(noticeNumber -> decouplerCachingKeys.addKeysItem(String.format(CACHING_KEY_TEMPLATE, creditorInstitutionId, noticeNumber)));
         apiInstance.saveMapping(decouplerCachingKeys, MDC.get(Constants.MDC_REQUEST_ID));
+
+        // generate and save re events internal for change status
+        generateREForSavedMappingForDecoupler(sessionData, decouplerCachingKeys);
     }
 
     public void saveMappedKeyForReceiptGeneration(String sessionId, SessionDataDTO sessionData, String creditorInstitutionId) {
@@ -114,21 +115,40 @@ public class DecouplerService {
             // save the mapping that permits to convert a NAV-based key in a IUV-based one
             String navToIuvMappingForRTHandling = String.format(MAP_CACHING_KEY_TEMPLATE, creditorInstitutionId, paymentNoticeContentDTO.getNoticeNumber());
             this.cacheRepository.insert(navToIuvMappingForRTHandling, requestIDForRTHandling, this.requestIDMappingTTL);
+
+            // generate and save re events internal for change status
+            String infoAboutCachedKey = "Main key = [(" + requestIDForRTHandling + "," + sessionId + ")], Mapping key = [(" + navToIuvMappingForRTHandling + "," + requestIDForRTHandling + ")]";
+            generateREForSavedMappingForRTGeneration(paymentNoticeContentDTO, infoAboutCachedKey);
         }
     }
 
-    private void generateRE() {
+    private void generateREForSavedMappingForDecoupler(SessionDataDTO sessionData, DecouplerCachingKeysDto decouplerCachingKeys) {
 
-        reService.addRe(ReUtil.getREBuilder()
-                .status(InternalStepStatus.GENERATED_CACHE_FOR_DECOUPLER_ABOUT_RPT)
+        for (String key : decouplerCachingKeys.getKeys()) {
+            String[] splitKey = key.split("_");
+            if (splitKey.length == 3) {
+                PaymentNoticeContentDTO paymentNotice = sessionData.getPaymentNoticeByNoticeNumber(splitKey[2]);
+                String infoAboutCachedKey = "Decoupler key = [(" + key + ",<baseNodeId>)]";
+                generateRE(InternalStepStatus.GENERATED_CACHE_ABOUT_RPT_FOR_DECOUPLER, paymentNotice.getIuv(), paymentNotice.getNoticeNumber(), paymentNotice.getCcp(), infoAboutCachedKey);
+            }
+        }
+    }
+
+    private void generateREForSavedMappingForRTGeneration(PaymentNoticeContentDTO paymentNotice, String infoAboutCachedKey) {
+
+        generateRE(InternalStepStatus.GENERATED_CACHE_ABOUT_RPT_FOR_RT_GENERATION, paymentNotice.getIuv(), paymentNotice.getNoticeNumber(), paymentNotice.getCcp(), infoAboutCachedKey);
+    }
+
+    private void generateRE(InternalStepStatus status, String iuv, String nav, String ccp, String otherInfo) {
+
+        ReEventDto reEvent = ReUtil.getREBuilder()
+                .status(status)
                 .provider(NODO_DEI_PAGAMENTI_SPC)
-                .sessionId(MDC.get(Constants.MDC_SESSION_ID))
-                .primitive(MDC.get(Constants.MDC_PRIMITIVE))
-                .cartId(MDC.get(Constants.MDC_CART_ID))
-                .domainId(MDC.get(Constants.MDC_DOMAIN_ID))
-                .station(MDC.get(Constants.MDC_STATION_ID))
-                .iuv(MDC.get(Constants.MDC_IUV)) // null if nodoInviaCarrelloRPT
-                .noticeNumber(MDC.get(Constants.MDC_NOTICE_NUMBER)) // null if nodoInviaCarrelloRPT
-                .build());
+                .iuv(iuv)
+                .noticeNumber(nav)
+                .ccp(ccp)
+                .info(otherInfo)
+                .build();
+        reService.addRe(reEvent);
     }
 }

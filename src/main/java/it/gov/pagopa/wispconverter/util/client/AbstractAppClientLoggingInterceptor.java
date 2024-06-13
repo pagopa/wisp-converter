@@ -88,11 +88,6 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
         String operationId = MDC.get(Constants.MDC_OPERATION_ID);
         request(clientOperationId, operationId, request, body);
 
-//    MDC.getCopyOfContextMap().forEach((k,v) -> {
-//      log.debug(String.format("CLIENT AFTER MDC %s=%s",k, v));
-//    });
-
-
         ClientHttpResponse response;
         try {
             response = execution.execute(request, body);
