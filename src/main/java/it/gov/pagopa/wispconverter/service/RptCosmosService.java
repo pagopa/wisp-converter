@@ -9,6 +9,7 @@ import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import it.gov.pagopa.wispconverter.util.ReUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +25,9 @@ public class RptCosmosService {
     private final ReService reService;
 
     private final RPTRequestRepository rptRequestRepository;
+
+    @Value("${wisp-converter.re-tracing.internal.rpt-retrieving.enabled}")
+    private Boolean isTracingOnREEnabled;
 
     public RPTRequestEntity getRPTRequestEntity(String sessionId) {
 
@@ -45,12 +49,14 @@ public class RptCosmosService {
     private void generateRE(String payload) {
 
         // creating event to be persisted for RE
-        ReEventDto reEvent = ReUtil.getREBuilder()
-                .status(InternalStepStatus.FOUND_RPT_IN_STORAGE)
-                .provider(NODO_DEI_PAGAMENTI_SPC)
-                .compressedPayload(payload)
-                .compressedPayload(String.valueOf(payload != null ? payload.length() : 0))
-                .build();
-        reService.addRe(reEvent);
+        if (Boolean.TRUE.equals(isTracingOnREEnabled)) {
+            ReEventDto reEvent = ReUtil.getREBuilder()
+                    .status(InternalStepStatus.FOUND_RPT_IN_STORAGE)
+                    .provider(NODO_DEI_PAGAMENTI_SPC)
+                    .compressedPayload(payload)
+                    .compressedPayload(String.valueOf(payload != null ? payload.length() : 0))
+                    .build();
+            reService.addRe(reEvent);
+        }
     }
 }

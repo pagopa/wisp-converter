@@ -38,8 +38,8 @@ public class DecouplerService {
     @Value("${wisp-converter.cached-requestid-mapping.ttl.minutes}")
     private Long requestIDMappingTTL;
 
-    @Value("${wisp-converter.re-tracing.internal.decouplercaching.enabled}")
-    private Boolean isRETracingEnabled;
+    @Value("${wisp-converter.re-tracing.internal.decoupler-caching.enabled}")
+    private Boolean isTracingOnREEnabled;
 
     public void storeRequestMappingInCache(SessionDataDTO sessionData, String sessionId) {
 
@@ -127,19 +127,25 @@ public class DecouplerService {
 
     private void generateREForSavedMappingForDecoupler(SessionDataDTO sessionData, DecouplerCachingKeysDto decouplerCachingKeys) {
 
-        for (String key : decouplerCachingKeys.getKeys()) {
-            String[] splitKey = key.split("_");
-            if (splitKey.length == 3) {
-                PaymentNoticeContentDTO paymentNotice = sessionData.getPaymentNoticeByNoticeNumber(splitKey[2]);
-                String infoAboutCachedKey = "Decoupler key = [(key:" + key + "; value:<baseNodeId>)]";
-                generateRE(InternalStepStatus.GENERATED_CACHE_ABOUT_RPT_FOR_DECOUPLER, paymentNotice.getIuv(), paymentNotice.getNoticeNumber(), paymentNotice.getCcp(), infoAboutCachedKey);
+        // creating event to be persisted for RE
+        if (Boolean.TRUE.equals(isTracingOnREEnabled)) {
+            for (String key : decouplerCachingKeys.getKeys()) {
+                String[] splitKey = key.split("_");
+                if (splitKey.length == 3) {
+                    PaymentNoticeContentDTO paymentNotice = sessionData.getPaymentNoticeByNoticeNumber(splitKey[2]);
+                    String infoAboutCachedKey = "Decoupler key = [(key:" + key + "; value:<baseNodeId>)]";
+                    generateRE(InternalStepStatus.GENERATED_CACHE_ABOUT_RPT_FOR_DECOUPLER, paymentNotice.getIuv(), paymentNotice.getNoticeNumber(), paymentNotice.getCcp(), infoAboutCachedKey);
+                }
             }
         }
     }
 
     private void generateREForSavedMappingForRTGeneration(PaymentNoticeContentDTO paymentNotice, String infoAboutCachedKey) {
 
-        generateRE(InternalStepStatus.GENERATED_CACHE_ABOUT_RPT_FOR_RT_GENERATION, paymentNotice.getIuv(), paymentNotice.getNoticeNumber(), paymentNotice.getCcp(), infoAboutCachedKey);
+        // creating event to be persisted for RE
+        if (Boolean.TRUE.equals(isTracingOnREEnabled)) {
+            generateRE(InternalStepStatus.GENERATED_CACHE_ABOUT_RPT_FOR_RT_GENERATION, paymentNotice.getIuv(), paymentNotice.getNoticeNumber(), paymentNotice.getCcp(), infoAboutCachedKey);
+        }
     }
 
     private void generateRE(InternalStepStatus status, String iuv, String nav, String ccp, String otherInfo) {

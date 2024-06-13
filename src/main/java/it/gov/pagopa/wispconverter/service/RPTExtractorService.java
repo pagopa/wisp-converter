@@ -23,6 +23,7 @@ import jakarta.xml.soap.SOAPMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -45,6 +46,9 @@ public class RPTExtractorService {
     private final JaxbElementUtil jaxbElementUtil;
 
     private final RPTMapper mapper;
+
+    @Value("${wisp-converter.re-tracing.internal.rpt-extraction.enabled}")
+    private Boolean isTracingOnREEnabled;
 
     public SessionDataDTO extractSessionData(String primitive, String payload) {
 
@@ -228,14 +232,16 @@ public class RPTExtractorService {
     private void generateRE(SessionDataDTO sessionData) {
 
         // creating event to be persisted for RE
-        for (RPTContentDTO rpt : sessionData.getAllRPTs()) {
-            ReEventDto reEventFromRPT = ReUtil.getREBuilder()
-                    .status(InternalStepStatus.EXTRACTED_DATA_FROM_RPT)
-                    .provider(NODO_DEI_PAGAMENTI_SPC)
-                    .iuv(rpt.getIuv())
-                    .ccp(rpt.getCcp())
-                    .build();
-            reService.addRe(reEventFromRPT);
+        if (Boolean.TRUE.equals(isTracingOnREEnabled)) {
+            for (RPTContentDTO rpt : sessionData.getAllRPTs()) {
+                ReEventDto reEventFromRPT = ReUtil.getREBuilder()
+                        .status(InternalStepStatus.EXTRACTED_DATA_FROM_RPT)
+                        .provider(NODO_DEI_PAGAMENTI_SPC)
+                        .iuv(rpt.getIuv())
+                        .ccp(rpt.getCcp())
+                        .build();
+                reService.addRe(reEventFromRPT);
+            }
         }
     }
 

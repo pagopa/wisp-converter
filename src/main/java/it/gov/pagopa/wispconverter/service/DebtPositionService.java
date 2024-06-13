@@ -79,6 +79,9 @@ public class DebtPositionService {
     @Value("${wisp-converter.station-in-gpd.partial-path}")
     private String stationInGpdPartialPath;
 
+    @Value("${wisp-converter.re-tracing.internal.payment-position-analysis.enabled}")
+    private Boolean isTracingOnREEnabled;
+
 
     public void createDebtPositions(SessionDataDTO sessionData) {
 
@@ -647,46 +650,62 @@ public class DebtPositionService {
 
     private void generateREForInvalidPaymentPosition(SessionDataDTO sessionDataDTO, String iuv) {
 
-        PaymentNoticeContentDTO paymentNotice = sessionDataDTO.getPaymentNoticeByIUV(iuv);
-        generateRE(InternalStepStatus.FOUND_INVALID_PAYMENT_POSITION_IN_GPD, iuv, paymentNotice.getNoticeNumber(), paymentNotice.getCcp(), null);
+        // creating event to be persisted for RE
+        if (Boolean.TRUE.equals(isTracingOnREEnabled)) {
+            PaymentNoticeContentDTO paymentNotice = sessionDataDTO.getPaymentNoticeByIUV(iuv);
+            generateRE(InternalStepStatus.FOUND_INVALID_PAYMENT_POSITION_IN_GPD, iuv, paymentNotice.getNoticeNumber(), paymentNotice.getCcp(), null);
+        }
     }
 
     private void generateREForCreatedNAV(SessionDataDTO sessionDataDTO, String iuv, String nav) {
 
-        PaymentNoticeContentDTO paymentNotice = sessionDataDTO.getPaymentNoticeByIUV(iuv);
-        generateRE(InternalStepStatus.GENERATED_NAV_FOR_NEW_PAYMENT_POSITION, iuv, nav, paymentNotice.getCcp(), null);
+        // creating event to be persisted for RE
+        if (Boolean.TRUE.equals(isTracingOnREEnabled)) {
+            PaymentNoticeContentDTO paymentNotice = sessionDataDTO.getPaymentNoticeByIUV(iuv);
+            generateRE(InternalStepStatus.GENERATED_NAV_FOR_NEW_PAYMENT_POSITION, iuv, nav, paymentNotice.getCcp(), null);
+        }
     }
 
     private void generateREForNotGenerableRT(SessionDataDTO sessionDataDTO, String iuv) {
 
-        PaymentNoticeContentDTO paymentNotice = sessionDataDTO.getPaymentNoticeByIUV(iuv);
-        generateRE(InternalStepStatus.NEGATIVE_RT_NOT_GENERABLE, iuv, paymentNotice.getNoticeNumber(), paymentNotice.getCcp(), null);
+        // creating event to be persisted for RE
+        if (Boolean.TRUE.equals(isTracingOnREEnabled)) {
+            PaymentNoticeContentDTO paymentNotice = sessionDataDTO.getPaymentNoticeByIUV(iuv);
+            generateRE(InternalStepStatus.NEGATIVE_RT_NOT_GENERABLE, iuv, paymentNotice.getNoticeNumber(), paymentNotice.getCcp(), null);
+        }
     }
 
     private void generateREForGeneratedRT(SessionDataDTO sessionDataDTO, List<ReceiptDto> receipts) {
 
-        for (ReceiptDto receipt : receipts) {
-
-            String receiptInfo = "Receipt from: " + receipt.toString();
-            PaymentNoticeContentDTO paymentNotice = sessionDataDTO.getPaymentNoticeByNoticeNumber(receipt.getNoticeNumber());
-            generateRE(InternalStepStatus.NEGATIVE_RT_GENERATION_SUCCESS, paymentNotice.getIuv(), paymentNotice.getNoticeNumber(), paymentNotice.getCcp(), receiptInfo);
+        // creating event to be persisted for RE
+        if (Boolean.TRUE.equals(isTracingOnREEnabled)) {
+            for (ReceiptDto receipt : receipts) {
+                String receiptInfo = "Receipt from: " + receipt.toString();
+                PaymentNoticeContentDTO paymentNotice = sessionDataDTO.getPaymentNoticeByNoticeNumber(receipt.getNoticeNumber());
+                generateRE(InternalStepStatus.NEGATIVE_RT_GENERATION_SUCCESS, paymentNotice.getIuv(), paymentNotice.getNoticeNumber(), paymentNotice.getCcp(), receiptInfo);
+            }
         }
     }
 
     private void generateREForNotGeneratedRT(SessionDataDTO sessionDataDTO, List<ReceiptDto> receipts) {
 
-        for (ReceiptDto receipt : receipts) {
-
-            String receiptInfo = "Receipt from: " + receipt.toString();
-            PaymentNoticeContentDTO paymentNotice = sessionDataDTO.getPaymentNoticeByNoticeNumber(receipt.getNoticeNumber());
-            generateRE(InternalStepStatus.NEGATIVE_RT_GENERATION_SKIPPED, paymentNotice.getIuv(), paymentNotice.getNoticeNumber(), paymentNotice.getCcp(), receiptInfo);
+        // creating event to be persisted for RE
+        if (Boolean.TRUE.equals(isTracingOnREEnabled)) {
+            for (ReceiptDto receipt : receipts) {
+                String receiptInfo = "Receipt from: " + receipt.toString();
+                PaymentNoticeContentDTO paymentNotice = sessionDataDTO.getPaymentNoticeByNoticeNumber(receipt.getNoticeNumber());
+                generateRE(InternalStepStatus.NEGATIVE_RT_GENERATION_SKIPPED, paymentNotice.getIuv(), paymentNotice.getNoticeNumber(), paymentNotice.getCcp(), receiptInfo);
+            }
         }
     }
 
     private void generateREForUpdatedPaymentPosition(SessionDataDTO sessionDataDTO, String iuv) {
 
-        PaymentNoticeContentDTO paymentNotice = sessionDataDTO.getPaymentNoticeByIUV(iuv);
-        generateRE(InternalStepStatus.UPDATED_EXISTING_PAYMENT_POSITION_IN_GPD, iuv, paymentNotice.getNoticeNumber(), paymentNotice.getCcp(), null);
+        // creating event to be persisted for RE
+        if (Boolean.TRUE.equals(isTracingOnREEnabled)) {
+            PaymentNoticeContentDTO paymentNotice = sessionDataDTO.getPaymentNoticeByIUV(iuv);
+            generateRE(InternalStepStatus.UPDATED_EXISTING_PAYMENT_POSITION_IN_GPD, iuv, paymentNotice.getNoticeNumber(), paymentNotice.getCcp(), null);
+        }
     }
 
     private void generateRE(InternalStepStatus status, String iuv, String noticeNumber, String ccp, String otherInfo) {

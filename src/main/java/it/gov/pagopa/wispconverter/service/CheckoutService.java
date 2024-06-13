@@ -14,6 +14,7 @@ import it.gov.pagopa.wispconverter.service.model.session.SessionDataDTO;
 import it.gov.pagopa.wispconverter.util.ReUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
 
@@ -34,6 +35,9 @@ public class CheckoutService {
     private final ReService reService;
 
     private final CartMapper mapper;
+
+    @Value("${wisp-converter.re-tracing.internal.checkout-interaction.enabled}")
+    private Boolean isTracingOnREEnabled;
 
     public String executeCall(SessionDataDTO sessionData) {
 
@@ -98,17 +102,20 @@ public class CheckoutService {
 
     private void generateRE(SessionDataDTO sessionData, CartRequestDto cartRequest, String redirectUrl) {
 
-        for (PaymentNoticeDto paymentNoticeFromCart : cartRequest.getPaymentNotices()) {
-            PaymentNoticeContentDTO paymentNotice = sessionData.getPaymentNoticeByNoticeNumber(paymentNoticeFromCart.getNoticeNumber());
-            ReEventDto reEvent = ReUtil.getREBuilder()
-                    .status(InternalStepStatus.SAVED_RPT_IN_CART_RECEIVED_REDIRECT_URL_FROM_CHECKOUT)
-                    .provider(NODO_DEI_PAGAMENTI_SPC)
-                    .iuv(paymentNotice.getIuv())
-                    .noticeNumber(paymentNotice.getNoticeNumber())
-                    .ccp(paymentNotice.getCcp())
-                    .info(String.format("Redirect URL = [%s]", redirectUrl))
-                    .build();
-            reService.addRe(reEvent);
+        // creating event to be persisted for RE
+        if (Boolean.TRUE.equals(isTracingOnREEnabled)) {
+            for (PaymentNoticeDto paymentNoticeFromCart : cartRequest.getPaymentNotices()) {
+                PaymentNoticeContentDTO paymentNotice = sessionData.getPaymentNoticeByNoticeNumber(paymentNoticeFromCart.getNoticeNumber());
+                ReEventDto reEvent = ReUtil.getREBuilder()
+                        .status(InternalStepStatus.SAVED_RPT_IN_CART_RECEIVED_REDIRECT_URL_FROM_CHECKOUT)
+                        .provider(NODO_DEI_PAGAMENTI_SPC)
+                        .iuv(paymentNotice.getIuv())
+                        .noticeNumber(paymentNotice.getNoticeNumber())
+                        .ccp(paymentNotice.getCcp())
+                        .info(String.format("Redirect URL = [%s]", redirectUrl))
+                        .build();
+                reService.addRe(reEvent);
+            }
         }
     }
 }
