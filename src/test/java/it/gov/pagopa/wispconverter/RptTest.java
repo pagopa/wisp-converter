@@ -1,13 +1,17 @@
 package it.gov.pagopa.wispconverter;
 
 import static it.gov.pagopa.wispconverter.ConstantsTestHelper.REDIRECT_PATH;
+import static it.gov.pagopa.wispconverter.utils.TestUtils.getPaymentPositionModelBaseResponseDto;
+import static it.gov.pagopa.wispconverter.utils.TestUtils.getPaymentPositionModelDto;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 import com.azure.messaging.servicebus.ServiceBusSenderClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import it.gov.pagopa.gen.wispconverter.client.cache.model.StationCreditorInstitutionDto;
 import it.gov.pagopa.gen.wispconverter.client.iuvgenerator.model.IUVGenerationResponseDto;
 import it.gov.pagopa.gen.wispconverter.client.gpd.model.MultiplePaymentPositionModelDto;
+import it.gov.pagopa.gen.wispconverter.client.gpd.model.PaymentPositionModelDto;
 import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.RTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.ReEventRepository;
@@ -67,19 +71,20 @@ class RptTest {
     private ServiceBusSenderClient serviceBusSenderClient;
 
     @Test
-    void success() throws Exception {
+    void success_paymentPositionUpdate() throws Exception {
         String station = "mystation";
-        org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configData",TestUtils.configData(station));
+        StationCreditorInstitutionDto stationCreditorInstitutionDto = new StationCreditorInstitutionDto();
+        stationCreditorInstitutionDto.setCreditorInstitutionCode("{pa}");
+        stationCreditorInstitutionDto.setSegregationCode(12L);
+        stationCreditorInstitutionDto.setStationCode(station);
+        org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configData",TestUtils.configDataCreditorInstitutionStations(stationCreditorInstitutionDto));
         HttpHeaders headers = new HttpHeaders();
         headers.add("location","locationheader");
         it.gov.pagopa.gen.wispconverter.client.checkout.model.CartResponseDto cartResponseDto = new it.gov.pagopa.gen.wispconverter.client.checkout.model.CartResponseDto();
         cartResponseDto.setCheckoutRedirectUrl(URI.create("http://www.google.com"));
         TestUtils.setMock(checkoutClient, ResponseEntity.status(HttpStatus.FOUND).headers(headers).body(cartResponseDto));
-
-        it.gov.pagopa.gen.wispconverter.client.iuvgenerator.model.IUVGenerationResponseDto iuvGenerationModelResponseDto = new IUVGenerationResponseDto();
-        iuvGenerationModelResponseDto.setIuv("00000000");
-        TestUtils.setMock(iuveneratorClient,ResponseEntity.ok().body(iuvGenerationModelResponseDto));
-        TestUtils.setMock(gpdClient,ResponseEntity.ok().build());
+        TestUtils.setMockGet(gpdClient,ResponseEntity.ok().body(getPaymentPositionModelBaseResponseDto()));
+        TestUtils.setMockPut(gpdClient,ResponseEntity.ok().body(getPaymentPositionModelDto()));
         TestUtils.setMock(decouplerCachingClient,ResponseEntity.ok().build());
         when(rptRequestRepository.findById(any())).thenReturn(
                 Optional.of(
@@ -100,18 +105,18 @@ class RptTest {
                         });
 
         verify(checkoutClient,times(1)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
-        verify(iuveneratorClient,times(1)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
-        verify(gpdClient,times(1)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
+        verify(gpdClient,times(2)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
         verify(decouplerCachingClient,times(1)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
 
         ArgumentCaptor<Object> argument = ArgumentCaptor.forClass(Object.class);
-        verify(gpdClient).invokeAPI(any(),any(),any(),any(),argument.capture(),any(),any(),any(),any(),any(),any(),any());
-        MultiplePaymentPositionModelDto value = (MultiplePaymentPositionModelDto) argument.getValue();
+        verify(gpdClient, times(2)).invokeAPI(any(),any(),any(),any(),argument.capture(),any(),any(),any(),any(),any(),any(),any());
+        MultiplePaymentPositionModelDto value = new MultiplePaymentPositionModelDto();
+        value.setPaymentPositions(List.of((PaymentPositionModelDto) argument.getValue()));
         assertEquals(1, value.getPaymentPositions().size());
         assertEquals("TTTTTT11T11T123T", value.getPaymentPositions().get(0).getFiscalCode());
 
         ArgumentCaptor<ReEventDto> reevents = ArgumentCaptor.forClass(ReEventDto.class);
-        verify(reEventRepository,times(8)).save(any());
+        verify(reEventRepository,times(7)).save(any());
         reevents.getAllValues();
     }
 
