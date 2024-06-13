@@ -34,7 +34,7 @@ public class RTCosmosService {
                                  it.gov.pagopa.gen.wispconverter.client.cache.model.PaymentServiceProviderDto psp,
                                  InternalStepStatus entityStatusName
     ) {
-        ReEventDto.ReEventDtoBuilder reEventDtoBuilder = ReUtil.createBaseReInternal()
+        ReEventDto.ReEventDtoBuilder reEventDtoBuilder = ReUtil.getREBuilder()
                 .status(entityStatusName)
                 .provider(NODO_DEI_PAGAMENTI_SPC)
                 .sessionId(rptRequestEntity.getId())

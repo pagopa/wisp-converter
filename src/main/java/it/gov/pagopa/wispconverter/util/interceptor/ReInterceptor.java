@@ -25,8 +25,8 @@ public class ReInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        if (handler instanceof HandlerMethod) {
-            Trace trace = ((HandlerMethod) handler).getMethod().getAnnotation(Trace.class);
+        if (handler instanceof HandlerMethod handlerMethod) {
+            Trace trace = handlerMethod.getMethod().getAnnotation(Trace.class);
             if (trace != null) {
                 if (trace.reEnabled()) {
                     String businessProcess = trace.businessProcess();
@@ -34,7 +34,7 @@ public class ReInterceptor implements HandlerInterceptor {
                     MDC.put(MDC_CALL_TYPE, CallTypeEnum.SERVER.name());
                     MDC.put(MDC_EVENT_CATEGORY, EventCategoryEnum.INTERFACE.name());
                     MDC.put(MDC_EVENT_SUB_CATEGORY, EventSubcategoryEnum.REQ.name());
-                    ReEventDto reEventDtoServerIN = ReUtil.createReServerInterfaceRequest(request);
+                    ReEventDto reEventDtoServerIN = ReUtil.createREForServerInterfaceInRequestEvent(request);
                     reService.addRe(reEventDtoServerIN);
                 }
             }
@@ -44,8 +44,8 @@ public class ReInterceptor implements HandlerInterceptor {
 
     @Override
     public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
-        if (handler instanceof HandlerMethod) {
-            Trace trace = ((HandlerMethod) handler).getMethod().getAnnotation(Trace.class);
+        if (handler instanceof HandlerMethod handlerMethod) {
+            Trace trace = handlerMethod.getMethod().getAnnotation(Trace.class);
             if (trace != null) {
                 if (trace.reEnabled()) {
                     String businessProcess = trace.businessProcess();
@@ -53,7 +53,7 @@ public class ReInterceptor implements HandlerInterceptor {
                     MDC.put(MDC_CALL_TYPE, CallTypeEnum.SERVER.name());
                     MDC.put(MDC_EVENT_CATEGORY, EventCategoryEnum.INTERFACE.name());
                     MDC.put(MDC_EVENT_SUB_CATEGORY, EventSubcategoryEnum.RESP.name());
-                    ReEventDto reEventDtoServerOUT = ReUtil.createReServerInterfaceResponse(request, response);
+                    ReEventDto reEventDtoServerOUT = ReUtil.createREForServerInterfaceInResponseEvent(request, response);
                     reService.addRe(reEventDtoServerOUT);
                 }
             }

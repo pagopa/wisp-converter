@@ -5,11 +5,10 @@ import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
 import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
-import it.gov.pagopa.wispconverter.util.Constants;
+import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import it.gov.pagopa.wispconverter.util.ReUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.MDC;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,7 +27,7 @@ public class RptCosmosService {
 
     public RPTRequestEntity getRPTRequestEntity(String sessionId) {
 
-        // searching RPT by session identifier
+        // searching RPT by session identifier: if no element is found throw an exception, in the RE will be saved an exception event of failure
         Optional<RPTRequestEntity> optRPTReqEntity = this.rptRequestRepository.findById(sessionId);
         RPTRequestEntity rptRequestEntity = optRPTReqEntity.orElseThrow(() -> new AppException(AppErrorCodeMessageEnum.PERSISTENCE_RPT_NOT_FOUND, sessionId));
 
@@ -46,12 +45,12 @@ public class RptCosmosService {
     private void generateRE(String payload) {
 
         // creating event to be persisted for RE
-        reService.addRe(ReUtil.createBaseReInternal()
+        ReEventDto reEvent = ReUtil.getREBuilder()
                 .status(InternalStepStatus.FOUND_RPT_IN_STORAGE)
                 .provider(NODO_DEI_PAGAMENTI_SPC)
-                .sessionId(MDC.get(Constants.MDC_SESSION_ID))
                 .compressedPayload(payload)
                 .compressedPayload(String.valueOf(payload != null ? payload.length() : 0))
-                .build());
+                .build();
+        reService.addRe(reEvent);
     }
 }

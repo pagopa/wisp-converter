@@ -97,7 +97,7 @@ public class CheckoutService {
 
     private void generateRE(String redirectUrl) {
 
-        reService.addRe(ReUtil.createBaseReInternal()
+        reService.addRe(ReUtil.getREBuilder()
                 .status(InternalStepStatus.RECEIVED_REDIRECT_URL_FROM_CHECKOUT)
                 .provider(NODO_DEI_PAGAMENTI_SPC)
                 .sessionId(MDC.get(Constants.MDC_SESSION_ID))

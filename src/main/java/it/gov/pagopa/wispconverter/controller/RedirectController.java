@@ -53,13 +53,16 @@ public class RedirectController {
                            @RequestParam("sessionId") String sessionId,
                            HttpServletResponse response) {
         try {
+            log.info("Invoking API operation redirect - args: {}", sessionId);
             String redirectURI = converterService.convert(sessionId);
+            log.info("Successful API operation redirect - result: {}", redirectURI);
             return "redirect:" + redirectURI;
         } catch (AppException appException) {
             ErrorResponse errorResponse = errorUtil.forAppException(appException);
             ProblemDetail problemDetail = errorResponse.updateAndGetBody(this.messageSource, LocaleContextHolder.getLocale());
             errorUtil.finalizeError(problemDetail, errorResponse.getStatusCode().value());
             response.setStatus(200);
+            log.error("Failed API operation redirect - error: {}", errorResponse);
             return "error";
         } catch (Exception ex) {
             String operationId = MDC.get(Constants.MDC_OPERATION_ID);
@@ -70,6 +73,7 @@ public class RedirectController {
             ProblemDetail problemDetail = errorResponse.updateAndGetBody(this.messageSource, LocaleContextHolder.getLocale());
             errorUtil.finalizeError(problemDetail, errorResponse.getStatusCode().value());
             response.setStatus(200);
+            log.error("Failed API operation redirect - error: {}", errorResponse);
             return "error";
         }
     }

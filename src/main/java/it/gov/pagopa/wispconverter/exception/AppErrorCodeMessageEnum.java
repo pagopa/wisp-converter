@@ -38,9 +38,10 @@ public enum AppErrorCodeMessageEnum {
     // --- Receipt generation errors ---
     RECEIPT_KO_NOT_GENERATED(1400, "KO Receipt not generated", "Error while generating KO receipt. It is not possible to generate the receipt due to an error: [{0}].", HttpStatus.UNPROCESSABLE_ENTITY, ""), // TODO
     // --- DB and storage interaction errors ---
-    PERSISTENCE_RPT_NOT_FOUND(2000, "RPT not found", "Error while retrieving RPT. RPT with sessionId [{0}] not found.", HttpStatus.NOT_FOUND, ""), // TODO
-    PERSISTENCE_REQUESTID_CACHING_ERROR(2001, "RequestID caching error", "Error while reading cached RequestID. No valid value found for key [{0}].", HttpStatus.UNPROCESSABLE_ENTITY, ""), // TODO
-    PERSISTENCE_MAPPING_NAV_TO_IUV_ERROR(2002, "Mapping caching error", "Error while reading cached mapping from NAV to IUV. No valid value found for NAV-based key [{0}].", HttpStatus.UNPROCESSABLE_ENTITY, ""), // TODO
+    PERSISTENCE_SAVING_RE_ERROR(2000, "Impossible to save event", "Error while trying to store an event in Registro Event, {0}.", HttpStatus.NOT_FOUND, ""), // TODO
+    PERSISTENCE_RPT_NOT_FOUND(2001, "RPT not found", "Error while retrieving RPT. RPT with sessionId [{0}] not found.", HttpStatus.NOT_FOUND, ""), // TODO
+    PERSISTENCE_REQUESTID_CACHING_ERROR(2002, "RequestID caching error", "Error while reading cached RequestID. No valid value found for key [{0}].", HttpStatus.UNPROCESSABLE_ENTITY, ""), // TODO
+    PERSISTENCE_MAPPING_NAV_TO_IUV_ERROR(2003, "Mapping caching error", "Error while reading cached mapping from NAV to IUV. No valid value found for NAV-based key [{0}].", HttpStatus.UNPROCESSABLE_ENTITY, ""), // TODO
     // --- Client errors ---
     CLIENT_APICONFIGCACHE(3000, "APIConfig cache client error", "Error while communicating with APIConfig cache service. {0}", HttpStatus.INTERNAL_SERVER_ERROR, "An error occurred while communicating with APIConfig Cache backend internal service in order to retrieve the last generated cache. It can be related to any client problem, so the best way to handle this is to use the Technical Support's APIs in order to find the cause."),
     CLIENT_GPD(3001, "GPD client error", "Error while communicating with GPD service. {0}", HttpStatus.INTERNAL_SERVER_ERROR, "An error occurred while communicating with GPD backend services in order to execute a specific operation on payment position. It can be related to any client problem and to any particular operation, so the best way to handle this is to use the Technical Support's APIs in order to find the cause."),

@@ -119,7 +119,7 @@ public class DecouplerService {
 
     private void generateRE() {
 
-        reService.addRe(ReUtil.createBaseReInternal()
+        reService.addRe(ReUtil.getREBuilder()
                 .status(InternalStepStatus.GENERATED_CACHE_FOR_DECOUPLER_ABOUT_RPT)
                 .provider(NODO_DEI_PAGAMENTI_SPC)
                 .sessionId(MDC.get(Constants.MDC_SESSION_ID))

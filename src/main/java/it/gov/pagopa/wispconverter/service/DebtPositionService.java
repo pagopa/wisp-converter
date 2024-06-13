@@ -625,7 +625,7 @@ public class DebtPositionService {
         for (PaymentPositionModelDto paymentPosition : paymentPositions) {
 
             // setting data in MDC for next use
-            ReEventDto reEventDto = ReUtil.createBaseReInternal()
+            ReEventDto reEventDto = ReUtil.getREBuilder()
                     .status(InternalStepStatus.CREATED_NEW_PAYMENT_POSITION_IN_GPD)
                     .provider(NODO_DEI_PAGAMENTI_SPC)
                     .sessionId(MDC.get(Constants.MDC_SESSION_ID))
@@ -680,7 +680,7 @@ public class DebtPositionService {
     private void generateRE(InternalStepStatus status, String iuv, String noticeNumber) {
 
         // setting data in MDC for next use
-        reService.addRe(ReUtil.createBaseReInternal()
+        reService.addRe(ReUtil.getREBuilder()
                 .status(status)
                 .provider(NODO_DEI_PAGAMENTI_SPC)
                 .sessionId(MDC.get(Constants.MDC_SESSION_ID))

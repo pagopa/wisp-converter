@@ -104,18 +104,18 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
 
             MDC.put(Constants.MDC_EVENT_SUB_CATEGORY, EventSubcategoryEnum.REQ.name());
             log.debug("[intercept] add RE CLIENT OUT - Sent");
-            ReEventDto reEventDtoClientIN = ReUtil.createReClientInterfaceRequest(request, body, OutcomeEnum.SEND);
+            ReEventDto reEventDtoClientIN = ReUtil.createREForClientInterfaceInRequestEvent(request, body, OutcomeEnum.SEND);
             reService.addRe(reEventDtoClientIN);
 
             if (response.getStatusCode().is2xxSuccessful()) {
                 MDC.put(Constants.MDC_EVENT_SUB_CATEGORY, EventSubcategoryEnum.RESP.name());
                 log.debug("[intercept] add RE CLIENT IN - Sent - RECEIVED");
-                ReEventDto reEventDtoClientOUT = ReUtil.createReClientInterfaceResponse(request, response, OutcomeEnum.RECEIVED);
+                ReEventDto reEventDtoClientOUT = ReUtil.createREForClientInterfaceInResponseEvent(request, response, OutcomeEnum.RECEIVED);
                 reService.addRe(reEventDtoClientOUT);
             } else {
                 MDC.put(Constants.MDC_EVENT_SUB_CATEGORY, EventSubcategoryEnum.RESP.name());
                 log.debug("[intercept] add RE CLIENT IN - Sent - RECEIVED_FAILURE");
-                ReEventDto reEventDtoClientOUT = ReUtil.createReClientInterfaceResponse(request, response, OutcomeEnum.RECEIVED_FAILURE);
+                ReEventDto reEventDtoClientOUT = ReUtil.createREForClientInterfaceInResponseEvent(request, response, OutcomeEnum.RECEIVED_FAILURE);
                 reService.addRe(reEventDtoClientOUT);
             }
 
@@ -128,12 +128,12 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
 
             MDC.put(Constants.MDC_EVENT_SUB_CATEGORY, EventSubcategoryEnum.REQ.name());
             log.debug("[intercept] add RE CLIENT OUT - NOT Sent");
-            ReEventDto reEventDtoClientIN = ReUtil.createReClientInterfaceRequest(request, body, OutcomeEnum.SEND_FAILURE);
+            ReEventDto reEventDtoClientIN = ReUtil.createREForClientInterfaceInRequestEvent(request, body, OutcomeEnum.SEND_FAILURE);
             reService.addRe(reEventDtoClientIN);
 
             MDC.put(Constants.MDC_EVENT_SUB_CATEGORY, EventSubcategoryEnum.RESP.name());
             log.debug("[intercept] add RE CLIENT IN - NOT Sent - NEVER_RECEIVED");
-            ReEventDto reEventDtoClientOUT = ReUtil.createReClientInterfaceResponse(request, null, OutcomeEnum.NEVER_RECEIVED);
+            ReEventDto reEventDtoClientOUT = ReUtil.createREForClientInterfaceInResponseEvent(request, null, OutcomeEnum.NEVER_RECEIVED);
             reService.addRe(reEventDtoClientOUT);
 
             response(clientOperationId, operationId, executionClientTime, request, null);
