@@ -101,7 +101,7 @@ class RptTest {
         mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.status().is(HttpStatus.FOUND.value()))
                 .andDo(
-                        (result) -> {
+                        result -> {
                             assertNotNull(result);
                             assertNotNull(result.getResponse());
                         });
@@ -152,7 +152,7 @@ class RptTest {
         mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.status().is2xxSuccessful())
                 .andDo(
-                        (result) -> {
+                        result -> {
                             assertNotNull(result);
                             assertNotNull(result.getResponse());
                         });
@@ -197,7 +197,7 @@ class RptTest {
         mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.status().is(HttpStatus.FOUND.value()))
                 .andDo(
-                        (result) -> {
+                        result -> {
                             assertNotNull(result);
                             assertNotNull(result.getResponse());
                         });
@@ -239,7 +239,7 @@ class RptTest {
         mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.status().is(HttpStatus.FOUND.value()))
                 .andDo(
-                        (result) -> {
+                        result -> {
                             assertNotNull(result);
                             assertNotNull(result.getResponse());
                         });
@@ -254,7 +254,7 @@ class RptTest {
     void fail_rptNotFound() throws Exception {
         MvcResult resultActions = mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.status().is2xxSuccessful()).andDo(
-                        (result) -> {
+                        result -> {
                             assertNotNull(result);
                             assertNotNull(result.getResponse());
                         }).andReturn();
@@ -291,7 +291,7 @@ class RptTest {
 
         MvcResult resultActions = mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.status().is2xxSuccessful()).andDo(
-                        (result) -> {
+                        result -> {
                             assertNotNull(result);
                             assertNotNull(result.getResponse());
                         }).andReturn();
@@ -323,7 +323,7 @@ class RptTest {
 
         MvcResult resultActions = mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.status().is2xxSuccessful()).andDo(
-                        (result) -> {
+                        result -> {
                             assertNotNull(result);
                             assertNotNull(result.getResponse());
                         }).andReturn();

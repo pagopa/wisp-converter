@@ -25,7 +25,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 class ConsumerTest {
 
     @Test
-    void ok() throws Exception {
+    void ok() {
 
         ServiceBusReceivedMessageContext messageContext = mock(ServiceBusReceivedMessageContext.class);
         ServiceBusReceivedMessage message = mock(ServiceBusReceivedMessage.class);
@@ -54,7 +54,7 @@ class ConsumerTest {
     }
 
     @Test
-    void moreThanMax() throws Exception {
+    void moreThanMax() {
 
         ServiceBusReceivedMessageContext messageContext = mock(ServiceBusReceivedMessageContext.class);
         ServiceBusReceivedMessage message = mock(ServiceBusReceivedMessage.class);
@@ -84,7 +84,7 @@ class ConsumerTest {
     }
 
     @Test
-    void koSendToPa() throws Exception {
+    void koSendToPa() {
 
         ServiceBusSenderClient serviceBusSenderClient = mock(ServiceBusSenderClient.class);
 
@@ -114,13 +114,13 @@ class ConsumerTest {
 
         rtConsumer.processMessage(messageContext);
 
-        assertEquals(receipt.getRetry(),1);
+        assertEquals(1,receipt.getRetry());
         verify(rtRequestRepository,times(1)).save(receipt);
         verify(serviceBusSenderClient,times(1)).sendMessage(any());
 
     }
     @Test
-    public void testprocesserror(){
+    void testprocesserror(){
         ServiceBusErrorContext serviceBusErrorContext = mock(ServiceBusErrorContext.class);
     when(serviceBusErrorContext.getException())
         .thenReturn(new ServiceBusException(new RuntimeException(),ServiceBusErrorSource.UNKNOWN));
@@ -129,7 +129,7 @@ class ConsumerTest {
         assertTrue(true);
     }
     @Test
-    public void testprocesserror2(){
+    void testprocesserror2(){
         ServiceBusErrorContext serviceBusErrorContext = mock(ServiceBusErrorContext.class);
         when(serviceBusErrorContext.getException())
                 .thenReturn(new ServiceBusException(new AmqpException(true, AmqpErrorCondition.MESSAGE_LOCK_LOST,"",null),ServiceBusErrorSource.UNKNOWN));
@@ -138,7 +138,7 @@ class ConsumerTest {
         assertTrue(true);
     }
     @Test
-    public void testprocesserror3(){
+    void testprocesserror3(){
         ServiceBusErrorContext serviceBusErrorContext = mock(ServiceBusErrorContext.class);
         when(serviceBusErrorContext.getException())
                 .thenReturn(new ServiceBusException(new AmqpException(true, AmqpErrorCondition.UNAUTHORIZED_ACCESS,"",null),ServiceBusErrorSource.UNKNOWN));

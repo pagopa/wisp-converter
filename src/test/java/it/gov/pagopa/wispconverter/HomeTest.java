@@ -21,8 +21,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 @ActiveProfiles(profiles = "test")
 @SpringBootTest(classes = Application.class)
 @AutoConfigureMockMvc
@@ -61,7 +59,7 @@ class HomeTest {
     void info() throws Exception {
         mvc.perform(MockMvcRequestBuilders.get("/info").accept(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.status().is2xxSuccessful()).andDo(
-                        (result) -> {
+                        result -> {
                             assertNotNull(result);
                             assertNotNull(result.getResponse());
                             final String content = result.getResponse().getContentAsString();

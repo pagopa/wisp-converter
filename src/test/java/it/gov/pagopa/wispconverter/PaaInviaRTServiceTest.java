@@ -17,10 +17,10 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class PaaInviaRTServiceTest {
+class PaaInviaRTServiceTest {
 
     @Test
-    public void esitoOK(){
+    void esitoOK(){
         RestClient.Builder builder = mock(RestClient.Builder.class);
         RestClient client = mock(RestClient.class);
         when(builder.build()).thenReturn(client);
@@ -47,7 +47,7 @@ public class PaaInviaRTServiceTest {
     }
 
     @Test
-    public void esitoKO(){
+    void esitoKO(){
         RestClient.Builder builder = mock(RestClient.Builder.class);
         RestClient client = mock(RestClient.class);
         when(builder.build()).thenReturn(client);

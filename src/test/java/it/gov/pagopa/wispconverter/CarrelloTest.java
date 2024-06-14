@@ -98,7 +98,7 @@ class CarrelloTest {
         mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.status().is(HttpStatus.FOUND.value()))
                 .andDo(
-                        (result) -> {
+                        result -> {
                             Assert.assertNotNull(result);
                             Assert.assertNotNull(result.getResponse());
                         });
@@ -143,7 +143,7 @@ class CarrelloTest {
         mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.status().is2xxSuccessful())
                 .andDo(
-                        (result) -> {
+                        result -> {
                             assertNotNull(result);
                             assertNotNull(result.getResponse());
                             assertTrue(result.getResponse().getContentAsString().contains("Riprova, oppure contatta l'assistenza"));
