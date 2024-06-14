@@ -185,7 +185,7 @@ public class TestUtils {
         String rpt = TestUtils.loadFileContent(bollo?"/requests/rptBollo.xml":"/requests/rpt.xml");
         return rpt
                 .replace("{datiSpecificiRiscossione}",datiSpecificiRiscossione)
-                .replaceAll("\\{amount\\}", amount);
+                .replaceAll("\\{amount}", amount);
     }
 
     public static String getRptPayload(boolean bollo,String station,String amount,String datiSpecificiRiscossione){
@@ -195,7 +195,7 @@ public class TestUtils {
         String rpt = TestUtils.loadFileContent(bollo?"/requests/rptBollo.xml":"/requests/rpt.xml");
         String rptreplace = rpt
                 .replace("{datiSpecificiRiscossione}",datiSpecificiRiscossione)
-                .replaceAll("\\{amount\\}", amount);
+                .replaceAll("\\{amount}", amount);
         String nodoInviaRPT = TestUtils.loadFileContent("/requests/nodoInviaRPT.xml");
         return nodoInviaRPT
                 .replace("{station}",station)
@@ -203,10 +203,12 @@ public class TestUtils {
     }
 
     public static String getCarrelloPayload(int numofrpt,String station,String amount,boolean multibeneficiario){
-        String rpt = TestUtils.loadFileContent("/requests/rpt.xml");
-        String rptreplace = rpt.replaceAll("\\{amount\\}", amount);
+        String rpt = TestUtils.loadFileContent("/requests/rptCart.xml");
+        String rptReplaceAmount = rpt.replaceAll("\\{amount}", amount);
+        String iuv = "123456IUVMOCK%s";
         StringBuilder listaRpt = new StringBuilder("");
         for(int i=0;i<numofrpt;i++){
+            String rptReplaceIuv = rptReplaceAmount.replaceAll("\\{iuv}", String.format(iuv, i));
             listaRpt.append(
                     ("<elementoListaRPT>"+
                             "<identificativoDominio></identificativoDominio>"+
@@ -214,7 +216,7 @@ public class TestUtils {
                             "<codiceContestoPagamento></codiceContestoPagamento>"+
                             "<tipoFirma></tipoFirma>"+
                             "<rpt>{rpt}</rpt>" +
-                            "</elementoListaRPT>").replace("{rpt}",Base64.getEncoder().encodeToString(rptreplace.getBytes(StandardCharsets.UTF_8)))
+                            "</elementoListaRPT>").replace("{rpt}",Base64.getEncoder().encodeToString(rptReplaceIuv.getBytes(StandardCharsets.UTF_8)))
             );
         }
 

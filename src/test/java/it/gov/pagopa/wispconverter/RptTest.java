@@ -12,7 +12,6 @@ import it.gov.pagopa.gen.wispconverter.client.cache.model.StationCreditorInstitu
 import it.gov.pagopa.gen.wispconverter.client.iuvgenerator.model.IUVGenerationResponseDto;
 import it.gov.pagopa.gen.wispconverter.client.gpd.model.MultiplePaymentPositionModelDto;
 import it.gov.pagopa.gen.wispconverter.client.gpd.model.PaymentPositionModelDto;
-import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.RTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.ReEventRepository;
@@ -127,7 +126,9 @@ class RptTest {
         org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configData",TestUtils.configData(station));
         HttpHeaders headers = new HttpHeaders();
         headers.add("location","locationheader");
-        TestUtils.setMock(checkoutClient, ResponseEntity.status(HttpStatus.FOUND).headers(headers).build());
+        it.gov.pagopa.gen.wispconverter.client.checkout.model.CartResponseDto cartResponseDto = new it.gov.pagopa.gen.wispconverter.client.checkout.model.CartResponseDto();
+        cartResponseDto.setCheckoutRedirectUrl(URI.create("http://www.google.com"));
+        TestUtils.setMock(checkoutClient, ResponseEntity.status(HttpStatus.FOUND).headers(headers).body(cartResponseDto));
 
         IUVGenerationResponseDto iuvGenerationModelResponseDto = new IUVGenerationResponseDto();
         iuvGenerationModelResponseDto.setIuv("123456IUVMOCK2");
@@ -148,7 +149,7 @@ class RptTest {
 
 
         mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
-                .andExpect(MockMvcResultMatchers.status().is2xxSuccessful())
+                .andExpect(MockMvcResultMatchers.status().is(HttpStatus.FOUND.value()))
                 .andDo(
                         (result) -> {
                             assertNotNull(result);
@@ -167,7 +168,9 @@ class RptTest {
         org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configData",TestUtils.configData(station));
         HttpHeaders headers = new HttpHeaders();
         headers.add("location","locationheader");
-        TestUtils.setMock(checkoutClient, ResponseEntity.status(HttpStatus.FOUND).headers(headers).build());
+        it.gov.pagopa.gen.wispconverter.client.checkout.model.CartResponseDto cartResponseDto = new it.gov.pagopa.gen.wispconverter.client.checkout.model.CartResponseDto();
+        cartResponseDto.setCheckoutRedirectUrl(URI.create("http://www.google.com"));
+        TestUtils.setMock(checkoutClient, ResponseEntity.status(HttpStatus.FOUND).headers(headers).body(cartResponseDto));
 
         IUVGenerationResponseDto iuvGenerationModelResponseDto = new IUVGenerationResponseDto();
         iuvGenerationModelResponseDto.setIuv("00000000");
@@ -188,7 +191,7 @@ class RptTest {
 
 
         mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
-                .andExpect(MockMvcResultMatchers.status().is2xxSuccessful())
+                .andExpect(MockMvcResultMatchers.status().is(HttpStatus.FOUND.value()))
                 .andDo(
                         (result) -> {
                             assertNotNull(result);
