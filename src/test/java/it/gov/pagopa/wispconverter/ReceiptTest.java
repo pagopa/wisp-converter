@@ -127,12 +127,13 @@ class ReceiptTest {
         String station = "mystation";
         org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configData",TestUtils.configData(station));
 
-        when(rptRequestRepository.findById(any())).thenReturn(Optional.of(RPTRequestEntity
-                .builder()
+        when(rptRequestRepository.findById(any()))
+                .thenReturn(Optional.of(RPTRequestEntity.builder()
                         .id(UUID.randomUUID().toString())
                         .primitive("nodoInviaRPT")
                         .payload(TestUtils.zipAndEncode(TestUtils.getRptPayload(false,"mystation","10.00","dati")))
-                .build()));
+                        .build()
+                ));
         when(cacheRepository.read(any(),any())).thenReturn("wisp_nav2iuv_dominio");
 
         ReceiptDto[] receiptDtos = {

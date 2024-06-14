@@ -243,11 +243,20 @@ public class TestUtils {
         }
     }
 
-    public static PaymentPositionModelBaseResponseDto getPaymentPositionModelBaseResponseDto(){
+    public static PaymentPositionModelBaseResponseDto getValidPaymentPositionModelBaseResponseDto(){
         PaymentPositionModelBaseResponseDto paymentPositionModelBaseResponseDto = new PaymentPositionModelBaseResponseDto();
         paymentPositionModelBaseResponseDto.setOrganizationFiscalCode("org12345678");
         paymentPositionModelBaseResponseDto.setIupd("abcd-efgh-ilmn-opqr");
         paymentPositionModelBaseResponseDto.setStatus(PaymentPositionModelBaseResponseDto.StatusEnum.VALID);
+        paymentPositionModelBaseResponseDto.setPaymentOption(List.of(getPaymentOptionModelResponseDto()));
+        return paymentPositionModelBaseResponseDto;
+    }
+
+    public static PaymentPositionModelBaseResponseDto getInvalidPaymentPositionModelBaseResponseDto(){
+        PaymentPositionModelBaseResponseDto paymentPositionModelBaseResponseDto = new PaymentPositionModelBaseResponseDto();
+        paymentPositionModelBaseResponseDto.setOrganizationFiscalCode("org12345678");
+        paymentPositionModelBaseResponseDto.setIupd("abcd-efgh-ilmn-opqr");
+        paymentPositionModelBaseResponseDto.setStatus(PaymentPositionModelBaseResponseDto.StatusEnum.INVALID);
         paymentPositionModelBaseResponseDto.setPaymentOption(List.of(getPaymentOptionModelResponseDto()));
         return paymentPositionModelBaseResponseDto;
     }

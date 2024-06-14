@@ -1,8 +1,7 @@
 package it.gov.pagopa.wispconverter;
 
 import static it.gov.pagopa.wispconverter.ConstantsTestHelper.REDIRECT_PATH;
-import static it.gov.pagopa.wispconverter.utils.TestUtils.getPaymentPositionModelBaseResponseDto;
-import static it.gov.pagopa.wispconverter.utils.TestUtils.getPaymentPositionModelDto;
+import static it.gov.pagopa.wispconverter.utils.TestUtils.*;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
@@ -12,6 +11,7 @@ import it.gov.pagopa.gen.wispconverter.client.cache.model.StationCreditorInstitu
 import it.gov.pagopa.gen.wispconverter.client.iuvgenerator.model.IUVGenerationResponseDto;
 import it.gov.pagopa.gen.wispconverter.client.gpd.model.MultiplePaymentPositionModelDto;
 import it.gov.pagopa.gen.wispconverter.client.gpd.model.PaymentPositionModelDto;
+import it.gov.pagopa.wispconverter.repository.CacheRepository;
 import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.RTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.ReEventRepository;
@@ -69,9 +69,11 @@ class RptTest {
     private ReEventRepository reEventRepository;
     @MockBean
     private ServiceBusSenderClient serviceBusSenderClient;
+    @MockBean
+    private CacheRepository cacheRepository;
 
     @Test
-    void success_debtPositionUpdate() throws Exception {
+    void success_debtPositionUpdateValid() throws Exception {
         String station = "mystation";
         StationCreditorInstitutionDto stationCreditorInstitutionDto = new StationCreditorInstitutionDto();
         stationCreditorInstitutionDto.setCreditorInstitutionCode("{pa}");
@@ -83,7 +85,7 @@ class RptTest {
         it.gov.pagopa.gen.wispconverter.client.checkout.model.CartResponseDto cartResponseDto = new it.gov.pagopa.gen.wispconverter.client.checkout.model.CartResponseDto();
         cartResponseDto.setCheckoutRedirectUrl(URI.create("http://www.google.com"));
         TestUtils.setMock(checkoutClient, ResponseEntity.status(HttpStatus.FOUND).headers(headers).body(cartResponseDto));
-        TestUtils.setMockGet(gpdClient,ResponseEntity.ok().body(getPaymentPositionModelBaseResponseDto()));
+        TestUtils.setMockGet(gpdClient,ResponseEntity.ok().body(getValidPaymentPositionModelBaseResponseDto()));
         TestUtils.setMockPut(gpdClient,ResponseEntity.ok().body(getPaymentPositionModelDto()));
         TestUtils.setMock(decouplerCachingClient,ResponseEntity.ok().build());
         when(rptRequestRepository.findById(any())).thenReturn(
@@ -117,6 +119,50 @@ class RptTest {
 
         ArgumentCaptor<ReEventDto> reevents = ArgumentCaptor.forClass(ReEventDto.class);
         verify(reEventRepository,times(7)).save(any());
+        reevents.getAllValues();
+    }
+
+    @Test
+    void success_debtPositionUpdateInvalid() throws Exception {
+        String station = "mystation";
+        StationCreditorInstitutionDto stationCreditorInstitutionDto = new StationCreditorInstitutionDto();
+        stationCreditorInstitutionDto.setCreditorInstitutionCode("{pa}");
+        stationCreditorInstitutionDto.setSegregationCode(12L);
+        stationCreditorInstitutionDto.setStationCode(station);
+        org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configData",TestUtils.configDataCreditorInstitutionStations(stationCreditorInstitutionDto));
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("location","locationheader");
+        it.gov.pagopa.gen.wispconverter.client.checkout.model.CartResponseDto cartResponseDto = new it.gov.pagopa.gen.wispconverter.client.checkout.model.CartResponseDto();
+        cartResponseDto.setCheckoutRedirectUrl(URI.create("http://www.google.com"));
+        TestUtils.setMock(checkoutClient, ResponseEntity.status(HttpStatus.FOUND).headers(headers).body(cartResponseDto));
+        TestUtils.setMockGet(gpdClient,ResponseEntity.ok().body(getInvalidPaymentPositionModelBaseResponseDto()));
+        TestUtils.setMockPut(gpdClient,ResponseEntity.ok().body(getPaymentPositionModelDto()));
+        TestUtils.setMock(decouplerCachingClient,ResponseEntity.ok().build());
+        when(rptRequestRepository.findById(any()))
+                .thenReturn(Optional.of(
+                        RPTRequestEntity.builder()
+                                .primitive("nodoInviaRPT")
+                                .payload(TestUtils.zipAndEncode(TestUtils.getRptPayload(false,station,"100.00",null)))
+                                .build()
+                )
+        );
+        when(cacheRepository.read(any(),any())).thenReturn("wisp_nav2iuv_dominio");
+        when(redisSimpleTemplate.opsForValue()).thenReturn(mock(ValueOperations.class));
+
+        mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
+                .andExpect(MockMvcResultMatchers.status().is2xxSuccessful())
+                .andDo(
+                        (result) -> {
+                            assertNotNull(result);
+                            assertNotNull(result.getResponse());
+                        });
+
+        verify(gpdClient,times(1)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
+        verify(decouplerCachingClient,times(0)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
+        verify(checkoutClient,times(0)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
+
+        ArgumentCaptor<ReEventDto> reevents = ArgumentCaptor.forClass(ReEventDto.class);
+        verify(reEventRepository,times(9)).save(any());
         reevents.getAllValues();
     }
 
