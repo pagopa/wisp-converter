@@ -69,7 +69,7 @@ public class DebtPositionService {
 
     private final Pattern taxonomyPattern = Pattern.compile("([^/]++/[^/]++)/?");
 
-    private final String REST_CLIENT_LOG_STRING = "RestClientException ERROR [%s] - %s";
+    private static final String REST_CLIENT_LOG_STRING = "RestClientException ERROR [%s] - %s";
 
     @Value("${wisp-converter.poste-italiane.abi-code}")
     private String posteItalianeABICode;

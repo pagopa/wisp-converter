@@ -147,7 +147,7 @@ class ConsumerTest {
         assertTrue(true);
     }
     @Test
-    public void testprocesserror4(){
+    void testprocesserror4(){
         ServiceBusErrorContext serviceBusErrorContext = mock(ServiceBusErrorContext.class);
         when(serviceBusErrorContext.getException())
                 .thenReturn(new ServiceBusException(new AmqpException(true, AmqpErrorCondition.SERVER_BUSY_ERROR,"",null),ServiceBusErrorSource.UNKNOWN));
@@ -156,7 +156,7 @@ class ConsumerTest {
         assertTrue(true);
     }
     @Test
-    public void testprocesserror5(){
+    void testprocesserror5(){
         ServiceBusErrorContext serviceBusErrorContext = mock(ServiceBusErrorContext.class);
     when(serviceBusErrorContext.getException())
         .thenReturn(
