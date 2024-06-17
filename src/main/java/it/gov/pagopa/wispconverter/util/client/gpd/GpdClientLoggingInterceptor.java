@@ -12,22 +12,27 @@ import org.springframework.http.client.ClientHttpResponse;
 @Slf4j
 public class GpdClientLoggingInterceptor extends AbstractAppClientLoggingInterceptor {
 
-  public GpdClientLoggingInterceptor(RequestResponseLoggingProperties clientLoggingProperties, ReService reService){
-    super(clientLoggingProperties, reService, ClientServiceEnum.GPD);
-  }
+    public GpdClientLoggingInterceptor(RequestResponseLoggingProperties clientLoggingProperties, ReService reService, Boolean isTracingOfClientOnREEnabled) {
+        super(clientLoggingProperties, reService, ClientServiceEnum.GPD);
 
-  @Override
-  protected void request(String clientOperationId, String operationId, HttpRequest request, byte[] reqBody) {
-    if(log.isDebugEnabled()){
-      log.debug(createRequestMessage(clientOperationId, operationId, request, reqBody));
+        // avoiding persistence of client invocation on RE
+        if (Boolean.FALSE.equals(isTracingOfClientOnREEnabled)) {
+            avoidEventPersistenceOnRE();
+        }
     }
-  }
 
-  @SneakyThrows
-  @Override
-  protected void response(String clientOperationId, String operationId, String clientExecutionTime, HttpRequest request, ClientHttpResponse response) {
-    if(log.isDebugEnabled()){
-      log.debug(createResponseMessage(clientOperationId, operationId, clientExecutionTime, request, response));
+    @Override
+    protected void request(String clientOperationId, String operationId, HttpRequest request, byte[] reqBody) {
+        if (log.isDebugEnabled()) {
+            log.debug(createRequestMessage(clientOperationId, operationId, request, reqBody));
+        }
     }
-  }
+
+    @SneakyThrows
+    @Override
+    protected void response(String clientOperationId, String operationId, String clientExecutionTime, HttpRequest request, ClientHttpResponse response) {
+        if (log.isDebugEnabled()) {
+            log.debug(createResponseMessage(clientOperationId, operationId, clientExecutionTime, request, response));
+        }
+    }
 }

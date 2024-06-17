@@ -38,6 +38,9 @@ public class DecouplerCachingClientConfig {
     @Value("${client.decoupler-caching.api-key}")
     private String apiKey;
 
+    @Value("${wisp-converter.re-tracing.interface.decoupler-caching.enabled}")
+    private Boolean isTracingOfClientOnREEnabled;
+
 
     @Bean
     @ConfigurationProperties(prefix = "log.client.decoupler-caching")
@@ -49,7 +52,7 @@ public class DecouplerCachingClientConfig {
     public it.gov.pagopa.gen.wispconverter.client.decouplercaching.invoker.ApiClient decouplerCachingClient() {
         RequestResponseLoggingProperties clientLoggingProperties = decouplerCachingClientLoggingProperties();
 
-        DecouplerCachingClientLoggingInterceptor clientLogging = new DecouplerCachingClientLoggingInterceptor(clientLoggingProperties, reService);
+        DecouplerCachingClientLoggingInterceptor clientLogging = new DecouplerCachingClientLoggingInterceptor(clientLoggingProperties, reService, isTracingOfClientOnREEnabled);
 
         RestTemplate restTemplate = restTemplate();
 

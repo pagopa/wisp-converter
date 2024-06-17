@@ -8,9 +8,10 @@ import gov.telematici.pagamenti.ws.nodoperpa.ppthead.IntestazionePPT;
 import it.gov.digitpa.schemas._2011.pagamenti.CtRichiestaPagamentoTelematico;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
+import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
 import it.gov.pagopa.wispconverter.service.mapper.RPTMapper;
 import it.gov.pagopa.wispconverter.service.model.paymentrequest.PaymentRequestDTO;
-import it.gov.pagopa.wispconverter.service.model.re.EntityStatusEnum;
+import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import it.gov.pagopa.wispconverter.service.model.session.CommonFieldsDTO;
 import it.gov.pagopa.wispconverter.service.model.session.RPTContentDTO;
 import it.gov.pagopa.wispconverter.service.model.session.SessionDataDTO;
@@ -22,6 +23,7 @@ import jakarta.xml.soap.SOAPMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -45,6 +47,9 @@ public class RPTExtractorService {
 
     private final RPTMapper mapper;
 
+    @Value("${wisp-converter.re-tracing.internal.rpt-extraction.enabled}")
+    private Boolean isTracingOnREEnabled;
+
     public SessionDataDTO extractSessionData(String primitive, String payload) {
 
         // extracting body from SOAP Envelope body
@@ -62,11 +67,12 @@ public class RPTExtractorService {
             case Constants.NODO_INVIA_RPT -> sessionData = extractSessionDataFromNodoInviaRPT(soapMessage);
             case Constants.NODO_INVIA_CARRELLO_RPT ->
                     sessionData = extractSessionDataFromNodoInviaCarrelloRPT(soapMessage);
-            default -> throw new AppException(AppErrorCodeMessageEnum.PARSING_PRIMITIVE_NOT_VALID);
+            default -> throw new AppException(AppErrorCodeMessageEnum.PARSING_RPT_PRIMITIVE_NOT_VALID);
         }
 
         // generate and save RE event internal for change status
-        generateRE(sessionData, primitive);
+        setSessionDataInfoInMDC(sessionData, primitive);
+        generateRE(sessionData);
 
         return sessionData;
     }
@@ -85,9 +91,12 @@ public class RPTExtractorService {
         // finally, generate session data
         return SessionDataDTO.builder()
                 .commonFields(CommonFieldsDTO.builder()
+                        .sessionId(MDC.get(Constants.MDC_SESSION_ID))
                         .creditorInstitutionId(creditorInstitutionId)
+                        .pspId(soapBody.getIdentificativoPSP())
                         .creditorInstitutionBrokerId(soapHeader.getIdentificativoIntermediarioPA())
                         .stationId(soapHeader.getIdentificativoStazioneIntermediarioPA())
+                        .channelId(soapBody.getIdentificativoCanale())
                         .payerType(rpt.getPayer().getSubjectUniqueIdentifier().getType())
                         .payerFiscalCode(rpt.getPayer().getSubjectUniqueIdentifier().getCode())
                         .payerFullName(rpt.getPayer().getName())
@@ -181,10 +190,13 @@ public class RPTExtractorService {
         // finally, generate session data
         return SessionDataDTO.builder()
                 .commonFields(CommonFieldsDTO.builder()
+                        .sessionId(MDC.get(Constants.MDC_SESSION_ID))
                         .cartId(soapHeader.getIdentificativoCarrello())
                         .creditorInstitutionId(creditorInstitutionId)
+                        .pspId(soapBody.getIdentificativoPSP())
                         .creditorInstitutionBrokerId(soapHeader.getIdentificativoIntermediarioPA())
                         .stationId(soapHeader.getIdentificativoStazioneIntermediarioPA())
+                        .channelId(soapBody.getIdentificativoCanale())
                         .payerType(payerType)
                         .payerFiscalCode(payerFiscalCode)
                         .payerFullName(fullName)
@@ -217,25 +229,39 @@ public class RPTExtractorService {
         return mapper.toPaymentRequestDTO(rptElement);
     }
 
-    private void generateRE(SessionDataDTO sessionData, String primitive) {
+    private void generateRE(SessionDataDTO sessionData) {
 
-        // setting data in MDC for next use
+        // creating event to be persisted for RE
+        if (Boolean.TRUE.equals(isTracingOnREEnabled)) {
+            for (RPTContentDTO rpt : sessionData.getAllRPTs()) {
+                ReEventDto reEventFromRPT = ReUtil.getREBuilder()
+                        .status(InternalStepStatus.EXTRACTED_DATA_FROM_RPT)
+                        .provider(NODO_DEI_PAGAMENTI_SPC)
+                        .iuv(rpt.getIuv())
+                        .ccp(rpt.getCcp())
+                        .build();
+                reService.addRe(reEventFromRPT);
+            }
+        }
+    }
+
+    private void setSessionDataInfoInMDC(SessionDataDTO sessionData, String primitive) {
+
         CommonFieldsDTO commonFields = sessionData.getCommonFields();
-        MDC.put(Constants.MDC_EVENT_TYPE, primitive);
+        MDC.put(Constants.MDC_PRIMITIVE, primitive);
         MDC.put(Constants.MDC_CART_ID, commonFields.getCartId());
         MDC.put(Constants.MDC_DOMAIN_ID, commonFields.getCreditorInstitutionId());
         MDC.put(Constants.MDC_STATION_ID, commonFields.getStationId());
+        MDC.put(Constants.MDC_CHANNEL_ID, commonFields.getChannelId());
+        MDC.put(Constants.MDC_PSP_ID, commonFields.getPspId());
 
-        // creating event to be persisted for RE
-        reService.addRe(ReUtil.createBaseReInternal()
-                .status(EntityStatusEnum.DATI_RPT_ESTRATTI.name())
-                .erogatore(NODO_DEI_PAGAMENTI_SPC)
-                .erogatoreDescr(NODO_DEI_PAGAMENTI_SPC)
-                .sessionIdOriginal(MDC.get(Constants.MDC_SESSION_ID))
-                .tipoEvento(MDC.get(Constants.MDC_EVENT_TYPE))
-                .cartId(MDC.get(Constants.MDC_CART_ID))
-                .idDominio(MDC.get(Constants.MDC_DOMAIN_ID))
-                .stazione(MDC.get(Constants.MDC_STATION_ID))
-                .build());
+        // if the primitive is nodoInviaCarrelloRPT, it means that a cart was extracted, so set cartId in MDC. Otherwise, set IUV and CCP in MDC
+        if (Constants.NODO_INVIA_CARRELLO_RPT.equals(primitive)) {
+            MDC.put(Constants.MDC_CART_ID, commonFields.getCartId());
+        } else {
+            RPTContentDTO singleRpt = sessionData.getFirstRPT();
+            MDC.put(Constants.MDC_IUV, singleRpt.getIuv());
+            MDC.put(Constants.MDC_CCP, singleRpt.getCcp());
+        }
     }
 }

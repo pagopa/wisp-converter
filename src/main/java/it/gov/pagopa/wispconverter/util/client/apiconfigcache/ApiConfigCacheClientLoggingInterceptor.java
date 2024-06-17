@@ -12,8 +12,11 @@ import org.springframework.http.client.ClientHttpResponse;
 @Slf4j
 public class ApiConfigCacheClientLoggingInterceptor extends AbstractAppClientLoggingInterceptor {
 
-    public ApiConfigCacheClientLoggingInterceptor(RequestResponseLoggingProperties clientLoggingProperties, ReService reService){
+    public ApiConfigCacheClientLoggingInterceptor(RequestResponseLoggingProperties clientLoggingProperties, ReService reService) {
         super(clientLoggingProperties, reService, ClientServiceEnum.API_CONFIG_CACHE);
+
+        // avoiding persistence of APIConfig Cache invocation on RE
+        avoidEventPersistenceOnRE();
     }
 
     @Override

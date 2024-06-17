@@ -1,5 +1,7 @@
 package it.gov.pagopa.wispconverter.service;
 
+import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
+import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.ReEventRepository;
 import it.gov.pagopa.wispconverter.repository.model.ReEventEntity;
 import it.gov.pagopa.wispconverter.service.mapper.ReEventMapper;
@@ -15,21 +17,13 @@ public class ReService {
 
     private final ReEventRepository reEventRepository;
     private final ReEventMapper reEventMapper;
-//    private final ObjectMapper objectMapper;
 
     public void addRe(ReEventDto reEventDto) {
-//        try {
-//            log.info("\n" +
-//                    "#################\n" +
-//                    "# RE "+reEventDto.getCategoriaEvento()+"/"+reEventDto.getCallType()+"/"+reEventDto.getSottoTipoEvento()+" \n" +
-//                    objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(reEventDto) + "\n" +
-//                    "#################");
+        try {
             ReEventEntity reEventEntity = reEventMapper.toReEventEntity(reEventDto);
             reEventRepository.save(reEventEntity);
-//        } catch (JsonProcessingException e) {
-//            throw new RuntimeException(e);
-//        }
+        } catch (Exception e) {
+            throw new AppException(AppErrorCodeMessageEnum.PERSISTENCE_SAVING_RE_ERROR, e);
+        }
     }
-
-
 }

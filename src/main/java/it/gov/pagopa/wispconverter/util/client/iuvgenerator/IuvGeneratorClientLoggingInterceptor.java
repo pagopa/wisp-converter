@@ -12,9 +12,15 @@ import org.springframework.http.client.ClientHttpResponse;
 @Slf4j
 public class IuvGeneratorClientLoggingInterceptor extends AbstractAppClientLoggingInterceptor {
 
-    public IuvGeneratorClientLoggingInterceptor(RequestResponseLoggingProperties clientLoggingProperties, ReService reService){
+    public IuvGeneratorClientLoggingInterceptor(RequestResponseLoggingProperties clientLoggingProperties, ReService reService, Boolean isTracingOfClientOnREEnabled) {
         super(clientLoggingProperties, reService, ClientServiceEnum.IUV_GENERATOR);
+
+        // avoiding persistence of client invocation on RE
+        if (Boolean.FALSE.equals(isTracingOfClientOnREEnabled)) {
+            avoidEventPersistenceOnRE();
+        }
     }
+
     @Override
     protected void request(String clientOperationId, String operationId, HttpRequest request, byte[] reqBody) {
         if (log.isDebugEnabled()) {

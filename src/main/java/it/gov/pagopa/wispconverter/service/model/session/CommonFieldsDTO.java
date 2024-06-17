@@ -14,8 +14,10 @@ public class CommonFieldsDTO {
     private String sessionId;
     private String cartId;
     private String creditorInstitutionId;
+    private String pspId;
     private String creditorInstitutionBrokerId;
     private String stationId;
+    private String channelId;
     private String payerType;
     private String payerFiscalCode;
     private String payerFullName;
