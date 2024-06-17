@@ -1,4 +1,4 @@
-package it.gov.pagopa.wispconverter;
+package it.gov.pagopa.wispconverter.consumer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;

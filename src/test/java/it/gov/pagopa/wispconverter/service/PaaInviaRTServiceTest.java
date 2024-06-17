@@ -1,4 +1,4 @@
-package it.gov.pagopa.wispconverter;
+package it.gov.pagopa.wispconverter.service;
 
 import gov.telematici.pagamenti.ws.papernodo.EsitoPaaInviaRT;
 import gov.telematici.pagamenti.ws.papernodo.FaultBean;

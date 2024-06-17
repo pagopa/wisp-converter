@@ -1,6 +1,6 @@
-package it.gov.pagopa.wispconverter;
+package it.gov.pagopa.wispconverter.endpoint;
 
-import static it.gov.pagopa.wispconverter.ConstantsTestHelper.REDIRECT_PATH;
+import static it.gov.pagopa.wispconverter.utils.ConstantsTestHelper.REDIRECT_PATH;
 import static it.gov.pagopa.wispconverter.utils.TestUtils.getPaymentPositionModelDto;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -10,6 +10,7 @@ import static org.mockito.Mockito.*;
 import com.azure.messaging.servicebus.ServiceBusSenderClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.gen.wispconverter.client.iuvgenerator.model.IUVGenerationResponseDto;
+import it.gov.pagopa.wispconverter.Application;
 import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.RTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.ReEventRepository;

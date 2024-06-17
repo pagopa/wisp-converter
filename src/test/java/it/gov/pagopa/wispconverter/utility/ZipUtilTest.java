@@ -1,4 +1,4 @@
-package it.gov.pagopa.wispconverter;
+package it.gov.pagopa.wispconverter.utility;
 
 import it.gov.pagopa.wispconverter.util.ZipUtil;
 import org.junit.jupiter.api.Test;
