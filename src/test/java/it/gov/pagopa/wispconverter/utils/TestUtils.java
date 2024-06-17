@@ -149,9 +149,14 @@ public class TestUtils {
         when(client.selectHeaderContentType(any())).thenReturn(MediaType.APPLICATION_JSON);
     }
 
-    public static void setMockGetException(it.gov.pagopa.gen.wispconverter.client.gpd.invoker.ApiClient client){
+    public static void setMockGetExceptionNotFound(it.gov.pagopa.gen.wispconverter.client.gpd.invoker.ApiClient client){
         when(client.invokeAPI(any(),eq(HttpMethod.GET),any(),any(),any(),any(),any(),any(),any(),any(),any(),any()))
                 .thenThrow(new AppException(new HttpClientErrorException(HttpStatus.NOT_FOUND), AppErrorCodeMessageEnum.CLIENT_GPD_DEBT_POSITION_NOT_FOUND));
+    }
+
+    public static void setMockGetExceptionBadRequest(it.gov.pagopa.gen.wispconverter.client.gpd.invoker.ApiClient client){
+        when(client.invokeAPI(any(),eq(HttpMethod.GET),any(),any(),any(),any(),any(),any(),any(),any(),any(),any()))
+                .thenThrow(new AppException(new HttpClientErrorException(HttpStatus.BAD_REQUEST), AppErrorCodeMessageEnum.CLIENT_GPD_DEBT_POSITION_BAD_REQUEST));
     }
 
     public static void setMockPut(it.gov.pagopa.gen.wispconverter.client.gpd.invoker.ApiClient client,ResponseEntity response){

@@ -78,7 +78,7 @@ class CarrelloTest {
         it.gov.pagopa.gen.wispconverter.client.iuvgenerator.model.IUVGenerationResponseDto iuvGenerationModelResponseDto = new IUVGenerationResponseDto();
         iuvGenerationModelResponseDto.setIuv("00000000");
         TestUtils.setMock(iuveneratorClient,ResponseEntity.ok().body(iuvGenerationModelResponseDto));
-        TestUtils.setMockGetException(gpdClient);
+        TestUtils.setMockGetExceptionNotFound(gpdClient);
         TestUtils.setMockPost(gpdClient,ResponseEntity.ok().body(getPaymentPositionModelDto()));
         TestUtils.setMock(decouplerCachingClient,ResponseEntity.ok().build());
         when(rptRequestRepository.findById(any())).thenReturn(
@@ -122,7 +122,7 @@ class CarrelloTest {
         it.gov.pagopa.gen.wispconverter.client.iuvgenerator.model.IUVGenerationResponseDto iuvGenerationModelResponseDto = new IUVGenerationResponseDto();
         iuvGenerationModelResponseDto.setIuv("00000000");
         TestUtils.setMock(iuveneratorClient,ResponseEntity.ok().body(iuvGenerationModelResponseDto));
-        TestUtils.setMockGetException(gpdClient);
+        TestUtils.setMockGetExceptionNotFound(gpdClient);
         TestUtils.setMockPost(gpdClient,ResponseEntity.ok().body(getPaymentPositionModelDto()));
         TestUtils.setMock(decouplerCachingClient,ResponseEntity.ok().build());
         when(rptRequestRepository.findById(any())).thenReturn(

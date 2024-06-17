@@ -177,7 +177,7 @@ class RptTest {
         IUVGenerationResponseDto iuvGenerationModelResponseDto = new IUVGenerationResponseDto();
         iuvGenerationModelResponseDto.setIuv("123456IUVMOCK2");
         TestUtils.setMock(iuvGeneratorClient,ResponseEntity.ok().body(iuvGenerationModelResponseDto));
-        TestUtils.setMockGetException(gpdClient);
+        TestUtils.setMockGetExceptionNotFound(gpdClient);
         TestUtils.setMockPost(gpdClient,ResponseEntity.ok().body(getPaymentPositionModelDto()));
         TestUtils.setMock(decouplerCachingClient,ResponseEntity.ok().build());
         when(rptRequestRepository.findById(any())).thenReturn(
@@ -189,8 +189,6 @@ class RptTest {
                 )
         );
         when(redisSimpleTemplate.opsForValue()).thenReturn(mock(ValueOperations.class));
-
-
 
         mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.status().is(HttpStatus.FOUND.value()))
@@ -219,7 +217,7 @@ class RptTest {
         IUVGenerationResponseDto iuvGenerationModelResponseDto = new IUVGenerationResponseDto();
         iuvGenerationModelResponseDto.setIuv("00000000");
         TestUtils.setMock(iuvGeneratorClient,ResponseEntity.ok().body(iuvGenerationModelResponseDto));
-        TestUtils.setMockGetException(gpdClient);
+        TestUtils.setMockGetExceptionNotFound(gpdClient);
         TestUtils.setMockPost(gpdClient,ResponseEntity.ok().body(getPaymentPositionModelDto()));
         TestUtils.setMock(decouplerCachingClient,ResponseEntity.ok().build());
         when(rptRequestRepository.findById(any())).thenReturn(
@@ -231,8 +229,6 @@ class RptTest {
                 )
         );
         when(redisSimpleTemplate.opsForValue()).thenReturn(mock(ValueOperations.class));
-
-
 
         mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.status().is(HttpStatus.FOUND.value()))
@@ -275,7 +271,7 @@ class RptTest {
         iuvGenerationModelResponseDto.setIuv("00000000");
         doThrow(new RestClientException("fail", new RuntimeException("this test must fail")))
                 .when(iuvGeneratorClient).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
-        TestUtils.setMockGetException(gpdClient);
+        TestUtils.setMockGetExceptionNotFound(gpdClient);
         TestUtils.setMock(decouplerCachingClient,ResponseEntity.ok().build());
         when(redisSimpleTemplate.opsForValue()).thenReturn(mock(ValueOperations.class));
         when(rptRequestRepository.findById(any())).thenReturn(
@@ -344,7 +340,7 @@ class RptTest {
         IUVGenerationResponseDto iuvGenerationModelResponseDto = new IUVGenerationResponseDto();
         iuvGenerationModelResponseDto.setIuv("00000000");
         TestUtils.setMock(iuvGeneratorClient,ResponseEntity.ok().body(iuvGenerationModelResponseDto));
-        TestUtils.setMockGetException(gpdClient);
+        TestUtils.setMockGetExceptionNotFound(gpdClient);
         doThrow(new RestClientException("fail", new RuntimeException("this test must fail")))
                 .when(gpdClient).parameterToMultiValueMap(any(),any(),any());
         TestUtils.setMock(decouplerCachingClient,ResponseEntity.ok().build());
@@ -357,8 +353,6 @@ class RptTest {
                 )
         );
         when(redisSimpleTemplate.opsForValue()).thenReturn(mock(ValueOperations.class));
-
-
 
         mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.status().is2xxSuccessful());
@@ -376,7 +370,7 @@ class RptTest {
         IUVGenerationResponseDto iuvGenerationModelResponseDto = new IUVGenerationResponseDto();
         iuvGenerationModelResponseDto.setIuv("123456IUVMOCK2");
         TestUtils.setMock(iuvGeneratorClient,ResponseEntity.ok().body(iuvGenerationModelResponseDto));
-        TestUtils.setMockGetException(gpdClient);
+        TestUtils.setMockGetExceptionNotFound(gpdClient);
         TestUtils.setMockPost(gpdClient,ResponseEntity.ok().body(getPaymentPositionModelDto()));
         doThrow(new RestClientException("fail", new RuntimeException("this test must fail")))
             .when(decouplerCachingClient)
@@ -408,7 +402,7 @@ class RptTest {
         IUVGenerationResponseDto iuvGenerationModelResponseDto = new IUVGenerationResponseDto();
         iuvGenerationModelResponseDto.setIuv("00000000");
         TestUtils.setMock(iuvGeneratorClient,ResponseEntity.ok().body(iuvGenerationModelResponseDto));
-        TestUtils.setMockGetException(gpdClient);
+        TestUtils.setMockGetExceptionNotFound(gpdClient);
         TestUtils.setMockPost(gpdClient,ResponseEntity.ok().body(getPaymentPositionModelDto()));
         TestUtils.setMock(decouplerCachingClient,ResponseEntity.ok().build());
         when(rptRequestRepository.findById(any())).thenReturn(
@@ -420,8 +414,6 @@ class RptTest {
                 )
         );
         when(redisSimpleTemplate.opsForValue()).thenReturn(mock(ValueOperations.class));
-
-
 
         mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.status().is2xxSuccessful());
@@ -440,13 +432,11 @@ class RptTest {
                 Optional.of(
                         RPTRequestEntity.builder().primitive("nodoInviaRPT")
                                 .payload(
-                                        TestUtils.zipAndEncode(TestUtils.getRptNullIbanPayload(false,station,"100.00","datispec"))
+                                        TestUtils.zipAndEncode(TestUtils.getRptNullIbanPayload(station,"100.00","datispec"))
                                 ).build()
                 )
         );
         when(redisSimpleTemplate.opsForValue()).thenReturn(mock(ValueOperations.class));
-
-
 
         MvcResult resultActions = mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.status().is2xxSuccessful()).andDo(
@@ -480,7 +470,36 @@ class RptTest {
         );
         when(redisSimpleTemplate.opsForValue()).thenReturn(mock(ValueOperations.class));
 
+        MvcResult resultActions = mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
+                .andExpect(MockMvcResultMatchers.status().is2xxSuccessful()).andDo(
+                        result -> {
+                            assertNotNull(result);
+                            assertNotNull(result.getResponse());
+                        }).andReturn();
+        assertEquals("text/html;charset=UTF-8",resultActions.getResponse().getContentType());
+        String contentAsString = resultActions.getResponse().getContentAsString();
+        assertTrue(contentAsString.contains("Riprova, oppure contatta l'assistenza"));
 
+        verify(checkoutClient,times(0)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
+        verify(iuvGeneratorClient,times(0)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
+        verify(gpdClient,times(1)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
+        verify(decouplerCachingClient,times(0)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
+    }
+
+    @Test
+    void fail_debtPositionBadRequest() throws Exception {
+        String station = "mystation";
+        org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configData",TestUtils.configData(station));
+        TestUtils.setMockGetExceptionBadRequest(gpdClient);
+        when(rptRequestRepository.findById(any())).thenReturn(
+                Optional.of(
+                        RPTRequestEntity.builder().primitive("nodoInviaRPT")
+                                .payload(
+                                        TestUtils.zipAndEncode(TestUtils.getRptPayload(false,station,"100.00","datispec"))
+                                ).build()
+                )
+        );
+        when(redisSimpleTemplate.opsForValue()).thenReturn(mock(ValueOperations.class));
 
         MvcResult resultActions = mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.status().is2xxSuccessful()).andDo(
