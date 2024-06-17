@@ -86,7 +86,7 @@ public class CommonUtility {
 
     public static PaymentOptionModelDto getSinglePaymentOption(PaymentPositionModelDto paymentPosition) {
         if (paymentPosition == null || paymentPosition.getPaymentOption() == null || paymentPosition.getPaymentOption().isEmpty()) {
-            throw new AppException(AppErrorCodeMessageEnum.PAYMENT_POSITION_NOT_EXTRACTABLE);
+            throw new AppException(AppErrorCodeMessageEnum.PAYMENT_OPTION_NOT_EXTRACTABLE);
         }
         PaymentOptionModelDto paymentOption = paymentPosition.getPaymentOption().get(0);
         if (paymentOption == null) {
@@ -97,7 +97,7 @@ public class CommonUtility {
 
     public static PaymentOptionModelResponseDto getSinglePaymentOption(PaymentPositionModelBaseResponseDto paymentPosition) {
         if (paymentPosition == null || paymentPosition.getPaymentOption() == null || paymentPosition.getPaymentOption().isEmpty()) {
-            throw new AppException(AppErrorCodeMessageEnum.PAYMENT_POSITION_NOT_EXTRACTABLE);
+            throw new AppException(AppErrorCodeMessageEnum.PAYMENT_OPTION_NOT_EXTRACTABLE);
         }
         PaymentOptionModelResponseDto paymentOption = paymentPosition.getPaymentOption().get(0);
         if (paymentOption == null) {

@@ -50,6 +50,8 @@ public class GpdClientConfig {
     @Value("${client.gpd.api-key}")
     private String apiKey;
 
+    @Value("${wisp-converter.re-tracing.interface.payment-position-analysis.enabled}")
+    private Boolean isTracingOfClientOnREEnabled;
 
     @Bean
     @ConfigurationProperties(prefix = "log.client.gpd")
@@ -61,7 +63,7 @@ public class GpdClientConfig {
     public it.gov.pagopa.gen.wispconverter.client.gpd.invoker.ApiClient gpdClient() {
         RequestResponseLoggingProperties clientLoggingProperties = gpdClientLoggingProperties();
 
-        GpdClientLoggingInterceptor clientLogging = new GpdClientLoggingInterceptor(clientLoggingProperties, reService);
+        GpdClientLoggingInterceptor clientLogging = new GpdClientLoggingInterceptor(clientLoggingProperties, reService, isTracingOfClientOnREEnabled);
 
         RestTemplate restTemplate = restTemplate();
 

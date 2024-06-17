@@ -1,6 +1,7 @@
 package it.gov.pagopa.wispconverter.util;
 
-import it.gov.pagopa.wispconverter.service.model.re.*;
+import it.gov.pagopa.wispconverter.repository.model.enumz.*;
+import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import it.gov.pagopa.wispconverter.util.filter.RepeatableContentCachingRequestWrapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -29,54 +30,15 @@ public class ReUtil {
     private static final String NODO_DEI_PAGAMENTI_SP = "NodoDeiPagamentiSPC";
     private static final String UNZIP_ERROR = "Unzip error";
 
-    private static ReEventDto.ReEventDtoBuilder createBaseReInterface(CategoriaEventoEnum categoriaEvento, SottoTipoEventoEnum sottoTipoEvento, EsitoEnum esitoEnum, String erogatore, String erogatoreDescr, String fruitore, String fruitoreDescr,
-                                                                      String httpMethod, String httpUri, String httpHeaders, String httpCallRemoteAddress, String compressedPayload, Integer compressedPayloadLength,
-                                                                      CallTypeEnum callTypeEnum) {
 
-        return createBaseReBuilder()
-                .categoriaEvento(categoriaEvento)
-                .sottoTipoEvento(sottoTipoEvento)
-                .callType(callTypeEnum)
-                .fruitore(fruitore)
-                .fruitoreDescr(fruitoreDescr)
-                .erogatore(erogatore)
-                .erogatoreDescr(erogatoreDescr)
-                .esito(esitoEnum)
-                .httpMethod(httpMethod)
-                .httpUri(httpUri)
-                .httpHeaders(httpHeaders)
-                .httpCallRemoteAddress(httpCallRemoteAddress)
-                .compressedPayload(compressedPayload)
-                .compressedPayloadLength(compressedPayloadLength)
-                .sessionIdOriginal(MDC.get(Constants.MDC_SESSION_ID))
-                .tipoEvento(MDC.get(Constants.MDC_EVENT_TYPE))
-                .cartId(MDC.get(Constants.MDC_CART_ID))
-                .iuv(MDC.get(Constants.MDC_IUV)) // null if nodoInviaCarrelloRPT
-                .noticeNumber(MDC.get(Constants.MDC_NOTICE_NUMBER)) // null if nodoInviaCarrelloRPT
-                .idDominio(MDC.get(Constants.MDC_DOMAIN_ID))
-                .stazione(MDC.get(Constants.MDC_STATION_ID));
-    }
-
-    private static ReEventDto.ReEventDtoBuilder createBaseReBuilder() {
-        Instant mdcStartTime = MDC.get(Constants.MDC_START_TIME) == null ? null : Instant.ofEpochMilli(Long.parseLong(MDC.get(Constants.MDC_START_TIME)));
-        return ReEventDto.builder()
-                .id(UUID.randomUUID().toString())
-                .requestId(MDC.get(Constants.MDC_REQUEST_ID))
-                .operationId(MDC.get(Constants.MDC_OPERATION_ID))
-                .clientOperationId(MDC.get(Constants.MDC_CLIENT_OPERATION_ID))
-                .componente(ComponenteEnum.WISP_CONVERTER)
-                .insertedTimestamp(mdcStartTime)
-                .businessProcess(MDC.get(Constants.MDC_BUSINESS_PROCESS));
-    }
-
-    public static ReEventDto.ReEventDtoBuilder createBaseReInternal() {
-        return createBaseReBuilder()
-                .categoriaEvento(CategoriaEventoEnum.INTERNO)
-                .sottoTipoEvento(SottoTipoEventoEnum.INTERN);
+    public static ReEventDto.ReEventDtoBuilder getREBuilder() {
+        return createBaseRE()
+                .eventCategory(EventCategoryEnum.INTERNAL)
+                .eventSubcategory(EventSubcategoryEnum.INTERN);
     }
 
 
-    public static ReEventDto createReServerInterfaceRequest(HttpServletRequest request) {
+    public static ReEventDto createREForServerInterfaceInRequestEvent(HttpServletRequest request) {
         String httpMethod = request.getMethod();
 
         StringBuilder msg = new StringBuilder(request.getRequestURI());
@@ -100,19 +62,17 @@ public class ReUtil {
             log.error(UNZIP_ERROR, e);
         }
 
-
-        return createBaseReInterface(
-                CategoriaEventoEnum.INTERFACCIA,
-                SottoTipoEventoEnum.REQ,
-                EsitoEnum.RICEVUTA,
-                NODO_DEI_PAGAMENTI_SP, NODO_DEI_PAGAMENTI_SP,
-                null, null,
-                httpMethod, httpUri, httpHeaders, httpCallRemoteAddress, compressedPayload, compressedPayloadLength,
-                CallTypeEnum.SERVER)
-                .build();
+        ReEventDto.ReEventDtoBuilder builder = createBaseREForInterfaceEvent(EventSubcategoryEnum.REQ, CallTypeEnum.SERVER, compressedPayload, compressedPayloadLength);
+        builder.outcome(OutcomeEnum.RECEIVED)
+                .httpMethod(httpMethod)
+                .httpUri(httpUri)
+                .httpHeaders(httpHeaders)
+                .httpCallRemoteAddress(httpCallRemoteAddress)
+                .provider(NODO_DEI_PAGAMENTI_SP);
+        return builder.build();
     }
 
-    public static ReEventDto createReServerInterfaceResponse(HttpServletRequest request, HttpServletResponse response) {
+    public static ReEventDto createREForServerInterfaceInResponseEvent(HttpServletRequest request, HttpServletResponse response) {
 
         String httpHeaders = formatServerResponseHeaders(response);
         String compressedPayload = null;
@@ -139,26 +99,23 @@ public class ReUtil {
         }
         String httpUri = msg.toString();
 
-        ReEventDto.ReEventDtoBuilder target = createBaseReInterface(
-                CategoriaEventoEnum.INTERFACCIA,
-                SottoTipoEventoEnum.RESP,
-                EsitoEnum.INVIATA,
-                NODO_DEI_PAGAMENTI_SP, NODO_DEI_PAGAMENTI_SP,
-                null, null,
-                httpMethod, httpUri, httpHeaders, null, compressedPayload, compressedPayloadLength,
-                CallTypeEnum.SERVER);
 
-        target.httpStatusCode(status);
-        target.executionTimeMs(Long.parseLong(executionTime));
-
-        target.operationStatus(MDC.get(Constants.MDC_STATUS));
-        target.operationErrorTitle(MDC.get(Constants.MDC_ERROR_TITLE));
-        target.operationErrorDetail(MDC.get(Constants.MDC_ERROR_DETAIL));
-        target.operationErrorCode(MDC.get(Constants.MDC_ERROR_CODE));
-        return target.build();
+        ReEventDto.ReEventDtoBuilder builder = createBaseREForInterfaceEvent(EventSubcategoryEnum.RESP, CallTypeEnum.SERVER, compressedPayload, compressedPayloadLength);
+        builder.outcome(OutcomeEnum.SEND)
+                .httpMethod(httpMethod)
+                .httpUri(httpUri)
+                .httpHeaders(httpHeaders)
+                .provider(NODO_DEI_PAGAMENTI_SP)
+                .httpStatusCode(status)
+                .executionTimeMs(Long.parseLong(executionTime))
+                .operationStatus(MDC.get(Constants.MDC_STATUS))
+                .operationErrorTitle(MDC.get(Constants.MDC_ERROR_TITLE))
+                .operationErrorDetail(MDC.get(Constants.MDC_ERROR_DETAIL))
+                .operationErrorCode(MDC.get(Constants.MDC_ERROR_CODE));
+        return builder.build();
     }
 
-    public static ReEventDto createReClientInterfaceRequest(HttpRequest request, byte[] reqBody, EsitoEnum esitoEnum) {
+    public static ReEventDto createREForClientInterfaceInRequestEvent(HttpRequest request, byte[] reqBody, OutcomeEnum outcome) {
         String httpMethod = request.getMethod().toString();
         String httpUri = request.getURI().toString();
         String httpHeaders = formatClientHeaders(request.getHeaders());
@@ -175,21 +132,18 @@ public class ReUtil {
             log.error(UNZIP_ERROR, e);
         }
 
-        String erogatore = MDC.get(Constants.MDC_EROGATORE);
-        String erogatoreDescr = MDC.get(Constants.MDC_EROGATORE_DESCR);
+        ReEventDto.ReEventDtoBuilder builder = createBaseREForInterfaceEvent(EventSubcategoryEnum.REQ, CallTypeEnum.CLIENT, compressedPayload, compressedPayloadPayloadLength);
+        builder.outcome(outcome)
+                .httpMethod(httpMethod)
+                .httpUri(httpUri)
+                .httpHeaders(httpHeaders)
+                .provider(MDC.get(Constants.MDC_PROVIDER))
+                .consumer(NODO_DEI_PAGAMENTI_SP);
 
-        return createBaseReInterface(
-                CategoriaEventoEnum.INTERFACCIA,
-                SottoTipoEventoEnum.REQ,
-                esitoEnum,
-                erogatore, erogatoreDescr,
-                NODO_DEI_PAGAMENTI_SP, NODO_DEI_PAGAMENTI_SP,
-                httpMethod, httpUri, httpHeaders, null, compressedPayload, compressedPayloadPayloadLength,
-                CallTypeEnum.CLIENT)
-                .build();
+        return builder.build();
     }
 
-    public static ReEventDto createReClientInterfaceResponse(HttpRequest request, ClientHttpResponse response, EsitoEnum esitoEnum) {
+    public static ReEventDto createREForClientInterfaceInResponseEvent(HttpRequest request, ClientHttpResponse response, OutcomeEnum outcome) {
         String httpHeaders = null;
         String compressedPayload = null;
         Integer compressedPayloadPayloadLength = null;
@@ -214,25 +168,51 @@ public class ReUtil {
 
         String executionTime = MDC.get(Constants.MDC_CLIENT_EXECUTION_TIME);
 
-        String erogatore = MDC.get(Constants.MDC_EROGATORE);
-        String erogatoreDescr = MDC.get(Constants.MDC_EROGATORE_DESCR);
-
         String httpMethod = request.getMethod().toString();
         String httpUri = request.getURI().toString();
 
-        ReEventDto.ReEventDtoBuilder target = createBaseReInterface(
-                CategoriaEventoEnum.INTERFACCIA,
-                SottoTipoEventoEnum.RESP,
-                esitoEnum,
-                erogatore, erogatoreDescr,
-                NODO_DEI_PAGAMENTI_SP, NODO_DEI_PAGAMENTI_SP,
-                httpMethod, httpUri, httpHeaders, null, compressedPayload, compressedPayloadPayloadLength,
-                CallTypeEnum.CLIENT);
+        ReEventDto.ReEventDtoBuilder builder = createBaseREForInterfaceEvent(EventSubcategoryEnum.RESP, CallTypeEnum.CLIENT, compressedPayload, compressedPayloadPayloadLength);
+        builder.outcome(outcome)
+                .httpMethod(httpMethod)
+                .httpUri(httpUri)
+                .httpHeaders(httpHeaders)
+                .provider(MDC.get(Constants.MDC_PROVIDER))
+                .consumer(NODO_DEI_PAGAMENTI_SP)
+                .httpStatusCode(status)
+                .executionTimeMs(Long.parseLong(executionTime));
+        return builder.build();
+    }
 
-        target.httpStatusCode(status);
-        target.executionTimeMs(Long.parseLong(executionTime));
+    private static ReEventDto.ReEventDtoBuilder createBaseREForInterfaceEvent(EventSubcategoryEnum eventSubcategory, CallTypeEnum callTypeEnum,
+                                                                              String compressedPayload, Integer compressedPayloadLength) {
+        return createBaseRE()
+                .eventCategory(EventCategoryEnum.INTERFACE)
+                .eventSubcategory(eventSubcategory)
+                .callType(callTypeEnum)
+                .compressedPayload(compressedPayload)
+                .compressedPayloadLength(compressedPayloadLength);
+    }
 
-        return target.build();
+    private static ReEventDto.ReEventDtoBuilder createBaseRE() {
+        Instant mdcStartTime = MDC.get(Constants.MDC_START_TIME) == null ? null : Instant.ofEpochMilli(Long.parseLong(MDC.get(Constants.MDC_START_TIME)));
+        return ReEventDto.builder()
+                .id(UUID.randomUUID().toString())
+                .requestId(MDC.get(Constants.MDC_REQUEST_ID))
+                .operationId(MDC.get(Constants.MDC_OPERATION_ID))
+                .clientOperationId(MDC.get(Constants.MDC_CLIENT_OPERATION_ID))
+                .component(ComponentEnum.WISP_CONVERTER)
+                .insertedTimestamp(mdcStartTime)
+                .businessProcess(MDC.get(Constants.MDC_BUSINESS_PROCESS))
+                .sessionId(MDC.get(Constants.MDC_SESSION_ID))
+                .primitive(MDC.get(Constants.MDC_PRIMITIVE))
+                .cartId(MDC.get(Constants.MDC_CART_ID))
+                .iuv(MDC.get(Constants.MDC_IUV))
+                .noticeNumber(MDC.get(Constants.MDC_NOTICE_NUMBER))
+                .ccp(MDC.get(Constants.MDC_CCP))
+                .domainId(MDC.get(Constants.MDC_DOMAIN_ID))
+                .psp(MDC.get(Constants.MDC_PSP_ID))
+                .station(MDC.get(Constants.MDC_STATION_ID))
+                .channel(MDC.get(Constants.MDC_CHANNEL_ID));
     }
 
     private static String formatClientHeaders(HttpHeaders headers) {

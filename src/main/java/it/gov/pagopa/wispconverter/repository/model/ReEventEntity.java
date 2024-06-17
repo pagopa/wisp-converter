@@ -13,76 +13,54 @@ import java.time.Instant;
 @Data
 @Builder(toBuilder = true)
 public class ReEventEntity {
-    //// START KEY
+
+    /**
+     * The identifier of the single event.
+     */
     @Id
     private String id;
 
+    /**
+     * The partition key that refers to the single partition on which the event will be stored.
+     */
     @PartitionKey
     private String partitionKey;
-    //// END KEY
 
-    //// START LOGICAL REF
-    private String requestId;           //gruppo, tutte le chiamate fatte con lo stesso X-Request-ID
-    private String operationId;         //id operation associato a un requestId
-    private String clientOperationId;   //id client operation associato a un operationId
-    private ComponenteEnum componente;  //componente che scrive l'evento
-    private Instant insertedTimestamp;  //ora di inserimento evento
-    //// END LOGICAL REF
-
-    //// START FIELD FOR INTERFACE AND INTERN CHANGE
-    private CategoriaEventoEnum categoriaEvento;
-    private SottoTipoEventoEnum sottoTipoEvento;
-    //// END FIELD FOR INTERFACE AND INTERN CHANGE
-
-    //// START FIELD FOR INTERFACE
+    private String requestId;
+    private String operationId;
+    private String clientOperationId;
+    private ComponentEnum component;
+    private Instant insertedTimestamp;
+    private EventCategoryEnum eventCategory;
+    private EventSubcategoryEnum eventSubcategory;
     private CallTypeEnum callType;
-
-    private String fruitore;
-    private String fruitoreDescr;
-    private String erogatore;
-    private String erogatoreDescr;
-
-    private EsitoEnum esito;
-
+    private String consumer;
+    private String provider;
+    private OutcomeEnum outcome;
     private String httpMethod;
     private String httpUri;
     private String httpHeaders;
     private String httpCallRemoteAddress;
-
     private Integer httpStatusCode;
     private Long executionTimeMs;
-
-    private String compressedPayload;       //zip+Base64
+    private String compressedPayload;
     private Integer compressedPayloadLength;
-
     private String businessProcess;
-
-    private String operationStatus;       //dettaglio response in uscita
-    private String operationErrorTitle;   //dettaglio response in uscita
-    private String operationErrorDetail;  //dettaglio response in uscita
-    private String operationErrorCode;    //dettaglio response in uscita
-    //// END FIELD FOR INTERFACE
-
-    //// START FIELD FOR INTERN CHANGE
-    private String idDominio;
+    private String operationStatus;
+    private String operationErrorTitle;
+    private String operationErrorDetail;
+    private String operationErrorCode;
+    private String primitive;
+    private String sessionId;
     private String cartId;
     private String iuv;
     private String noticeNumber;
+    private String domainId;
     private String ccp;
     private String psp;
-    //private String tipoVersamento; TODO remove this comment
-    private String tipoEvento;
-    private String stazione;
-    private String canale;
-    //private String parametriSpecificiInterfaccia; TODO remove this comment
+    private String station;
+    private String channel;
     private String status;
-    private String info;
-
-    //private String pspDescr; TODO remove this comment
-    //private String creditorReferenceId; TODO remove this comment
     private String paymentToken;
-    private String sessionIdOriginal;
-    //private Boolean standIn; TODO remove this comment
-    //// END FIELD FOR INTERN CHANGE
-
+    private String info;
 }

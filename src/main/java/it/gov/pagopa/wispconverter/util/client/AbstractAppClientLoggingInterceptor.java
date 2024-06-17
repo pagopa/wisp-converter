@@ -1,7 +1,11 @@
 package it.gov.pagopa.wispconverter.util.client;
 
+import it.gov.pagopa.wispconverter.repository.model.enumz.CallTypeEnum;
+import it.gov.pagopa.wispconverter.repository.model.enumz.EventCategoryEnum;
+import it.gov.pagopa.wispconverter.repository.model.enumz.EventSubcategoryEnum;
+import it.gov.pagopa.wispconverter.repository.model.enumz.OutcomeEnum;
 import it.gov.pagopa.wispconverter.service.ReService;
-import it.gov.pagopa.wispconverter.service.model.re.*;
+import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import it.gov.pagopa.wispconverter.util.CommonUtility;
 import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.ReUtil;
@@ -46,10 +50,12 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
     private int responseMaxPayloadLength = RESPONSE_DEFAULT_MAX_PAYLOAD_LENGTH;
     private boolean requestPretty;
     private boolean responsePretty;
+    private boolean mustPersistEventOnRE;
 
     public AbstractAppClientLoggingInterceptor(RequestResponseLoggingProperties clientLoggingProperties, ReService reService, ClientServiceEnum clientServiceEnum) {
         this.reService = reService;
         this.clientServiceEnum = clientServiceEnum;
+        this.mustPersistEventOnRE = true;
 
         if (clientLoggingProperties != null) {
             RequestResponseLoggingProperties.Request request = clientLoggingProperties.getRequest();
@@ -82,11 +88,6 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
         String operationId = MDC.get(Constants.MDC_OPERATION_ID);
         request(clientOperationId, operationId, request, body);
 
-//    MDC.getCopyOfContextMap().forEach((k,v) -> {
-//      log.debug(String.format("CLIENT AFTER MDC %s=%s",k, v));
-//    });
-
-
         ClientHttpResponse response;
         try {
             response = execution.execute(request, body);
@@ -96,23 +97,23 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
 
             MDC.put(Constants.MDC_STATUS_CODE, String.valueOf(response.getStatusCode().value()));
             MDC.put(Constants.MDC_CALL_TYPE, CallTypeEnum.CLIENT.name());
-            MDC.put(Constants.MDC_EVENT_CATEGORY, CategoriaEventoEnum.INTERFACCIA.name());
+            MDC.put(Constants.MDC_EVENT_CATEGORY, EventCategoryEnum.INTERFACE.name());
 
-            MDC.put(Constants.MDC_EVENT_SUB_CATEGORY, SottoTipoEventoEnum.REQ.name());
+            MDC.put(Constants.MDC_EVENT_SUB_CATEGORY, EventSubcategoryEnum.REQ.name());
             log.debug("[intercept] add RE CLIENT OUT - Sent");
-            ReEventDto reEventDtoClientIN = ReUtil.createReClientInterfaceRequest(request, body, EsitoEnum.INVIATA);
-            reService.addRe(reEventDtoClientIN);
+            ReEventDto reEventDtoClientIN = ReUtil.createREForClientInterfaceInRequestEvent(request, body, OutcomeEnum.SEND);
+            persistInterfaceEventInRE(reEventDtoClientIN);
 
             if (response.getStatusCode().is2xxSuccessful()) {
-                MDC.put(Constants.MDC_EVENT_SUB_CATEGORY, SottoTipoEventoEnum.RESP.name());
-                log.debug("[intercept] add RE CLIENT IN - Sent - RICEVUTA");
-                ReEventDto reEventDtoClientOUT = ReUtil.createReClientInterfaceResponse(request, response, EsitoEnum.RICEVUTA);
-                reService.addRe(reEventDtoClientOUT);
+                MDC.put(Constants.MDC_EVENT_SUB_CATEGORY, EventSubcategoryEnum.RESP.name());
+                log.debug("[intercept] add RE CLIENT IN - Sent - RECEIVED");
+                ReEventDto reEventDtoClientOUT = ReUtil.createREForClientInterfaceInResponseEvent(request, response, OutcomeEnum.RECEIVED);
+                persistInterfaceEventInRE(reEventDtoClientOUT);
             } else {
-                MDC.put(Constants.MDC_EVENT_SUB_CATEGORY, SottoTipoEventoEnum.RESP.name());
-                log.debug("[intercept] add RE CLIENT IN - Sent - RICEVUTA_KO");
-                ReEventDto reEventDtoClientOUT = ReUtil.createReClientInterfaceResponse(request, response, EsitoEnum.RICEVUTA_KO);
-                reService.addRe(reEventDtoClientOUT);
+                MDC.put(Constants.MDC_EVENT_SUB_CATEGORY, EventSubcategoryEnum.RESP.name());
+                log.debug("[intercept] add RE CLIENT IN - Sent - RECEIVED_FAILURE");
+                ReEventDto reEventDtoClientOUT = ReUtil.createREForClientInterfaceInResponseEvent(request, response, OutcomeEnum.RECEIVED_FAILURE);
+                persistInterfaceEventInRE(reEventDtoClientOUT);
             }
 
 
@@ -122,15 +123,15 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
             String executionClientTime = CommonUtility.getExecutionTime(startClient);
             MDC.put(Constants.MDC_CLIENT_EXECUTION_TIME, executionClientTime);
 
-            MDC.put(Constants.MDC_EVENT_SUB_CATEGORY, SottoTipoEventoEnum.REQ.name());
+            MDC.put(Constants.MDC_EVENT_SUB_CATEGORY, EventSubcategoryEnum.REQ.name());
             log.debug("[intercept] add RE CLIENT OUT - NOT Sent");
-            ReEventDto reEventDtoClientIN = ReUtil.createReClientInterfaceRequest(request, body, EsitoEnum.INVIATA_KO);
-            reService.addRe(reEventDtoClientIN);
+            ReEventDto reEventDtoClientIN = ReUtil.createREForClientInterfaceInRequestEvent(request, body, OutcomeEnum.SEND_FAILURE);
+            persistInterfaceEventInRE(reEventDtoClientIN);
 
-            MDC.put(Constants.MDC_EVENT_SUB_CATEGORY, SottoTipoEventoEnum.RESP.name());
-            log.debug("[intercept] add RE CLIENT IN - NOT Sent - NO_RICEVUTA");
-            ReEventDto reEventDtoClientOUT = ReUtil.createReClientInterfaceResponse(request, null, EsitoEnum.NO_RICEVUTA);
-            reService.addRe(reEventDtoClientOUT);
+            MDC.put(Constants.MDC_EVENT_SUB_CATEGORY, EventSubcategoryEnum.RESP.name());
+            log.debug("[intercept] add RE CLIENT IN - NOT Sent - NEVER_RECEIVED");
+            ReEventDto reEventDtoClientOUT = ReUtil.createREForClientInterfaceInResponseEvent(request, null, OutcomeEnum.NEVER_RECEIVED);
+            persistInterfaceEventInRE(reEventDtoClientOUT);
 
             response(clientOperationId, operationId, executionClientTime, request, null);
 
@@ -317,4 +318,13 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
         return StreamUtils.copyToString(body, StandardCharsets.UTF_8);
     }
 
+    private void persistInterfaceEventInRE(ReEventDto reEvent) {
+        if (this.mustPersistEventOnRE) {
+            reService.addRe(reEvent);
+        }
+    }
+
+    protected void avoidEventPersistenceOnRE() {
+        this.mustPersistEventOnRE = false;
+    }
 }

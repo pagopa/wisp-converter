@@ -1,7 +1,7 @@
 package it.gov.pagopa.wispconverter.repository.model.enumz;
 
-public enum SottoTipoEventoEnum {
+public enum EventSubcategoryEnum {
     REQ,
     RESP,
-    INTERN;
+    INTERN
 }

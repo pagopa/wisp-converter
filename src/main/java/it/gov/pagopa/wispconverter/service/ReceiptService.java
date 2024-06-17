@@ -13,10 +13,10 @@ import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
 import it.gov.pagopa.wispconverter.repository.model.RTRequestEntity;
+import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
 import it.gov.pagopa.wispconverter.service.mapper.RTMapper;
 import it.gov.pagopa.wispconverter.service.model.CachedKeysMapping;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
-import it.gov.pagopa.wispconverter.service.model.re.EntityStatusEnum;
 import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import it.gov.pagopa.wispconverter.service.model.session.CommonFieldsDTO;
 import it.gov.pagopa.wispconverter.service.model.session.RPTContentDTO;
@@ -115,7 +115,7 @@ public class ReceiptService {
                             receipt.getPaymentToken(),
                             stationDto.getStationCode(),
                             psp,
-                            EntityStatusEnum.RT_GENERATA.name()
+                            InternalStepStatus.GENERATED_NEW_RT
                     );
                     reService.addRe(reEventDto);
 
@@ -183,7 +183,7 @@ public class ReceiptService {
                         paSendRTV2Request.getReceipt().getCreditorReferenceId(),
                         stationDto.getStationCode(),
                         psp,
-                        EntityStatusEnum.RT_GENERATA.name());
+                        InternalStepStatus.GENERATED_NEW_RT);
                 reService.addRe(reEventDto);
 
                 send(url,
@@ -323,7 +323,7 @@ public class ReceiptService {
                     paymentToken,
                     stationDto.getStationCode(),
                     psp,
-                    EntityStatusEnum.RT_INVIATA_KO.name()
+                    InternalStepStatus.RT_SEND_FAILURE
             );
             reService.addRe(reEventDtoKo);
 

@@ -3,6 +3,7 @@ package it.gov.pagopa.wispconverter.service;
 import it.gov.pagopa.wispconverter.repository.RTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
 import it.gov.pagopa.wispconverter.repository.model.RTRequestEntity;
+import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
 import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import it.gov.pagopa.wispconverter.service.model.session.RPTContentDTO;
 import it.gov.pagopa.wispconverter.util.ReUtil;
@@ -31,25 +32,23 @@ public class RTCosmosService {
                                  String paymentToken,
                                  String stationCode,
                                  it.gov.pagopa.gen.wispconverter.client.cache.model.PaymentServiceProviderDto psp,
-                                 String entityStatusName
+                                 InternalStepStatus entityStatusName
     ) {
-        ReEventDto.ReEventDtoBuilder reEventDtoBuilder = ReUtil.createBaseReInternal()
+        ReEventDto.ReEventDtoBuilder reEventDtoBuilder = ReUtil.getREBuilder()
                 .status(entityStatusName)
-                .erogatore(NODO_DEI_PAGAMENTI_SPC)
-                .erogatoreDescr(NODO_DEI_PAGAMENTI_SPC)
-                .sessionIdOriginal(rptRequestEntity.getId())
+                .provider(NODO_DEI_PAGAMENTI_SPC)
+                .sessionId(rptRequestEntity.getId())
                 .ccp(rptContentDTO.getRpt().getTransferData().getCcp())
-                .idDominio(rptContentDTO.getRpt().getDomain().getDomainId())
+                .domainId(rptContentDTO.getRpt().getDomain().getDomainId())
                 .iuv(rptContentDTO.getIuv())
                 .noticeNumber(noticeNumber)
                 .paymentToken(paymentToken);
 
         if (psp != null) {
             reEventDtoBuilder.psp(psp.getPspCode());
-            reEventDtoBuilder.pspDescr(psp.getDescription());
         }
         if (stationCode != null) {
-            reEventDtoBuilder.stazione(stationCode);
+            reEventDtoBuilder.station(stationCode);
         }
         return reEventDtoBuilder.build();
     }
