@@ -436,18 +436,6 @@ class RptTest {
     void fail_ibanNullValue() throws Exception {
         String station = "mystation";
         org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configData",TestUtils.configData(station));
-        HttpHeaders headers = new HttpHeaders();
-        headers.add("location","locationheader");
-        it.gov.pagopa.gen.wispconverter.client.checkout.model.CartResponseDto cartResponseDto = new it.gov.pagopa.gen.wispconverter.client.checkout.model.CartResponseDto();
-        cartResponseDto.setCheckoutRedirectUrl(URI.create("http://www.google.com"));
-        TestUtils.setMock(checkoutClient, ResponseEntity.status(HttpStatus.FOUND).headers(headers).body(cartResponseDto));
-
-        IUVGenerationResponseDto iuvGenerationModelResponseDto = new IUVGenerationResponseDto();
-        iuvGenerationModelResponseDto.setIuv("123456IUVMOCK2");
-        TestUtils.setMock(iuvGeneratorClient,ResponseEntity.ok().body(iuvGenerationModelResponseDto));
-        TestUtils.setMockGetException(gpdClient);
-        TestUtils.setMockPost(gpdClient,ResponseEntity.ok().body(getPaymentPositionModelDto()));
-        TestUtils.setMock(decouplerCachingClient,ResponseEntity.ok().build());
         when(rptRequestRepository.findById(any())).thenReturn(
                 Optional.of(
                         RPTRequestEntity.builder().primitive("nodoInviaRPT")
@@ -476,4 +464,37 @@ class RptTest {
         verify(decouplerCachingClient,times(0)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
     }
 
+    @Test
+    void fail_nullDebtPosition() throws Exception {
+        String station = "mystation";
+        org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configData",TestUtils.configData(station));
+
+        TestUtils.setMock(gpdClient, ResponseEntity.ok().build());
+        when(rptRequestRepository.findById(any())).thenReturn(
+                Optional.of(
+                        RPTRequestEntity.builder().primitive("nodoInviaRPT")
+                                .payload(
+                                        TestUtils.zipAndEncode(TestUtils.getRptPayload(false,station,"100.00","datispec"))
+                                ).build()
+                )
+        );
+        when(redisSimpleTemplate.opsForValue()).thenReturn(mock(ValueOperations.class));
+
+
+
+        MvcResult resultActions = mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
+                .andExpect(MockMvcResultMatchers.status().is2xxSuccessful()).andDo(
+                        result -> {
+                            assertNotNull(result);
+                            assertNotNull(result.getResponse());
+                        }).andReturn();
+        assertEquals("text/html;charset=UTF-8",resultActions.getResponse().getContentType());
+        String contentAsString = resultActions.getResponse().getContentAsString();
+        assertTrue(contentAsString.contains("Riprova, oppure contatta l'assistenza"));
+
+        verify(checkoutClient,times(0)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
+        verify(iuvGeneratorClient,times(0)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
+        verify(gpdClient,times(1)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
+        verify(decouplerCachingClient,times(0)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
+    }
 }
