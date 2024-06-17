@@ -202,7 +202,7 @@ public class TestUtils {
                 .replace("{rpt}", Base64.getEncoder().encodeToString(rptreplace.getBytes(StandardCharsets.UTF_8)));
     }
 
-    public static String getRptNullIbanPayload(boolean bollo,String station,String amount,String datiSpecificiRiscossione){
+    public static String getRptNullIbanPayload(String station,String amount,String datiSpecificiRiscossione){
         if(datiSpecificiRiscossione==null){
             datiSpecificiRiscossione = "9/tipodovuto_7/datospecifico";
         }
