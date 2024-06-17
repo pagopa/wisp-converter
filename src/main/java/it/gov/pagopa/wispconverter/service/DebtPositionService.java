@@ -74,9 +74,6 @@ public class DebtPositionService {
     @Value("${wisp-converter.payment-position-valid-status}")
     private Set<String> paymentPositionValidStatuses;
 
-    @Value("${wisp-converter.station-in-gpd.partial-path}")
-    private String stationInGpdPartialPath;
-
     @Value("${wisp-converter.re-tracing.internal.payment-position-analysis.enabled}")
     private Boolean isTracingOnREEnabled;
 
@@ -355,36 +352,15 @@ public class DebtPositionService {
             // update the payment notice, setting the NAV code from the retrieved existing payment position
             paymentNotice.setNoticeNumber(CommonUtility.getSinglePaymentOption(paymentPosition).getNav());
 
-            try {
+            // Generate the receipt to be sent to creditor institution. On next steps, it will be validated about station to be sent.
+            ReceiptDto receipt = new ReceiptDto();
+            receipt.setFiscalCode(paymentNotice.getFiscalCode());
+            receipt.setNoticeNumber(paymentNotice.getNoticeNumber());
+            receipt.setPaymentToken(paymentNotice.getCcp());
+            receiptsToSend.add(receipt);
 
-                /*
-                  Validate the station, checking if exists one with the required segregation code and, if is onboarded on GPD,
-                  has the correct primitive version.
-                  If it is not onboarded on GPD, it must be used for generate RT to sent to creditor institution via
-                  institution's custom endpoint.
-                 */
-                if (!checkStationValidityAndOnboardedOnGpd(sessionData, paymentNotice.getNoticeNumber())) {
-                    ReceiptDto receipt = new ReceiptDto();
-                    receipt.setFiscalCode(paymentNotice.getFiscalCode());
-                    receipt.setNoticeNumber(paymentNotice.getNoticeNumber());
-                    receipt.setPaymentToken(paymentNotice.getCcp());
-                    receiptsToSend.add(receipt);
-                }
-
-            } catch (AppException e) {
-
-                /*
-                  If the station has been set up for GPD but incorrectly, or if the station is misconfigured and does not
-                  point to a custom endpoint of the creditor institution services, the ‘non-generability’ of the negative RT
-                  must be logged on the Registro Eventi in order to permit error tracing.
-                 */
-                generateREForNotGenerableRT(sessionData, iuv);
-
-            } finally {
-
-                // no matter how the RG generation goes, save event in RE for trace the error due to invalid payment position status
-                generateREForInvalidPaymentPosition(sessionData, iuv);
-            }
+            // save event in RE for trace the error due to invalid payment position status
+            generateREForInvalidPaymentPosition(sessionData, iuv);
         }
 
         /*
@@ -400,9 +376,6 @@ public class DebtPositionService {
 
                 // generate and send the KO receipts to creditor institution via configured station
                 receiptService.paaInviaRTKo(receiptsToSend.toString());
-
-                // finally, generate event in Registro Eventi for each sent receipt
-                generateREForGeneratedRT(sessionData, receiptsToSend);
 
             } catch (AppException e) {
 
@@ -598,33 +571,6 @@ public class DebtPositionService {
         }
     }
 
-    private boolean checkStationValidityAndOnboardedOnGpd(SessionDataDTO sessionData, String noticeNumber) {
-
-        // extracting segregation code from notice number
-        if (noticeNumber == null) {
-            throw new AppException(AppErrorCodeMessageEnum.PAYMENT_POSITION_NOT_VALID, "In order to check the station validity is required a notice number from which the segregation code must be extracted, but it is not correctly set in the payment position.");
-        }
-        Long segregationCodeFromNoticeNumber = Long.parseLong(noticeNumber.substring(1, 3));
-
-        // retrieving station by station identifier
-        StationDto station = configCacheService.getStationsByCreditorInstitutionAndSegregationCodeFromCache(sessionData.getCommonFields().getCreditorInstitutionId(), segregationCodeFromNoticeNumber);
-
-        // check if station is onboarded on GPD and is correctly configured for v2 primitives
-        ServiceDto service = station.getService();
-        if (service == null || service.getPath() == null) {
-            throw new AppException(AppErrorCodeMessageEnum.CONFIGURATION_INVALID_STATION_REDIRECT_URL, station.getStationCode());
-        }
-
-        // check if the station is
-        boolean isOnboardedInGpd = service.getPath().contains(stationInGpdPartialPath);
-        if (isOnboardedInGpd && station.getPrimitiveVersion() != 2) {
-            throw new AppException(AppErrorCodeMessageEnum.CONFIGURATION_INVALID_GPD_STATION, station.getStationCode());
-        }
-
-        return isOnboardedInGpd;
-    }
-
-
     private void generateREForBulkInsert(List<PaymentPositionModelDto> paymentPositions) {
 
         for (PaymentPositionModelDto paymentPosition : paymentPositions) {
@@ -660,27 +606,6 @@ public class DebtPositionService {
         if (Boolean.TRUE.equals(isTracingOnREEnabled)) {
             PaymentNoticeContentDTO paymentNotice = sessionDataDTO.getPaymentNoticeByIUV(iuv);
             generateRE(InternalStepStatus.GENERATED_NAV_FOR_NEW_PAYMENT_POSITION, iuv, nav, paymentNotice.getCcp(), null);
-        }
-    }
-
-    private void generateREForNotGenerableRT(SessionDataDTO sessionDataDTO, String iuv) {
-
-        // creating event to be persisted for RE
-        if (Boolean.TRUE.equals(isTracingOnREEnabled)) {
-            PaymentNoticeContentDTO paymentNotice = sessionDataDTO.getPaymentNoticeByIUV(iuv);
-            generateRE(InternalStepStatus.NEGATIVE_RT_NOT_GENERABLE, iuv, paymentNotice.getNoticeNumber(), paymentNotice.getCcp(), null);
-        }
-    }
-
-    private void generateREForGeneratedRT(SessionDataDTO sessionDataDTO, List<ReceiptDto> receipts) {
-
-        // creating event to be persisted for RE
-        if (Boolean.TRUE.equals(isTracingOnREEnabled)) {
-            for (ReceiptDto receipt : receipts) {
-                String receiptInfo = "Receipt from: " + receipt.toString();
-                PaymentNoticeContentDTO paymentNotice = sessionDataDTO.getPaymentNoticeByNoticeNumber(receipt.getNoticeNumber());
-                generateRE(InternalStepStatus.NEGATIVE_RT_GENERATION_SUCCESS, paymentNotice.getIuv(), paymentNotice.getNoticeNumber(), paymentNotice.getCcp(), receiptInfo);
-            }
         }
     }
 
