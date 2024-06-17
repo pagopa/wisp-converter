@@ -53,7 +53,7 @@ public class RedirectController {
                            @RequestParam("sessionId") String sessionId,
                            HttpServletResponse response) {
         try {
-            log.info("Invoking API operation redirect - args: {}", sessionId);
+            log.info("Invoking API operation redirect - args: {}", sessionId.matches("[\\w\\-]*") ? sessionId : "...");
             String redirectURI = converterService.convert(sessionId);
             log.info("Successful API operation redirect - result: {}", redirectURI);
             return "redirect:" + redirectURI;
