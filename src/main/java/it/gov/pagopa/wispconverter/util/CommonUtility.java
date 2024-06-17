@@ -1,11 +1,15 @@
 package it.gov.pagopa.wispconverter.util;
 
+import it.gov.pagopa.gen.wispconverter.client.cache.model.ServiceDto;
+import it.gov.pagopa.gen.wispconverter.client.cache.model.StationDto;
 import it.gov.pagopa.gen.wispconverter.client.gpd.model.PaymentOptionModelDto;
 import it.gov.pagopa.gen.wispconverter.client.gpd.model.PaymentOptionModelResponseDto;
 import it.gov.pagopa.gen.wispconverter.client.gpd.model.PaymentPositionModelBaseResponseDto;
 import it.gov.pagopa.gen.wispconverter.client.gpd.model.PaymentPositionModelDto;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
+import it.gov.pagopa.wispconverter.service.ConfigCacheService;
+import it.gov.pagopa.wispconverter.service.model.session.SessionDataDTO;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
@@ -16,7 +20,6 @@ import java.util.Optional;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class CommonUtility {
-
 
     /**
      * @param value value to deNullify.
@@ -104,5 +107,51 @@ public class CommonUtility {
             throw new AppException(AppErrorCodeMessageEnum.PAYMENT_OPTION_NOT_EXTRACTABLE);
         }
         return paymentOption;
+    }
+
+
+    public static void checkStationValidity(ConfigCacheService configCacheService, SessionDataDTO sessionData, String noticeNumber) {
+
+        checkStation(configCacheService, sessionData.getCommonFields().getCreditorInstitutionId(), noticeNumber, false, null);
+    }
+
+    public static boolean isStationOnboardedOnGpd(ConfigCacheService configCacheService, SessionDataDTO sessionData, String noticeNumber, String gpdPath) {
+
+        return checkStation(configCacheService, sessionData.getCommonFields().getCreditorInstitutionId(), noticeNumber, true, gpdPath);
+    }
+
+    private static boolean checkStation(ConfigCacheService configCacheService, String creditorInstitutionId, String noticeNumber, boolean checkIfOnboardedInGPD, String gpdPath) {
+
+        boolean isOk = true;
+
+        // extracting segregation code from notice number
+        if (noticeNumber == null) {
+            throw new AppException(AppErrorCodeMessageEnum.PAYMENT_POSITION_NOT_VALID, "null", "In order to check the station validity is required a notice number from which the segregation code must be extracted, but it is not correctly set in the payment position.");
+        }
+        long segregationCodeFromNoticeNumber;
+        try {
+            segregationCodeFromNoticeNumber = Long.parseLong(noticeNumber.substring(1, 3));
+        } catch (NumberFormatException e) {
+            throw new AppException(AppErrorCodeMessageEnum.PAYMENT_POSITION_NOT_VALID, noticeNumber, "In order to check the station validity is required a notice number from which the segregation code must be extracted, but it is not correctly set as numeric string in the payment position.");
+        }
+
+        // retrieving station by station identifier
+        StationDto station = configCacheService.getStationsByCreditorInstitutionAndSegregationCodeFromCache(creditorInstitutionId, segregationCodeFromNoticeNumber);
+
+        // check if station is correctly configured for a valid service
+        ServiceDto service = station.getService();
+        if (service == null || service.getPath() == null) {
+            throw new AppException(AppErrorCodeMessageEnum.CONFIGURATION_INVALID_STATION_REDIRECT_URL, station.getStationCode());
+        }
+
+        // check if station is onboarded on GPD and is correctly configured for v2 primitives
+        if (checkIfOnboardedInGPD) {
+            isOk = service.getPath().contains(gpdPath);
+            if (isOk && station.getPrimitiveVersion() != 2) {
+                throw new AppException(AppErrorCodeMessageEnum.CONFIGURATION_INVALID_GPD_STATION, station.getStationCode());
+            }
+        }
+
+        return isOk;
     }
 }
