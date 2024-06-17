@@ -15,8 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
-import static it.gov.pagopa.wispconverter.util.Constants.NODO_DEI_PAGAMENTI_SPC;
-
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -52,7 +50,6 @@ public class RptCosmosService {
         if (Boolean.TRUE.equals(isTracingOnREEnabled)) {
             ReEventDto reEvent = ReUtil.getREBuilder()
                     .status(InternalStepStatus.FOUND_RPT_IN_STORAGE)
-                    .provider(NODO_DEI_PAGAMENTI_SPC)
                     .compressedPayload(payload)
                     .compressedPayload(String.valueOf(payload != null ? payload.length() : 0))
                     .build();

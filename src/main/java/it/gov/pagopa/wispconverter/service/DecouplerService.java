@@ -18,8 +18,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
 
-import static it.gov.pagopa.wispconverter.util.Constants.NODO_DEI_PAGAMENTI_SPC;
-
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -152,7 +150,6 @@ public class DecouplerService {
 
         ReEventDto reEvent = ReUtil.getREBuilder()
                 .status(status)
-                .provider(NODO_DEI_PAGAMENTI_SPC)
                 .iuv(iuv)
                 .noticeNumber(nav)
                 .ccp(ccp)

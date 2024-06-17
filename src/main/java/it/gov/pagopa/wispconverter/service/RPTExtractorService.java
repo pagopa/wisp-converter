@@ -34,8 +34,6 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static it.gov.pagopa.wispconverter.util.Constants.NODO_DEI_PAGAMENTI_SPC;
-
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -236,7 +234,6 @@ public class RPTExtractorService {
             for (RPTContentDTO rpt : sessionData.getAllRPTs()) {
                 ReEventDto reEventFromRPT = ReUtil.getREBuilder()
                         .status(InternalStepStatus.EXTRACTED_DATA_FROM_RPT)
-                        .provider(NODO_DEI_PAGAMENTI_SPC)
                         .iuv(rpt.getIuv())
                         .ccp(rpt.getCcp())
                         .build();

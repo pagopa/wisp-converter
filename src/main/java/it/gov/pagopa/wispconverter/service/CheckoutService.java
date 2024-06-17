@@ -21,8 +21,6 @@ import org.springframework.web.client.RestClientException;
 import java.net.URI;
 import java.net.URISyntaxException;
 
-import static it.gov.pagopa.wispconverter.util.Constants.NODO_DEI_PAGAMENTI_SPC;
-
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -108,7 +106,6 @@ public class CheckoutService {
                 PaymentNoticeContentDTO paymentNotice = sessionData.getPaymentNoticeByNoticeNumber(paymentNoticeFromCart.getNoticeNumber());
                 ReEventDto reEvent = ReUtil.getREBuilder()
                         .status(InternalStepStatus.SAVED_RPT_IN_CART_RECEIVED_REDIRECT_URL_FROM_CHECKOUT)
-                        .provider(NODO_DEI_PAGAMENTI_SPC)
                         .iuv(paymentNotice.getIuv())
                         .noticeNumber(paymentNotice.getNoticeNumber())
                         .ccp(paymentNotice.getCcp())

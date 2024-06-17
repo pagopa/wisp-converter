@@ -12,8 +12,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import static it.gov.pagopa.wispconverter.util.Constants.NODO_DEI_PAGAMENTI_SPC;
-
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -36,7 +34,6 @@ public class RTCosmosService {
     ) {
         ReEventDto.ReEventDtoBuilder reEventDtoBuilder = ReUtil.getREBuilder()
                 .status(entityStatusName)
-                .provider(NODO_DEI_PAGAMENTI_SPC)
                 .sessionId(rptRequestEntity.getId())
                 .ccp(rptContentDTO.getRpt().getTransferData().getCcp())
                 .domainId(rptContentDTO.getRpt().getDomain().getDomainId())
