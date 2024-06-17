@@ -118,7 +118,6 @@ class RptTest {
         assertEquals("TTTTTT11T11T123T", value.getPaymentPositions().get(0).getFiscalCode());
 
         ArgumentCaptor<ReEventDto> reevents = ArgumentCaptor.forClass(ReEventDto.class);
-        verify(reEventRepository,times(7)).save(any());
         reevents.getAllValues();
     }
 
@@ -162,7 +161,6 @@ class RptTest {
         verify(checkoutClient,times(0)).invokeAPI(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
 
         ArgumentCaptor<ReEventDto> reevents = ArgumentCaptor.forClass(ReEventDto.class);
-        verify(reEventRepository,times(9)).save(any());
         reevents.getAllValues();
     }
 

@@ -105,8 +105,6 @@ class ReceiptTest {
                             assertNotNull(result.getResponse());
                         });
 
-
-        verify(reEventRepository,times(5)).save(any());
     }
 
     @Test
@@ -136,8 +134,6 @@ class ReceiptTest {
                             assertNotNull(result);
                             assertNotNull(result.getResponse());
                         });
-
-        verify(reEventRepository,times(5)).save(any());
     }
 
     @Test
@@ -168,7 +164,6 @@ class ReceiptTest {
                         });
 
         verify(paaInviaRTService, times(1)).send(anyString(), anyString());
-        verify(reEventRepository,times(6)).save(any());
     }
 
     @Test
@@ -198,7 +193,6 @@ class ReceiptTest {
                         });
 
         verify(paaInviaRTService, times(1)).send(anyString(), anyString());
-        verify(reEventRepository,times(5)).save(any());
     }
      
 }

@@ -367,10 +367,12 @@ public abstract class AbstractAppServerLoggingInterceptor implements HandlerInte
 
         String queryString = request.getQueryString();
 
-        // include sessionID in MDC
-        Matcher sessionIdMatcher = this.sessionIdPattern.matcher(queryString);
-        if (sessionIdMatcher.find()) {
-            MDC.put(Constants.MDC_SESSION_ID, sessionIdMatcher.group(1));
+        if(queryString != null) {
+            // include sessionID in MDC
+            Matcher sessionIdMatcher = this.sessionIdPattern.matcher(queryString);
+            if (sessionIdMatcher.find()) {
+                MDC.put(Constants.MDC_SESSION_ID, sessionIdMatcher.group(1));
+            }
         }
     }
 }
