@@ -52,7 +52,7 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
     private boolean responsePretty;
     private boolean mustPersistEventOnRE;
 
-    public AbstractAppClientLoggingInterceptor(RequestResponseLoggingProperties clientLoggingProperties, ReService reService, ClientServiceEnum clientServiceEnum) {
+    protected AbstractAppClientLoggingInterceptor(RequestResponseLoggingProperties clientLoggingProperties, ReService reService, ClientServiceEnum clientServiceEnum) {
         this.reService = reService;
         this.clientServiceEnum = clientServiceEnum;
         this.mustPersistEventOnRE = true;

@@ -3,8 +3,8 @@
     <dominio>
         <identificativoDominio>{pa}</identificativoDominio>
     </dominio>
-    <identificativoMessaggioRichiesta>3179612d79fa3366</identificativoMessaggioRichiesta>
-    <dataOraMessaggioRichiesta>{dataOraMessaggioRichiesta}T17:13:30</dataOraMessaggioRichiesta>
+    <identificativoMessaggioRichiesta>3179612d79fa3367</identificativoMessaggioRichiesta>
+    <dataOraMessaggioRichiesta>{dataOraMessaggioRichiesta}T17:13:31</dataOraMessaggioRichiesta>
     <autenticazioneSoggetto>USR</autenticazioneSoggetto>
     <soggettoPagatore>
         <identificativoUnivocoPagatore>
@@ -24,7 +24,7 @@
         <dataEsecuzionePagamento>{dataEsecuzionePagamento}</dataEsecuzionePagamento>
         <importoTotaleDaVersare>{amount}</importoTotaleDaVersare>
         <tipoVersamento>{tipoVersamento}</tipoVersamento>
-        <identificativoUnivocoVersamento>123456IUVMOCK1</identificativoUnivocoVersamento>
+        <identificativoUnivocoVersamento>{iuv}</identificativoUnivocoVersamento>
         <codiceContestoPagamento>{ccp}</codiceContestoPagamento>
         <firmaRicevuta>0</firmaRicevuta>
         <datiSingoloVersamento>

@@ -1,4 +1,4 @@
-package it.gov.pagopa.wispconverter;
+package it.gov.pagopa.wispconverter.utility;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;

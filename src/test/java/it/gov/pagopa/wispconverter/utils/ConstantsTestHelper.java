@@ -1,4 +1,4 @@
-package it.gov.pagopa.wispconverter;
+package it.gov.pagopa.wispconverter.utils;
 
 public class ConstantsTestHelper {
 

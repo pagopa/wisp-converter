@@ -153,7 +153,6 @@ public class ReceiptService {
             gov.telematici.pagamenti.ws.papernodo.ObjectFactory objectFactory = new gov.telematici.pagamenti.ws.papernodo.ObjectFactory();
 
             sessionData.getAllRPTs().forEach(rpt -> {
-                Instant now = Instant.now();
                 PaymentServiceProviderDto psp = psps.get(rpt.getRpt().getPayeeInstitution().getSubjectUniqueIdentifier().getCode());
 
                 IntestazionePPT intestazionePPT = generateIntestazionePPT(
