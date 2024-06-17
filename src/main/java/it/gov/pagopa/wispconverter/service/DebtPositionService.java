@@ -3,7 +3,12 @@ package it.gov.pagopa.wispconverter.service;
 import it.gov.pagopa.gen.wispconverter.client.cache.model.ServiceDto;
 import it.gov.pagopa.gen.wispconverter.client.cache.model.StationDto;
 import it.gov.pagopa.gen.wispconverter.client.gpd.api.DebtPositionsApiApi;
-import it.gov.pagopa.gen.wispconverter.client.gpd.model.*;
+import it.gov.pagopa.gen.wispconverter.client.gpd.model.MultiplePaymentPositionModelDto;
+import it.gov.pagopa.gen.wispconverter.client.gpd.model.PaymentOptionModelDto;
+import it.gov.pagopa.gen.wispconverter.client.gpd.model.PaymentPositionModelBaseResponseDto;
+import it.gov.pagopa.gen.wispconverter.client.gpd.model.PaymentPositionModelDto;
+import it.gov.pagopa.gen.wispconverter.client.gpd.model.TransferMetadataModelDto;
+import it.gov.pagopa.gen.wispconverter.client.gpd.model.TransferModelDto;
 import it.gov.pagopa.gen.wispconverter.client.iuvgenerator.api.GenerationApi;
 import it.gov.pagopa.gen.wispconverter.client.iuvgenerator.model.IUVGenerationResponseDto;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
@@ -61,6 +66,8 @@ public class DebtPositionService {
     private final DebtPositionUpdateMapper mapperForUpdate;
 
     private final Pattern taxonomyPattern = Pattern.compile("([^/]++/[^/]++)/?");
+
+    private static final String REST_CLIENT_LOG_STRING = "RestClientException ERROR [%s] - %s";
 
     @Value("${wisp-converter.poste-italiane.abi-code}")
     private String posteItalianeABICode;
@@ -410,7 +417,7 @@ public class DebtPositionService {
             generateREForUpdatedPaymentPosition(sessionData, iuv);
 
         } catch (RestClientException e) {
-            throw new AppException(AppErrorCodeMessageEnum.CLIENT_GPD, String.format("RestClientException ERROR [%s] - %s", e.getCause().getClass().getCanonicalName(), e.getMessage()));
+            throw new AppException(AppErrorCodeMessageEnum.CLIENT_GPD, String.format(REST_CLIENT_LOG_STRING, e.getCause().getClass().getCanonicalName(), e.getMessage()));
         }
     }
 
@@ -505,7 +512,7 @@ public class DebtPositionService {
 
         } catch (RestClientException e) {
             throw new AppException(AppErrorCodeMessageEnum.CLIENT_IUVGENERATOR,
-                    String.format("RestClientException ERROR [%s] - %s", e.getCause().getClass().getCanonicalName(), e.getMessage()));
+                    String.format(REST_CLIENT_LOG_STRING, e.getCause().getClass().getCanonicalName(), e.getMessage()));
         }
         return navCode;
     }
@@ -530,7 +537,7 @@ public class DebtPositionService {
                 generateREForBulkInsert(extractedPaymentPositions);
 
             } catch (RestClientException e) {
-                throw new AppException(AppErrorCodeMessageEnum.CLIENT_GPD, String.format("RestClientException ERROR [%s] - %s", e.getCause().getClass().getCanonicalName(), e.getMessage()));
+                throw new AppException(AppErrorCodeMessageEnum.CLIENT_GPD, String.format(REST_CLIENT_LOG_STRING, e.getCause().getClass().getCanonicalName(), e.getMessage()));
             }
         }
     }

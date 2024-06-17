@@ -1,4 +1,4 @@
-package it.gov.pagopa.wispconverter;
+package it.gov.pagopa.wispconverter.service;
 
 import gov.telematici.pagamenti.ws.papernodo.EsitoPaaInviaRT;
 import gov.telematici.pagamenti.ws.papernodo.FaultBean;
@@ -17,10 +17,10 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class PaaInviaRTServiceTest {
+class PaaInviaRTServiceTest {
 
     @Test
-    public void esitoOK(){
+    void esitoOK(){
         RestClient.Builder builder = mock(RestClient.Builder.class);
         RestClient client = mock(RestClient.class);
         when(builder.build()).thenReturn(client);
@@ -28,6 +28,7 @@ public class PaaInviaRTServiceTest {
         when(client.post()).thenReturn(requestBodyUriSpec);
         RestClient.RequestBodySpec requestBodySpec = mock(RestClient.RequestBodySpec.class);
         when(requestBodyUriSpec.uri(any(URI.class))).thenReturn(requestBodySpec);
+        when(requestBodySpec.header(anyString(), anyString())).thenReturn(requestBodySpec);
         when(requestBodySpec.body(anyString())).thenReturn(requestBodySpec);
 
         RestClient.ResponseSpec responseSpec = mock(RestClient.ResponseSpec.class);
@@ -46,7 +47,7 @@ public class PaaInviaRTServiceTest {
     }
 
     @Test
-    public void esitoKO(){
+    void esitoKO(){
         RestClient.Builder builder = mock(RestClient.Builder.class);
         RestClient client = mock(RestClient.class);
         when(builder.build()).thenReturn(client);

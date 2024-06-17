@@ -29,7 +29,6 @@
         <firmaRicevuta>0</firmaRicevuta>
         <datiSingoloVersamento>
             <importoSingoloVersamento>{amount}</importoSingoloVersamento>
-            <ibanAccredito>IT96R0760154321000000012345</ibanAccredito>
             <causaleVersamento>Pagamento di prova</causaleVersamento>
             <datiSpecificiRiscossione>{datiSpecificiRiscossione}</datiSpecificiRiscossione>
         </datiSingoloVersamento>

@@ -1,4 +1,4 @@
-package it.gov.pagopa.wispconverter;
+package it.gov.pagopa.wispconverter.utility;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 

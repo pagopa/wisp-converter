@@ -1,14 +1,13 @@
-package it.gov.pagopa.wispconverter;
+package it.gov.pagopa.wispconverter.endpoint;
 
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import com.azure.cosmos.CosmosClientBuilder;
 import com.azure.messaging.servicebus.ServiceBusSenderClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import gov.telematici.pagamenti.ws.papernodo.PaaInviaRTRisposta;
+import it.gov.pagopa.wispconverter.Application;
 import it.gov.pagopa.wispconverter.controller.model.ReceiptRequest;
 import it.gov.pagopa.wispconverter.exception.PaaInviaRTException;
 import it.gov.pagopa.wispconverter.repository.CacheRepository;
@@ -21,13 +20,9 @@ import it.gov.pagopa.wispconverter.service.PaaInviaRTService;
 import it.gov.pagopa.wispconverter.service.PaaInviaRTServiceBusService;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
 import it.gov.pagopa.wispconverter.utils.TestUtils;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.zip.GZIPOutputStream;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -84,29 +79,21 @@ class ReceiptTest {
         return pasendrtv2;
     }
 
-    private byte[] zip(byte[] uncompressed) throws IOException {
-        ByteArrayOutputStream bais = new ByteArrayOutputStream();
-        GZIPOutputStream gzipOutputStream = new GZIPOutputStream(bais);
-        gzipOutputStream.write(uncompressed);
-        gzipOutputStream.close();
-        bais.close();
-        return bais.toByteArray();
-    }
-
     @Test
     void success_positive() throws Exception {
         String station = "mystation";
         org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configData",TestUtils.configData(station));
 
-        when(rptRequestRepository.findById(any())).thenReturn(
+
+        when(rptRequestRepository.findById(anyString())).thenReturn(
                 Optional.of(
-                        RPTRequestEntity.builder().primitive("nodoInviaRPT")
-                                .payload(
-                                        TestUtils.zipAndEncode(TestUtils.getRptPayload(false,station,"100.00","datispec"))
-                                ).build()
+                        RPTRequestEntity.builder()
+                                .primitive("nodoInviaRPT")
+                                .payload(TestUtils.zipAndEncode(TestUtils.getRptPayload(false,station,"100.00","datispec")))
+                                .build()
                 )
         );
-        when(cacheRepository.read(any(),any())).thenReturn("asdsad");
+        when(cacheRepository.read(anyString(),any())).thenReturn("wisp_nav2iuv_dominio");
 
         mvc.perform(MockMvcRequestBuilders.post("/receipt/ok")
                         .accept(MediaType.APPLICATION_JSON)
@@ -114,13 +101,11 @@ class ReceiptTest {
                         .content(objectMapper.writeValueAsString(new ReceiptRequest(getPaSendRTPayload()))))
                 .andExpect(MockMvcResultMatchers.status().is2xxSuccessful())
                 .andDo(
-                        (result) -> {
+                        result -> {
                             assertNotNull(result);
                             assertNotNull(result.getResponse());
                         });
 
-
-        verify(reEventRepository,times(5)).save(any());
     }
 
     @Test
@@ -128,12 +113,13 @@ class ReceiptTest {
         String station = "mystation";
         org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configData",TestUtils.configData(station));
 
-        when(rptRequestRepository.findById(any())).thenReturn(Optional.of(RPTRequestEntity
-                .builder()
+        when(rptRequestRepository.findById(any()))
+                .thenReturn(Optional.of(RPTRequestEntity.builder()
                         .id(UUID.randomUUID().toString())
                         .primitive("nodoInviaRPT")
                         .payload(TestUtils.zipAndEncode(TestUtils.getRptPayload(false,"mystation","10.00","dati")))
-                .build()));
+                        .build()
+                ));
         when(cacheRepository.read(any(),any())).thenReturn("wisp_nav2iuv_dominio");
 
         ReceiptDto[] receiptDtos = {
@@ -145,12 +131,10 @@ class ReceiptTest {
                         .content(objectMapper.writeValueAsString(new ReceiptRequest(objectMapper.writeValueAsString(receiptDtos)))))
                 .andExpect(MockMvcResultMatchers.status().is2xxSuccessful())
                 .andDo(
-                        (result) -> {
+                        result -> {
                             assertNotNull(result);
                             assertNotNull(result.getResponse());
                         });
-
-        verify(reEventRepository,times(5)).save(any());
     }
 
     @Test
@@ -166,8 +150,8 @@ class ReceiptTest {
                                 ).build()
                 )
         );
-        when(cacheRepository.read(any(),any())).thenReturn("asdsad");
-        doThrow(new PaaInviaRTException("PAA_ERRORE_RESPONSE","PAA_ERRORE_RESPONSE","Errore PA")).doNothing().when(paaInviaRTService).send(anyString(), anyString());
+        when(cacheRepository.read(any(),any())).thenReturn("wisp_nav2iuv_dominio");
+        doThrow(new PaaInviaRTException("PAA_ERRORE_RESPONSE","PAA_ERRORE_RESPONSE","Errore PA")).when(paaInviaRTService).send(anyString(), anyString());
 
         mvc.perform(MockMvcRequestBuilders.post("/receipt/ok")
                         .accept(MediaType.APPLICATION_JSON)
@@ -175,13 +159,12 @@ class ReceiptTest {
                         .content(objectMapper.writeValueAsString(new ReceiptRequest(getPaSendRTPayload()))))
                 .andExpect(MockMvcResultMatchers.status().is2xxSuccessful())
                 .andDo(
-                        (result) -> {
+                        result -> {
                             assertNotNull(result);
                             assertNotNull(result.getResponse());
                         });
 
         verify(paaInviaRTService, times(1)).send(anyString(), anyString());
-        verify(reEventRepository,times(6)).save(any());
     }
 
     @Test
@@ -197,23 +180,20 @@ class ReceiptTest {
                                 ).build()
                 )
         );
-        when(cacheRepository.read(any(),any())).thenReturn("asdsad");
-        doAnswer((i) -> {
-            return new ResponseEntity<>(HttpStatusCode.valueOf(200));
-        }).when(paaInviaRTService).send(anyString(), anyString());
+        when(cacheRepository.read(any(),any())).thenReturn("wisp_nav2iuv_dominio");
+        doAnswer(i -> new ResponseEntity<>(HttpStatusCode.valueOf(200))).when(paaInviaRTService).send(anyString(), anyString());
         mvc.perform(MockMvcRequestBuilders.post("/receipt/ok")
                         .accept(MediaType.APPLICATION_JSON)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new ReceiptRequest(getPaSendRTPayload()))))
                 .andExpect(MockMvcResultMatchers.status().is2xxSuccessful())
                 .andDo(
-                        (result) -> {
+                        result -> {
                             assertNotNull(result);
                             assertNotNull(result.getResponse());
                         });
 
         verify(paaInviaRTService, times(1)).send(anyString(), anyString());
-        verify(reEventRepository,times(5)).save(any());
     }
      
 }

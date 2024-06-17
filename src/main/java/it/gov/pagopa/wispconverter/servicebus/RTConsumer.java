@@ -59,8 +59,8 @@ public class RTConsumer {
               .connectionString(connectionString)
               .processor()
               .queueName(queueName)
-              .processMessage(context -> processMessage(context))
-              .processError(context -> processError(context))
+              .processMessage(this::processMessage)
+              .processError(this::processError)
               .buildProcessorClient();
         }
 
@@ -99,7 +99,7 @@ public class RTConsumer {
                             null
                     );
 
-                    Boolean ok = false;
+                    boolean ok = false;
                     try{
                         log.debug("[{}]Sending receipt",receiptId);
                         paaInviaRTService.send(url,receipt.getPayload());
