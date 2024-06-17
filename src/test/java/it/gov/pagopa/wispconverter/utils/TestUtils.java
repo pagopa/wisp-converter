@@ -202,6 +202,20 @@ public class TestUtils {
                 .replace("{rpt}", Base64.getEncoder().encodeToString(rptreplace.getBytes(StandardCharsets.UTF_8)));
     }
 
+    public static String getRptNullIbanPayload(boolean bollo,String station,String amount,String datiSpecificiRiscossione){
+        if(datiSpecificiRiscossione==null){
+            datiSpecificiRiscossione = "9/tipodovuto_7/datospecifico";
+        }
+        String rpt = TestUtils.loadFileContent("/requests/rptNullIban.xml");
+        String rptreplace = rpt
+                .replace("{datiSpecificiRiscossione}",datiSpecificiRiscossione)
+                .replaceAll("\\{amount}", amount);
+        String nodoInviaRPT = TestUtils.loadFileContent("/requests/nodoInviaRPT.xml");
+        return nodoInviaRPT
+                .replace("{station}",station)
+                .replace("{rpt}", Base64.getEncoder().encodeToString(rptreplace.getBytes(StandardCharsets.UTF_8)));
+    }
+
     public static String getCarrelloPayload(int numofrpt,String station,String amount,boolean multibeneficiario){
         String rpt = TestUtils.loadFileContent("/requests/rptCart.xml");
         String rptReplaceAmount = rpt.replaceAll("\\{amount}", amount);
