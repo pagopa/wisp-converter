@@ -6,9 +6,9 @@ import gov.telematici.pagamenti.ws.nodoperpa.ppthead.IntestazionePPT;
 import gov.telematici.pagamenti.ws.pafornode.PaSendRTV2Request;
 import gov.telematici.pagamenti.ws.papernodo.PaaInviaRT;
 import it.gov.digitpa.schemas._2011.pagamenti.*;
+import it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigDataV1Dto;
 import it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigurationKeyDto;
 import it.gov.pagopa.gen.wispconverter.client.cache.model.PaymentServiceProviderDto;
-import it.gov.pagopa.gen.wispconverter.client.cache.model.ServiceDto;
 import it.gov.pagopa.gen.wispconverter.client.cache.model.StationDto;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
@@ -66,21 +66,61 @@ public class ReceiptService {
     @Value("${wisp-converter.station-in-gpd.partial-path}")
     private String stationInGpdPartialPath;
 
+
     @Transactional
-    public void paaInviaRTKo(String payload) {
+    public void sendKoPaaInviaRtToCreditorInstitution(String payload) {
         try {
-            List<ReceiptDto> receiptDtos = List.of(mapper.readValue(payload, ReceiptDto[].class));
+            List<ReceiptDto> receipts = List.of(mapper.readValue(payload, ReceiptDto[].class));
             gov.telematici.pagamenti.ws.papernodo.ObjectFactory objectFactory = new gov.telematici.pagamenti.ws.papernodo.ObjectFactory();
 
-            Map<String, ConfigurationKeyDto> configurations = configCacheService.getConfigData().getConfigurations();
-            Map<String, PaymentServiceProviderDto> psps = configCacheService.getConfigData().getPsps();
-            Map<String, StationDto> stations = configCacheService.getConfigData().getStations();
+            // retrieve configuration data from cache
+            ConfigDataV1Dto configData = configCacheService.getConfigData();
+            Map<String, ConfigurationKeyDto> configurations = configData.getConfigurations();
+            Map<String, PaymentServiceProviderDto> psps = configData.getPsps();
+            Map<String, StationDto> stations = configData.getStations();
 
-            receiptDtos.forEach(receipt -> {
+            for (ReceiptDto receipt : receipts) {
 
                 // retrieve the NAV-based-key-to-IUV-based-key-map keys from Redis, then use the result for retrieve the IUV-based key
                 CachedKeysMapping cachedMapping = decouplerService.getCachedMappingFromNavToIuv(receipt.getFiscalCode(), receipt.getNoticeNumber());
                 String cachedSessionId = decouplerService.getCachedSessionId(cachedMapping.getFiscalCode(), cachedMapping.getIuv());
+
+                //
+                RPTRequestEntity rptRequestEntity = rptCosmosService.getRPTRequestEntity(cachedSessionId);
+
+                //
+                SessionDataDTO sessionData = this.rptExtractorService.extractSessionData(rptRequestEntity.getPrimitive(), rptRequestEntity.getPayload());
+                CommonFieldsDTO commonFields = sessionData.getCommonFields();
+
+                /*
+                  Validate the station, checking if exists one with the required segregation code and, if is onboarded on GPD
+                  has the correct primitive version.
+                  If it is not onboarded on GPD, it must be used for generate RT to sent to creditor institution via
+                  institution's custom endpoint.
+                 */
+                if (CommonUtility.isStationOnboardedOnGpd(configCacheService, sessionData, receipt.getNoticeNumber(), stationInGpdPartialPath)) {
+
+                    generateREForNotGenerableRT(sessionData, cachedMapping.getIuv());
+                } else {
+
+                }
+            }
+
+
+            receipts.forEach(receipt -> {
+
+                // retrieve the NAV-based-key-to-IUV-based-key-map keys from Redis, then use the result for retrieve the IUV-based key
+                CachedKeysMapping cachedMapping = decouplerService.getCachedMappingFromNavToIuv(receipt.getFiscalCode(), receipt.getNoticeNumber());
+                String cachedSessionId = decouplerService.getCachedSessionId(cachedMapping.getFiscalCode(), cachedMapping.getIuv());
+
+                /*
+                CachedKeysMapping cachedMapping = decouplerService.getCachedMappingFromNavToIuv(paSendRTV2Request.getIdPA(), noticeNumber);
+                CachedKeysMapping cachedMapping = decouplerService.getCachedMappingFromNavToIuv(receipt.getFiscalCode(), receipt.getNoticeNumber());
+
+
+                String cachedSessionId = decouplerService.getCachedSessionId(cachedMapping.getFiscalCode(), cachedMapping.getIuv());
+                String cachedSessionId = decouplerService.getCachedSessionId(cachedMapping.getFiscalCode(), cachedMapping.getIuv());
+                 */
 
                 RPTRequestEntity rptRequestEntity = rptCosmosService.getRPTRequestEntity(cachedSessionId);
 
@@ -93,7 +133,7 @@ public class ReceiptService {
                   If it is not onboarded on GPD, it must be used for generate RT to sent to creditor institution via
                   institution's custom endpoint.
                  */
-                if (checkStationValidityAndOnboardedOnGpd(sessionData, receipt.getNoticeNumber())) {
+                if (CommonUtility.isStationOnboardedOnGpd(configCacheService, sessionData, receipt.getNoticeNumber(), stationInGpdPartialPath)) {
 
                     generateREForNotGenerableRT(sessionData, cachedMapping.getIuv());
 
@@ -149,7 +189,7 @@ public class ReceiptService {
     }
 
     @Transactional
-    public void paaInviaRTOk(String payload) {
+    public void sendOkPaaInviaRtToCreditorInstitution(String payload) {
         try {
             Map<String, StationDto> stations = configCacheService.getConfigData().getStations();
             Map<String, PaymentServiceProviderDto> psps = configCacheService.getConfigData().getPsps();
@@ -178,7 +218,7 @@ public class ReceiptService {
                   If it is not onboarded on GPD, it must be used for generate RT to sent to creditor institution via
                   institution's custom endpoint.
                  */
-                if (checkStationValidityAndOnboardedOnGpd(sessionData, noticeNumber)) {
+                if (CommonUtility.isStationOnboardedOnGpd(configCacheService, sessionData, noticeNumber, stationInGpdPartialPath)) {
 
                     generateREForNotGenerableRT(sessionData, cachedMapping.getIuv());
 
@@ -365,38 +405,6 @@ public class ReceiptService {
             paaInviaRTServiceBusService.sendMessage(rtRequestEntity.getPartitionKey() + "_" + rtRequestEntity.getId());
         }
     }
-
-    private boolean checkStationValidityAndOnboardedOnGpd(SessionDataDTO sessionData, String noticeNumber) {
-
-        // extracting segregation code from notice number
-        if (noticeNumber == null) {
-            throw new AppException(AppErrorCodeMessageEnum.PAYMENT_POSITION_NOT_VALID, "null", "In order to check the station validity is required a notice number from which the segregation code must be extracted, but it is not correctly set in the payment position.");
-        }
-        long segregationCodeFromNoticeNumber;
-        try {
-            segregationCodeFromNoticeNumber = Long.parseLong(noticeNumber.substring(1, 3));
-        } catch (NumberFormatException e) {
-            throw new AppException(AppErrorCodeMessageEnum.PAYMENT_POSITION_NOT_VALID, noticeNumber, "In order to check the station validity is required a notice number from which the segregation code must be extracted, but it is not correctly set as numeric string in the payment position.");
-        }
-
-        // retrieving station by station identifier
-        StationDto station = configCacheService.getStationsByCreditorInstitutionAndSegregationCodeFromCache(sessionData.getCommonFields().getCreditorInstitutionId(), segregationCodeFromNoticeNumber);
-
-        // check if station is onboarded on GPD and is correctly configured for v2 primitives
-        ServiceDto service = station.getService();
-        if (service == null || service.getPath() == null) {
-            throw new AppException(AppErrorCodeMessageEnum.CONFIGURATION_INVALID_STATION_REDIRECT_URL, station.getStationCode());
-        }
-
-        // check if the station is
-        boolean isOnboardedInGpd = service.getPath().contains(stationInGpdPartialPath);
-        if (isOnboardedInGpd && station.getPrimitiveVersion() != 2) {
-            throw new AppException(AppErrorCodeMessageEnum.CONFIGURATION_INVALID_GPD_STATION, station.getStationCode());
-        }
-
-        return isOnboardedInGpd;
-    }
-
 
     private void generateREForNotGenerableRT(SessionDataDTO sessionDataDTO, String iuv) {
 
