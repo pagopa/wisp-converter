@@ -7,7 +7,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import it.gov.pagopa.wispconverter.controller.model.PaymentTokenList;
 import it.gov.pagopa.wispconverter.controller.model.ReceiptRequest;
 import it.gov.pagopa.wispconverter.controller.model.ReceiptTimerRequest;
 import it.gov.pagopa.wispconverter.service.ReceiptService;
@@ -24,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
+import java.util.List;
 
 @RestController
 @RequestMapping("/receipt")
@@ -93,7 +93,7 @@ public class ReceiptController {
             consumes = MediaType.APPLICATION_JSON_VALUE
     )
     @Trace(businessProcess = BP_TIMER_DELETE, reEnabled = true)
-    public void deleteTimer(@RequestBody PaymentTokenList paymentTokens) {
-        paymentTokens.getPaymentTokens().forEach(paymentToken -> log.info("Delete Timer arrived: " + paymentToken));
+    public void deleteTimer(@RequestBody List<String> paymentTokens) {
+        paymentTokens.forEach(paymentToken -> log.info("Delete Timer arrived: " + paymentToken));
     }
 }
