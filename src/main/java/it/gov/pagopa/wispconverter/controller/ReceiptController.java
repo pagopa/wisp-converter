@@ -10,17 +10,13 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import it.gov.pagopa.wispconverter.controller.model.ReceiptRequest;
 import it.gov.pagopa.wispconverter.controller.model.ReceiptTimerRequest;
 import it.gov.pagopa.wispconverter.service.ReceiptService;
+import it.gov.pagopa.wispconverter.service.ReceiptTimerService;
 import it.gov.pagopa.wispconverter.util.Trace;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.util.List;
@@ -38,6 +34,8 @@ public class ReceiptController {
     private static final String BP_TIMER_SET = "timer-set";
     private static final String BP_TIMER_DELETE = "timer-delete";
     private final ReceiptService receiptService;
+
+    private final ReceiptTimerService receiptTimerService;
 
     @Operation(summary = "", description = "", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"Receipt"})
     @ApiResponses(value = {
@@ -81,6 +79,7 @@ public class ReceiptController {
     @Trace(businessProcess = BP_TIMER_SET, reEnabled = true)
     public void createTimer(@RequestBody ReceiptTimerRequest request) {
         log.info("Set Timer arrived: " + request.toString());
+        receiptTimerService.sendMessage(request);
     }
 
     @Operation(summary = "deleteTimer", description = "Delete a timer by paymentToken", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"ReceiptTimer"})
@@ -93,7 +92,7 @@ public class ReceiptController {
             consumes = MediaType.APPLICATION_JSON_VALUE
     )
     @Trace(businessProcess = BP_TIMER_DELETE, reEnabled = true)
-    public void deleteTimer(@RequestBody List<String> paymentTokens) {
+    public void deleteTimer(@RequestParam List<String> paymentTokens) {
         paymentTokens.forEach(paymentToken -> log.info("Delete Timer arrived: " + paymentToken));
     }
 }
