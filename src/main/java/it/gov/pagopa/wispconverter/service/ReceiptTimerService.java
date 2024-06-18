@@ -22,7 +22,7 @@ public class ReceiptTimerService {
     @Value("${azure.sb.connectionString}")
     private String connectionString;
 
-    @Value("${azure.sb.receipt_timer.name}")
+    @Value("${azure.sb.queue.receiptTimer.name}")
     private String queueName;
 
     @Autowired
