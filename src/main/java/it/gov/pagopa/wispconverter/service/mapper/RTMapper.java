@@ -5,6 +5,7 @@ import gov.telematici.pagamenti.ws.pafornode.CtSubject;
 import gov.telematici.pagamenti.ws.pafornode.CtTransferPAReceiptV2;
 import gov.telematici.pagamenti.ws.pafornode.PaSendRTV2Request;
 import it.gov.digitpa.schemas._2011.pagamenti.*;
+import it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigurationKeyDto;
 import it.gov.pagopa.pagopa_api.xsd.common_types.v1_0.CtMapEntry;
 import it.gov.pagopa.wispconverter.service.model.*;
 import it.gov.pagopa.wispconverter.service.model.paymentrequest.PaymentRequestDTO;
@@ -23,9 +24,7 @@ public abstract class RTMapper {
     @Value("${wisp-converter.rtMapper.ctRicevutaTelematica.versioneOggetto}")
     String versioneOggetto;
 
-    public void toCtIstitutoAttestante(@MappingTarget CtIstitutoAttestante ctIstitutoAttestante,
-                                       CtIdentificativoUnivoco ctIdentificativoUnivoco,
-                                       Map<String, it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigurationKeyDto> configurations) {
+    public void toCtIstitutoAttestante(@MappingTarget CtIstitutoAttestante ctIstitutoAttestante, CtIdentificativoUnivoco ctIdentificativoUnivoco, Map<String, ConfigurationKeyDto> configurations) {
         String tipoIdentificativoUnivoco = CommonUtility.getConfigKeyValueCache(configurations, "GLOBAL-istitutoAttestante.identificativoUnivocoAttestante.tipoIdentificativoUnivoco");
         String codiceIdentificativoUnivoco = CommonUtility.getConfigKeyValueCache(configurations, "GLOBAL-istitutoAttestante.identificativoUnivocoAttestante.codiceIdentificativoUnivoco");
         String denominazioneAttestante = CommonUtility.getConfigKeyValueCache(configurations, "GLOBAL-istitutoAttestante.denominazioneAttestante");
@@ -148,7 +147,7 @@ public abstract class RTMapper {
     }
 
     @Mapping(target = "singoloImportoPagato", expression = "java(java.math.BigDecimal.ZERO)")
-    @Mapping(target = "esitoSingoloPagamento", constant = "Annullato da WISP")//TODO cosa mettere?
+    //@Mapping(target = "esitoSingoloPagamento", constant = "Annullato da WISP")//TODO cosa mettere?
     @Mapping(target = "dataEsitoSingoloPagamento", expression = "java(it.gov.pagopa.wispconverter.util.XmlUtil.toXMLGregoirianCalendar(instant))")
     @Mapping(target = "identificativoUnivocoRiscossione", constant = "0")
     @Mapping(source = "transferDTO.remittanceInformation", target = "causaleVersamento")

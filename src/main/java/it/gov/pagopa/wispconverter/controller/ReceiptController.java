@@ -33,7 +33,7 @@ public class ReceiptController {
 
     @Operation(summary = "", description = "", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"Receipt"})
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully forwarded paaInviaRT- to EC", content = @Content(schema = @Schema()))
+            @ApiResponse(responseCode = "200", description = "Successfully forwarded negative paaInviaRT to EC", content = @Content(schema = @Schema()))
     })
     @PostMapping(
             value = "/ko",
@@ -43,12 +43,12 @@ public class ReceiptController {
     @Trace(businessProcess = BP_RECEIPT_KO, reEnabled = true)
     public void receiptKo(@RequestBody ReceiptRequest request) throws IOException {
 
-        receiptService.paaInviaRTKo(request.getContent());
+        receiptService.sendKoPaaInviaRtToCreditorInstitution(request.getContent());
     }
 
     @Operation(summary = "", description = "", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"Receipt"})
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully forwarded paaInviaRT+ to EC", content = @Content(schema = @Schema()))
+            @ApiResponse(responseCode = "200", description = "Successfully forwarded positive paaInviaRT to EC", content = @Content(schema = @Schema()))
     })
     @PostMapping(
             value = "/ok",
@@ -58,6 +58,6 @@ public class ReceiptController {
     @Trace(businessProcess = BP_RECEIPT_OK, reEnabled = true)
     public void receiptOk(@RequestBody ReceiptRequest request) throws IOException {
 
-        receiptService.paaInviaRTOk(request.getContent());
+        receiptService.sendOkPaaInviaRtToCreditorInstitution(request.getContent());
     }
 }

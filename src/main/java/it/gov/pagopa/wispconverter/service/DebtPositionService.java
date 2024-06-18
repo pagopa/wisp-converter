@@ -1,14 +1,7 @@
 package it.gov.pagopa.wispconverter.service;
 
-import it.gov.pagopa.gen.wispconverter.client.cache.model.ServiceDto;
-import it.gov.pagopa.gen.wispconverter.client.cache.model.StationDto;
 import it.gov.pagopa.gen.wispconverter.client.gpd.api.DebtPositionsApiApi;
-import it.gov.pagopa.gen.wispconverter.client.gpd.model.MultiplePaymentPositionModelDto;
-import it.gov.pagopa.gen.wispconverter.client.gpd.model.PaymentOptionModelDto;
-import it.gov.pagopa.gen.wispconverter.client.gpd.model.PaymentPositionModelBaseResponseDto;
-import it.gov.pagopa.gen.wispconverter.client.gpd.model.PaymentPositionModelDto;
-import it.gov.pagopa.gen.wispconverter.client.gpd.model.TransferMetadataModelDto;
-import it.gov.pagopa.gen.wispconverter.client.gpd.model.TransferModelDto;
+import it.gov.pagopa.gen.wispconverter.client.gpd.model.*;
 import it.gov.pagopa.gen.wispconverter.client.iuvgenerator.api.GenerationApi;
 import it.gov.pagopa.gen.wispconverter.client.iuvgenerator.model.IUVGenerationResponseDto;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
@@ -49,6 +42,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class DebtPositionService {
 
+    private static final String REST_CLIENT_LOG_STRING = "RestClientException ERROR [%s] - %s";
+
     private final it.gov.pagopa.gen.wispconverter.client.gpd.invoker.ApiClient gpdClient;
 
     private final it.gov.pagopa.gen.wispconverter.client.iuvgenerator.invoker.ApiClient iuvGeneratorClient;
@@ -66,8 +61,6 @@ public class DebtPositionService {
     private final DebtPositionUpdateMapper mapperForUpdate;
 
     private final Pattern taxonomyPattern = Pattern.compile("([^/]++/[^/]++)/?");
-
-    private static final String REST_CLIENT_LOG_STRING = "RestClientException ERROR [%s] - %s";
 
     @Value("${wisp-converter.poste-italiane.abi-code}")
     private String posteItalianeABICode;
@@ -376,20 +369,12 @@ public class DebtPositionService {
           The receipt send is executed only if there are analyzed receipts in the list, otherwise skip this step.
          */
         if (!receiptsToSend.isEmpty()) {
-            try {
 
-                // save the mapped keys in the Redis cache for receipt generation
-                decouplerService.saveMappedKeyForReceiptGeneration(sessionData.getCommonFields().getSessionId(), sessionData, creditorInstitutionId);
+            // save the mapped keys in the Redis cache for receipt generation
+            decouplerService.saveMappedKeyForReceiptGeneration(sessionData.getCommonFields().getSessionId(), sessionData, creditorInstitutionId);
 
-                // generate and send the KO receipts to creditor institution via configured station
-                receiptService.paaInviaRTKo(receiptsToSend.toString());
-
-            } catch (AppException e) {
-
-                // finally, generate event in Registro Eventi for each receipt (not sent)
-                generateREForNotGeneratedRT(sessionData, receiptsToSend);
-                throw new AppException(AppErrorCodeMessageEnum.RECEIPT_KO_NOT_GENERATED, e);
-            }
+            // generate and send the KO receipts to creditor institution via configured station
+            receiptService.sendKoPaaInviaRtToCreditorInstitution(receiptsToSend.toString());
         }
 
         // finally, throw an exception for notify the error, including all the IUVs
@@ -405,7 +390,7 @@ public class DebtPositionService {
         try {
 
             // validate the station, checking if exists one with the required segregation code and, if is onboarded on GPD, has the correct primitive version
-            checkStationValidity(sessionData, CommonUtility.getSinglePaymentOption(paymentPositionFromGPD).getNav());
+            CommonUtility.checkStationValidity(configCacheService, sessionData, CommonUtility.getSinglePaymentOption(paymentPositionFromGPD).getNav());
 
             // merge the information of extracted payment position with the data from existing payment position, retrieved from GPD
             PaymentPositionModelDto updatedPaymentPosition = updateExtractedPaymentPositionWithExistingData(iuv, sessionData, paymentPositionFromGPD, extractedPaymentPosition);
@@ -477,9 +462,12 @@ public class DebtPositionService {
         // generate a new NAV code calling IUVGenerator
         String nav = generateNavCodeFromIuvGenerator(creditorInstitutionId);
         generateREForCreatedNAV(sessionData, iuv, nav);
-        if (sessionData.getCommonFields().getCartId() == null) {
+        if (Constants.NODO_INVIA_CARRELLO_RPT.equals(MDC.get(Constants.MDC_PRIMITIVE))) {
             MDC.put(Constants.MDC_NOTICE_NUMBER, nav);
         }
+
+        // validate the station, checking if exists one with the required segregation code and, if is onboarded on GPD, has the correct primitive version
+        CommonUtility.checkStationValidity(configCacheService, sessionData, nav);
 
         // update the payment option to be used in bulk insert with the newly generated NAV code
         List<PaymentOptionModelDto> paymentOptions = extractedPaymentPosition.getPaymentOption();
@@ -560,23 +548,6 @@ public class DebtPositionService {
         return iban != null && iban.substring(5, 10).equals(posteItalianeABICode);
     }
 
-    private void checkStationValidity(SessionDataDTO sessionData, String noticeNumber) {
-
-        // extracting segregation code from notice number
-        if (noticeNumber == null) {
-            throw new AppException(AppErrorCodeMessageEnum.PAYMENT_POSITION_NOT_VALID, "In order to check the station validity is required a notice number from which the segregation code must be extracted, but it is not correctly set in the payment position.");
-        }
-        Long segregationCodeFromNoticeNumber = Long.parseLong(noticeNumber.substring(1, 3));
-
-        // retrieving station by station identifier
-        StationDto station = configCacheService.getStationsByCreditorInstitutionAndSegregationCodeFromCache(sessionData.getCommonFields().getCreditorInstitutionId(), segregationCodeFromNoticeNumber);
-
-        // check if station is onboarded on GPD and is correctly configured for v2 primitives
-        ServiceDto service = station.getService();
-        if (service == null || service.getPath() == null) {
-            throw new AppException(AppErrorCodeMessageEnum.CONFIGURATION_INVALID_STATION_REDIRECT_URL, station.getStationCode());
-        }
-    }
 
     private void generateREForBulkInsert(List<PaymentPositionModelDto> paymentPositions) {
 
@@ -613,18 +584,6 @@ public class DebtPositionService {
         if (Boolean.TRUE.equals(isTracingOnREEnabled)) {
             PaymentNoticeContentDTO paymentNotice = sessionDataDTO.getPaymentNoticeByIUV(iuv);
             generateRE(InternalStepStatus.GENERATED_NAV_FOR_NEW_PAYMENT_POSITION, iuv, nav, paymentNotice.getCcp(), null);
-        }
-    }
-
-    private void generateREForNotGeneratedRT(SessionDataDTO sessionDataDTO, List<ReceiptDto> receipts) {
-
-        // creating event to be persisted for RE
-        if (Boolean.TRUE.equals(isTracingOnREEnabled)) {
-            for (ReceiptDto receipt : receipts) {
-                String receiptInfo = "Receipt from: " + receipt.toString();
-                PaymentNoticeContentDTO paymentNotice = sessionDataDTO.getPaymentNoticeByNoticeNumber(receipt.getNoticeNumber());
-                generateRE(InternalStepStatus.NEGATIVE_RT_GENERATION_SKIPPED, paymentNotice.getIuv(), paymentNotice.getNoticeNumber(), paymentNotice.getCcp(), receiptInfo);
-            }
         }
     }
 

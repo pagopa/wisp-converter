@@ -1,10 +1,5 @@
 package it.gov.pagopa.wispconverter.consumer;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.*;
-import static org.mockito.Mockito.doThrow;
-
 import com.azure.core.amqp.exception.AmqpErrorCondition;
 import com.azure.core.amqp.exception.AmqpException;
 import com.azure.core.util.BinaryData;
@@ -14,13 +9,18 @@ import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.RTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.model.RTRequestEntity;
 import it.gov.pagopa.wispconverter.service.ConfigCacheService;
-import it.gov.pagopa.wispconverter.service.PaaInviaRTService;
+import it.gov.pagopa.wispconverter.service.PaaInviaRTSenderService;
 import it.gov.pagopa.wispconverter.servicebus.RTConsumer;
 import it.gov.pagopa.wispconverter.utils.TestUtils;
-import java.nio.charset.StandardCharsets;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
+
+import java.nio.charset.StandardCharsets;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.*;
 
 class ConsumerTest {
 
@@ -36,7 +36,7 @@ class ConsumerTest {
         when(bindata.toBytes()).thenReturn("aaaaa_bbbbb_ccccc".getBytes(StandardCharsets.UTF_8));
 
         RTRequestRepository rtRequestRepository = mock(RTRequestRepository.class);
-        when(rtRequestRepository.findById(any(),any())).thenReturn(Optional.of(RTRequestEntity.builder().retry(0).build()));
+        when(rtRequestRepository.findById(any(), any())).thenReturn(Optional.of(RTRequestEntity.builder().retry(0).build()));
 
         RTConsumer rtConsumer = new RTConsumer();
         ReflectionTestUtils.setField(rtConsumer, "rtRequestRepository", rtRequestRepository);
@@ -44,12 +44,12 @@ class ConsumerTest {
         when(ccs.getConfigData()).thenReturn(TestUtils.configData("mystation"));
         ReflectionTestUtils.setField(rtConsumer, "configCacheService", ccs);
 
-        PaaInviaRTService paaInviaRTService = mock(PaaInviaRTService.class);
-        ReflectionTestUtils.setField(rtConsumer, "paaInviaRTService", paaInviaRTService);
+        PaaInviaRTSenderService paaInviaRTSenderService = mock(PaaInviaRTSenderService.class);
+        ReflectionTestUtils.setField(rtConsumer, "paaInviaRTService", paaInviaRTSenderService);
 
         rtConsumer.processMessage(messageContext);
 
-        verify(rtRequestRepository,times(1)).delete(any());
+        verify(rtRequestRepository, times(1)).delete(any());
 
     }
 
@@ -65,7 +65,7 @@ class ConsumerTest {
         when(bindata.toBytes()).thenReturn("aaaaa_bbbbb_ccccc".getBytes(StandardCharsets.UTF_8));
 
         RTRequestRepository rtRequestRepository = mock(RTRequestRepository.class);
-        when(rtRequestRepository.findById(any(),any())).thenReturn(Optional.of(RTRequestEntity.builder().retry(48).build()));
+        when(rtRequestRepository.findById(any(), any())).thenReturn(Optional.of(RTRequestEntity.builder().retry(48).build()));
 
         RTConsumer rtConsumer = new RTConsumer();
         ReflectionTestUtils.setField(rtConsumer, "rtRequestRepository", rtRequestRepository);
@@ -73,13 +73,13 @@ class ConsumerTest {
         when(ccs.getConfigData()).thenReturn(TestUtils.configData("mystation"));
         ReflectionTestUtils.setField(rtConsumer, "configCacheService", ccs);
 
-        PaaInviaRTService paaInviaRTService = mock(PaaInviaRTService.class);
-        ReflectionTestUtils.setField(rtConsumer, "paaInviaRTService", paaInviaRTService);
+        PaaInviaRTSenderService paaInviaRTSenderService = mock(PaaInviaRTSenderService.class);
+        ReflectionTestUtils.setField(rtConsumer, "paaInviaRTService", paaInviaRTSenderService);
 
         rtConsumer.processMessage(messageContext);
 
-        verify(rtRequestRepository,times(0)).delete(any());
-        verify(rtRequestRepository,times(0)).save(any());
+        verify(rtRequestRepository, times(0)).delete(any());
+        verify(rtRequestRepository, times(0)).save(any());
 
     }
 
@@ -98,72 +98,77 @@ class ConsumerTest {
 
         RTRequestEntity receipt = RTRequestEntity.builder().retry(0).build();
         RTRequestRepository rtRequestRepository = mock(RTRequestRepository.class);
-        when(rtRequestRepository.findById(any(),any())).thenReturn(Optional.of(receipt));
+        when(rtRequestRepository.findById(any(), any())).thenReturn(Optional.of(receipt));
 
         RTConsumer rtConsumer = new RTConsumer();
         ConfigCacheService ccs = mock(ConfigCacheService.class);
         when(ccs.getConfigData()).thenReturn(TestUtils.configData("mystation"));
 
-        PaaInviaRTService paaInviaRTService = mock(PaaInviaRTService.class);
-        doThrow(new AppException(AppErrorCodeMessageEnum.PARSING_GENERIC_ERROR)).when(paaInviaRTService).send(any(),any());
+        PaaInviaRTSenderService paaInviaRTSenderService = mock(PaaInviaRTSenderService.class);
+        doThrow(new AppException(AppErrorCodeMessageEnum.PARSING_GENERIC_ERROR)).when(paaInviaRTSenderService).sendToCreditorInstitution(any(), any());
 
         ReflectionTestUtils.setField(rtConsumer, "rtRequestRepository", rtRequestRepository);
         ReflectionTestUtils.setField(rtConsumer, "configCacheService", ccs);
-        ReflectionTestUtils.setField(rtConsumer, "paaInviaRTService", paaInviaRTService);
+        ReflectionTestUtils.setField(rtConsumer, "paaInviaRTService", paaInviaRTSenderService);
         ReflectionTestUtils.setField(rtConsumer, "serviceBusSenderClient", serviceBusSenderClient);
 
         rtConsumer.processMessage(messageContext);
 
-        assertEquals(1,receipt.getRetry());
-        verify(rtRequestRepository,times(1)).save(receipt);
-        verify(serviceBusSenderClient,times(1)).sendMessage(any());
+        assertEquals(1, receipt.getRetry());
+        verify(rtRequestRepository, times(1)).save(receipt);
+        verify(serviceBusSenderClient, times(1)).sendMessage(any());
 
     }
+
     @Test
-    void testprocesserror(){
-        ServiceBusErrorContext serviceBusErrorContext = mock(ServiceBusErrorContext.class);
-    when(serviceBusErrorContext.getException())
-        .thenReturn(new ServiceBusException(new RuntimeException(),ServiceBusErrorSource.UNKNOWN));
-        when(serviceBusErrorContext.getErrorSource()).thenReturn(ServiceBusErrorSource.COMPLETE);
-        new RTConsumer().processError(serviceBusErrorContext);
-        assertTrue(true);
-    }
-    @Test
-    void testprocesserror2(){
+    void testprocesserror() {
         ServiceBusErrorContext serviceBusErrorContext = mock(ServiceBusErrorContext.class);
         when(serviceBusErrorContext.getException())
-                .thenReturn(new ServiceBusException(new AmqpException(true, AmqpErrorCondition.MESSAGE_LOCK_LOST,"",null),ServiceBusErrorSource.UNKNOWN));
+                .thenReturn(new ServiceBusException(new RuntimeException(), ServiceBusErrorSource.UNKNOWN));
         when(serviceBusErrorContext.getErrorSource()).thenReturn(ServiceBusErrorSource.COMPLETE);
         new RTConsumer().processError(serviceBusErrorContext);
         assertTrue(true);
     }
+
     @Test
-    void testprocesserror3(){
+    void testprocesserror2() {
         ServiceBusErrorContext serviceBusErrorContext = mock(ServiceBusErrorContext.class);
         when(serviceBusErrorContext.getException())
-                .thenReturn(new ServiceBusException(new AmqpException(true, AmqpErrorCondition.UNAUTHORIZED_ACCESS,"",null),ServiceBusErrorSource.UNKNOWN));
+                .thenReturn(new ServiceBusException(new AmqpException(true, AmqpErrorCondition.MESSAGE_LOCK_LOST, "", null), ServiceBusErrorSource.UNKNOWN));
         when(serviceBusErrorContext.getErrorSource()).thenReturn(ServiceBusErrorSource.COMPLETE);
         new RTConsumer().processError(serviceBusErrorContext);
         assertTrue(true);
     }
+
     @Test
-    void testprocesserror4(){
+    void testprocesserror3() {
         ServiceBusErrorContext serviceBusErrorContext = mock(ServiceBusErrorContext.class);
         when(serviceBusErrorContext.getException())
-                .thenReturn(new ServiceBusException(new AmqpException(true, AmqpErrorCondition.SERVER_BUSY_ERROR,"",null),ServiceBusErrorSource.UNKNOWN));
+                .thenReturn(new ServiceBusException(new AmqpException(true, AmqpErrorCondition.UNAUTHORIZED_ACCESS, "", null), ServiceBusErrorSource.UNKNOWN));
         when(serviceBusErrorContext.getErrorSource()).thenReturn(ServiceBusErrorSource.COMPLETE);
         new RTConsumer().processError(serviceBusErrorContext);
         assertTrue(true);
     }
+
     @Test
-    void testprocesserror5(){
+    void testprocesserror4() {
         ServiceBusErrorContext serviceBusErrorContext = mock(ServiceBusErrorContext.class);
-    when(serviceBusErrorContext.getException())
-        .thenReturn(
-            new RuntimeException());
+        when(serviceBusErrorContext.getException())
+                .thenReturn(new ServiceBusException(new AmqpException(true, AmqpErrorCondition.SERVER_BUSY_ERROR, "", null), ServiceBusErrorSource.UNKNOWN));
         when(serviceBusErrorContext.getErrorSource()).thenReturn(ServiceBusErrorSource.COMPLETE);
         new RTConsumer().processError(serviceBusErrorContext);
         assertTrue(true);
     }
-     
+
+    @Test
+    void testprocesserror5() {
+        ServiceBusErrorContext serviceBusErrorContext = mock(ServiceBusErrorContext.class);
+        when(serviceBusErrorContext.getException())
+                .thenReturn(
+                        new RuntimeException());
+        when(serviceBusErrorContext.getErrorSource()).thenReturn(ServiceBusErrorSource.COMPLETE);
+        new RTConsumer().processError(serviceBusErrorContext);
+        assertTrue(true);
+    }
+
 }

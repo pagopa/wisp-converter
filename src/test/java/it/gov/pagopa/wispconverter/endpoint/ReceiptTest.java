@@ -13,8 +13,8 @@ import it.gov.pagopa.wispconverter.repository.RTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.ReEventRepository;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
 import it.gov.pagopa.wispconverter.service.ConfigCacheService;
-import it.gov.pagopa.wispconverter.service.PaaInviaRTService;
-import it.gov.pagopa.wispconverter.service.PaaInviaRTServiceBusService;
+import it.gov.pagopa.wispconverter.service.PaaInviaRTSenderService;
+import it.gov.pagopa.wispconverter.service.ServiceBusService;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
 import it.gov.pagopa.wispconverter.utils.TestUtils;
 import org.junit.jupiter.api.Test;
@@ -71,9 +71,9 @@ class ReceiptTest {
     @MockBean
     private it.gov.pagopa.gen.wispconverter.client.decouplercaching.invoker.ApiClient decouplerCachingClient;
     @MockBean
-    private PaaInviaRTService paaInviaRTService;
+    private PaaInviaRTSenderService paaInviaRTSenderService;
     @MockBean
-    private PaaInviaRTServiceBusService paaInviaRTServiceBusService;
+    private ServiceBusService serviceBusService;
     @MockBean
     private ServiceBusSenderClient serviceBusSenderClient;
     @MockBean
@@ -179,7 +179,7 @@ class ReceiptTest {
                 )
         );
         when(cacheRepository.read(any(), any())).thenReturn("wisp_nav2iuv_dominio");
-        doThrow(new PaaInviaRTException("PAA_ERRORE_RESPONSE", "PAA_ERRORE_RESPONSE", "Errore PA")).when(paaInviaRTService).send(anyString(), anyString());
+        doThrow(new PaaInviaRTException("PAA_ERRORE_RESPONSE", "PAA_ERRORE_RESPONSE", "Errore PA")).when(paaInviaRTSenderService).sendToCreditorInstitution(anyString(), anyString());
 
         mvc.perform(MockMvcRequestBuilders.post("/receipt/ok")
                         .accept(MediaType.APPLICATION_JSON)
@@ -192,7 +192,7 @@ class ReceiptTest {
                             assertNotNull(result.getResponse());
                         });
 
-        verify(paaInviaRTService, times(1)).send(anyString(), anyString());
+        verify(paaInviaRTSenderService, times(1)).sendToCreditorInstitution(anyString(), anyString());
     }
 
     @Test
@@ -213,7 +213,7 @@ class ReceiptTest {
                 )
         );
         when(cacheRepository.read(any(), any())).thenReturn("wisp_nav2iuv_dominio");
-        doAnswer(i -> new ResponseEntity<>(HttpStatusCode.valueOf(200))).when(paaInviaRTService).send(anyString(), anyString());
+        doAnswer(i -> new ResponseEntity<>(HttpStatusCode.valueOf(200))).when(paaInviaRTSenderService).sendToCreditorInstitution(anyString(), anyString());
         mvc.perform(MockMvcRequestBuilders.post("/receipt/ok")
                         .accept(MediaType.APPLICATION_JSON)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -225,7 +225,7 @@ class ReceiptTest {
                             assertNotNull(result.getResponse());
                         });
 
-        verify(paaInviaRTService, times(1)).send(anyString(), anyString());
+        verify(paaInviaRTSenderService, times(1)).sendToCreditorInstitution(anyString(), anyString());
     }
 
 }
