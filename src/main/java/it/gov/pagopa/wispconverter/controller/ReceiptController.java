@@ -68,9 +68,9 @@ public class ReceiptController {
         receiptService.paaInviaRTOk(request.getContent());
     }
 
-    @Operation(summary = "", description = "", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"Receipt"})
+    @Operation(summary = "createTimer", description = "Create a timer linked with paymentToken and receipt data", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"ReceiptTimer"})
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Set paymentToken expiration time", content = @Content(schema = @Schema()))
+            @ApiResponse(responseCode = "200", description = "Successfully paymentToken expiration timer created", content = @Content(schema = @Schema()))
     })
     @PostMapping(
             value = "/timer",
@@ -78,20 +78,20 @@ public class ReceiptController {
             consumes = MediaType.APPLICATION_JSON_VALUE
     )
     @Trace(businessProcess = BP_TIMER_SET, reEnabled = true)
-    public void setTimer(@RequestBody ReceiptTimerRequest request) {
+    public void createTimer(@RequestBody ReceiptTimerRequest request) {
         log.info("Set Timer arrived: " + request.toString());
     }
 
-    @Operation(summary = "", description = "", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"Receipt"})
+    @Operation(summary = "deleteTimer", description = "Delete a timer by paymentToken", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"ReceiptTimer"})
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Delete paymentToken expiration time", content = @Content(schema = @Schema()))
+            @ApiResponse(responseCode = "200", description = "Successfully paymentToken expiration timer deleted", content = @Content(schema = @Schema()))
     })
     @DeleteMapping(
             value = "/timer",
             produces = MediaType.APPLICATION_JSON_VALUE,
             consumes = MediaType.APPLICATION_JSON_VALUE
     )
-    @Trace(businessProcess = BP_TIMER_SET, reEnabled = true)
+    @Trace(businessProcess = BP_TIMER_DELETE, reEnabled = true)
     public void deleteTimer(@RequestParam(name = "paymentToken") String paymentToken) {
         log.info("Delete Timer arrived: " + paymentToken);
     }
