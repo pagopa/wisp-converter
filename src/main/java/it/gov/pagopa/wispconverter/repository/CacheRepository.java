@@ -7,6 +7,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 
 @Component
 @Slf4j
@@ -18,6 +19,10 @@ public class CacheRepository {
 
     public void insert(String key, String value, long ttlInMinutes) {
         this.redisSimpleTemplate.opsForValue().set(key, value, Duration.ofMinutes(ttlInMinutes));
+    }
+
+    public void insert(String key, String value, long ttl, ChronoUnit chronoUnit) {
+        this.redisSimpleTemplate.opsForValue().set(key, value, Duration.of(ttl, chronoUnit));
     }
 
     public <T> T read(String key, Class<T> clazz) {

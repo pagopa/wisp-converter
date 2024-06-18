@@ -59,7 +59,7 @@ public class ReceiptTimerService {
         Long sequenceNumber = serviceBusSenderClient.scheduleMessage(serviceBusMessage, scheduledExpirationTime);
         log.info("Sent scheduled message {} to the queue: {}", message, queueName);
         // Insert {wisp_timer_<paymentToken>, sequenceNumber} for Duplicate Prevention Logic and for call cancelScheduledMessage(sequenceNumber)
-        cacheRepository.insert(sequenceNumberKey, String.valueOf(sequenceNumber), message.getExpirationTime());
+        cacheRepository.insert(sequenceNumberKey, String.valueOf(sequenceNumber), message.getExpirationTime(), ChronoUnit.MILLIS);
         log.info("Cache sequence number {} for payment-token: {}", sequenceNumber, sequenceNumberKey);
     }
 }
