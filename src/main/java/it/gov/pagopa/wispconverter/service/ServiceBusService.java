@@ -8,6 +8,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.time.ZonedDateTime;
+
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -22,10 +24,13 @@ public class ServiceBusService {
     @Autowired
     private ServiceBusSenderClient serviceBusSenderClient;
 
-    public void sendMessage(String message) {
+    public void sendMessage(String message, Integer scheduledTimeInHours) {
         ServiceBusMessage serviceBusMessage = new ServiceBusMessage(message);
-        log.debug("Sending message {} to the queue: {}", message, queueName);
+        if (scheduledTimeInHours != null) {
+            serviceBusMessage.setScheduledEnqueueTime(ZonedDateTime.now().plusHours(scheduledTimeInHours).toOffsetDateTime());
+        }
+        log.debug("Rescheduling message [{}] at {}", message, serviceBusMessage.getScheduledEnqueueTime());
         serviceBusSenderClient.sendMessage(serviceBusMessage);
-        log.debug("Sent message {} to the queue: {}", message, queueName);
+        log.debug("Rescheduled receipt [{}] at {} to the queue [{}]", message, serviceBusMessage.getScheduledEnqueueTime(), queueName);
     }
 }

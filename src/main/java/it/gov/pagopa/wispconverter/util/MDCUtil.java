@@ -1,5 +1,6 @@
 package it.gov.pagopa.wispconverter.util;
 
+import gov.telematici.pagamenti.ws.nodoperpa.ppthead.IntestazionePPT;
 import it.gov.pagopa.wispconverter.service.model.session.CommonFieldsDTO;
 import it.gov.pagopa.wispconverter.service.model.session.RPTContentDTO;
 import it.gov.pagopa.wispconverter.service.model.session.SessionDataDTO;
@@ -15,7 +16,8 @@ public class MDCUtil {
 
     public static void setSessionDataInfoInMDC(SessionDataDTO sessionData, String primitive) {
 
-        if ("TRUE".equals(MDC.get(Constants.MDC_CONTROL_FLAG))) {
+        String controlFlag = MDC.get(Constants.MDC_CONTROL_FLAG);
+        if (!"TRUE".equals(controlFlag)) {
 
             CommonFieldsDTO commonFields = sessionData.getCommonFields();
             MDC.put(Constants.MDC_CONTROL_FLAG, "TRUE");
@@ -40,6 +42,17 @@ public class MDCUtil {
                 }
             }
         }
+    }
+
+
+    public static void setSessionDataInfoInMDC(IntestazionePPT header, String noticeNumber) {
+
+        MDC.put(Constants.MDC_PRIMITIVE, Constants.PAA_INVIA_RT);
+        MDC.put(Constants.MDC_DOMAIN_ID, header.getIdentificativoDominio());
+        MDC.put(Constants.MDC_STATION_ID, header.getIdentificativoStazioneIntermediarioPA());
+        MDC.put(Constants.MDC_IUV, header.getIdentificativoUnivocoVersamento());
+        MDC.put(Constants.MDC_NOTICE_NUMBER, noticeNumber);
+        MDC.put(Constants.MDC_CCP, header.getCodiceContestoPagamento());
     }
 
     public static void setMDCError(ProblemDetail problemDetail) {
@@ -71,4 +84,5 @@ public class MDCUtil {
     public static boolean hasStatus() {
         return MDC.get(Constants.MDC_STATUS) != null;
     }
+
 }

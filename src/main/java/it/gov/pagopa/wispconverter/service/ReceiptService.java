@@ -21,7 +21,6 @@ import it.gov.pagopa.wispconverter.service.model.CachedKeysMapping;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
 import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import it.gov.pagopa.wispconverter.service.model.session.CommonFieldsDTO;
-import it.gov.pagopa.wispconverter.service.model.session.PaymentNoticeContentDTO;
 import it.gov.pagopa.wispconverter.service.model.session.RPTContentDTO;
 import it.gov.pagopa.wispconverter.service.model.session.SessionDataDTO;
 import it.gov.pagopa.wispconverter.util.*;
@@ -56,7 +55,7 @@ public class ReceiptService {
 
     private final RptCosmosService rptCosmosService;
 
-    private final RTCosmosService rtCosmosService;
+    private final RtCosmosService rtCosmosService;
 
     private final RPTExtractorService rptExtractorService;
 
@@ -72,6 +71,9 @@ public class ReceiptService {
 
     @Value("${wisp-converter.station-in-gpd.partial-path}")
     private String stationInGpdPartialPath;
+
+    @Value("${wisp-converter.rt-send.scheduling-time-in-hours}")
+    private Integer schedulingTimeInHours;
 
 
     @Transactional
@@ -106,7 +108,7 @@ public class ReceiptService {
                 */
                 if (CommonUtility.isStationOnboardedOnGpd(configCacheService, sessionData, noticeNumber, stationInGpdPartialPath)) {
 
-                    generateREForNotGenerableRT(sessionData, cachedMapping.getIuv());
+                    generateREForNotGenerableRT(sessionData, cachedMapping.getIuv(), noticeNumber);
 
                 } else {
 
@@ -156,7 +158,7 @@ public class ReceiptService {
 
     @Transactional
     public void sendOkPaaInviaRtToCreditorInstitution(String payload) {
-        
+
         try {
 
             // map the received payload as a paSendRTV2 SOAP request that will be lately evaluated
@@ -186,7 +188,7 @@ public class ReceiptService {
             */
             if (CommonUtility.isStationOnboardedOnGpd(configCacheService, sessionData, noticeNumber, stationInGpdPartialPath)) {
 
-                generateREForNotGenerableRT(sessionData, cachedMapping.getIuv());
+                generateREForNotGenerableRT(sessionData, cachedMapping.getIuv(), noticeNumber);
 
             } else {
 
@@ -235,12 +237,7 @@ public class ReceiptService {
         RPTRequestEntity rptRequestEntity = rptCosmosService.getRPTRequestEntity(cachedSessionId);
 
         // use the retrieved RPT for generate session data information on which the next execution will operate
-        SessionDataDTO sessionData = this.rptExtractorService.extractSessionData(rptRequestEntity.getPrimitive(), rptRequestEntity.getPayload());
-
-        // setting session data in MDC object
-        MDCUtil.setSessionDataInfoInMDC(sessionData, null);
-
-        return sessionData;
+        return this.rptExtractorService.extractSessionData(rptRequestEntity.getPrimitive(), rptRequestEntity.getPayload());
     }
 
     private void sendReceiptToCreditorInstitution(SessionDataDTO sessionData, String rawPayload, Object receipt,
@@ -275,7 +272,7 @@ public class ReceiptService {
         } catch (Exception e) {
 
             // generate a new event in RE for store the unsuccessful sending of the receipt
-            generateREForNotSentRT(sessionData, iuv, noticeNumber);
+            generateREForNotSentRT(sessionData, iuv, noticeNumber, e.getMessage());
 
             // because of the not sent receipt, it is necessary to schedule a retry of the sending process for this receipt
             scheduleRTSend(sessionData, url, rawPayload, station, iuv, noticeNumber);
@@ -365,7 +362,7 @@ public class ReceiptService {
 
         // Generate paaInviaRT object, as JAXB element, with the RT in base64 format
         PaaInviaRT paaInviaRT = objectFactory.createPaaInviaRT();
-        paaInviaRT.setRt(AppBase64Util.base64Encode(receiptContent.getBytes(StandardCharsets.UTF_8)).getBytes(StandardCharsets.UTF_8));
+        paaInviaRT.setRt(receiptContent.getBytes(StandardCharsets.UTF_8));
         JAXBElement<PaaInviaRT> paaInviaRTJaxb = objectFactory.createPaaInviaRT(paaInviaRT);
 
         // generating a SOAP message, including body and header, and then extract the raw string of the envelope
@@ -392,7 +389,7 @@ public class ReceiptService {
             rtCosmosService.saveRTRequestEntity(rtRequestEntity);
 
             // after the RT persist, send a message on the service bus
-            serviceBusService.sendMessage(rtRequestEntity.getPartitionKey() + "_" + rtRequestEntity.getId());
+            serviceBusService.sendMessage(rtRequestEntity.getPartitionKey() + "_" + rtRequestEntity.getId(), schedulingTimeInHours);
 
             // generate a new event in RE for store the successful scheduling of the RT send
             generateREForSuccessfulSchedulingSentRT(sessionData, iuv, noticeNumber);
@@ -405,15 +402,14 @@ public class ReceiptService {
     }
 
 
-    private void generateREForNotGenerableRT(SessionDataDTO sessionData, String iuv) {
+    private void generateREForNotGenerableRT(SessionDataDTO sessionData, String iuv, String noticeNumber) {
 
         // extract psp on which the payment will be sent
         RPTContentDTO rptContent = sessionData.getRPTByIUV(iuv);
         String psp = rptContent.getRpt().getPayeeInstitution().getSubjectUniqueIdentifier().getCode();
 
         // creating event to be persisted for RE
-        PaymentNoticeContentDTO paymentNotice = sessionData.getPaymentNoticeByIUV(iuv);
-        generateRE(InternalStepStatus.NEGATIVE_RT_NOT_GENERABLE_FOR_GPD_STATION, iuv, paymentNotice.getNoticeNumber(), paymentNotice.getCcp(), psp, null);
+        generateRE(InternalStepStatus.NEGATIVE_RT_NOT_GENERABLE_FOR_GPD_STATION, iuv, noticeNumber, rptContent.getCcp(), psp, null);
     }
 
     private void generateREForSentRT(SessionDataDTO sessionData, String iuv, String noticeNumber) {
@@ -423,19 +419,17 @@ public class ReceiptService {
         String psp = rptContent.getRpt().getPayeeInstitution().getSubjectUniqueIdentifier().getCode();
 
         // creating event to be persisted for RE
-        PaymentNoticeContentDTO paymentNotice = iuv != null ? sessionData.getPaymentNoticeByIUV(iuv) : sessionData.getPaymentNoticeByNoticeNumber(noticeNumber);
-        generateRE(InternalStepStatus.RT_SEND_SUCCESS, iuv, paymentNotice.getNoticeNumber(), paymentNotice.getCcp(), psp, null);
+        generateRE(InternalStepStatus.RT_SEND_SUCCESS, iuv, noticeNumber, rptContent.getCcp(), psp, null);
     }
 
-    private void generateREForNotSentRT(SessionDataDTO sessionData, String iuv, String noticeNumber) {
+    private void generateREForNotSentRT(SessionDataDTO sessionData, String iuv, String noticeNumber, String otherInfo) {
 
         // extract psp on which the payment will be sent
         RPTContentDTO rptContent = sessionData.getRPTByIUV(iuv);
         String psp = rptContent.getRpt().getPayeeInstitution().getSubjectUniqueIdentifier().getCode();
 
         // creating event to be persisted for RE
-        PaymentNoticeContentDTO paymentNotice = iuv != null ? sessionData.getPaymentNoticeByIUV(iuv) : sessionData.getPaymentNoticeByNoticeNumber(noticeNumber);
-        generateRE(InternalStepStatus.RT_SEND_FAILURE, iuv, paymentNotice.getNoticeNumber(), paymentNotice.getCcp(), psp, null);
+        generateRE(InternalStepStatus.RT_SEND_FAILURE, iuv, noticeNumber, rptContent.getCcp(), psp, otherInfo);
     }
 
     private void generateREForSuccessfulSchedulingSentRT(SessionDataDTO sessionData, String iuv, String noticeNumber) {
@@ -445,8 +439,7 @@ public class ReceiptService {
         String psp = rptContent.getRpt().getPayeeInstitution().getSubjectUniqueIdentifier().getCode();
 
         // creating event to be persisted for RE
-        PaymentNoticeContentDTO paymentNotice = iuv != null ? sessionData.getPaymentNoticeByIUV(iuv) : sessionData.getPaymentNoticeByNoticeNumber(noticeNumber);
-        generateRE(InternalStepStatus.RT_SEND_SCHEDULING_SUCCESS, iuv, paymentNotice.getNoticeNumber(), paymentNotice.getCcp(), psp, null);
+        generateRE(InternalStepStatus.RT_SEND_SCHEDULING_SUCCESS, iuv, noticeNumber, rptContent.getCcp(), psp, null);
     }
 
     private void generateREForFailedSchedulingSentRT(SessionDataDTO sessionData, String iuv, String noticeNumber, Throwable e) {
@@ -456,9 +449,8 @@ public class ReceiptService {
         String psp = rptContent.getRpt().getPayeeInstitution().getSubjectUniqueIdentifier().getCode();
 
         // creating event to be persisted for RE
-        PaymentNoticeContentDTO paymentNotice = iuv != null ? sessionData.getPaymentNoticeByIUV(iuv) : sessionData.getPaymentNoticeByNoticeNumber(noticeNumber);
         String otherInfo = "Caused by: " + e.getMessage();
-        generateRE(InternalStepStatus.RT_SEND_SCHEDULING_FAILURE, iuv, paymentNotice.getNoticeNumber(), paymentNotice.getCcp(), psp, otherInfo);
+        generateRE(InternalStepStatus.RT_SEND_SCHEDULING_FAILURE, iuv, noticeNumber, rptContent.getCcp(), psp, otherInfo);
     }
 
     private void generateREForSendingRT(boolean mustSendNegativeRT, SessionDataDTO sessionData, Object receipt, String iuv, String noticeNumber) {
@@ -482,8 +474,7 @@ public class ReceiptService {
         String psp = rptContent.getRpt().getPayeeInstitution().getSubjectUniqueIdentifier().getCode();
 
         // creating event to be persisted for RE
-        PaymentNoticeContentDTO paymentNotice = sessionData.getPaymentNoticeByNoticeNumber(noticeNumber);
-        generateRE(status, paymentNotice.getIuv(), paymentNotice.getNoticeNumber(), paymentNotice.getCcp(), psp, info);
+        generateRE(status, iuv, noticeNumber, rptContent.getCcp(), psp, info);
     }
 
     private void generateRE(InternalStepStatus status, String iuv, String noticeNumber, String ccp, String psp, String otherInfo) {

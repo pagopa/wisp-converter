@@ -11,7 +11,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
@@ -37,11 +36,6 @@ public class RptCosmosService {
         generateRE(rptRequestEntity.getPayload());
 
         return rptRequestEntity;
-    }
-
-    @Transactional
-    public void saveRPTRequestEntity(RPTRequestEntity rptRequestEntity) {
-        rptRequestRepository.save(rptRequestEntity);
     }
 
     private void generateRE(String payload) {
