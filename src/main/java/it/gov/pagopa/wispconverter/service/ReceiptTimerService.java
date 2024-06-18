@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import javax.annotation.PostConstruct;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 
 @Service
 @Slf4j
@@ -58,8 +59,25 @@ public class ReceiptTimerService {
         OffsetDateTime scheduledExpirationTime = OffsetDateTime.now().plus(message.getExpirationTime(), ChronoUnit.MILLIS);
         Long sequenceNumber = serviceBusSenderClient.scheduleMessage(serviceBusMessage, scheduledExpirationTime);
         log.info("Sent scheduled message {} to the queue: {}", message, queueName);
-        // Insert {wisp_timer_<paymentToken>, sequenceNumber} for Duplicate Prevention Logic and for call cancelScheduledMessage(sequenceNumber)
+        // insert {wisp_timer_<paymentToken>, sequenceNumber} for Duplicate Prevention Logic and for call cancelScheduledMessage(sequenceNumber)
         cacheRepository.insert(sequenceNumberKey, String.valueOf(sequenceNumber), message.getExpirationTime(), ChronoUnit.MILLIS);
         log.info("Cache sequence number {} for payment-token: {}", sequenceNumber, sequenceNumberKey);
+    }
+
+    public void cancelScheduledMessage(List<String> paymentTokens) {
+        paymentTokens.forEach(this::cancelScheduledMessage);
+    }
+
+    private void cancelScheduledMessage(String paymentToken) {
+        log.info("Cancel scheduled message for payment-token {}", paymentToken);
+        String sequenceNumberKey = String.format(CACHING_KEY_TEMPLATE, paymentToken);
+        String sequenceNumberString = cacheRepository.read(sequenceNumberKey, String.class);
+        if(sequenceNumberString == null) return; // the message related to payment-token has either already been deleted or it does not exist
+        // cancel scheduled message
+        long sequenceNumber = Long.parseLong(sequenceNumberString);
+        serviceBusSenderClient.cancelScheduledMessage(sequenceNumber);
+        log.info("Canceled scheduled message for payment-token {}", paymentToken);
+        cacheRepository.delete(sequenceNumberKey);
+        log.info("Deleted sequence number {} for payment-token: {} from cache", sequenceNumber, sequenceNumberKey);
     }
 }

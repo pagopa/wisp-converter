@@ -88,11 +88,12 @@ public class ReceiptController {
     })
     @DeleteMapping(
             value = "/timer",
-            produces = MediaType.APPLICATION_JSON_VALUE,
-            consumes = MediaType.APPLICATION_JSON_VALUE
+            produces = MediaType.APPLICATION_JSON_VALUE
     )
     @Trace(businessProcess = BP_TIMER_DELETE, reEnabled = true)
     public void deleteTimer(@RequestParam List<String> paymentTokens) {
-        paymentTokens.forEach(paymentToken -> log.info("Delete Timer arrived: " + paymentToken));
+        log.info("Delete Timer arrived: " + paymentTokens);
+        receiptTimerService.cancelScheduledMessage(paymentTokens);
+
     }
 }

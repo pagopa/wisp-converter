@@ -35,4 +35,19 @@ public class CacheRepository {
         }
         return result;
     }
+
+    public void delete(String key) {
+        this.redisSimpleTemplate.delete(key);
+    }
+
+    public <T> T delete(String key, Class<T> clazz) {
+        T result = null;
+        try {
+            Object value = this.redisSimpleTemplate.opsForValue().getAndDelete(key);
+            result = clazz.cast(value);
+        } catch (ClassCastException e) {
+            log.error(String.format("Cannot correctly parse the object retrieved with key [%s] in [%s] class", key, clazz.getCanonicalName()));
+        }
+        return result;
+    }
 }
