@@ -4,6 +4,7 @@ import com.azure.messaging.servicebus.*;
 
 import java.io.IOException;
 import java.time.ZonedDateTime;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -70,7 +71,7 @@ public class PaymentTimeoutConsumer {
         try {
             ReceiptDto receiptDto = mapper.readValue(message.getBody().toStream(), ReceiptDto.class);
             // transform to string list
-            String inputPaaInviaRTKo = String.format("%s %s %s", "[", receiptDto.toString(), "]");
+            String inputPaaInviaRTKo = List.of(receiptDto).toString();
             receiptService.paaInviaRTKo(inputPaaInviaRTKo);
         } catch (IOException e) {
             log.error("Error when read ReceiptDto value from message: '{}'. Body: '{}'",
