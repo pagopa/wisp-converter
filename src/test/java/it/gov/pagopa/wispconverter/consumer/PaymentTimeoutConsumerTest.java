@@ -84,4 +84,46 @@ public class PaymentTimeoutConsumerTest {
         paymentTimeoutConsumer.post();
         assertNotNull(ReflectionTestUtils.getField(paymentTimeoutConsumer, "receiverClient"));
     }
+
+    @Test
+    public void testProcessErrorExecution_SERVICE_BUSY() {
+        testProcessErrorExecution(ServiceBusFailureReason.SERVICE_BUSY, 1);
+    }
+
+    @Test
+    public void testProcessErrorExecution_MESSAGING_ENTITY_DISABLED() {
+        testProcessErrorExecution(ServiceBusFailureReason.MESSAGING_ENTITY_DISABLED, 1);
+    }
+
+    @Test
+    public void testProcessErrorExecution_MESSAGING_ENTITY_NOT_FOUND() {
+        testProcessErrorExecution(ServiceBusFailureReason.MESSAGING_ENTITY_NOT_FOUND, 1);
+    }
+
+    @Test
+    public void testProcessErrorExecution_MESSAGE_LOCK_LOST() {
+        testProcessErrorExecution(ServiceBusFailureReason.MESSAGE_LOCK_LOST, 2);
+    }
+
+    @Test
+    public void testProcessErrorExecution_UNAUTHORIZED() {
+        testProcessErrorExecution(ServiceBusFailureReason.UNAUTHORIZED, 1);
+    }
+
+    private void testProcessErrorExecution(ServiceBusFailureReason serviceBusFailureReason, int wantedNumberOfInvocations) {
+        // Create a mock context and exception
+        ServiceBusErrorContext context = mock(ServiceBusErrorContext.class);
+        ServiceBusException exception = mock(ServiceBusException.class);
+
+        // Mock the context and exception behavior
+        when(context.getException()).thenReturn(exception);
+        when(exception.getReason()).thenReturn(serviceBusFailureReason);
+
+        // Call the processError method
+        paymentTimeoutConsumer.processError(context);
+
+        // Verify that the method executes correctly
+        verify(context, times(wantedNumberOfInvocations)).getException();
+        verify(exception, times(1)).getReason();
+    }
 }
