@@ -15,7 +15,9 @@ import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
 import it.gov.pagopa.wispconverter.repository.model.RTRequestEntity;
+import it.gov.pagopa.wispconverter.repository.model.enumz.IdempotencyStatusEnum;
 import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
+import it.gov.pagopa.wispconverter.repository.model.enumz.ReceiptTypeEnum;
 import it.gov.pagopa.wispconverter.service.mapper.RTMapper;
 import it.gov.pagopa.wispconverter.service.model.CachedKeysMapping;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
@@ -62,6 +64,8 @@ public class ReceiptService {
     private final ReService reService;
 
     private final DecouplerService decouplerService;
+
+    private final IdempotencyService idempotencyService;
 
     private final PaaInviaRTSenderService paaInviaRTSenderService;
 
@@ -133,11 +137,13 @@ public class ReceiptService {
                         String rawGeneratedReceipt = jaxbElementUtil.objectToString(generatedReceipt);
                         String paaInviaRtPayload = generatePayloadAsRawString(header, null, rawGeneratedReceipt, objectFactory);
 
+                        // idempotency key creation to check if the rt has already been sent
+                        String idempotencyKey = commonFields.getSessionId() + "_" + noticeNumber;
                         // retrieve station from common station identifier
                         StationDto station = stations.get(commonFields.getStationId());
 
                         // send receipt to the creditor institution and, if not correctly sent, add to queue for retry
-                        sendReceiptToCreditorInstitution(sessionData, paaInviaRtPayload, receipt, rpt.getIuv(), noticeNumber, station, true);
+                        sendReceiptToCreditorInstitution(sessionData, paaInviaRtPayload, receipt, rpt.getIuv(), noticeNumber, idempotencyKey, station, true);
                     }
                 }
             }
@@ -214,8 +220,11 @@ public class ReceiptService {
                     String rawGeneratedReceipt = jaxbElementUtil.objectToString(generatedReceipt);
                     String paaInviaRtPayload = generatePayloadAsRawString(intestazionePPT, commonFields.getSignatureType(), rawGeneratedReceipt, objectFactory);
 
+                    // idempotency key creation to check if the rt has already been sent
+                    String idempotencyKey = commonFields.getSessionId() + "_" + noticeNumber;
+
                     // send receipt to the creditor institution and, if not correctly sent, add to queue for retry
-                    sendReceiptToCreditorInstitution(sessionData, paaInviaRtPayload, receipt, rpt.getIuv(), noticeNumber, station, false);
+                    sendReceiptToCreditorInstitution(sessionData, paaInviaRtPayload, receipt, rpt.getIuv(), noticeNumber, idempotencyKey, station, false);
                 }
             }
 
@@ -242,7 +251,7 @@ public class ReceiptService {
     }
 
     private void sendReceiptToCreditorInstitution(SessionDataDTO sessionData, String rawPayload, Object receipt,
-                                                  String iuv, String noticeNumber, StationDto station, boolean mustSendNegativeRT) {
+                                                  String iuv, String noticeNumber, String idempotencyKey, StationDto station, boolean mustSendNegativeRT) {
 
         /*
           From station identifier (the common one defined, not the payment reference), retrieve the data
@@ -258,29 +267,43 @@ public class ReceiptService {
                 null
         );
 
-        // Save an RE event in order to track the sending RT operation
-        generateREForSendingRT(mustSendNegativeRT, sessionData, receipt, iuv, noticeNumber);
+        // send to creditor institution only if another receipt wasn't already sent (if sent an idempotency key was created)
+        ReceiptTypeEnum receiptType = mustSendNegativeRT ? ReceiptTypeEnum.KO : ReceiptTypeEnum.OK;
+        if(idempotencyService.isIdempotencyKeyProcessable(idempotencyKey, receiptType)) {
 
-        // finally, send the receipt to the creditor institution
-        try {
+            // lock idempotency key status to avoid concurrency issues
+            idempotencyService.lockIdempotencyKey(idempotencyKey, receiptType);
 
-            // send the receipt to the creditor institution via the URL set in the station configuration
-            paaInviaRTSenderService.sendToCreditorInstitution(url, rawPayload);
+            // Save an RE event in order to track the sending RT operation
+            generateREForSendingRT(mustSendNegativeRT, sessionData, receipt, iuv, noticeNumber);
 
-            // generate a new event in RE for store the successful sending of the receipt
-            generateREForSentRT(sessionData, iuv, noticeNumber);
+            // finally, send the receipt to the creditor institution
+            try {
 
-        } catch (Exception e) {
+                // send the receipt to the creditor institution via the URL set in the station configuration
+                paaInviaRTSenderService.sendToCreditorInstitution(url, rawPayload);
 
-            // generate a new event in RE for store the unsuccessful sending of the receipt
-            generateREForNotSentRT(sessionData, iuv, noticeNumber, e.getMessage());
+                // generate a new event in RE for store the successful sending of the receipt
+                generateREForSentRT(sessionData, iuv, noticeNumber);
 
-            // because of the not sent receipt, it is necessary to schedule a retry of the sending process for this receipt
-            scheduleRTSend(sessionData, url, rawPayload, station, iuv, noticeNumber);
+                // Unlock idempotency key after a successful operation
+                idempotencyService.unlockIdempotencyKey(idempotencyKey, receiptType, IdempotencyStatusEnum.SUCCESS);
+
+            } catch (Exception e) {
+
+                // generate a new event in RE for store the unsuccessful sending of the receipt
+                generateREForNotSentRT(sessionData, iuv, noticeNumber, e.getMessage());
+
+                // because of the not sent receipt, it is necessary to schedule a retry of the sending process for this receipt
+                scheduleRTSend(sessionData, url, rawPayload, station, iuv, noticeNumber, idempotencyKey, receiptType);
+
+                // Unlock idempotency key after a failed operation
+                idempotencyService.unlockIdempotencyKey(idempotencyKey, receiptType, IdempotencyStatusEnum.FAILED);
+            }
+
+            // Save an RE event in order to track the correctly sent RT request
+            generateREForGeneratedRT(mustSendNegativeRT, sessionData, receipt, iuv, noticeNumber);
         }
-
-        // Save an RE event in order to track the correctly sent RT request
-        generateREForGeneratedRT(mustSendNegativeRT, sessionData, receipt, iuv, noticeNumber);
     }
 
 
@@ -394,7 +417,8 @@ public class ReceiptService {
     }
 
 
-    private void scheduleRTSend(SessionDataDTO sessionData, String url, String payload, StationDto station, String iuv, String noticeNumber) {
+    private void scheduleRTSend(SessionDataDTO sessionData, String url, String payload, StationDto station,
+                                String iuv, String noticeNumber, String idempotencyKey, ReceiptTypeEnum receiptType) {
 
         try {
 
@@ -406,6 +430,8 @@ public class ReceiptService {
                     .payload(AppBase64Util.base64Encode(ZipUtil.zip(payload)))
                     .url(url)
                     .retry(0)
+                    .idempotencyKey(idempotencyKey)
+                    .receiptType(receiptType)
                     .build();
             rtCosmosService.saveRTRequestEntity(rtRequestEntity);
 
