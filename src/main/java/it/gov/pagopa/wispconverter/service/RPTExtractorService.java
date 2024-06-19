@@ -107,6 +107,7 @@ public class RPTExtractorService {
                         .payerEmail(rpt.getPayer().getEmail())
                         .isMultibeneficiary(false)
                         .containsDigitalStamp(containsDigitalStamp)
+                        .signatureType(soapBody.getTipoFirma())
                         .build())
                 .paymentNotices(new HashMap<>())
                 .rpts(Collections.singletonMap(rpt.getTransferData().getIuv(), RPTContentDTO.builder()

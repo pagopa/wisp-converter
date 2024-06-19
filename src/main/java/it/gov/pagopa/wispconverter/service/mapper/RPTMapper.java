@@ -15,8 +15,8 @@ public interface RPTMapper {
     @Mapping(source = "identificativoMessaggioRichiesta", target = "messageRequestId")
     @Mapping(source = "dataOraMessaggioRichiesta", target = "messageRequestDatetime")
     @Mapping(source = "autenticazioneSoggetto", target = "subjectAuthentication")
-    @Mapping(source = "soggettoVersante", target = "debtor")
     @Mapping(source = "soggettoPagatore", target = "payer")
+    @Mapping(source = "soggettoVersante", target = "payerDelegate")
     @Mapping(source = "enteBeneficiario", target = "payeeInstitution")
     @Mapping(source = "datiVersamento", target = "transferData")
     PaymentRequestDTO toPaymentRequestDTO(CtRichiestaPagamentoTelematico rpt);

@@ -127,10 +127,11 @@ public class ReceiptService {
                     for (RPTContentDTO rpt : sessionData.getAllRPTs()) {
 
                         // Generating the paaInviaRT payload from the RPT
+                        String paymentOutcome = ""; // TODO change this with one of the following -> https://pagopa.atlassian.net/wiki/spaces/PN5/pages/913244345/WISP-Converter?focusedCommentId=1002078407
                         JAXBElement<CtRicevutaTelematica> generatedReceipt = new ObjectFactory()
-                                .createRT(generateCtRicevutaTelematicaKO(rpt, configurations, Instant.now()));
+                                .createRT(generateRTContentForKoReceipt(rpt, configurations, Instant.now(), paymentOutcome));
                         String rawGeneratedReceipt = jaxbElementUtil.objectToString(generatedReceipt);
-                        String paaInviaRtPayload = generatePayloadAsRawString(header, rawGeneratedReceipt, objectFactory);
+                        String paaInviaRtPayload = generatePayloadAsRawString(header, null, rawGeneratedReceipt, objectFactory);
 
                         // retrieve station from common station identifier
                         StationDto station = stations.get(commonFields.getStationId());
@@ -209,9 +210,9 @@ public class ReceiptService {
 
                     // Generating the paaInviaRT payload from the RPT
                     JAXBElement<CtRicevutaTelematica> generatedReceipt = new it.gov.digitpa.schemas._2011.pagamenti.ObjectFactory()
-                            .createRT(generateCtRicevutaTelematicaOK(rpt, paSendRTV2Request));
+                            .createRT(generateRTContentForOkReceipt(rpt, paSendRTV2Request));
                     String rawGeneratedReceipt = jaxbElementUtil.objectToString(generatedReceipt);
-                    String paaInviaRtPayload = generatePayloadAsRawString(intestazionePPT, rawGeneratedReceipt, objectFactory);
+                    String paaInviaRtPayload = generatePayloadAsRawString(intestazionePPT, commonFields.getSignatureType(), rawGeneratedReceipt, objectFactory);
 
                     // send receipt to the creditor institution and, if not correctly sent, add to queue for retry
                     sendReceiptToCreditorInstitution(sessionData, paaInviaRtPayload, receipt, rpt.getIuv(), noticeNumber, station, false);
@@ -283,29 +284,38 @@ public class ReceiptService {
     }
 
 
-    // TODO to be validated
-    private CtRicevutaTelematica generateCtRicevutaTelematicaKO(RPTContentDTO rpt, Map<String, ConfigurationKeyDto> configurations, Instant now) {
-        it.gov.digitpa.schemas._2011.pagamenti.ObjectFactory objectFactory = new it.gov.digitpa.schemas._2011.pagamenti.ObjectFactory();
-        CtRicevutaTelematica ctRicevutaTelematica = objectFactory.createCtRicevutaTelematica();
+    private CtRicevutaTelematica generateRTContentForKoReceipt(RPTContentDTO rpt, Map<String, ConfigurationKeyDto> configurations, Instant now, String paymentOutcome) {
 
+        it.gov.digitpa.schemas._2011.pagamenti.ObjectFactory objectFactory = new it.gov.digitpa.schemas._2011.pagamenti.ObjectFactory();
+
+        // populate ctIstitutoAttestante and ctIdentificativoUnivoco tag
         CtIstitutoAttestante ctIstitutoAttestante = objectFactory.createCtIstitutoAttestante();
         CtIdentificativoUnivoco ctIdentificativoUnivoco = objectFactory.createCtIdentificativoUnivoco();
-        rtMapper.toCtIstitutoAttestante(ctIstitutoAttestante, ctIdentificativoUnivoco, configurations);
+        this.rtMapper.toCtIstitutoAttestante(ctIstitutoAttestante, ctIdentificativoUnivoco, configurations);
 
+        // populate ctDominio tag
         CtDominio ctDominio = objectFactory.createCtDominio();
-        rtMapper.toCtDominio(ctDominio, rpt.getRpt().getDomain());
+        this.rtMapper.toCtDominio(ctDominio, rpt.getRpt().getDomain());
 
+        // populate ctEnteBeneficiario tag
         CtEnteBeneficiario ctEnteBeneficiario = objectFactory.createCtEnteBeneficiario();
-        rtMapper.toCtEnteBeneficiario(ctEnteBeneficiario, rpt.getRpt().getPayeeInstitution());
+        this.rtMapper.toCtEnteBeneficiario(ctEnteBeneficiario, rpt.getRpt().getPayeeInstitution());
 
+        // populate ctSoggettoPagatore tag
         CtSoggettoPagatore ctSoggettoPagatore = objectFactory.createCtSoggettoPagatore();
-        rtMapper.toCtSoggettoPagatore(ctSoggettoPagatore, rpt.getRpt().getPayer());
+        this.rtMapper.toCtSoggettoPagatore(ctSoggettoPagatore, rpt.getRpt().getPayer());
 
+        // populate ctSoggettoVersante tag
+        CtSoggettoVersante ctSoggettoVersante = objectFactory.createCtSoggettoVersante();
+        this.rtMapper.toCtSoggettoVersante(ctSoggettoVersante, rpt.getRpt().getPayerDelegate());
+
+        // populate ctDatiVersamentoRT tag
         CtDatiVersamentoRT ctDatiVersamentoRT = objectFactory.createCtDatiVersamentoRT();
-        rtMapper.toCtDatiVersamentoRT(ctDatiVersamentoRT, rpt.getRpt().getTransferData(), now);
+        this.rtMapper.toCtDatiVersamentoRTForKoRT(ctDatiVersamentoRT, rpt.getRpt().getTransferData(), now, paymentOutcome);
 
-        rtMapper.toCtRicevutaTelematicaNegativa(ctRicevutaTelematica, rpt.getRpt(), now);
-
+        // populate ctRicevutaTelematica tag
+        CtRicevutaTelematica ctRicevutaTelematica = objectFactory.createCtRicevutaTelematica();
+        this.rtMapper.toCtRicevutaTelematicaNegativa(ctRicevutaTelematica, rpt.getRpt(), now);
         ctRicevutaTelematica.setDominio(ctDominio);
         ctRicevutaTelematica.setIstitutoAttestante(ctIstitutoAttestante);
         ctRicevutaTelematica.setEnteBeneficiario(ctEnteBeneficiario);
@@ -315,32 +325,42 @@ public class ReceiptService {
         return ctRicevutaTelematica;
     }
 
-    // TODO to be validated
-    private CtRicevutaTelematica generateCtRicevutaTelematicaOK(RPTContentDTO rpt, PaSendRTV2Request paSendRTV2Request) {
+    private CtRicevutaTelematica generateRTContentForOkReceipt(RPTContentDTO rpt, PaSendRTV2Request paSendRTV2Request) {
+
         it.gov.digitpa.schemas._2011.pagamenti.ObjectFactory objectFactory = new it.gov.digitpa.schemas._2011.pagamenti.ObjectFactory();
-        CtRicevutaTelematica ctRicevutaTelematica = objectFactory.createCtRicevutaTelematica();
 
+        // populate ctIstitutoAttestante tag
         CtIstitutoAttestante ctIstitutoAttestante = objectFactory.createCtIstitutoAttestante();
-        rtMapper.toCtIstitutoAttestante(ctIstitutoAttestante, paSendRTV2Request);
+        this.rtMapper.toCtIstitutoAttestante(ctIstitutoAttestante, paSendRTV2Request);
 
+        // populate ctDominio tag
         CtDominio ctDominio = objectFactory.createCtDominio();
-        rtMapper.toCtDominio(ctDominio, rpt.getRpt().getDomain());
+        this.rtMapper.toCtDominio(ctDominio, rpt.getRpt().getDomain());
 
+        // populate ctEnteBeneficiario tag
         CtEnteBeneficiario ctEnteBeneficiario = objectFactory.createCtEnteBeneficiario();
-        rtMapper.toCtEnteBeneficiario(ctEnteBeneficiario, rpt.getRpt().getPayeeInstitution());
+        this.rtMapper.toCtEnteBeneficiario(ctEnteBeneficiario, rpt.getRpt().getPayeeInstitution());
 
+        // populate ctSoggettoPagatore tag
         CtSoggettoPagatore ctSoggettoPagatore = objectFactory.createCtSoggettoPagatore();
-        rtMapper.toCtSoggettoPagatore(ctSoggettoPagatore, paSendRTV2Request.getReceipt().getDebtor());
+        this.rtMapper.toCtSoggettoPagatore(ctSoggettoPagatore, paSendRTV2Request.getReceipt().getDebtor());
 
-        rtMapper.toCtRicevutaTelematicaPositiva(ctRicevutaTelematica, rpt.getRpt(), paSendRTV2Request);
+        // populate ctSoggettoVersante tag
+        CtSoggettoVersante ctSoggettoVersante = objectFactory.createCtSoggettoVersante();
+        this.rtMapper.toCtSoggettoVersante(ctSoggettoVersante, paSendRTV2Request.getReceipt().getPayer());
 
+        // populate ctDatiVersamentoRT tag
         CtDatiVersamentoRT ctDatiVersamentoRT = objectFactory.createCtDatiVersamentoRT();
-        rtMapper.toCtDatiVersamentoRT(ctDatiVersamentoRT, rpt.getRpt().getTransferData(), paSendRTV2Request.getReceipt());
+        this.rtMapper.toCtDatiVersamentoRTForOkRT(ctDatiVersamentoRT, rpt.getRpt().getTransferData(), paSendRTV2Request.getReceipt());
 
+        // populate ctRicevutaTelematica tag
+        CtRicevutaTelematica ctRicevutaTelematica = objectFactory.createCtRicevutaTelematica();
+        this.rtMapper.toCtRicevutaTelematicaPositiva(ctRicevutaTelematica, rpt.getRpt(), paSendRTV2Request);
         ctRicevutaTelematica.setDominio(ctDominio);
         ctRicevutaTelematica.setIstitutoAttestante(ctIstitutoAttestante);
         ctRicevutaTelematica.setEnteBeneficiario(ctEnteBeneficiario);
         ctRicevutaTelematica.setSoggettoPagatore(ctSoggettoPagatore);
+        ctRicevutaTelematica.setSoggettoVersante(ctSoggettoVersante);
         ctRicevutaTelematica.setDatiPagamento(ctDatiVersamentoRT);
 
         return ctRicevutaTelematica;
@@ -358,11 +378,12 @@ public class ReceiptService {
         return header;
     }
 
-    private String generatePayloadAsRawString(IntestazionePPT header, String receiptContent, gov.telematici.pagamenti.ws.papernodo.ObjectFactory objectFactory) {
+    private String generatePayloadAsRawString(IntestazionePPT header, String signatureType, String receiptContent, gov.telematici.pagamenti.ws.papernodo.ObjectFactory objectFactory) {
 
         // Generate paaInviaRT object, as JAXB element, with the RT in base64 format
         PaaInviaRT paaInviaRT = objectFactory.createPaaInviaRT();
         paaInviaRT.setRt(receiptContent.getBytes(StandardCharsets.UTF_8));
+        paaInviaRT.setTipoFirma(signatureType);
         JAXBElement<PaaInviaRT> paaInviaRTJaxb = objectFactory.createPaaInviaRT(paaInviaRT);
 
         // generating a SOAP message, including body and header, and then extract the raw string of the envelope
