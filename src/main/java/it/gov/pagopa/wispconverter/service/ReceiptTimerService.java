@@ -4,6 +4,8 @@ import com.azure.messaging.servicebus.ServiceBusClientBuilder;
 import com.azure.messaging.servicebus.ServiceBusMessage;
 import com.azure.messaging.servicebus.ServiceBusSenderClient;
 import it.gov.pagopa.wispconverter.controller.model.ReceiptTimerRequest;
+import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
+import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.CacheRepository;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
 import lombok.RequiredArgsConstructor;
@@ -76,10 +78,20 @@ public class ReceiptTimerService {
         // without sequenceNumber is not possible to delete from serviceBus -> return
         if(sequenceNumberString == null) return;
         // cancel scheduled message
+        if(this.callCancelScheduledMessage(sequenceNumberString)) {
+            log.info("Canceled scheduled message for payment-token {}", paymentToken);
+            cacheRepository.delete(sequenceNumberKey);
+            log.info("Deleted sequence number {} for payment-token: {} from cache", sequenceNumberString, sequenceNumberKey);
+        }
+    }
+
+    public boolean callCancelScheduledMessage(String sequenceNumberString) {
         long sequenceNumber = Long.parseLong(sequenceNumberString);
-        serviceBusSenderClient.cancelScheduledMessage(sequenceNumber);
-        log.info("Canceled scheduled message for payment-token {}", paymentToken);
-        cacheRepository.delete(sequenceNumberKey);
-        log.info("Deleted sequence number {} for payment-token: {} from cache", sequenceNumber, sequenceNumberKey);
+        try {
+            serviceBusSenderClient.cancelScheduledMessage(sequenceNumber);
+            return true;
+        } catch (Exception exception) {
+            throw new AppException(AppErrorCodeMessageEnum.SERVICE_BUS_CLIENT_CANCEL_ERROR, exception.getMessage());
+        }
     }
 }

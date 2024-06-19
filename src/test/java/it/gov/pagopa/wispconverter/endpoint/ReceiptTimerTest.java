@@ -79,7 +79,7 @@ public class ReceiptTimerTest {
                 .expirationTime(1000L)
                 .fiscalCode("77777777777")
                 .noticeNumber("348123456789123456")
-                .paymentToken("thisIsAPaymentToken123").build();
+                .paymentToken("token123").build();
 
         mockMvc.perform(post("/receipt/timer")
                         .contentType(MediaType.APPLICATION_JSON)
