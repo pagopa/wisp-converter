@@ -8,6 +8,7 @@ import it.gov.pagopa.wispconverter.repository.model.RTRequestEntity;
 import it.gov.pagopa.wispconverter.service.ConfigCacheService;
 import it.gov.pagopa.wispconverter.service.PaaInviaRTService;
 import it.gov.pagopa.wispconverter.util.CommonUtility;
+import java.util.Map;
 import java.time.ZonedDateTime;
 import java.util.Optional;
 import javax.annotation.PostConstruct;

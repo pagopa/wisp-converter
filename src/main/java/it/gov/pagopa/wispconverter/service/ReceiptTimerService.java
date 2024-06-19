@@ -72,7 +72,9 @@ public class ReceiptTimerService {
         log.info("Cancel scheduled message for payment-token {}", paymentToken);
         String sequenceNumberKey = String.format(CACHING_KEY_TEMPLATE, paymentToken);
         String sequenceNumberString = cacheRepository.read(sequenceNumberKey, String.class);
-        if(sequenceNumberString == null) return; // the message related to payment-token has either already been deleted or it does not exist
+        // the message related to payment-token has either already been deleted or it does not exist:
+        // without sequenceNumber is not possible to delete from serviceBus -> return
+        if(sequenceNumberString == null) return;
         // cancel scheduled message
         long sequenceNumber = Long.parseLong(sequenceNumberString);
         serviceBusSenderClient.cancelScheduledMessage(sequenceNumber);
