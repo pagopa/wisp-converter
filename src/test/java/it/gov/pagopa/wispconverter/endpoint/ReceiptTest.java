@@ -6,7 +6,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.gen.wispconverter.client.cache.model.StationCreditorInstitutionDto;
 import it.gov.pagopa.wispconverter.Application;
 import it.gov.pagopa.wispconverter.controller.model.ReceiptRequest;
-import it.gov.pagopa.wispconverter.exception.PaaInviaRTException;
+import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
+import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.CacheRepository;
 import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.RTRequestRepository;
@@ -179,7 +180,7 @@ class ReceiptTest {
                 )
         );
         when(cacheRepository.read(any(), any())).thenReturn("wisp_nav2iuv_dominio");
-        doThrow(new PaaInviaRTException("PAA_ERRORE_RESPONSE", "PAA_ERRORE_RESPONSE", "Errore PA")).when(paaInviaRTSenderService).sendToCreditorInstitution(anyString(), anyString());
+        doThrow(new AppException(AppErrorCodeMessageEnum.RECEIPT_GENERATION_ERROR_RESPONSE_FROM_CREDITOR_INSTITUTION, "PAA_ERRORE_RESPONSE", "PAA_ERRORE_RESPONSE", "Errore PA")).when(paaInviaRTSenderService).sendToCreditorInstitution(anyString(), anyString());
 
         mvc.perform(MockMvcRequestBuilders.post("/receipt/ok")
                         .accept(MediaType.APPLICATION_JSON)
