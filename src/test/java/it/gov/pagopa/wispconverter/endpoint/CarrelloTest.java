@@ -16,6 +16,7 @@ import it.gov.pagopa.wispconverter.repository.RTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.ReEventRepository;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
 import it.gov.pagopa.wispconverter.service.ConfigCacheService;
+import it.gov.pagopa.wispconverter.service.ReceiptTimerService;
 import it.gov.pagopa.wispconverter.utils.TestUtils;
 
 import java.net.URI;
@@ -65,6 +66,8 @@ class CarrelloTest {
     private ReEventRepository reEventRepository;
     @MockBean
     private ServiceBusSenderClient serviceBusSenderClient;
+    @MockBean
+    private ReceiptTimerService receiptTimerService;
 
     @Test
     void success() throws Exception {
