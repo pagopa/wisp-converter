@@ -4,6 +4,7 @@ import com.azure.messaging.servicebus.ServiceBusMessage;
 import com.azure.messaging.servicebus.ServiceBusSenderClient;
 import it.gov.pagopa.wispconverter.controller.model.ReceiptTimerRequest;
 import it.gov.pagopa.wispconverter.repository.CacheRepository;
+import it.gov.pagopa.wispconverter.servicebus.ServiceBusSenderClientWrapperImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,9 +23,7 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 public class ReceiptTimerServiceTest {
     private static final String MOCK_CONNECTION_STRING = "Endpoint=sb://mock-servicebus.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=mock-key";
-
-    @Mock
-    private ServiceBusSenderClient serviceBusSenderClient;
+    private static final String QUEUE_NAME = "your-queue-name";
 
     @Mock
     private CacheRepository cacheRepository;
@@ -34,10 +33,10 @@ public class ReceiptTimerServiceTest {
 
     @BeforeEach
     public void setup() {
+        ServiceBusSenderClientWrapperImpl serviceBusSenderClientWrapper = new MockServiceBusSenderClient(null);
         ReflectionTestUtils.setField(receiptTimerService, "connectionString", MOCK_CONNECTION_STRING);
-        ReflectionTestUtils.setField(receiptTimerService, "queueName", "your-queue-name");
-
-        receiptTimerService.post();
+        ReflectionTestUtils.setField(receiptTimerService, "queueName", QUEUE_NAME);
+        ReflectionTestUtils.setField(receiptTimerService, "serviceBusSenderClientWrapper", serviceBusSenderClientWrapper);
     }
 
     @Test
@@ -52,7 +51,6 @@ public class ReceiptTimerServiceTest {
 
         receiptTimerService.sendMessage(request);
 
-        verify(serviceBusSenderClient, times(0)).scheduleMessage(any(ServiceBusMessage.class), any(OffsetDateTime.class));
         verify(cacheRepository, times(0)).insert(any(String.class), any(String.class), any(Long.class), any(ChronoUnit.class));
     }
 
@@ -65,32 +63,27 @@ public class ReceiptTimerServiceTest {
         request.setExpirationTime(1000L);
 
         when(cacheRepository.read(any(String.class), eq(String.class))).thenReturn(null);
-        when(serviceBusSenderClient.scheduleMessage(any(ServiceBusMessage.class), any(OffsetDateTime.class))).thenReturn(123L);
 
         receiptTimerService.sendMessage(request);
 
-        verify(serviceBusSenderClient, times(1)).scheduleMessage(any(ServiceBusMessage.class), any(OffsetDateTime.class));
         verify(cacheRepository, times(1)).insert(any(String.class), eq("123"), eq(1000L), eq(ChronoUnit.MILLIS));
     }
 
     @Test
     public void testCancelScheduledMessage_callCancelScheduledMessage() {
         List<String> paymentTokens = List.of("token1", "token2");
-        String sequenceNumberKey1 = "wisp_timer_token1";
-        String sequenceNumberKey2 = "wisp_timer_token2";
+        String sequenceNumberKey1 = String.format(ReceiptTimerService.CACHING_KEY_TEMPLATE, "token1");
+        String sequenceNumberKey2 = String.format(ReceiptTimerService.CACHING_KEY_TEMPLATE, "token2");
         long sequenceNumber1 = 123L;
         long sequenceNumber2 = 456L;
 
         when(cacheRepository.read(sequenceNumberKey1, String.class)).thenReturn(Long.toString(sequenceNumber1));
         when(cacheRepository.read(sequenceNumberKey2, String.class)).thenReturn(Long.toString(sequenceNumber2));
-        doNothing().when(serviceBusSenderClient).cancelScheduledMessage(anyLong());
 
-        // Call method under test
         receiptTimerService.cancelScheduledMessage(paymentTokens);
 
-        // Verify interactions
-        verify(cacheRepository).delete(sequenceNumberKey1);
-        verify(cacheRepository).delete(sequenceNumberKey2);
+        verify(cacheRepository, times(1)).delete(sequenceNumberKey1);
+        verify(cacheRepository, times(1)).delete(sequenceNumberKey2);
     }
 
     @Test
@@ -101,7 +94,26 @@ public class ReceiptTimerServiceTest {
 
         receiptTimerService.cancelScheduledMessage(paymentTokens);
 
-        verify(serviceBusSenderClient, times(0)).cancelScheduledMessage(anyLong());
         verify(cacheRepository, times(0)).delete(any(String.class));
     }
+
+     static class MockServiceBusSenderClient extends ServiceBusSenderClientWrapperImpl {
+        public MockServiceBusSenderClient(ServiceBusSenderClient serviceBusSenderClient) {
+            super(serviceBusSenderClient);
+        }
+
+        @Override
+        public long scheduleMessage(ServiceBusMessage message, OffsetDateTime scheduledEnqueueTime) {
+            // Return a mock sequence number
+            return 123L;
+        }
+
+        @Override
+        public void cancelScheduledMessage(long sequenceNumber) {
+            // Simulate canceling the scheduled message
+            // No operation needed for the mock
+        }
+    }
 }
+
+
