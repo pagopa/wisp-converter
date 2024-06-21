@@ -41,11 +41,11 @@ public class IdempotencyService {
              */
             IdempotencyKeyEntity idempotencyKeyEntity = optIdempotencyKeyEntity.get();
             if (!receiptType.equals(idempotencyKeyEntity.getReceiptType())) {
-                throw new RuntimeException();
+                throw new AppException(AppErrorCodeMessageEnum.RECEIPT_GENERATION_ANOMALY_ON_PROCESSING, idempotencyKey);
             }
 
             // check the processability of the idempotency key
-            isProcessable = isActiveLockExpired(idempotencyKeyEntity) || !IdempotencyStatusEnum.FAILED.equals(idempotencyKeyEntity.getStatus());
+            isProcessable = isActiveLockExpired(idempotencyKeyEntity) || IdempotencyStatusEnum.FAILED.equals(idempotencyKeyEntity.getStatus());
         }
         return isProcessable;
     }
