@@ -3,6 +3,7 @@ package it.gov.pagopa.wispconverter.servicebus;
 import com.azure.messaging.servicebus.*;
 
 import java.io.IOException;
+import java.time.ZonedDateTime;
 import java.util.List;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -10,7 +11,9 @@ import javax.annotation.PreDestroy;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.wispconverter.service.ReceiptService;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
+import it.gov.pagopa.wispconverter.util.CommonUtility;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -36,12 +39,17 @@ public class PaymentTimeoutConsumer extends SBConsumer {
 
     @EventListener(ApplicationReadyEvent.class)
     public void initializeClient() {
-        this.initServiceBusProcessorClient(receiverClient);
+        if(receiverClient!=null){
+            log.info("[Scheduled] Starting RTConsumer {}", ZonedDateTime.now());
+            receiverClient.start();
+        }
     }
 
     @PostConstruct
     public void post(){
-        receiverClient = createServiceBusProcessorClient(connectionString, queueName);
+        if (StringUtils.isNotBlank(connectionString) && !connectionString.equals("-")) {
+            receiverClient = CommonUtility.getServiceBusProcessorClient(connectionString, queueName, this::processMessage, this::processError);
+        }
     }
 
     @PreDestroy

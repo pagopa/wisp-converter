@@ -14,6 +14,7 @@ import java.util.Optional;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -43,12 +44,17 @@ public class RTConsumer extends SBConsumer {
 
     @EventListener(ApplicationReadyEvent.class)
     public void initializeClient() {
-        this.initServiceBusProcessorClient(receiverClient);
+        if(receiverClient != null){
+            log.info("[Scheduled] Starting RTConsumer {}", ZonedDateTime.now());
+            receiverClient.start();
+        }
     }
 
     @PostConstruct
     public void post(){
-        receiverClient = createServiceBusProcessorClient(connectionString, queueName);
+        if (StringUtils.isNotBlank(connectionString) && !connectionString.equals("-")) {
+            receiverClient = CommonUtility.getServiceBusProcessorClient(connectionString, queueName, this::processMessage, this::processError);
+        }
     }
 
     @PreDestroy

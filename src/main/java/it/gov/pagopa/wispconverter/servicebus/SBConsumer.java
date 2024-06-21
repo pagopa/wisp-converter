@@ -11,27 +11,6 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public abstract class SBConsumer {
 
-    protected ServiceBusProcessorClient createServiceBusProcessorClient(String connectionString, String queueName){
-        if (StringUtils.isNotBlank(connectionString) && !connectionString.equals("-"))
-            return null;
-        else {
-            return new ServiceBusClientBuilder()
-                    .connectionString(connectionString)
-                    .processor()
-                    .queueName(queueName)
-                    .processMessage(this::processMessage)
-                    .processError(this::processError)
-                    .buildProcessorClient();
-        }
-    }
-
-    protected void initServiceBusProcessorClient(ServiceBusProcessorClient receiverClient) {
-        if(receiverClient != null){
-            log.info("[Scheduled] Starting RTConsumer {}", ZonedDateTime.now());
-            receiverClient.start();
-        }
-    }
-
     public abstract void processMessage(ServiceBusReceivedMessageContext context);
 
     public void processError(ServiceBusErrorContext context) {
