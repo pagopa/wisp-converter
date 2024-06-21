@@ -8,8 +8,6 @@ import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.CacheRepository;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
-import it.gov.pagopa.wispconverter.servicebus.ServiceBusSenderClientWrapper;
-import it.gov.pagopa.wispconverter.servicebus.ServiceBusSenderClientWrapperImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -33,18 +31,17 @@ public class ReceiptTimerService {
     @Value("${azure.sb.queue.receiptTimer.name}")
     private String queueName;
 
-    private ServiceBusSenderClientWrapper serviceBusSenderClientWrapper;
+    private ServiceBusSenderClient serviceBusSenderClient;
 
     private final CacheRepository cacheRepository;
 
     @PostConstruct
     public void post() {
-        ServiceBusSenderClient serviceBusSenderClient = new ServiceBusClientBuilder()
+        serviceBusSenderClient = new ServiceBusClientBuilder()
                 .connectionString(connectionString)
                 .sender()
                 .queueName(queueName)
                 .buildClient();
-        serviceBusSenderClientWrapper = new ServiceBusSenderClientWrapperImpl(serviceBusSenderClient);
     }
 
     public void sendMessage(ReceiptTimerRequest message) {
@@ -62,7 +59,7 @@ public class ReceiptTimerService {
         log.info("Sending scheduled message {} to the queue: {}", message, queueName);
         // compute time and schedule message for consumer trigger
         OffsetDateTime scheduledExpirationTime = OffsetDateTime.now().plus(message.getExpirationTime(), ChronoUnit.MILLIS);
-        Long sequenceNumber = serviceBusSenderClientWrapper.scheduleMessage(serviceBusMessage, scheduledExpirationTime);
+        Long sequenceNumber = serviceBusSenderClient.scheduleMessage(serviceBusMessage, scheduledExpirationTime);
         log.info("Sent scheduled message {} to the queue: {}", message, queueName);
         // insert {wisp_timer_<paymentToken>, sequenceNumber} for Duplicate Prevention Logic and for call cancelScheduledMessage(sequenceNumber)
         cacheRepository.insert(sequenceNumberKey, String.valueOf(sequenceNumber), message.getExpirationTime(), ChronoUnit.MILLIS);
@@ -91,7 +88,7 @@ public class ReceiptTimerService {
     public boolean callCancelScheduledMessage(String sequenceNumberString) {
         long sequenceNumber = Long.parseLong(sequenceNumberString);
         try {
-            serviceBusSenderClientWrapper.cancelScheduledMessage(sequenceNumber);
+            serviceBusSenderClient.cancelScheduledMessage(sequenceNumber);
             return true;
         } catch (Exception exception) {
             throw new AppException(AppErrorCodeMessageEnum.PERSISTENCE_SERVICE_BUS_CANCEL_ERROR, exception.getMessage());
