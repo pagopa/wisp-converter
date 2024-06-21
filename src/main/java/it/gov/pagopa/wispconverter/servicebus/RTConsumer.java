@@ -108,10 +108,13 @@ public class RTConsumer {
         String idempotencyKey = rtRequestEntity.getIdempotencyKey();
         ReceiptTypeEnum receiptType = rtRequestEntity.getReceiptType();
 
+        IdempotencyStatusEnum idempotencyStatus = IdempotencyStatusEnum.FAILED;
+        boolean isIdempotencyKeyProcessable = false;
         try {
 
             // before sending the RT to the creditor institution, the idempotency key must be checked in order to not send duplicated receipts
-            if (idempotencyService.isIdempotencyKeyProcessable(idempotencyKey, receiptType)) {
+            isIdempotencyKeyProcessable = idempotencyService.isIdempotencyKeyProcessable(idempotencyKey, receiptType);
+            if (isIdempotencyKeyProcessable) {
 
                 // Lock idempotency key status to avoid concurrency issues
                 idempotencyService.lockIdempotencyKey(idempotencyKey, receiptType);
@@ -120,8 +123,7 @@ public class RTConsumer {
                 log.debug("Sending message {}, retry: {}", compositedIdForReceipt, rtRequestEntity.getRetry());
                 resendRTToCreditorInstitution(receiptId, rtRequestEntity, compositedIdForReceipt, idempotencyKey);
 
-                // Unlock idempotency key after a successful operation
-                idempotencyService.unlockIdempotencyKey(idempotencyKey, receiptType, IdempotencyStatusEnum.SUCCESS);
+                idempotencyStatus = IdempotencyStatusEnum.SUCCESS;
 
             } else {
 
@@ -136,9 +138,15 @@ public class RTConsumer {
             // Generate a new event in RE for store the unsuccessful re-sending of the receipt
             generateREForNotSentRT(e);
 
+        }
 
-            // Unlock idempotency key after a failed operation
-            idempotencyService.unlockIdempotencyKey(idempotencyKey, receiptType, IdempotencyStatusEnum.FAILED);
+        // Unlock idempotency key after a successful operation
+        if(isIdempotencyKeyProcessable) {
+            try {
+                idempotencyService.unlockIdempotencyKey(idempotencyKey, receiptType, idempotencyStatus);
+            } catch (AppException e) {
+                log.error("AppException: ", e);
+            }
         }
     }
 

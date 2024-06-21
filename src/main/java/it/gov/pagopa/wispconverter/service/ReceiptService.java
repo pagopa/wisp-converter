@@ -32,7 +32,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -80,7 +79,6 @@ public class ReceiptService {
     private Integer schedulingTimeInHours;
 
 
-    @Transactional
     public void sendKoPaaInviaRtToCreditorInstitution(String payload) {
 
         try {
@@ -161,7 +159,6 @@ public class ReceiptService {
     }
 
 
-    @Transactional
     public void sendOkPaaInviaRtToCreditorInstitution(String payload) {
 
         try {
@@ -276,6 +273,7 @@ public class ReceiptService {
             generateREForSendingRT(mustSendNegativeRT, sessionData, receipt, iuv, noticeNumber);
 
             // finally, send the receipt to the creditor institution
+            IdempotencyStatusEnum idempotencyStatus;
             try {
 
                 // send the receipt to the creditor institution via the URL set in the station configuration
@@ -284,8 +282,7 @@ public class ReceiptService {
                 // generate a new event in RE for store the successful sending of the receipt
                 generateREForSentRT(sessionData, iuv, noticeNumber);
 
-                // Unlock idempotency key after a successful operation
-                idempotencyService.unlockIdempotencyKey(idempotencyKey, receiptType, IdempotencyStatusEnum.SUCCESS);
+                idempotencyStatus = IdempotencyStatusEnum.SUCCESS;
 
             } catch (Exception e) {
 
@@ -295,12 +292,18 @@ public class ReceiptService {
                 // because of the not sent receipt, it is necessary to schedule a retry of the sending process for this receipt
                 scheduleRTSend(sessionData, url, rawPayload, station, iuv, noticeNumber, idempotencyKey, receiptType);
 
-                // Unlock idempotency key after a failed operation
-                idempotencyService.unlockIdempotencyKey(idempotencyKey, receiptType, IdempotencyStatusEnum.FAILED);
+                idempotencyStatus = IdempotencyStatusEnum.FAILED;
             }
 
             // Save an RE event in order to track the correctly sent RT request
             generateREForGeneratedRT(mustSendNegativeRT, sessionData, receipt, iuv, noticeNumber);
+
+            try {
+                // Unlock idempotency key after a successful operation
+                idempotencyService.unlockIdempotencyKey(idempotencyKey, receiptType, idempotencyStatus);
+            } catch (AppException e) {
+                log.error("AppException: ", e);
+            }
         }
     }
 
