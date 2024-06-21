@@ -1,7 +1,6 @@
 package it.gov.pagopa.wispconverter.service;
 
 import com.azure.messaging.servicebus.ServiceBusMessage;
-import com.azure.messaging.servicebus.ServiceBusSenderAsyncClient;
 import com.azure.messaging.servicebus.ServiceBusSenderClient;
 import it.gov.pagopa.wispconverter.controller.model.ReceiptTimerRequest;
 import it.gov.pagopa.wispconverter.repository.CacheRepository;
@@ -56,7 +55,7 @@ public class ReceiptTimerServiceTest {
         verify(serviceBusSenderClient, times(0)).scheduleMessage(any(ServiceBusMessage.class), any(OffsetDateTime.class));
         verify(cacheRepository, times(0)).insert(any(String.class), any(String.class), any(Long.class), any(ChronoUnit.class));
     }
-    /*
+
     @Test
     public void testSendMessage_newMessage() {
         ReceiptTimerRequest request = new ReceiptTimerRequest();
@@ -73,8 +72,7 @@ public class ReceiptTimerServiceTest {
         verify(serviceBusSenderClient, times(1)).scheduleMessage(any(ServiceBusMessage.class), any(OffsetDateTime.class));
         verify(cacheRepository, times(1)).insert(any(String.class), eq("123"), eq(1000L), eq(ChronoUnit.MILLIS));
     }
-    */
-    /*
+
     @Test
     public void testCancelScheduledMessage_callCancelScheduledMessage() {
         List<String> paymentTokens = List.of("token1", "token2");
@@ -85,9 +83,7 @@ public class ReceiptTimerServiceTest {
 
         when(cacheRepository.read(sequenceNumberKey1, String.class)).thenReturn(Long.toString(sequenceNumber1));
         when(cacheRepository.read(sequenceNumberKey2, String.class)).thenReturn(Long.toString(sequenceNumber2));
-        //doNothing().when(serviceBusSenderClient).cancelScheduledMessage(anyLong());
-        when(asyncSender.cancelScheduledMessage(123L)).thenReturn(Mono.empty());
-        when(asyncSender.cancelScheduledMessage(456L)).thenReturn(Mono.empty());
+        doNothing().when(serviceBusSenderClient).cancelScheduledMessage(anyLong());
 
         // Call method under test
         receiptTimerService.cancelScheduledMessage(paymentTokens);
@@ -96,7 +92,6 @@ public class ReceiptTimerServiceTest {
         verify(cacheRepository).delete(sequenceNumberKey1);
         verify(cacheRepository).delete(sequenceNumberKey2);
     }
-    */
 
     @Test
     public void testCancelScheduledMessage_notFound() {
