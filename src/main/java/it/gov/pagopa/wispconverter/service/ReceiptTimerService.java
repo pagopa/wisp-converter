@@ -91,7 +91,7 @@ public class ReceiptTimerService {
             serviceBusSenderClient.cancelScheduledMessage(sequenceNumber);
             return true;
         } catch (Exception exception) {
-            throw new AppException(AppErrorCodeMessageEnum.SERVICE_BUS_CLIENT_CANCEL_ERROR, exception.getMessage());
+            throw new AppException(AppErrorCodeMessageEnum.PERSISTENCE_SERVICE_BUS_CANCEL_ERROR, exception.getMessage());
         }
     }
 }
