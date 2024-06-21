@@ -2,14 +2,19 @@ package it.gov.pagopa.wispconverter.servicebus;
 
 import com.azure.messaging.servicebus.*;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 
-import java.time.ZonedDateTime;
+import javax.annotation.PreDestroy;
 import java.util.concurrent.TimeUnit;
 
 // Service Bus Consumer
 @Slf4j
 public abstract class SBConsumer {
+    protected ServiceBusProcessorClient receiverClient;
+
+    @PreDestroy
+    public void preDestroy() {
+        receiverClient.close();
+    }
 
     public abstract void processMessage(ServiceBusReceivedMessageContext context);
 

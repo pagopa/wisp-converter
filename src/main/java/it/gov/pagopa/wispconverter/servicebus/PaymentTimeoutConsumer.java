@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.time.ZonedDateTime;
 import java.util.List;
 import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.wispconverter.service.ReceiptService;
@@ -20,8 +19,8 @@ import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
-@Component
 @Slf4j
+@Component
 public class PaymentTimeoutConsumer extends SBConsumer {
 
     @Value("${azure.sb.connectionString}")
@@ -34,8 +33,6 @@ public class PaymentTimeoutConsumer extends SBConsumer {
     private ReceiptService receiptService;
 
     private final ObjectMapper mapper = new ObjectMapper();
-
-    private ServiceBusProcessorClient receiverClient;
 
     @EventListener(ApplicationReadyEvent.class)
     public void initializeClient() {
@@ -50,11 +47,6 @@ public class PaymentTimeoutConsumer extends SBConsumer {
         if (StringUtils.isNotBlank(connectionString) && !connectionString.equals("-")) {
             receiverClient = CommonUtility.getServiceBusProcessorClient(connectionString, queueName, this::processMessage, this::processError);
         }
-    }
-
-    @PreDestroy
-    public void preDestroy(){
-        receiverClient.close();
     }
 
     public void processMessage(ServiceBusReceivedMessageContext context) {

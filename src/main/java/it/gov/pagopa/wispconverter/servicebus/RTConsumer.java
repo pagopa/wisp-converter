@@ -12,7 +12,6 @@ import java.util.Map;
 import java.time.ZonedDateTime;
 import java.util.Optional;
 import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,8 +39,6 @@ public class RTConsumer extends SBConsumer {
     @Autowired
     private ConfigCacheService configCacheService;
 
-    private ServiceBusProcessorClient receiverClient;
-
     @EventListener(ApplicationReadyEvent.class)
     public void initializeClient() {
         if(receiverClient != null){
@@ -55,11 +52,6 @@ public class RTConsumer extends SBConsumer {
         if (StringUtils.isNotBlank(connectionString) && !connectionString.equals("-")) {
             receiverClient = CommonUtility.getServiceBusProcessorClient(connectionString, queueName, this::processMessage, this::processError);
         }
-    }
-
-    @PreDestroy
-    public void preDestroy(){
-        receiverClient.close();
     }
 
     public void processMessage(ServiceBusReceivedMessageContext context) {
