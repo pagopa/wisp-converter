@@ -15,7 +15,9 @@ import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
 import it.gov.pagopa.wispconverter.repository.model.RTRequestEntity;
+import it.gov.pagopa.wispconverter.repository.model.enumz.IdempotencyStatusEnum;
 import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
+import it.gov.pagopa.wispconverter.repository.model.enumz.ReceiptTypeEnum;
 import it.gov.pagopa.wispconverter.service.mapper.RTMapper;
 import it.gov.pagopa.wispconverter.service.model.CachedKeysMapping;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
@@ -30,7 +32,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -63,6 +64,8 @@ public class ReceiptService {
 
     private final DecouplerService decouplerService;
 
+    private final IdempotencyService idempotencyService;
+
     private final PaaInviaRTSenderService paaInviaRTSenderService;
 
     private final ServiceBusService serviceBusService;
@@ -76,7 +79,6 @@ public class ReceiptService {
     private Integer schedulingTimeInHours;
 
 
-    @Transactional
     public void sendKoPaaInviaRtToCreditorInstitution(String payload) {
 
         try {
@@ -157,7 +159,6 @@ public class ReceiptService {
     }
 
 
-    @Transactional
     public void sendOkPaaInviaRtToCreditorInstitution(String payload) {
 
         try {
@@ -258,29 +259,52 @@ public class ReceiptService {
                 null
         );
 
-        // Save an RE event in order to track the sending RT operation
-        generateREForSendingRT(mustSendNegativeRT, sessionData, receipt, iuv, noticeNumber);
+        // idempotency key creation to check if the rt has already been sent
+        String idempotencyKey = sessionData.getCommonFields().getSessionId() + "_" + noticeNumber;
 
-        // finally, send the receipt to the creditor institution
-        try {
+        // send to creditor institution only if another receipt wasn't already sent
+        ReceiptTypeEnum receiptType = mustSendNegativeRT ? ReceiptTypeEnum.KO : ReceiptTypeEnum.OK;
+        if (idempotencyService.isIdempotencyKeyProcessable(idempotencyKey, receiptType)) {
 
-            // send the receipt to the creditor institution via the URL set in the station configuration
-            paaInviaRTSenderService.sendToCreditorInstitution(url, rawPayload);
+            // lock idempotency key status to avoid concurrency issues
+            idempotencyService.lockIdempotencyKey(idempotencyKey, receiptType);
 
-            // generate a new event in RE for store the successful sending of the receipt
-            generateREForSentRT(sessionData, iuv, noticeNumber);
+            // Save an RE event in order to track the sending RT operation
+            generateREForSendingRT(mustSendNegativeRT, sessionData, receipt, iuv, noticeNumber);
 
-        } catch (Exception e) {
+            // finally, send the receipt to the creditor institution
+            IdempotencyStatusEnum idempotencyStatus;
+            try {
 
-            // generate a new event in RE for store the unsuccessful sending of the receipt
-            generateREForNotSentRT(sessionData, iuv, noticeNumber, e.getMessage());
+                // send the receipt to the creditor institution via the URL set in the station configuration
+                paaInviaRTSenderService.sendToCreditorInstitution(url, rawPayload);
 
-            // because of the not sent receipt, it is necessary to schedule a retry of the sending process for this receipt
-            scheduleRTSend(sessionData, url, rawPayload, station, iuv, noticeNumber);
+                // generate a new event in RE for store the successful sending of the receipt
+                generateREForSentRT(sessionData, iuv, noticeNumber);
+
+                idempotencyStatus = IdempotencyStatusEnum.SUCCESS;
+
+            } catch (Exception e) {
+
+                // generate a new event in RE for store the unsuccessful sending of the receipt
+                generateREForNotSentRT(sessionData, iuv, noticeNumber, e.getMessage());
+
+                // because of the not sent receipt, it is necessary to schedule a retry of the sending process for this receipt
+                scheduleRTSend(sessionData, url, rawPayload, station, iuv, noticeNumber, idempotencyKey, receiptType);
+
+                idempotencyStatus = IdempotencyStatusEnum.FAILED;
+            }
+
+            // Save an RE event in order to track the correctly sent RT request
+            generateREForGeneratedRT(mustSendNegativeRT, sessionData, receipt, iuv, noticeNumber);
+
+            try {
+                // Unlock idempotency key after a successful operation
+                idempotencyService.unlockIdempotencyKey(idempotencyKey, receiptType, idempotencyStatus);
+            } catch (AppException e) {
+                log.error("AppException: ", e);
+            }
         }
-
-        // Save an RE event in order to track the correctly sent RT request
-        generateREForGeneratedRT(mustSendNegativeRT, sessionData, receipt, iuv, noticeNumber);
     }
 
 
@@ -394,7 +418,8 @@ public class ReceiptService {
     }
 
 
-    private void scheduleRTSend(SessionDataDTO sessionData, String url, String payload, StationDto station, String iuv, String noticeNumber) {
+    private void scheduleRTSend(SessionDataDTO sessionData, String url, String payload, StationDto station,
+                                String iuv, String noticeNumber, String idempotencyKey, ReceiptTypeEnum receiptType) {
 
         try {
 
@@ -406,6 +431,8 @@ public class ReceiptService {
                     .payload(AppBase64Util.base64Encode(ZipUtil.zip(payload)))
                     .url(url)
                     .retry(0)
+                    .idempotencyKey(idempotencyKey)
+                    .receiptType(receiptType)
                     .build();
             rtCosmosService.saveRTRequestEntity(rtRequestEntity);
 
