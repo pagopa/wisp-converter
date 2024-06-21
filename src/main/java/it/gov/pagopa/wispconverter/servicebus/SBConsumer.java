@@ -38,6 +38,7 @@ public abstract class SBConsumer {
                 TimeUnit.SECONDS.sleep(1);
             } catch (InterruptedException e) {
                 log.debug("Unable to sleep for period of time");
+                Thread.currentThread().interrupt();
             }
         } else {
             log.error("Error source {}, reason {}, message: {}", context.getErrorSource(),
