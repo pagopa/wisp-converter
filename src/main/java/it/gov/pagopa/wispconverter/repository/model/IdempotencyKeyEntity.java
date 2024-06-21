@@ -10,6 +10,8 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import org.springframework.data.annotation.Id;
 
+import java.time.Instant;
+
 @Container(containerName = "idempotency_key")
 @Data
 @ToString
@@ -26,4 +28,6 @@ public class IdempotencyKeyEntity {
     private ReceiptTypeEnum receiptType;
 
     private IdempotencyStatusEnum status;
+
+    private Instant lockedAt;
 }

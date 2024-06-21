@@ -137,13 +137,11 @@ public class ReceiptService {
                         String rawGeneratedReceipt = jaxbElementUtil.objectToString(generatedReceipt);
                         String paaInviaRtPayload = generatePayloadAsRawString(header, null, rawGeneratedReceipt, objectFactory);
 
-                        // idempotency key creation to check if the rt has already been sent
-                        String idempotencyKey = commonFields.getSessionId() + "_" + noticeNumber;
                         // retrieve station from common station identifier
                         StationDto station = stations.get(commonFields.getStationId());
 
                         // send receipt to the creditor institution and, if not correctly sent, add to queue for retry
-                        sendReceiptToCreditorInstitution(sessionData, paaInviaRtPayload, receipt, rpt.getIuv(), noticeNumber, idempotencyKey, station, true);
+                        sendReceiptToCreditorInstitution(sessionData, paaInviaRtPayload, receipt, rpt.getIuv(), noticeNumber, station, true);
                     }
                 }
             }
@@ -220,11 +218,8 @@ public class ReceiptService {
                     String rawGeneratedReceipt = jaxbElementUtil.objectToString(generatedReceipt);
                     String paaInviaRtPayload = generatePayloadAsRawString(intestazionePPT, commonFields.getSignatureType(), rawGeneratedReceipt, objectFactory);
 
-                    // idempotency key creation to check if the rt has already been sent
-                    String idempotencyKey = commonFields.getSessionId() + "_" + noticeNumber;
-
                     // send receipt to the creditor institution and, if not correctly sent, add to queue for retry
-                    sendReceiptToCreditorInstitution(sessionData, paaInviaRtPayload, receipt, rpt.getIuv(), noticeNumber, idempotencyKey, station, false);
+                    sendReceiptToCreditorInstitution(sessionData, paaInviaRtPayload, receipt, rpt.getIuv(), noticeNumber, station, false);
                 }
             }
 
@@ -251,7 +246,7 @@ public class ReceiptService {
     }
 
     private void sendReceiptToCreditorInstitution(SessionDataDTO sessionData, String rawPayload, Object receipt,
-                                                  String iuv, String noticeNumber, String idempotencyKey, StationDto station, boolean mustSendNegativeRT) {
+                                                  String iuv, String noticeNumber, StationDto station, boolean mustSendNegativeRT) {
 
         /*
           From station identifier (the common one defined, not the payment reference), retrieve the data
@@ -267,9 +262,12 @@ public class ReceiptService {
                 null
         );
 
-        // send to creditor institution only if another receipt wasn't already sent (if sent an idempotency key was created)
+        // idempotency key creation to check if the rt has already been sent
+        String idempotencyKey = sessionData.getCommonFields().getSessionId() + "_" + noticeNumber;
+
+        // send to creditor institution only if another receipt wasn't already sent
         ReceiptTypeEnum receiptType = mustSendNegativeRT ? ReceiptTypeEnum.KO : ReceiptTypeEnum.OK;
-        if(idempotencyService.isIdempotencyKeyProcessable(idempotencyKey, receiptType)) {
+        if (idempotencyService.isIdempotencyKeyProcessable(idempotencyKey, receiptType)) {
 
             // lock idempotency key status to avoid concurrency issues
             idempotencyService.lockIdempotencyKey(idempotencyKey, receiptType);

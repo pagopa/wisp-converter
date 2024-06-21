@@ -26,11 +26,11 @@ public class RTRequestEntity {
 
     private String payload;
 
+    private ReceiptTypeEnum receiptType;
+
     private String url;
 
     private Integer retry;
 
     private String idempotencyKey;
-
-    private ReceiptTypeEnum receiptType;
 }
