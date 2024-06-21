@@ -8,6 +8,7 @@ import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.CacheRepository;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
+import it.gov.pagopa.wispconverter.util.LogUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -56,14 +57,14 @@ public class ReceiptTimerService {
                 .noticeNumber(message.getNoticeNumber())
                 .build();
         ServiceBusMessage serviceBusMessage = new ServiceBusMessage(receiptDto.toString());
-        log.info("Sending scheduled message {} to the queue: {}", message, queueName);
+        log.debug("Sending scheduled message {} to the queue: {}", message, queueName);
         // compute time and schedule message for consumer trigger
         OffsetDateTime scheduledExpirationTime = OffsetDateTime.now().plus(message.getExpirationTime(), ChronoUnit.MILLIS);
         Long sequenceNumber = serviceBusSenderClient.scheduleMessage(serviceBusMessage, scheduledExpirationTime);
-        log.info("Sent scheduled message {} to the queue: {}", message, queueName);
+        log.info("Sent scheduled message_base64 {} to the queue: {}", LogUtils.encodeToBase64(message.toString()), queueName);
         // insert {wisp_timer_<paymentToken>, sequenceNumber} for Duplicate Prevention Logic and for call cancelScheduledMessage(sequenceNumber)
         cacheRepository.insert(sequenceNumberKey, String.valueOf(sequenceNumber), message.getExpirationTime(), ChronoUnit.MILLIS);
-        log.info("Cache sequence number {} for payment-token: {}", sequenceNumber, sequenceNumberKey);
+        log.debug("Cache sequence number {} for payment-token: {}", sequenceNumber, sequenceNumberKey);
     }
 
     public void cancelScheduledMessage(List<String> paymentTokens) {
@@ -71,7 +72,7 @@ public class ReceiptTimerService {
     }
 
     private void cancelScheduledMessage(String paymentToken) {
-        log.info("Cancel scheduled message for payment-token {}", paymentToken);
+        log.debug("Cancel scheduled message for payment-token {}", paymentToken);
         String sequenceNumberKey = String.format(CACHING_KEY_TEMPLATE, paymentToken);
         String sequenceNumberString = cacheRepository.read(sequenceNumberKey, String.class);
         // the message related to payment-token has either already been deleted or it does not exist:
@@ -79,9 +80,9 @@ public class ReceiptTimerService {
         if(sequenceNumberString == null) return;
         // cancel scheduled message
         if(this.callCancelScheduledMessage(sequenceNumberString)) {
-            log.info("Canceled scheduled message for payment-token {}", paymentToken);
+            log.info("Canceled scheduled message for payment-token_base64 {}", LogUtils.encodeToBase64(paymentToken));
             cacheRepository.delete(sequenceNumberKey);
-            log.info("Deleted sequence number {} for payment-token: {} from cache", sequenceNumberString, sequenceNumberKey);
+            log.debug("Deleted sequence number {} for payment-token: {} from cache", sequenceNumberString, sequenceNumberKey);
         }
     }
 

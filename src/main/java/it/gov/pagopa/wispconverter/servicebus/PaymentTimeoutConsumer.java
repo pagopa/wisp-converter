@@ -37,7 +37,7 @@ public class PaymentTimeoutConsumer extends SBConsumer {
     @EventListener(ApplicationReadyEvent.class)
     public void initializeClient() {
         if(receiverClient!=null){
-            log.info("[Scheduled] Starting RTConsumer {}", ZonedDateTime.now());
+            log.debug("[Scheduled] Starting RTConsumer {}", ZonedDateTime.now());
             receiverClient.start();
         }
     }
@@ -51,7 +51,7 @@ public class PaymentTimeoutConsumer extends SBConsumer {
 
     public void processMessage(ServiceBusReceivedMessageContext context) {
         ServiceBusReceivedMessage message = context.getMessage();
-        log.info("Processing message. Session: {}, Sequence #: {}. Contents: {}", message.getMessageId(),
+        log.debug("Processing message. Session: {}, Sequence #: {}. Contents: {}", message.getMessageId(),
                 message.getSequenceNumber(), message.getBody());
         try {
             ReceiptDto receiptDto = mapper.readValue(message.getBody().toStream(), ReceiptDto.class);
