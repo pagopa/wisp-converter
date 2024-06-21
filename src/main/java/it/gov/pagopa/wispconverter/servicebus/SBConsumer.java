@@ -1,16 +1,36 @@
 package it.gov.pagopa.wispconverter.servicebus;
 
-import com.azure.messaging.servicebus.ServiceBusErrorContext;
-import com.azure.messaging.servicebus.ServiceBusException;
-import com.azure.messaging.servicebus.ServiceBusFailureReason;
-import com.azure.messaging.servicebus.ServiceBusReceivedMessageContext;
+import com.azure.messaging.servicebus.*;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
+import java.time.ZonedDateTime;
 import java.util.concurrent.TimeUnit;
 
 // Service Bus Consumer
 @Slf4j
 public abstract class SBConsumer {
+
+    protected ServiceBusProcessorClient createServiceBusProcessorClient(String connectionString, String queueName){
+        if (StringUtils.isNotBlank(connectionString) && !connectionString.equals("-"))
+            return null;
+        else {
+            return new ServiceBusClientBuilder()
+                    .connectionString(connectionString)
+                    .processor()
+                    .queueName(queueName)
+                    .processMessage(this::processMessage)
+                    .processError(this::processError)
+                    .buildProcessorClient();
+        }
+    }
+
+    protected void initServiceBusProcessorClient(ServiceBusProcessorClient receiverClient) {
+        if(receiverClient != null){
+            log.info("[Scheduled] Starting RTConsumer {}", ZonedDateTime.now());
+            receiverClient.start();
+        }
+    }
 
     public abstract void processMessage(ServiceBusReceivedMessageContext context);
 
