@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import it.gov.pagopa.wispconverter.controller.model.ReceiptTimerRequest;
 import it.gov.pagopa.wispconverter.service.ReceiptTimerService;
 import it.gov.pagopa.wispconverter.util.Trace;
+import java.util.Arrays;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -53,9 +54,9 @@ public class ReceiptTimerController {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     @Trace(businessProcess = BP_TIMER_DELETE, reEnabled = true)
-    public void deleteTimer(@RequestParam List<String> paymentTokens) {
+  public void deleteTimer(@RequestParam() String tokens) {
+        List<String> paymentTokens = Arrays.asList(tokens.split(","));
         log.info("Delete Timer arrived: " + paymentTokens);
         receiptTimerService.cancelScheduledMessage(paymentTokens);
-
     }
 }
