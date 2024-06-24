@@ -74,20 +74,25 @@ public class TestUtils {
         return configDataV1;
     }
 
-    public static it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigDataV1Dto configDataCreditorInstitutionStations
-            (StationCreditorInstitutionDto stationCreditorInstitutionDto) {
+
+    public static it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigDataV1Dto configDataCreditorInstitutionStations(StationCreditorInstitutionDto stationCreditorInstitutionDto) {
+        return configDataCreditorInstitutionStations(stationCreditorInstitutionDto, "/path", 2);
+    }
+
+    public static it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigDataV1Dto configDataCreditorInstitutionStations(StationCreditorInstitutionDto stationCreditorInstitutionDto, String servicePath, int primitiveVersion) {
         it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigDataV1Dto configDataV1 = new it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigDataV1Dto();
         configDataV1.setCreditorInstitutionStations(new HashMap<>());
         configDataV1.getCreditorInstitutionStations().put(stationCreditorInstitutionDto.getCreditorInstitutionCode(), stationCreditorInstitutionDto);
         configDataV1.setStations(new HashMap<>());
         it.gov.pagopa.gen.wispconverter.client.cache.model.StationDto station = new it.gov.pagopa.gen.wispconverter.client.cache.model.StationDto();
         station.setStationCode(stationCreditorInstitutionDto.getStationCode());
+        station.setPrimitiveVersion(primitiveVersion);
         station.setConnection(new ConnectionDto());
         station.getConnection().setIp("127.0.0.1");
         station.getConnection().setPort(8888L);
         station.getConnection().setProtocol(ConnectionDto.ProtocolEnum.HTTP);
         station.setService(new ServiceDto());
-        station.getService().setPath("/path");
+        station.getService().setPath(servicePath);
         station.setRedirect(new it.gov.pagopa.gen.wispconverter.client.cache.model.RedirectDto());
         station.getRedirect().setIp("127.0.0.1");
         station.getRedirect().setPath("/redirect");
