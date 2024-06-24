@@ -6,8 +6,11 @@ import com.azure.core.util.BinaryData;
 import com.azure.messaging.servicebus.*;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
+import it.gov.pagopa.wispconverter.repository.IdempotencyKeyRepository;
 import it.gov.pagopa.wispconverter.repository.RTRequestRepository;
+import it.gov.pagopa.wispconverter.repository.model.IdempotencyKeyEntity;
 import it.gov.pagopa.wispconverter.repository.model.RTRequestEntity;
+import it.gov.pagopa.wispconverter.repository.model.enumz.IdempotencyStatusEnum;
 import it.gov.pagopa.wispconverter.repository.model.enumz.ReceiptTypeEnum;
 import it.gov.pagopa.wispconverter.service.*;
 import it.gov.pagopa.wispconverter.servicebus.RTConsumer;
@@ -22,6 +25,8 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -57,8 +62,15 @@ class ConsumerTest {
         ReService reService = mock(ReService.class);
         doNothing().when(reService).addRe(any());
 
-        IdempotencyService idempotencyService = mock(IdempotencyService.class);
-        when(idempotencyService.isIdempotencyKeyProcessable(any(), any())).thenReturn(true);
+        IdempotencyKeyRepository idempotencyKeyRepository = mock(IdempotencyKeyRepository.class);
+        IdempotencyService idempotencyService = new IdempotencyService(idempotencyKeyRepository);
+        when(idempotencyKeyRepository.findById(any(), any())).thenReturn(Optional.of(IdempotencyKeyEntity.builder()
+                .status(IdempotencyStatusEnum.FAILED)
+                .receiptType("OK".equalsIgnoreCase(receiptType) ? ReceiptTypeEnum.OK : ReceiptTypeEnum.KO)
+                .lockedAt(null)
+                .build()));
+        ReflectionTestUtils.setField(idempotencyService, "lockValidityInMinutes", 10);
+        ReflectionTestUtils.setField(idempotencyService, "idempotencyKeyRepository", idempotencyKeyRepository);
 
         JaxbElementUtil jaxbElementUtil = new JaxbElementUtil();
 
@@ -88,13 +100,12 @@ class ConsumerTest {
 
         rtConsumer.processMessage(messageContext);
 
-        verify(idempotencyService, times(1)).lockIdempotencyKey(any(), any());
+        //verify(idempotencyService, times(1)).lockIdempotencyKey(any(), any());
         verify(rtRequestRepository, times(1)).findById(any(), any());
         verify(rtRequestRepository, times(1)).delete(any());
         verify(rtRequestRepository, times(0)).save(any());
         verify(serviceBusSenderClient, times(0)).sendMessage(any(), any());
-        verify(idempotencyService, times(1)).unlockIdempotencyKey(any(), any(), any());
-
+        verify(idempotencyKeyRepository, times(2)).save(any());
     }
 
     @ParameterizedTest
@@ -113,9 +124,15 @@ class ConsumerTest {
         ReService reService = mock(ReService.class);
         doNothing().when(reService).addRe(any());
 
-        IdempotencyService idempotencyService = mock(IdempotencyService.class);
-        when(idempotencyService.isIdempotencyKeyProcessable(any(), any())).thenReturn(false);
-        when(idempotencyService.isCompleted(any())).thenReturn(isCompleted);
+        IdempotencyKeyRepository idempotencyKeyRepository = mock(IdempotencyKeyRepository.class);
+        IdempotencyService idempotencyService = new IdempotencyService(idempotencyKeyRepository);
+        when(idempotencyKeyRepository.findById(any(), any())).thenReturn(Optional.of(IdempotencyKeyEntity.builder()
+                .status(isCompleted ? IdempotencyStatusEnum.SUCCESS : IdempotencyStatusEnum.LOCKED)
+                .receiptType("OK".equalsIgnoreCase(receiptType) ? ReceiptTypeEnum.OK : ReceiptTypeEnum.KO)
+                .lockedAt(Instant.now().minus(1, ChronoUnit.MINUTES))
+                .build()));
+        ReflectionTestUtils.setField(idempotencyService, "lockValidityInMinutes", 10);
+        ReflectionTestUtils.setField(idempotencyService, "idempotencyKeyRepository", idempotencyKeyRepository);
 
         JaxbElementUtil jaxbElementUtil = new JaxbElementUtil();
 
@@ -145,13 +162,11 @@ class ConsumerTest {
 
         rtConsumer.processMessage(messageContext);
 
-        verify(idempotencyService, times(0)).lockIdempotencyKey(any(), any());
         verify(rtRequestRepository, times(1)).findById(any(), any());
         verify(rtRequestRepository, times(0)).delete(any());
         verify(rtRequestRepository, times(isCompleted ? 0 : 1)).save(any());
         verify(serviceBusSenderClient, times(0)).sendMessage(any(), any());
-        verify(idempotencyService, times(0)).unlockIdempotencyKey(any(), any(), any());
-
+        verify(idempotencyKeyRepository, times(0)).save(any());
     }
 
     @ParameterizedTest
