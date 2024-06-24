@@ -129,7 +129,7 @@ public class ReceiptService {
                     for (RPTContentDTO rpt : sessionData.getAllRPTs()) {
 
                         // Generating the paaInviaRT payload from the RPT
-                        String paymentOutcome = ""; // TODO change this with one of the following -> https://pagopa.atlassian.net/wiki/spaces/PN5/pages/913244345/WISP-Converter?focusedCommentId=1002078407
+                        String paymentOutcome = "Annullato da WISP"; // TODO change this with one of the following -> https://pagopa.atlassian.net/wiki/spaces/PN5/pages/913244345/WISP-Converter?focusedCommentId=1002078407
                         JAXBElement<CtRicevutaTelematica> generatedReceipt = new ObjectFactory()
                                 .createRT(generateRTContentForKoReceipt(rpt, configurations, Instant.now(), paymentOutcome));
                         String rawGeneratedReceipt = jaxbElementUtil.objectToString(generatedReceipt);
