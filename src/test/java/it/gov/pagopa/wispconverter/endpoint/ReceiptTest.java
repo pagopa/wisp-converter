@@ -10,7 +10,10 @@ import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.*;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
-import it.gov.pagopa.wispconverter.service.*;
+import it.gov.pagopa.wispconverter.service.ConfigCacheService;
+import it.gov.pagopa.wispconverter.service.PaaInviaRTSenderService;
+import it.gov.pagopa.wispconverter.service.ReceiptTimerService;
+import it.gov.pagopa.wispconverter.service.ServiceBusService;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
 import it.gov.pagopa.wispconverter.utils.TestUtils;
 import org.junit.jupiter.api.Test;
@@ -87,8 +90,8 @@ class ReceiptTest {
     private CacheRepository cacheRepository;
     @MockBean
     private ReceiptTimerService receiptTimerService;
-    @MockBean
-    private ReceiptService receiptService;
+    //@MockBean
+    //private ReceiptService receiptService;
 
     private String getPaSendRTPayload() {
         String pasendrtv2 = TestUtils.loadFileContent("/requests/paSendRTV2.xml");
