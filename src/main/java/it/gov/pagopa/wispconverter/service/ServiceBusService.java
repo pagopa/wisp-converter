@@ -15,9 +15,6 @@ import java.time.ZonedDateTime;
 @RequiredArgsConstructor
 public class ServiceBusService {
 
-    @Value("${azure.sb.connectionString}")
-    private String connectionString;
-
     @Value("${azure.sb.paaInviaRT.name}")
     private String queueName;
 

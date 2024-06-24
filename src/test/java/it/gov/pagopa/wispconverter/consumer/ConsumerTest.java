@@ -6,6 +6,7 @@ import com.azure.core.util.BinaryData;
 import com.azure.messaging.servicebus.*;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
+import it.gov.pagopa.wispconverter.repository.RTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.model.RTRequestEntity;
 import it.gov.pagopa.wispconverter.repository.model.enumz.ReceiptTypeEnum;
 import it.gov.pagopa.wispconverter.service.*;
@@ -21,6 +22,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
@@ -44,8 +46,6 @@ class ConsumerTest {
     @CsvSource(value = {"ok", "ko"})
     void sendToPa_sent(String receiptType) {
 
-        ServiceBusService serviceBusService = mock(ServiceBusService.class);
-
         ServiceBusReceivedMessageContext messageContext = mock(ServiceBusReceivedMessageContext.class);
         ServiceBusReceivedMessage message = mock(ServiceBusReceivedMessage.class);
         when(messageContext.getMessage()).thenReturn(message);
@@ -54,10 +54,6 @@ class ConsumerTest {
         when(message.getSubject()).thenReturn("mystation");
         when(bindata.toBytes()).thenReturn("aaaaa_bbbbb_ccccc".getBytes(StandardCharsets.UTF_8));
 
-
-        RtCosmosService rtCosmosService = mock(RtCosmosService.class);
-        when(rtCosmosService.getRTRequestEntity(any(), any())).thenReturn(getStoredReceipt(0, receiptType, "http://endpoint:443"));
-
         ReService reService = mock(ReService.class);
         doNothing().when(reService).addRe(any());
 
@@ -65,6 +61,16 @@ class ConsumerTest {
         when(idempotencyService.isIdempotencyKeyProcessable(any(), any())).thenReturn(true);
 
         JaxbElementUtil jaxbElementUtil = new JaxbElementUtil();
+
+        RTRequestRepository rtRequestRepository = mock(RTRequestRepository.class);
+        when(rtRequestRepository.findById(any(), any())).thenReturn(Optional.ofNullable(getStoredReceipt(0, receiptType, "http://endpoint:443")));
+        RtCosmosService rtCosmosService = new RtCosmosService(reService, rtRequestRepository);
+        ReflectionTestUtils.setField(rtCosmosService, "isTracingOnREEnabled", true);
+
+        ServiceBusService serviceBusService = new ServiceBusService();
+        ServiceBusSenderClient serviceBusSenderClient = mock(ServiceBusSenderClient.class);
+        doNothing().when(serviceBusSenderClient).sendMessage(any());
+        ReflectionTestUtils.setField(serviceBusService, "serviceBusSenderClient", serviceBusSenderClient);
 
         RTConsumer rtConsumer = new RTConsumer();
         ConfigCacheService ccs = mock(ConfigCacheService.class);
@@ -83,18 +89,74 @@ class ConsumerTest {
         rtConsumer.processMessage(messageContext);
 
         verify(idempotencyService, times(1)).lockIdempotencyKey(any(), any());
-        verify(rtCosmosService, times(0)).saveRTRequestEntity(any());
-        verify(rtCosmosService, times(1)).deleteRTRequestEntity(any());
-        verify(serviceBusService, times(0)).sendMessage(any(), any());
+        verify(rtRequestRepository, times(1)).findById(any(), any());
+        verify(rtRequestRepository, times(1)).delete(any());
+        verify(rtRequestRepository, times(0)).save(any());
+        verify(serviceBusSenderClient, times(0)).sendMessage(any(), any());
         verify(idempotencyService, times(1)).unlockIdempotencyKey(any(), any(), any());
+
+    }
+
+    @ParameterizedTest
+    @CsvSource(value = {"ok, false", "ko, false", "ok, true", "ko, true"})
+    void sendToPa_locked(String receiptType, String rawIsCompleted) {
+
+        Boolean isCompleted = Boolean.valueOf(rawIsCompleted);
+        ServiceBusReceivedMessageContext messageContext = mock(ServiceBusReceivedMessageContext.class);
+        ServiceBusReceivedMessage message = mock(ServiceBusReceivedMessage.class);
+        when(messageContext.getMessage()).thenReturn(message);
+        BinaryData bindata = mock(BinaryData.class);
+        when(message.getBody()).thenReturn(bindata);
+        when(message.getSubject()).thenReturn("mystation");
+        when(bindata.toBytes()).thenReturn("aaaaa_bbbbb_ccccc".getBytes(StandardCharsets.UTF_8));
+
+        ReService reService = mock(ReService.class);
+        doNothing().when(reService).addRe(any());
+
+        IdempotencyService idempotencyService = mock(IdempotencyService.class);
+        when(idempotencyService.isIdempotencyKeyProcessable(any(), any())).thenReturn(false);
+        when(idempotencyService.isCompleted(any())).thenReturn(isCompleted);
+
+        JaxbElementUtil jaxbElementUtil = new JaxbElementUtil();
+
+        RTRequestRepository rtRequestRepository = mock(RTRequestRepository.class);
+        when(rtRequestRepository.findById(any(), any())).thenReturn(Optional.ofNullable(getStoredReceipt(0, receiptType, "http://endpoint:443")));
+        RtCosmosService rtCosmosService = new RtCosmosService(reService, rtRequestRepository);
+        ReflectionTestUtils.setField(rtCosmosService, "isTracingOnREEnabled", true);
+
+        ServiceBusService serviceBusService = new ServiceBusService();
+        ServiceBusSenderClient serviceBusSenderClient = mock(ServiceBusSenderClient.class);
+        doNothing().when(serviceBusSenderClient).sendMessage(any());
+        ReflectionTestUtils.setField(serviceBusService, "serviceBusSenderClient", serviceBusSenderClient);
+
+        RTConsumer rtConsumer = new RTConsumer();
+        ConfigCacheService ccs = mock(ConfigCacheService.class);
+        when(ccs.getConfigData()).thenReturn(TestUtils.configData("mystation"));
+
+        PaaInviaRTSenderService paaInviaRTSenderService = mock(PaaInviaRTSenderService.class);
+
+        ReflectionTestUtils.setField(rtConsumer, "rtCosmosService", rtCosmosService);
+        ReflectionTestUtils.setField(rtConsumer, "paaInviaRTSenderService", paaInviaRTSenderService);
+        ReflectionTestUtils.setField(rtConsumer, "serviceBusService", serviceBusService);
+        ReflectionTestUtils.setField(rtConsumer, "reService", reService);
+        ReflectionTestUtils.setField(rtConsumer, "idempotencyService", idempotencyService);
+        ReflectionTestUtils.setField(rtConsumer, "jaxbElementUtil", jaxbElementUtil);
+        ReflectionTestUtils.setField(rtConsumer, "maxRetries", 48);
+
+        rtConsumer.processMessage(messageContext);
+
+        verify(idempotencyService, times(0)).lockIdempotencyKey(any(), any());
+        verify(rtRequestRepository, times(1)).findById(any(), any());
+        verify(rtRequestRepository, times(0)).delete(any());
+        verify(rtRequestRepository, times(isCompleted ? 0 : 1)).save(any());
+        verify(serviceBusSenderClient, times(0)).sendMessage(any(), any());
+        verify(idempotencyService, times(0)).unlockIdempotencyKey(any(), any(), any());
 
     }
 
     @ParameterizedTest
     @CsvSource(value = {"ok", "ko"})
     void sendToPa_onError_reschedulable(String receiptType) {
-
-        ServiceBusService serviceBusService = mock(ServiceBusService.class);
 
         ServiceBusReceivedMessageContext messageContext = mock(ServiceBusReceivedMessageContext.class);
         ServiceBusReceivedMessage message = mock(ServiceBusReceivedMessage.class);
@@ -104,10 +166,6 @@ class ConsumerTest {
         when(message.getSubject()).thenReturn("mystation");
         when(bindata.toBytes()).thenReturn("aaaaa_bbbbb_ccccc".getBytes(StandardCharsets.UTF_8));
 
-
-        RtCosmosService rtCosmosService = mock(RtCosmosService.class);
-        when(rtCosmosService.getRTRequestEntity(any(), any())).thenReturn(getStoredReceipt(0, receiptType, "http://endpoint:443"));
-
         ReService reService = mock(ReService.class);
         doNothing().when(reService).addRe(any());
 
@@ -115,6 +173,16 @@ class ConsumerTest {
         when(idempotencyService.isIdempotencyKeyProcessable(any(), any())).thenReturn(true);
 
         JaxbElementUtil jaxbElementUtil = new JaxbElementUtil();
+
+        RTRequestRepository rtRequestRepository = mock(RTRequestRepository.class);
+        when(rtRequestRepository.findById(any(), any())).thenReturn(Optional.ofNullable(getStoredReceipt(0, receiptType, "http://endpoint:443")));
+        RtCosmosService rtCosmosService = new RtCosmosService(reService, rtRequestRepository);
+        ReflectionTestUtils.setField(rtCosmosService, "isTracingOnREEnabled", true);
+
+        ServiceBusService serviceBusService = new ServiceBusService();
+        ServiceBusSenderClient serviceBusSenderClient = mock(ServiceBusSenderClient.class);
+        doNothing().when(serviceBusSenderClient).sendMessage(any());
+        ReflectionTestUtils.setField(serviceBusService, "serviceBusSenderClient", serviceBusSenderClient);
 
         RTConsumer rtConsumer = new RTConsumer();
         ConfigCacheService ccs = mock(ConfigCacheService.class);
@@ -134,9 +202,10 @@ class ConsumerTest {
         rtConsumer.processMessage(messageContext);
 
         verify(idempotencyService, times(1)).lockIdempotencyKey(any(), any());
-        verify(rtCosmosService, times(1)).saveRTRequestEntity(any());
-        verify(rtCosmosService, times(0)).deleteRTRequestEntity(any());
-        verify(serviceBusService, times(1)).sendMessage(any(), any());
+        verify(rtRequestRepository, times(1)).findById(any(), any());
+        verify(rtRequestRepository, times(0)).delete(any());
+        verify(rtRequestRepository, times(1)).save(any());
+        verify(serviceBusSenderClient, times(0)).sendMessage(any(), any());
         verify(idempotencyService, times(1)).unlockIdempotencyKey(any(), any(), any());
 
     }
@@ -145,8 +214,6 @@ class ConsumerTest {
     @CsvSource(value = {"ok", "ko"})
     void sendToPa_onError_notReschedulable(String receiptType) {
 
-        ServiceBusService serviceBusService = mock(ServiceBusService.class);
-
         ServiceBusReceivedMessageContext messageContext = mock(ServiceBusReceivedMessageContext.class);
         ServiceBusReceivedMessage message = mock(ServiceBusReceivedMessage.class);
         when(messageContext.getMessage()).thenReturn(message);
@@ -156,9 +223,6 @@ class ConsumerTest {
         when(bindata.toBytes()).thenReturn("aaaaa_bbbbb_ccccc".getBytes(StandardCharsets.UTF_8));
 
 
-        RtCosmosService rtCosmosService = mock(RtCosmosService.class);
-        when(rtCosmosService.getRTRequestEntity(any(), any())).thenReturn(getStoredReceipt(48, receiptType, "http://endpoint:443"));
-
         ReService reService = mock(ReService.class);
         doNothing().when(reService).addRe(any());
 
@@ -166,6 +230,16 @@ class ConsumerTest {
         when(idempotencyService.isIdempotencyKeyProcessable(any(), any())).thenReturn(true);
 
         JaxbElementUtil jaxbElementUtil = new JaxbElementUtil();
+
+        RTRequestRepository rtRequestRepository = mock(RTRequestRepository.class);
+        when(rtRequestRepository.findById(any(), any())).thenReturn(Optional.ofNullable(getStoredReceipt(48, receiptType, "http://endpoint:443")));
+        RtCosmosService rtCosmosService = new RtCosmosService(reService, rtRequestRepository);
+        ReflectionTestUtils.setField(rtCosmosService, "isTracingOnREEnabled", true);
+
+        ServiceBusService serviceBusService = new ServiceBusService();
+        ServiceBusSenderClient serviceBusSenderClient = mock(ServiceBusSenderClient.class);
+        doNothing().when(serviceBusSenderClient).sendMessage(any());
+        ReflectionTestUtils.setField(serviceBusService, "serviceBusSenderClient", serviceBusSenderClient);
 
         RTConsumer rtConsumer = new RTConsumer();
         ConfigCacheService ccs = mock(ConfigCacheService.class);
@@ -185,11 +259,11 @@ class ConsumerTest {
         rtConsumer.processMessage(messageContext);
 
         verify(idempotencyService, times(1)).lockIdempotencyKey(any(), any());
-        verify(rtCosmosService, times(0)).saveRTRequestEntity(any());
-        verify(rtCosmosService, times(0)).deleteRTRequestEntity(any());
-        verify(serviceBusService, times(0)).sendMessage(any(), any());
+        verify(rtRequestRepository, times(1)).findById(any(), any());
+        verify(rtRequestRepository, times(0)).delete(any());
+        verify(rtRequestRepository, times(0)).save(any());
+        verify(serviceBusSenderClient, times(0)).sendMessage(any(), any());
         verify(idempotencyService, times(1)).unlockIdempotencyKey(any(), any(), any());
-
     }
 
     @Test
