@@ -109,7 +109,7 @@ microservice-chart:
     envSecrets:
       # required
       APPLICATIONINSIGHTS_CONNECTION_STRING: 'ai-d-connection-string'
-      SERVICE_BUS_CONNECTION_STRING: 'wisp-converter-sb-connection-string'
+      SERVICE_BUS_CONNECTION_STRING: 'nodo-wisp-sb-connection-string'
       OTEL_EXPORTER_OTLP_HEADERS: elastic-apm-secret-token
       REDIS_PASSWORD: 'redis-primary-key'
       REDIS_HOST: 'redis-hostname'
