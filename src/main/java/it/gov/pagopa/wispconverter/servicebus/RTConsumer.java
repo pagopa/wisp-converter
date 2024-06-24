@@ -25,7 +25,6 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.time.ZonedDateTime;
 
 @Component
@@ -38,10 +37,10 @@ public class RTConsumer extends SBConsumer {
     @Value("${azure.sb.paaInviaRT.name}")
     private String queueName;
 
-    @Value("${wisp-converter.rt-send.max-retries}")
+    @Value("${wisp-converter.rt-send.max-retries:48}")
     private Integer maxRetries;
 
-    @Value("${wisp-converter.rt-send.scheduling-time-in-hours}")
+    @Value("${wisp-converter.rt-send.scheduling-time-in-hours:1}")
     private Integer schedulingTimeInHours;
 
     @Autowired
@@ -148,7 +147,7 @@ public class RTConsumer extends SBConsumer {
             log.debug("Sending receipt [{}]", receiptId);
 
             // unzip retrieved zipped payload from GZip format
-            byte[] unzippedPayload = ZipUtil.unzip(receipt.getPayload().getBytes(StandardCharsets.UTF_8));
+            byte[] unzippedPayload = ZipUtil.unzip(AppBase64Util.base64Decode(receipt.getPayload()));
             SOAPMessage envelopeElement = jaxbElementUtil.getMessage(unzippedPayload);
             IntestazionePPT header = jaxbElementUtil.getHeader(envelopeElement, IntestazionePPT.class);
 

@@ -10,10 +10,16 @@ import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.*;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
-import it.gov.pagopa.wispconverter.service.*;
+import it.gov.pagopa.wispconverter.service.ConfigCacheService;
+import it.gov.pagopa.wispconverter.service.PaaInviaRTSenderService;
+import it.gov.pagopa.wispconverter.service.ReceiptTimerService;
+import it.gov.pagopa.wispconverter.service.ServiceBusService;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
 import it.gov.pagopa.wispconverter.utils.TestUtils;
+import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -21,17 +27,16 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.core.metrics.ApplicationStartup;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.web.client.RestClient;
 
+import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
@@ -42,13 +47,13 @@ import static org.mockito.Mockito.*;
 @AutoConfigureMockMvc
 class ReceiptTest {
 
+    private static final String STATION_ID = "mystation";
     @Autowired
     ObjectMapper objectMapper;
     @Autowired
     private MockMvc mvc;
     @Autowired
     private ConfigCacheService configCacheService;
-
     @MockBean
     private ApplicationStartup applicationStartup;
     @MockBean
@@ -75,7 +80,6 @@ class ReceiptTest {
     private ServiceBusSenderClient serviceBusSenderClient;
     @MockBean
     private RestClient.Builder restClientBuilder;
-
     @MockBean
     private CosmosClientBuilder cosmosClientBuilder;
     @Qualifier("redisSimpleTemplate")
@@ -87,33 +91,129 @@ class ReceiptTest {
     private CacheRepository cacheRepository;
     @MockBean
     private ReceiptTimerService receiptTimerService;
-    @MockBean
-    private ReceiptService receiptService;
 
     private String getPaSendRTPayload() {
-        String pasendrtv2 = TestUtils.loadFileContent("/requests/paSendRTV2.xml");
-        return pasendrtv2;
+        return TestUtils.loadFileContent("/requests/paSendRTV2.xml");
+    }
+
+    private void setConfigCacheStoredData(String servicePath, int primitiveVersion) {
+        StationCreditorInstitutionDto stationCreditorInstitutionDto = new StationCreditorInstitutionDto();
+        stationCreditorInstitutionDto.setCreditorInstitutionCode("{pa}");
+        stationCreditorInstitutionDto.setSegregationCode(48L);
+        stationCreditorInstitutionDto.setStationCode(STATION_ID);
+        ReflectionTestUtils.setField(configCacheService, "configData", TestUtils.configDataCreditorInstitutionStations(stationCreditorInstitutionDto, servicePath, primitiveVersion));
     }
 
     @Test
-    void success_positive() throws Exception {
-        String station = "mystation";
-        StationCreditorInstitutionDto stationCreditorInstitutionDto = new StationCreditorInstitutionDto();
-        stationCreditorInstitutionDto.setCreditorInstitutionCode("{pa}");
-        stationCreditorInstitutionDto.setSegregationCode(11L);
-        stationCreditorInstitutionDto.setStationCode(station);
-        org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configData", TestUtils.configDataCreditorInstitutionStations(stationCreditorInstitutionDto));
+    @SneakyThrows
+    void sendOkReceipt() {
+
+        // mocking cached configuration
+        setConfigCacheStoredData("/creditorinstitution/station", 2);
+
+        // mocking decoupler cached keys
+        when(cacheRepository.read(anyString(), any())).thenReturn("wisp_nav2iuv_123456IUVMOCK1");
+
+        // mocking RPT retrieve
+        RPTRequestEntity rptRequestEntity = RPTRequestEntity.builder()
+                .primitive("nodoInviaRPT")
+                .payload(TestUtils.zipAndEncode(TestUtils.getRptPayload(false, STATION_ID, "100.00", "datispec")))
+                .build();
+        when(rptRequestRepository.findById(anyString())).thenReturn(Optional.of(rptRequestEntity));
 
 
-        when(rptRequestRepository.findById(anyString())).thenReturn(
-                Optional.of(
-                        RPTRequestEntity.builder()
-                                .primitive("nodoInviaRPT")
-                                .payload(TestUtils.zipAndEncode(TestUtils.getRptPayload(false, station, "100.00", "datispec")))
-                                .build()
-                )
-        );
-        when(cacheRepository.read(anyString(), any())).thenReturn("wisp_nav2iuv_dominio");
+        // executing request
+        mvc.perform(MockMvcRequestBuilders.post("/receipt/ok")
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new ReceiptRequest(getPaSendRTPayload()))))
+                .andExpect(MockMvcResultMatchers.status().is2xxSuccessful())
+                .andDo(result -> {
+                    assertNotNull(result);
+                    assertNotNull(result.getResponse());
+                });
+    }
+
+    @Test
+    @SneakyThrows
+    void sendOkReceipt_gpdStation() {
+
+        // mocking cached configuration
+        setConfigCacheStoredData("/gpd-payments/api/v1", 2);
+
+        // mocking decoupler cached keys
+        when(cacheRepository.read(anyString(), any())).thenReturn("wisp_nav2iuv_123456IUVMOCK1");
+
+        // mocking RPT retrieve
+        RPTRequestEntity rptRequestEntity = RPTRequestEntity.builder()
+                .primitive("nodoInviaRPT")
+                .payload(TestUtils.zipAndEncode(TestUtils.getRptPayload(false, STATION_ID, "100.00", "datispec")))
+                .build();
+        when(rptRequestRepository.findById(anyString())).thenReturn(Optional.of(rptRequestEntity));
+
+
+        // executing request
+        mvc.perform(MockMvcRequestBuilders.post("/receipt/ok")
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new ReceiptRequest(getPaSendRTPayload()))))
+                .andExpect(MockMvcResultMatchers.status().is2xxSuccessful())
+                .andDo(result -> {
+                    assertNotNull(result);
+                    assertNotNull(result.getResponse());
+                });
+    }
+
+    @ParameterizedTest
+    @CsvSource(value = {"/gpd-payments/api/v1,1", "NULL,2"}, nullValues = {"NULL"})
+    @SneakyThrows
+    void sendOkReceipt_misconfiguredGpdStation(String path, String version) {
+
+        // mocking cached configuration
+        setConfigCacheStoredData(path, Integer.parseInt(version));
+
+        // mocking decoupler cached keys
+        when(cacheRepository.read(anyString(), any())).thenReturn("wisp_nav2iuv_123456IUVMOCK1");
+
+        // mocking RPT retrieve
+        RPTRequestEntity rptRequestEntity = RPTRequestEntity.builder()
+                .primitive("nodoInviaRPT")
+                .payload(TestUtils.zipAndEncode(TestUtils.getRptPayload(false, STATION_ID, "100.00", "datispec")))
+                .build();
+        when(rptRequestRepository.findById(anyString())).thenReturn(Optional.of(rptRequestEntity));
+
+
+        // executing request
+        mvc.perform(MockMvcRequestBuilders.post("/receipt/ok")
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new ReceiptRequest(getPaSendRTPayload()))))
+                .andExpect(MockMvcResultMatchers.status().is4xxClientError())
+                .andDo(result -> {
+                    assertNotNull(result);
+                    assertNotNull(result.getResponse());
+                });
+    }
+
+    @Test
+    void sendOkReceipt_notSent() throws Exception {
+
+        // mocking cached configuration
+        setConfigCacheStoredData("/creditorinstitution/station", 2);
+
+        // mocking decoupler cached keys
+        when(cacheRepository.read(anyString(), any())).thenReturn("wisp_nav2iuv_123456IUVMOCK1");
+
+        // mocking RPT retrieve
+        RPTRequestEntity rptRequestEntity = RPTRequestEntity.builder()
+                .primitive("nodoInviaRPT")
+                .payload(TestUtils.zipAndEncode(TestUtils.getRptPayload(false, STATION_ID, "100.00", "datispec")))
+                .build();
+        when(rptRequestRepository.findById(anyString())).thenReturn(Optional.of(rptRequestEntity));
+
+        // mocking error response from creditor institution
+        doThrow(new AppException(AppErrorCodeMessageEnum.RECEIPT_GENERATION_ERROR_RESPONSE_FROM_CREDITOR_INSTITUTION, "PAA_ERRORE_RESPONSE", "PAA_ERRORE_RESPONSE", "Errore PA"))
+                .when(paaInviaRTSenderService).sendToCreditorInstitution(anyString(), anyString());
 
         mvc.perform(MockMvcRequestBuilders.post("/receipt/ok")
                         .accept(MediaType.APPLICATION_JSON)
@@ -126,66 +226,208 @@ class ReceiptTest {
                             assertNotNull(result.getResponse());
                         });
 
+        verify(paaInviaRTSenderService, times(1)).sendToCreditorInstitution(anyString(), anyString());
     }
 
+    @ParameterizedTest
+    @CsvSource(value = {"<soapenv:Envelope><soapenv:Body>", "NULL"}, nullValues = {"NULL"})
+    @SneakyThrows
+    void sendOkReceipt_malformedRequest(String request) {
+
+        // mocking cached configuration
+        setConfigCacheStoredData("/creditorinstitution/station", 2);
+
+        // mocking decoupler cached keys
+        when(cacheRepository.read(anyString(), any())).thenReturn("wisp_nav2iuv_123456IUVMOCK1");
+
+        // mocking RPT retrieve
+        RPTRequestEntity rptRequestEntity = RPTRequestEntity.builder()
+                .primitive("nodoInviaRPT")
+                .payload(TestUtils.zipAndEncode(TestUtils.getRptPayload(false, STATION_ID, "100.00", "datispec")))
+                .build();
+        when(rptRequestRepository.findById(anyString())).thenReturn(Optional.of(rptRequestEntity));
+
+
+        // executing request
+        mvc.perform(MockMvcRequestBuilders.post("/receipt/ok")
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new ReceiptRequest(request))))
+                .andExpect(MockMvcResultMatchers.status().is4xxClientError())
+                .andDo(result -> {
+                    assertNotNull(result);
+                    assertNotNull(result.getResponse());
+                });
+    }
+
+
     @Test
-    void success_negative() throws Exception {
-        String station = "mystation";
-        StationCreditorInstitutionDto stationCreditorInstitutionDto = new StationCreditorInstitutionDto();
-        stationCreditorInstitutionDto.setCreditorInstitutionCode("{pa}");
-        stationCreditorInstitutionDto.setSegregationCode(11L);
-        stationCreditorInstitutionDto.setStationCode(station);
-        org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configData", TestUtils.configDataCreditorInstitutionStations(stationCreditorInstitutionDto));
+    @SneakyThrows
+    void sendKoReceipt() {
+
+        // mocking cached configuration
+        setConfigCacheStoredData("/creditorinstitution/station", 2);
+
+        // mocking decoupler cached keys
+        when(cacheRepository.read(anyString(), any())).thenReturn("wisp_nav2iuv_123456IUVMOCK1");
+
+        // mocking RPT retrieve
+        RPTRequestEntity rptRequestEntity = RPTRequestEntity.builder()
+                .primitive("nodoInviaRPT")
+                .payload(TestUtils.zipAndEncode(TestUtils.getRptPayload(false, STATION_ID, "100.00", "datispec")))
+                .build();
+        when(rptRequestRepository.findById(anyString())).thenReturn(Optional.of(rptRequestEntity));
 
 
-        when(rptRequestRepository.findById(any()))
-                .thenReturn(Optional.of(RPTRequestEntity.builder()
-                        .id(UUID.randomUUID().toString())
-                        .primitive("nodoInviaRPT")
-                        .payload(TestUtils.zipAndEncode(TestUtils.getRptPayload(false, "mystation", "10.00", "dati")))
-                        .build()
-                ));
-        when(cacheRepository.read(any(), any())).thenReturn("wisp_nav2iuv_dominio");
-
-        ReceiptDto[] receiptDtos = {
-                new ReceiptDto("token", "dominio", "iuv")
-        };
+        // executing request
+        List<ReceiptDto> receipts = List.of(ReceiptDto.builder()
+                .fiscalCode("{pa}")
+                .noticeNumber("3480000000000000")
+                .paymentToken("token01")
+                .build());
         mvc.perform(MockMvcRequestBuilders.post("/receipt/ko")
                         .accept(MediaType.APPLICATION_JSON)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new ReceiptRequest(objectMapper.writeValueAsString(receiptDtos)))))
+                        .content(objectMapper.writeValueAsString(new ReceiptRequest(receipts.toString()))))
+                .andExpect(MockMvcResultMatchers.status().is2xxSuccessful())
+                .andDo(result -> {
+                    assertNotNull(result);
+                    assertNotNull(result.getResponse());
+                });
+    }
+
+    @Test
+    @SneakyThrows
+    void sendKoReceipt_gpdStation() {
+
+        // mocking cached configuration
+        setConfigCacheStoredData("/gpd-payments/api/v1", 2);
+
+        // mocking decoupler cached keys
+        when(cacheRepository.read(anyString(), any())).thenReturn("wisp_nav2iuv_123456IUVMOCK1");
+
+        // mocking RPT retrieve
+        RPTRequestEntity rptRequestEntity = RPTRequestEntity.builder()
+                .primitive("nodoInviaRPT")
+                .payload(TestUtils.zipAndEncode(TestUtils.getRptPayload(false, STATION_ID, "100.00", "datispec")))
+                .build();
+        when(rptRequestRepository.findById(anyString())).thenReturn(Optional.of(rptRequestEntity));
+
+
+        // executing request
+        List<ReceiptDto> receipts = List.of(ReceiptDto.builder()
+                .fiscalCode("{pa}")
+                .noticeNumber("3480000000000000")
+                .paymentToken("token01")
+                .build());
+        mvc.perform(MockMvcRequestBuilders.post("/receipt/ko")
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new ReceiptRequest(receipts.toString()))))
+                .andExpect(MockMvcResultMatchers.status().is2xxSuccessful())
+                .andDo(result -> {
+                    assertNotNull(result);
+                    assertNotNull(result.getResponse());
+                });
+    }
+
+    @ParameterizedTest
+    @CsvSource(value = {"/gpd-payments/api/v1,1", "NULL,2"}, nullValues = {"NULL"})
+    @SneakyThrows
+    void sendKoReceipt_misconfiguredGpdStation(String path, String version) {
+
+        // mocking cached configuration
+        setConfigCacheStoredData(path, Integer.parseInt(version));
+
+        // mocking decoupler cached keys
+        when(cacheRepository.read(anyString(), any())).thenReturn("wisp_nav2iuv_123456IUVMOCK1");
+
+        // mocking RPT retrieve
+        RPTRequestEntity rptRequestEntity = RPTRequestEntity.builder()
+                .primitive("nodoInviaRPT")
+                .payload(TestUtils.zipAndEncode(TestUtils.getRptPayload(false, STATION_ID, "100.00", "datispec")))
+                .build();
+        when(rptRequestRepository.findById(anyString())).thenReturn(Optional.of(rptRequestEntity));
+
+
+        // executing request
+        List<ReceiptDto> receipts = List.of(ReceiptDto.builder()
+                .fiscalCode("{pa}")
+                .noticeNumber("3480000000000000")
+                .paymentToken("token01")
+                .build());
+        mvc.perform(MockMvcRequestBuilders.post("/receipt/ko")
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new ReceiptRequest(receipts.toString()))))
                 .andExpect(MockMvcResultMatchers.status().is4xxClientError())
-                .andDo(
-                        result -> {
-                            assertNotNull(result);
-                            assertNotNull(result.getResponse());
-                        });
+                .andDo(result -> {
+                    assertNotNull(result);
+                    assertNotNull(result.getResponse());
+                });
     }
 
-    @Test
-    void error_send_rt() throws Exception {
-        String station = "mystation";
-        StationCreditorInstitutionDto stationCreditorInstitutionDto = new StationCreditorInstitutionDto();
-        stationCreditorInstitutionDto.setCreditorInstitutionCode("{pa}");
-        stationCreditorInstitutionDto.setSegregationCode(11L);
-        stationCreditorInstitutionDto.setStationCode(station);
-        org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configData", TestUtils.configDataCreditorInstitutionStations(stationCreditorInstitutionDto));
+    @ParameterizedTest
+    @CsvSource(value = {"[{\"paymentToken\": \"fake\",\"noticeNumber\": \"fake\"}", "NULL"}, nullValues = {"NULL"})
+    @SneakyThrows
+    void sendKoReceipt_malformedRequest(String request) {
 
-        when(rptRequestRepository.findById(any())).thenReturn(
-                Optional.of(
-                        RPTRequestEntity.builder().primitive("nodoInviaRPT")
-                                .payload(
-                                        TestUtils.zipAndEncode(TestUtils.getRptPayload(false, station, "100.00", "datispec"))
-                                ).build()
-                )
-        );
-        when(cacheRepository.read(any(), any())).thenReturn("wisp_nav2iuv_dominio");
-        doThrow(new AppException(AppErrorCodeMessageEnum.RECEIPT_GENERATION_ERROR_RESPONSE_FROM_CREDITOR_INSTITUTION, "PAA_ERRORE_RESPONSE", "PAA_ERRORE_RESPONSE", "Errore PA")).when(paaInviaRTSenderService).sendToCreditorInstitution(anyString(), anyString());
+        // mocking cached configuration
+        setConfigCacheStoredData("/creditorinstitution/station", 2);
 
-        mvc.perform(MockMvcRequestBuilders.post("/receipt/ok")
+        // mocking decoupler cached keys
+        when(cacheRepository.read(anyString(), any())).thenReturn("wisp_nav2iuv_123456IUVMOCK1");
+
+        // mocking RPT retrieve
+        RPTRequestEntity rptRequestEntity = RPTRequestEntity.builder()
+                .primitive("nodoInviaRPT")
+                .payload(TestUtils.zipAndEncode(TestUtils.getRptPayload(false, STATION_ID, "100.00", "datispec")))
+                .build();
+        when(rptRequestRepository.findById(anyString())).thenReturn(Optional.of(rptRequestEntity));
+
+
+        // executing request
+        mvc.perform(MockMvcRequestBuilders.post("/receipt/ko")
                         .accept(MediaType.APPLICATION_JSON)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new ReceiptRequest(getPaSendRTPayload()))))
+                        .content(objectMapper.writeValueAsString(new ReceiptRequest(request))))
+                .andExpect(MockMvcResultMatchers.status().is4xxClientError())
+                .andDo(result -> {
+                    assertNotNull(result);
+                    assertNotNull(result.getResponse());
+                });
+    }
+
+
+    @Test
+    void sendKoReceipt_notSent() throws Exception {
+
+        // mocking cached configuration
+        setConfigCacheStoredData("/creditorinstitution/station", 2);
+
+        // mocking decoupler cached keys
+        when(cacheRepository.read(anyString(), any())).thenReturn("wisp_nav2iuv_123456IUVMOCK1");
+
+        // mocking RPT retrieve
+        RPTRequestEntity rptRequestEntity = RPTRequestEntity.builder()
+                .primitive("nodoInviaRPT")
+                .payload(TestUtils.zipAndEncode(TestUtils.getRptPayload(false, STATION_ID, "100.00", "datispec")))
+                .build();
+        when(rptRequestRepository.findById(anyString())).thenReturn(Optional.of(rptRequestEntity));
+
+        // mocking error response from creditor institution
+        List<ReceiptDto> receipts = List.of(ReceiptDto.builder()
+                .fiscalCode("{pa}")
+                .noticeNumber("3480000000000000")
+                .paymentToken("token01")
+                .build());
+        doThrow(new AppException(AppErrorCodeMessageEnum.RECEIPT_GENERATION_ERROR_RESPONSE_FROM_CREDITOR_INSTITUTION, "PAA_ERRORE_RESPONSE", "PAA_ERRORE_RESPONSE", "Errore PA"))
+                .when(paaInviaRTSenderService).sendToCreditorInstitution(anyString(), anyString());
+
+        mvc.perform(MockMvcRequestBuilders.post("/receipt/ko")
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new ReceiptRequest(receipts.toString()))))
                 .andExpect(MockMvcResultMatchers.status().is2xxSuccessful())
                 .andDo(
                         result -> {
@@ -195,38 +437,4 @@ class ReceiptTest {
 
         verify(paaInviaRTSenderService, times(1)).sendToCreditorInstitution(anyString(), anyString());
     }
-
-    @Test
-    void error_send_rt2() throws Exception {
-        String station = "mystation";
-        StationCreditorInstitutionDto stationCreditorInstitutionDto = new StationCreditorInstitutionDto();
-        stationCreditorInstitutionDto.setCreditorInstitutionCode("{pa}");
-        stationCreditorInstitutionDto.setSegregationCode(11L);
-        stationCreditorInstitutionDto.setStationCode(station);
-        org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configData", TestUtils.configDataCreditorInstitutionStations(stationCreditorInstitutionDto));
-
-        when(rptRequestRepository.findById(any())).thenReturn(
-                Optional.of(
-                        RPTRequestEntity.builder().primitive("nodoInviaRPT")
-                                .payload(
-                                        TestUtils.zipAndEncode(TestUtils.getRptPayload(false, station, "100.00", "datispec"))
-                                ).build()
-                )
-        );
-        when(cacheRepository.read(any(), any())).thenReturn("wisp_nav2iuv_dominio");
-        doAnswer(i -> new ResponseEntity<>(HttpStatusCode.valueOf(200))).when(paaInviaRTSenderService).sendToCreditorInstitution(anyString(), anyString());
-        mvc.perform(MockMvcRequestBuilders.post("/receipt/ok")
-                        .accept(MediaType.APPLICATION_JSON)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new ReceiptRequest(getPaSendRTPayload()))))
-                .andExpect(MockMvcResultMatchers.status().is2xxSuccessful())
-                .andDo(
-                        result -> {
-                            assertNotNull(result);
-                            assertNotNull(result.getResponse());
-                        });
-
-        verify(paaInviaRTSenderService, times(1)).sendToCreditorInstitution(anyString(), anyString());
-    }
-
 }
