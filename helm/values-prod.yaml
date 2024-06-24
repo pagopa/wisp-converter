@@ -90,12 +90,15 @@ microservice-chart:
     CLIENT_CHECKOUT_HOST: 'https://api.platform.pagopa.it/checkout/carts-auth/v1'
     CLIENT_DECOUPLERCACHING_HOST: 'https://api.platform.pagopa.it/wisp-converter/caching/api/v1'
     CLIENT_CACHE_HOST: 'https://api.platform.pagopa.it/api-config-cache/p/v1'
-    STATION_IN_GPD_PARTIAL_PATH: 'gpd-payments/api/v2'
+    STATION_IN_GPD_PARTIAL_PATH: 'gpd-payments/api/v1'
+    RT_SEND_MAX_RETRIES: '48'
+    RT_SEND_SCHEDULING_TIME_IN_HOURS: '1'
     RE_TRACING_INTERFACE_IUVGENERATOR_ENABLED: 'true'
     RE_TRACING_INTERFACE_PAYMENTPOSITIONANALYSIS_ENABLED: 'true'
     RE_TRACING_INTERFACE_DECOUPLERCACHING_ENABLED: 'true'
     RE_TRACING_INTERFACE_CHECKOUTINTERACTION_ENABLED: 'true'
     RE_TRACING_INTERNAL_RPTRETRIEVING_ENABLED: 'true'
+    RE_TRACING_INTERNAL_RTRETRIEVING_ENABLED: 'true'
     RE_TRACING_INTERNAL_RPTEXTRACTION_ENABLED: 'true'
     RE_TRACING_INTERNAL_PAYMENTPOSITIONANALYSIS_ENABLED: 'true'
     RE_TRACING_INTERNAL_DECOUPLERCACHING_ENABLED: 'true'
@@ -106,7 +109,7 @@ microservice-chart:
     envSecrets:
       # required
       APPLICATIONINSIGHTS_CONNECTION_STRING: 'ai-p-connection-string'
-      SERVICE_BUS_CONNECTION_STRING: 'wisp-converter-sb-connection-string'
+      SERVICE_BUS_CONNECTION_STRING: 'wisp-converter-sb-connection-string' #todo
       OTEL_EXPORTER_OTLP_HEADERS: elastic-apm-secret-token
       REDIS_PASSWORD: 'redis-primary-key'
       REDIS_HOST: 'redis-hostname'

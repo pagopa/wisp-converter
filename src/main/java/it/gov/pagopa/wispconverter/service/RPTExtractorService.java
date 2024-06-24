@@ -15,10 +15,7 @@ import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import it.gov.pagopa.wispconverter.service.model.session.CommonFieldsDTO;
 import it.gov.pagopa.wispconverter.service.model.session.RPTContentDTO;
 import it.gov.pagopa.wispconverter.service.model.session.SessionDataDTO;
-import it.gov.pagopa.wispconverter.util.Constants;
-import it.gov.pagopa.wispconverter.util.JaxbElementUtil;
-import it.gov.pagopa.wispconverter.util.ReUtil;
-import it.gov.pagopa.wispconverter.util.ZipUtil;
+import it.gov.pagopa.wispconverter.util.*;
 import jakarta.xml.soap.SOAPMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,8 +30,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import static it.gov.pagopa.wispconverter.util.Constants.NODO_DEI_PAGAMENTI_SPC;
 
 @Service
 @Slf4j
@@ -71,7 +66,7 @@ public class RPTExtractorService {
         }
 
         // generate and save RE event internal for change status
-        setSessionDataInfoInMDC(sessionData, primitive);
+        MDCUtil.setSessionDataInfoInMDC(sessionData, primitive);
         generateRE(sessionData);
 
         return sessionData;
@@ -112,6 +107,7 @@ public class RPTExtractorService {
                         .payerEmail(rpt.getPayer().getEmail())
                         .isMultibeneficiary(false)
                         .containsDigitalStamp(containsDigitalStamp)
+                        .signatureType(soapBody.getTipoFirma())
                         .build())
                 .paymentNotices(new HashMap<>())
                 .rpts(Collections.singletonMap(rpt.getTransferData().getIuv(), RPTContentDTO.builder()
@@ -236,32 +232,11 @@ public class RPTExtractorService {
             for (RPTContentDTO rpt : sessionData.getAllRPTs()) {
                 ReEventDto reEventFromRPT = ReUtil.getREBuilder()
                         .status(InternalStepStatus.EXTRACTED_DATA_FROM_RPT)
-                        .provider(NODO_DEI_PAGAMENTI_SPC)
                         .iuv(rpt.getIuv())
                         .ccp(rpt.getCcp())
                         .build();
                 reService.addRe(reEventFromRPT);
             }
-        }
-    }
-
-    private void setSessionDataInfoInMDC(SessionDataDTO sessionData, String primitive) {
-
-        CommonFieldsDTO commonFields = sessionData.getCommonFields();
-        MDC.put(Constants.MDC_PRIMITIVE, primitive);
-        MDC.put(Constants.MDC_CART_ID, commonFields.getCartId());
-        MDC.put(Constants.MDC_DOMAIN_ID, commonFields.getCreditorInstitutionId());
-        MDC.put(Constants.MDC_STATION_ID, commonFields.getStationId());
-        MDC.put(Constants.MDC_CHANNEL_ID, commonFields.getChannelId());
-        MDC.put(Constants.MDC_PSP_ID, commonFields.getPspId());
-
-        // if the primitive is nodoInviaCarrelloRPT, it means that a cart was extracted, so set cartId in MDC. Otherwise, set IUV and CCP in MDC
-        if (Constants.NODO_INVIA_CARRELLO_RPT.equals(primitive)) {
-            MDC.put(Constants.MDC_CART_ID, commonFields.getCartId());
-        } else {
-            RPTContentDTO singleRpt = sessionData.getFirstRPT();
-            MDC.put(Constants.MDC_IUV, singleRpt.getIuv());
-            MDC.put(Constants.MDC_CCP, singleRpt.getCcp());
         }
     }
 }

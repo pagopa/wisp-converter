@@ -1,8 +1,5 @@
 package it.gov.pagopa.wispconverter.consumer;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
-
 import com.azure.core.util.BinaryData;
 import com.azure.messaging.servicebus.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -18,6 +15,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.util.ReflectionTestUtils;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 public class PaymentTimeoutConsumerTest {
@@ -81,7 +81,7 @@ public class PaymentTimeoutConsumerTest {
 
         paymentTimeoutConsumer.processMessage(context);
 
-        verify(receiptService, times(1)).paaInviaRTKo(anyString());
+        verify(receiptService, times(1)).sendKoPaaInviaRtToCreditorInstitution(anyString());
     }
 
     @Test

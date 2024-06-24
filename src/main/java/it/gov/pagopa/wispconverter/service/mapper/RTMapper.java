@@ -1,10 +1,8 @@
 package it.gov.pagopa.wispconverter.service.mapper;
 
-import gov.telematici.pagamenti.ws.pafornode.CtReceiptV2;
-import gov.telematici.pagamenti.ws.pafornode.CtSubject;
-import gov.telematici.pagamenti.ws.pafornode.CtTransferPAReceiptV2;
-import gov.telematici.pagamenti.ws.pafornode.PaSendRTV2Request;
+import gov.telematici.pagamenti.ws.pafornode.*;
 import it.gov.digitpa.schemas._2011.pagamenti.*;
+import it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigurationKeyDto;
 import it.gov.pagopa.pagopa_api.xsd.common_types.v1_0.CtMapEntry;
 import it.gov.pagopa.wispconverter.service.model.*;
 import it.gov.pagopa.wispconverter.service.model.paymentrequest.PaymentRequestDTO;
@@ -23,9 +21,8 @@ public abstract class RTMapper {
     @Value("${wisp-converter.rtMapper.ctRicevutaTelematica.versioneOggetto}")
     String versioneOggetto;
 
-    public void toCtIstitutoAttestante(@MappingTarget CtIstitutoAttestante ctIstitutoAttestante,
-                                       CtIdentificativoUnivoco ctIdentificativoUnivoco,
-                                       Map<String, it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigurationKeyDto> configurations) {
+    public void toCtIstitutoAttestante(@MappingTarget CtIstitutoAttestante ctIstitutoAttestante, CtIdentificativoUnivoco ctIdentificativoUnivoco, Map<String, ConfigurationKeyDto> configurations) {
+
         String tipoIdentificativoUnivoco = CommonUtility.getConfigKeyValueCache(configurations, "GLOBAL-istitutoAttestante.identificativoUnivocoAttestante.tipoIdentificativoUnivoco");
         String codiceIdentificativoUnivoco = CommonUtility.getConfigKeyValueCache(configurations, "GLOBAL-istitutoAttestante.identificativoUnivocoAttestante.codiceIdentificativoUnivoco");
         String denominazioneAttestante = CommonUtility.getConfigKeyValueCache(configurations, "GLOBAL-istitutoAttestante.denominazioneAttestante");
@@ -96,7 +93,7 @@ public abstract class RTMapper {
     @Mapping(source = "province", target = "provinciaPagatore")
     @Mapping(source = "nation", target = "nazionePagatore")
     @Mapping(source = "email", target = "EMailPagatore")
-    public abstract void toCtSoggettoPagatore(@MappingTarget CtSoggettoPagatore ctSoggettoPagatore, PaymentSubjectDTO debtor);
+    public abstract void toCtSoggettoPagatore(@MappingTarget CtSoggettoPagatore ctSoggettoPagatore, PaymentSubjectDTO payer);
 
     @Mapping(source = "uniqueIdentifier", target = "identificativoUnivocoPagatore")
     @Mapping(source = "fullName", target = "anagraficaPagatore")
@@ -109,6 +106,28 @@ public abstract class RTMapper {
     @Mapping(source = "EMail", target = "EMailPagatore")
     public abstract void toCtSoggettoPagatore(@MappingTarget CtSoggettoPagatore ctSoggettoPagatore, CtSubject debtor);
 
+    @Mapping(source = "subjectUniqueIdentifier", target = "identificativoUnivocoVersante")
+    @Mapping(source = "name", target = "anagraficaVersante")
+    @Mapping(source = "address", target = "indirizzoVersante")
+    @Mapping(source = "streetNumber", target = "civicoVersante")
+    @Mapping(source = "postalCode", target = "capVersante")
+    @Mapping(source = "city", target = "localitaVersante")
+    @Mapping(source = "province", target = "provinciaVersante")
+    @Mapping(source = "nation", target = "nazioneVersante")
+    @Mapping(source = "email", target = "EMailVersante")
+    public abstract void toCtSoggettoVersante(@MappingTarget CtSoggettoVersante ctSoggettoVersante, PaymentSubjectDTO payerDelegate);
+
+    @Mapping(source = "uniqueIdentifier", target = "identificativoUnivocoVersante")
+    @Mapping(source = "fullName", target = "anagraficaVersante")
+    @Mapping(source = "streetName", target = "indirizzoVersante")
+    @Mapping(source = "civicNumber", target = "civicoVersante")
+    @Mapping(source = "postalCode", target = "capVersante")
+    @Mapping(source = "city", target = "localitaVersante")
+    @Mapping(source = "stateProvinceRegion", target = "provinciaVersante")
+    @Mapping(source = "country", target = "nazioneVersante")
+    @Mapping(source = "EMail", target = "EMailVersante")
+    public abstract void toCtSoggettoVersante(@MappingTarget CtSoggettoVersante ctSoggettoVersante, CtSubject payer);
+
     @Mapping(source = "type", target = "tipoIdentificativoUnivoco")
     @Mapping(source = "code", target = "codiceIdentificativoUnivoco")
     public abstract CtIdentificativoUnivocoPersonaG toIdentificativoUnivocoBeneficiario(SubjectUniqueIdentifierDTO subjectUniqueIdentifierDTO);
@@ -117,52 +136,56 @@ public abstract class RTMapper {
     @Mapping(source = "code", target = "codiceIdentificativoUnivoco")
     public abstract CtIdentificativoUnivocoPersonaFG toIdentificativoUnivocoPagatore(SubjectUniqueIdentifierDTO subjectUniqueIdentifierDTO);
 
+    @Mapping(source = "entityUniqueIdentifierType", target = "tipoIdentificativoUnivoco")
+    @Mapping(source = "entityUniqueIdentifierValue", target = "codiceIdentificativoUnivoco")
+    public abstract CtIdentificativoUnivocoPersonaFG toIdentificativoUnivocoPagatore(CtEntityUniqueIdentifier ctEntityUniqueIdentifier);
+
     @Mapping(target = "codiceEsitoPagamento", constant = "1")
     @Mapping(target = "importoTotalePagato", expression = "java(java.math.BigDecimal.ZERO)")
     @Mapping(source = "transferDataDTO.iuv", target = "identificativoUnivocoVersamento")
     @Mapping(source = "transferDataDTO.ccp", target = "codiceContestoPagamento")
-    @Mapping(target = "datiSingoloPagamento", expression = "java(toCtDatiSingoloPagamentoRTList(transferDataDTO.getTransfer(), instant))")
-    public abstract void toCtDatiVersamentoRT(@MappingTarget CtDatiVersamentoRT ctDatiVersamentoRT, TransferDataDTO transferDataDTO, @Context Instant instant);
+    @Mapping(target = "datiSingoloPagamento", expression = "java(toCtDatiSingoloPagamentoRTListForKoRT(transferDataDTO.getTransfer(), instant, paymentOutcome))")
+    public abstract void toCtDatiVersamentoRTForKoRT(@MappingTarget CtDatiVersamentoRT ctDatiVersamentoRT, TransferDataDTO transferDataDTO, @Context Instant instant, String paymentOutcome);
 
     @Mapping(target = "codiceEsitoPagamento", constant = "0")
     @Mapping(source = "ctReceiptV2.paymentAmount", target = "importoTotalePagato")
     @Mapping(source = "ctReceiptV2.creditorReferenceId", target = "identificativoUnivocoVersamento")
     @Mapping(source = "transferDataDTO.ccp", target = "codiceContestoPagamento")
-    @Mapping(target = "datiSingoloPagamento", expression = "java(toCtDatiSingoloPagamentoRTList(ctReceiptV2))")
-    public abstract void toCtDatiVersamentoRT(@MappingTarget CtDatiVersamentoRT ctDatiVersamentoRT, TransferDataDTO transferDataDTO, CtReceiptV2 ctReceiptV2);
+    @Mapping(target = "datiSingoloPagamento", expression = "java(toCtDatiSingoloPagamentoRTListForOkRT(ctReceiptV2))")
+    public abstract void toCtDatiVersamentoRTForOkRT(@MappingTarget CtDatiVersamentoRT ctDatiVersamentoRT, TransferDataDTO transferDataDTO, CtReceiptV2 ctReceiptV2);
 
-    public List<CtDatiSingoloPagamentoRT> toCtDatiSingoloPagamentoRTList(List<TransferDTO> transferDTOList, Instant instant) {
+    public List<CtDatiSingoloPagamentoRT> toCtDatiSingoloPagamentoRTListForKoRT(List<TransferDTO> transferDTOList, Instant instant, String paymentOutcome) {
         List<CtDatiSingoloPagamentoRT> ctDatiSingoloPagamentoRTList = new ArrayList<>();
         transferDTOList.forEach(transferDTO -> {
-            ctDatiSingoloPagamentoRTList.add(toCtDatiSingoloPagamentoRT(transferDTO, instant));
+            ctDatiSingoloPagamentoRTList.add(toCtDatiSingoloPagamentoRT(transferDTO, instant, paymentOutcome));
         });
         return ctDatiSingoloPagamentoRTList;
     }
 
-    public List<CtDatiSingoloPagamentoRT> toCtDatiSingoloPagamentoRTList(CtReceiptV2 ctReceiptV2) {
+    public List<CtDatiSingoloPagamentoRT> toCtDatiSingoloPagamentoRTListForOkRT(CtReceiptV2 ctReceiptV2) {
         List<CtDatiSingoloPagamentoRT> ctDatiSingoloPagamentoRTList = new ArrayList<>();
         ctReceiptV2.getTransferList().getTransfer().forEach(ctTransferPAReceiptV2 -> {
-            ctDatiSingoloPagamentoRTList.add(toCtDatiSingoloPagamentoRT(ctTransferPAReceiptV2, ctReceiptV2));
+            ctDatiSingoloPagamentoRTList.add(toCtDatiSingoloPagamentoRTForOkRT(ctTransferPAReceiptV2, ctReceiptV2));
         });
         return ctDatiSingoloPagamentoRTList;
     }
 
     @Mapping(target = "singoloImportoPagato", expression = "java(java.math.BigDecimal.ZERO)")
-    @Mapping(target = "esitoSingoloPagamento", constant = "Annullato da WISP")//TODO cosa mettere?
+    @Mapping(source = "paymentOutcome", target = "esitoSingoloPagamento")
     @Mapping(target = "dataEsitoSingoloPagamento", expression = "java(it.gov.pagopa.wispconverter.util.XmlUtil.toXMLGregoirianCalendar(instant))")
     @Mapping(target = "identificativoUnivocoRiscossione", constant = "0")
     @Mapping(source = "transferDTO.remittanceInformation", target = "causaleVersamento")
     @Mapping(source = "transferDTO.category", target = "datiSpecificiRiscossione")
-    public abstract CtDatiSingoloPagamentoRT toCtDatiSingoloPagamentoRT(TransferDTO transferDTO, Instant instant);
+    public abstract CtDatiSingoloPagamentoRT toCtDatiSingoloPagamentoRT(TransferDTO transferDTO, Instant instant, String paymentOutcome);
 
     @Mapping(source = "ctTransferPAReceiptV2.transferAmount", target = "singoloImportoPagato")
     @Mapping(target = "esitoSingoloPagamento", constant = "ESEGUITO")
-    @Mapping(source = "ctReceiptV2.transferDate", target = "dataEsitoSingoloPagamento")
+    @Mapping(source = "ctReceiptV2.paymentDateTime", target = "dataEsitoSingoloPagamento")
     @Mapping(source = "ctReceiptV2.receiptId", target = "identificativoUnivocoRiscossione")
     @Mapping(source = "ctTransferPAReceiptV2.remittanceInformation", target = "causaleVersamento")
     @Mapping(target = "ctReceiptV2.datiSpecificiRiscossione", qualifiedByName = "java(extractMetadata(ctReceiptV2.getMetadata().getMapEntry()))")
     @Mapping(source = "ctReceiptV2.fee", target = "commissioniApplicatePSP")
-    public abstract CtDatiSingoloPagamentoRT toCtDatiSingoloPagamentoRT(CtTransferPAReceiptV2 ctTransferPAReceiptV2, CtReceiptV2 ctReceiptV2);
+    public abstract CtDatiSingoloPagamentoRT toCtDatiSingoloPagamentoRTForOkRT(CtTransferPAReceiptV2 ctTransferPAReceiptV2, CtReceiptV2 ctReceiptV2);
 
     @Named("extractMetadata")
     private String extractMetadata(List<CtMapEntry> ctMapEntries) {

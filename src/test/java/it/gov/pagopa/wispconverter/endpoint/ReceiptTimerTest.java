@@ -10,9 +10,9 @@ import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.RTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.ReEventRepository;
 import it.gov.pagopa.wispconverter.service.ConfigCacheService;
-import it.gov.pagopa.wispconverter.service.PaaInviaRTService;
-import it.gov.pagopa.wispconverter.service.PaaInviaRTServiceBusService;
+import it.gov.pagopa.wispconverter.service.PaaInviaRTSenderService;
 import it.gov.pagopa.wispconverter.service.ReceiptTimerService;
+import it.gov.pagopa.wispconverter.service.ServiceBusService;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,28 +43,41 @@ public class ReceiptTimerTest {
     ObjectMapper objectMapper;
     @Autowired
     private MockMvc mvc;
-    @Autowired private ConfigCacheService configCacheService;
+    @Autowired
+    private ConfigCacheService configCacheService;
     @MockBean
     private ApplicationStartup applicationStartup;
     @MockBean
     private RPTRequestRepository rptRequestRepository;
     @MockBean
     private RTRequestRepository rtRequestRepository;
-    @MockBean private it.gov.pagopa.gen.wispconverter.client.iuvgenerator.invoker.ApiClient iuveneratorClient;
-    @MockBean private it.gov.pagopa.gen.wispconverter.client.gpd.invoker.ApiClient gpdClient;
-    @MockBean private it.gov.pagopa.gen.wispconverter.client.checkout.invoker.ApiClient checkoutClient;
-    @MockBean private it.gov.pagopa.gen.wispconverter.client.cache.invoker.ApiClient cacheClient;
-    @MockBean private it.gov.pagopa.gen.wispconverter.client.decouplercaching.invoker.ApiClient decouplerCachingClient;
-    @MockBean private PaaInviaRTService paaInviaRTService;
-    @MockBean private PaaInviaRTServiceBusService paaInviaRTServiceBusService;
-    @MockBean private ServiceBusSenderClient serviceBusSenderClient;
-    @MockBean private RestClient.Builder restClientBuilder;
-    @MockBean private CosmosClientBuilder cosmosClientBuilder;
+    @MockBean
+    private it.gov.pagopa.gen.wispconverter.client.iuvgenerator.invoker.ApiClient iuveneratorClient;
+    @MockBean
+    private it.gov.pagopa.gen.wispconverter.client.gpd.invoker.ApiClient gpdClient;
+    @MockBean
+    private it.gov.pagopa.gen.wispconverter.client.checkout.invoker.ApiClient checkoutClient;
+    @MockBean
+    private it.gov.pagopa.gen.wispconverter.client.cache.invoker.ApiClient cacheClient;
+    @MockBean
+    private it.gov.pagopa.gen.wispconverter.client.decouplercaching.invoker.ApiClient decouplerCachingClient;
+    @MockBean
+    private PaaInviaRTSenderService paaInviaRTService;
+    @MockBean
+    private ServiceBusService paaInviaRTServiceBusService;
+    @MockBean
+    private ServiceBusSenderClient serviceBusSenderClient;
+    @MockBean
+    private RestClient.Builder restClientBuilder;
+    @MockBean
+    private CosmosClientBuilder cosmosClientBuilder;
     @Qualifier("redisSimpleTemplate")
-    @MockBean private RedisTemplate<String, Object> redisSimpleTemplate;
+    @MockBean
+    private RedisTemplate<String, Object> redisSimpleTemplate;
     @MockBean
     private ReEventRepository reEventRepository;
-    @MockBean private CacheRepository cacheRepository;
+    @MockBean
+    private CacheRepository cacheRepository;
     @Autowired
     private MockMvc mockMvc;
     @MockBean
@@ -102,8 +115,8 @@ public class ReceiptTimerTest {
     }
 
     /*
-    * DELETE receipt/timer
-    * */
+     * DELETE receipt/timer
+     * */
     @Test
     public void testDeleteTimer() throws Exception {
         List<String> paymentTokens = List.of("token1", "token2");

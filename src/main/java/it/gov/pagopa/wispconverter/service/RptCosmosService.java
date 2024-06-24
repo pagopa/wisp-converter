@@ -11,11 +11,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
-
-import static it.gov.pagopa.wispconverter.util.Constants.NODO_DEI_PAGAMENTI_SPC;
 
 @Service
 @Slf4j
@@ -41,18 +38,12 @@ public class RptCosmosService {
         return rptRequestEntity;
     }
 
-    @Transactional
-    public void saveRPTRequestEntity(RPTRequestEntity rptRequestEntity) {
-        rptRequestRepository.save(rptRequestEntity);
-    }
-
     private void generateRE(String payload) {
 
         // creating event to be persisted for RE
         if (Boolean.TRUE.equals(isTracingOnREEnabled)) {
             ReEventDto reEvent = ReUtil.getREBuilder()
                     .status(InternalStepStatus.FOUND_RPT_IN_STORAGE)
-                    .provider(NODO_DEI_PAGAMENTI_SPC)
                     .compressedPayload(payload)
                     .compressedPayload(String.valueOf(payload != null ? payload.length() : 0))
                     .build();

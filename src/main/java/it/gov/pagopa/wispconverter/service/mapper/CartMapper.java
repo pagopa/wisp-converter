@@ -9,7 +9,7 @@ import org.mapstruct.ReportingPolicy;
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface CartMapper {
 
-    @Mapping(source = "commonFields.cartId", target = "idCart")
+    @Mapping(source = "commonFields.sessionId", target = "idCart")
     @Mapping(source = "commonFields.payerEmail", target = "emailNotice")
     @Mapping(target = "allCCP", constant = "false")
     @Mapping(target = "paymentNotices", ignore = true)

@@ -1,17 +1,19 @@
 package it.gov.pagopa.wispconverter.servicebus;
 
-import com.azure.cosmos.models.PartitionKey;
-import com.azure.messaging.servicebus.*;
+import com.azure.messaging.servicebus.ServiceBusProcessorClient;
+import com.azure.messaging.servicebus.ServiceBusReceivedMessage;
+import com.azure.messaging.servicebus.ServiceBusReceivedMessageContext;
+import gov.telematici.pagamenti.ws.nodoperpa.ppthead.IntestazionePPT;
+import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
-import it.gov.pagopa.wispconverter.repository.RTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.model.RTRequestEntity;
-import it.gov.pagopa.wispconverter.service.ConfigCacheService;
-import it.gov.pagopa.wispconverter.service.PaaInviaRTService;
-import it.gov.pagopa.wispconverter.util.CommonUtility;
-import java.util.Map;
-import java.time.ZonedDateTime;
-import java.util.Optional;
-import javax.annotation.PostConstruct;
+import it.gov.pagopa.wispconverter.repository.model.enumz.IdempotencyStatusEnum;
+import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
+import it.gov.pagopa.wispconverter.repository.model.enumz.ReceiptTypeEnum;
+import it.gov.pagopa.wispconverter.service.*;
+import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
+import it.gov.pagopa.wispconverter.util.*;
+import jakarta.xml.soap.SOAPMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +21,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
+
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.time.ZonedDateTime;
 
 @Component
 @Slf4j
@@ -30,84 +38,198 @@ public class RTConsumer extends SBConsumer {
     @Value("${azure.sb.paaInviaRT.name}")
     private String queueName;
 
+    @Value("${wisp-converter.rt-send.max-retries}")
+    private Integer maxRetries;
+
+    @Value("${wisp-converter.rt-send.scheduling-time-in-hours}")
+    private Integer schedulingTimeInHours;
+
     @Autowired
-    private RTRequestRepository rtRequestRepository;
+    private RtCosmosService rtCosmosService;
+
     @Autowired
-    private ServiceBusSenderClient serviceBusSenderClient;
+    private IdempotencyService idempotencyService;
+
     @Autowired
-    private PaaInviaRTService paaInviaRTService;
+    private PaaInviaRTSenderService paaInviaRTSenderService;
+
+    private ServiceBusProcessorClient receiverClient;
+
+    private ServiceBusService serviceBusService;
+
+    private ReService reService;
+
     @Autowired
-    private ConfigCacheService configCacheService;
+    private JaxbElementUtil jaxbElementUtil;
 
     @EventListener(ApplicationReadyEvent.class)
     public void initializeClient() {
-        if(receiverClient != null){
+        if (receiverClient != null) {
             log.info("[Scheduled] Starting RTConsumer {}", ZonedDateTime.now());
             receiverClient.start();
         }
     }
 
     @PostConstruct
-    public void post(){
+    public void post() {
         if (StringUtils.isNotBlank(connectionString) && !connectionString.equals("-")) {
             receiverClient = CommonUtility.getServiceBusProcessorClient(connectionString, queueName, this::processMessage, this::processError);
         }
     }
 
+    @PreDestroy
+    public void preDestroy() {
+        receiverClient.close();
+    }
+
     public void processMessage(ServiceBusReceivedMessageContext context) {
+
+        // retrieving content from context of arrived message
         ServiceBusReceivedMessage message = context.getMessage();
-        log.info("Processing "+message.getMessageId());
-        try{
-            String cosmosId = new String(message.getBody().toBytes());
-            String station = message.getSubject();
-            String[] idparts = cosmosId.split("_");
-            String pk = idparts[0];
-            String receiptId = idparts[1]+"_"+idparts[2];
-            Optional<RTRequestEntity> byId = rtRequestRepository.findById(receiptId,new PartitionKey(pk));
-            log.debug(byId.toString());
-            byId.ifPresent(receipt->{
+        log.info("Processing " + message.getMessageId());
 
-                if(receipt.getRetry()>=48){
-                    log.warn("Max retry reached for message {}", cosmosId);
-                }else{
-                    log.debug("Sending message {},retry: {}", cosmosId,receipt.getRetry());
-                    Map<String, it.gov.pagopa.gen.wispconverter.client.cache.model.StationDto> stations = configCacheService.getConfigData().getStations();
-                    it.gov.pagopa.gen.wispconverter.client.cache.model.StationDto stationDto = stations.get(station);
-                    String url = CommonUtility.constructUrl(
-                            stationDto.getConnection().getProtocol().getValue(),
-                            stationDto.getConnection().getIp(),
-                            stationDto.getConnection().getPort().intValue(),
-                            stationDto.getService().getPath(),
-                            null,
-                            null
-                    );
+        // extracting the values needed for the search of the receipt persisted in storage
+        String compositedIdForReceipt = new String(message.getBody().toBytes());
+        String[] idSections = compositedIdForReceipt.split("_");
+        String rtInsertionDate = idSections[0];
+        String receiptId = idSections[1] + "_" + idSections[2];
 
-                    boolean ok = false;
-                    try{
-                        log.debug("[{}]Sending receipt",receiptId);
-                        paaInviaRTService.send(url,receipt.getPayload());
-                        ok = true;
-                    } catch (AppException appe){
-                        log.error("[{}]error while sending receipt:{}",receipt,appe.toString());
-                        ok = false;
-                    }
-                    if(ok){
-                        log.info("[{}]Removing sent receipt",receiptId);
-                        rtRequestRepository.delete(receipt);
-                    }else{
-                        log.debug("[{}]Increasing retry and saving", receiptId);
-                        receipt.setRetry(receipt.getRetry()+1);
-                        rtRequestRepository.save(receipt);
-                        ServiceBusMessage serviceBusMessage = new ServiceBusMessage(message.getBody());
-                        serviceBusMessage.setScheduledEnqueueTime(ZonedDateTime.now().plusHours(1).toOffsetDateTime());
-                        log.debug("[{}]Rescheduling receipt at {}", receiptId,serviceBusMessage.getScheduledEnqueueTime());
-                        serviceBusSenderClient.sendMessage(serviceBusMessage);
-                        log.debug("[{}]Rescheduled receipt at {}", receiptId,serviceBusMessage.getScheduledEnqueueTime());
-                    }
+        // get RT request entity from database
+        RTRequestEntity rtRequestEntity = rtCosmosService.getRTRequestEntity(receiptId, rtInsertionDate);
+        String idempotencyKey = rtRequestEntity.getIdempotencyKey();
+        ReceiptTypeEnum receiptType = rtRequestEntity.getReceiptType();
+
+        IdempotencyStatusEnum idempotencyStatus = IdempotencyStatusEnum.FAILED;
+        boolean isIdempotencyKeyProcessable = false;
+        try {
+
+            // before sending the RT to the creditor institution, the idempotency key must be checked in order to not send duplicated receipts
+            isIdempotencyKeyProcessable = idempotencyService.isIdempotencyKeyProcessable(idempotencyKey, receiptType);
+            if (isIdempotencyKeyProcessable) {
+
+                // Lock idempotency key status to avoid concurrency issues
+                idempotencyService.lockIdempotencyKey(idempotencyKey, receiptType);
+
+                // If receipt was found, it must be sent to creditor institution, so it try this operation
+                log.debug("Sending message {}, retry: {}", compositedIdForReceipt, rtRequestEntity.getRetry());
+                resendRTToCreditorInstitution(receiptId, rtRequestEntity, compositedIdForReceipt, idempotencyKey);
+
+                idempotencyStatus = IdempotencyStatusEnum.SUCCESS;
+
+            } else {
+
+                // Status was locked due to concurrent execution, so it will be retried at the next execution (but only if it is not completed)
+                if (!idempotencyService.isCompleted(idempotencyKey)) {
+                    reScheduleReceiptSend(rtRequestEntity, receiptId, compositedIdForReceipt);
                 }
-            });
-        } catch (Exception e){
-            log.error("Generic error while processing message",e);
+            }
+
+        } catch (Exception e) {
+
+            // Generate a new event in RE for store the unsuccessful re-sending of the receipt
+            generateREForNotSentRT(e);
+
         }
+
+        // Unlock idempotency key after a successful operation
+        if (isIdempotencyKeyProcessable) {
+            try {
+                idempotencyService.unlockIdempotencyKey(idempotencyKey, receiptType, idempotencyStatus);
+            } catch (AppException e) {
+                log.error("AppException: ", e);
+            }
+        }
+    }
+
+    private void resendRTToCreditorInstitution(String receiptId, RTRequestEntity receipt, String compositedIdForReceipt, String idempotencyKey) {
+
+        try {
+
+            log.debug("Sending receipt [{}]", receiptId);
+
+            // unzip retrieved zipped payload from GZip format
+            byte[] unzippedPayload = ZipUtil.unzip(receipt.getPayload().getBytes(StandardCharsets.UTF_8));
+            SOAPMessage envelopeElement = jaxbElementUtil.getMessage(unzippedPayload);
+            IntestazionePPT header = jaxbElementUtil.getHeader(envelopeElement, IntestazionePPT.class);
+
+            // set MDC session data for RE
+            String[] idempotencyKeySections = idempotencyKey.split("_");
+            MDCUtil.setSessionDataInfoInMDC(header, idempotencyKeySections[2]);
+
+            String rawPayload = new String(unzippedPayload);
+            paaInviaRTSenderService.sendToCreditorInstitution(receipt.getUrl(), rawPayload);
+            rtCosmosService.deleteRTRequestEntity(receipt);
+            log.info("Sent receipt [{}]", receiptId);
+
+            // generate a new event in RE for store the successful re-sending of the receipt
+            generateREForSentRT();
+
+        } catch (AppException e) {
+
+            // generate a new event in RE for store the unsuccessful re-sending of the receipt
+            generateREForNotSentRT(e);
+
+            // Rescheduled due to errors caused by faulty communication with creditor institution
+            reScheduleReceiptSend(receipt, receiptId, compositedIdForReceipt);
+
+        } catch (IOException e) {
+
+            throw new AppException(AppErrorCodeMessageEnum.PARSING_INVALID_ZIPPED_PAYLOAD);
+        }
+    }
+
+    private void reScheduleReceiptSend(RTRequestEntity receipt, String receiptId, String compositedIdForReceipt) {
+
+        // because of the not sent receipt, it is necessary to schedule a retry of the sending process for this receipt
+        if (receipt.getRetry() < this.maxRetries - 1) {
+
+            try {
+
+                // if required, update the retry count for the retrieved RT
+                log.debug("Increasing retry by one and saving receipt with id: [{}]", receiptId);
+                receipt.setRetry(receipt.getRetry() + 1);
+                rtCosmosService.saveRTRequestEntity(receipt);
+
+                // because of the not sent receipt, it is necessary to schedule a retry of the sending process for this receipt
+                serviceBusService.sendMessage(compositedIdForReceipt, schedulingTimeInHours);
+
+                // generate a new event in RE for store the successful scheduling of the RT send
+                generateREForSuccessfulReschedulingSentRT();
+
+            } catch (Exception e) {
+
+                // generate a new event in RE for store the unsuccessful scheduling of the RT send
+                generateREForFailedReschedulingSentRT(e);
+            }
+        }
+    }
+
+    private void generateREForSentRT() {
+
+        generateRE(InternalStepStatus.RT_SCHEDULED_SEND_SUCCESS, "Re-scheduled send operation: success.");
+    }
+
+    private void generateREForNotSentRT(Throwable e) {
+
+        generateRE(InternalStepStatus.RT_SCHEDULED_SEND_FAILURE, "Re-scheduled send operation: failure. Caused by: " + e.getMessage());
+    }
+
+    private void generateREForSuccessfulReschedulingSentRT() {
+
+        generateRE(InternalStepStatus.RT_SEND_RESCHEDULING_SUCCESS, "Trying to re-schedule for next retry: success.");
+    }
+
+    private void generateREForFailedReschedulingSentRT(Throwable exception) {
+
+        generateRE(InternalStepStatus.RT_SEND_RESCHEDULING_FAILURE, "Trying to re-schedule for next retry: failure. Caused by: " + exception.getMessage());
+    }
+
+    private void generateRE(InternalStepStatus status, String otherInfo) {
+
+        ReEventDto reEvent = ReUtil.getREBuilder()
+                .status(status)
+                .info(otherInfo)
+                .build();
+        reService.addRe(reEvent);
     }
 }

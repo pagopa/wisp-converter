@@ -40,12 +40,6 @@ public class ReEventDto {
     @Schema(title = "INTERFACE", description = "The type of role that the application has in the communication with the remote endpoint.")
     private CallTypeEnum callType;
 
-    @Schema(title = "INTERFACE", description = "The service that is consumer in the step execution.<br>In NDP it is mapped with field 'fruitore'.")
-    private String consumer;
-
-    @Schema(title = "INTERFACE", description = "The service that provide to the step execution.<br>In NDP it is mapped with field 'erogatore'.")
-    private String provider;
-
     @Schema(title = "INTERFACE", description = "The outcome of the operation described by the event.<br>In NDP it is mapped with field 'esito'.")
     private OutcomeEnum outcome;
 

@@ -1,14 +1,10 @@
 package it.gov.pagopa.wispconverter;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import com.azure.messaging.servicebus.ServiceBusSenderClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.wispconverter.controller.model.AppInfoResponse;
-import it.gov.pagopa.wispconverter.repository.CacheRepository;
-import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
-import it.gov.pagopa.wispconverter.repository.RTRequestRepository;
-import it.gov.pagopa.wispconverter.repository.ReEventRepository;
+import it.gov.pagopa.wispconverter.repository.*;
+import it.gov.pagopa.wispconverter.service.ReceiptService;
 import it.gov.pagopa.wispconverter.service.ReceiptTimerService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +17,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 @ActiveProfiles(profiles = "test")
 @SpringBootTest(classes = Application.class)
@@ -47,9 +45,13 @@ class HomeTest {
     @MockBean
     private ReEventRepository reEventRepository;
     @MockBean
+    private IdempotencyKeyRepository idempotencyKeyRepository;
+    @MockBean
     private ServiceBusSenderClient serviceBusSenderClient;
     @MockBean
     private ReceiptTimerService receiptTimerService;
+    @MockBean
+    private ReceiptService receiptService;
 
     @Test
     void slash() throws Exception {

@@ -2,6 +2,7 @@ package it.gov.pagopa.wispconverter.repository.model;
 
 import com.azure.spring.data.cosmos.core.mapping.Container;
 import com.azure.spring.data.cosmos.core.mapping.PartitionKey;
+import it.gov.pagopa.wispconverter.repository.model.enumz.IdempotencyStatusEnum;
 import it.gov.pagopa.wispconverter.repository.model.enumz.ReceiptTypeEnum;
 import lombok.Builder;
 import lombok.Data;
@@ -9,12 +10,14 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import org.springframework.data.annotation.Id;
 
-@Container(containerName = "receipt")
+import java.time.Instant;
+
+@Container(containerName = "idempotency_key")
 @Data
-@ToString(exclude = "payload")
-@EqualsAndHashCode(exclude = "payload")
+@ToString
+@EqualsAndHashCode
 @Builder(toBuilder = true)
-public class RTRequestEntity {
+public class IdempotencyKeyEntity {
 
     @Id
     private String id;
@@ -22,15 +25,9 @@ public class RTRequestEntity {
     @PartitionKey
     private String partitionKey;
 
-    private String primitive;
-
-    private String payload;
-
     private ReceiptTypeEnum receiptType;
 
-    private String url;
+    private IdempotencyStatusEnum status;
 
-    private Integer retry;
-
-    private String idempotencyKey;
+    private Instant lockedAt;
 }

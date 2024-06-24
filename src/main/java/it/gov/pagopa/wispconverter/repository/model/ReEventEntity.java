@@ -34,8 +34,6 @@ public class ReEventEntity {
     private EventCategoryEnum eventCategory;
     private EventSubcategoryEnum eventSubcategory;
     private CallTypeEnum callType;
-    private String consumer;
-    private String provider;
     private OutcomeEnum outcome;
     private String httpMethod;
     private String httpUri;

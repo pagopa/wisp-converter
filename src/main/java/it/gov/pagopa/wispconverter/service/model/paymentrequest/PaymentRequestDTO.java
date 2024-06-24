@@ -21,8 +21,8 @@ public class PaymentRequestDTO {
     private String messageRequestId;
     private XMLGregorianCalendar messageRequestDatetime;
     private SubjectAuthentication subjectAuthentication;
-    private PaymentSubjectDTO debtor; // versante
-    private PaymentSubjectDTO payer; // pagatore
+    private PaymentSubjectDTO payer; // pagatore, colui a cui è associata la PD
+    private PaymentSubjectDTO payerDelegate; // versante, colui che è delegato dal pagatore
     private PaymentSubjectDTO payeeInstitution;
     private TransferDataDTO transferData;
 }

@@ -27,7 +27,6 @@ import java.util.stream.Stream;
 @Slf4j
 public class ReUtil {
 
-    private static final String NODO_DEI_PAGAMENTI_SP = "NodoDeiPagamentiSPC";
     private static final String UNZIP_ERROR = "Unzip error";
 
 
@@ -67,8 +66,7 @@ public class ReUtil {
                 .httpMethod(httpMethod)
                 .httpUri(httpUri)
                 .httpHeaders(httpHeaders)
-                .httpCallRemoteAddress(httpCallRemoteAddress)
-                .provider(NODO_DEI_PAGAMENTI_SP);
+                .httpCallRemoteAddress(httpCallRemoteAddress);
         return builder.build();
     }
 
@@ -105,7 +103,6 @@ public class ReUtil {
                 .httpMethod(httpMethod)
                 .httpUri(httpUri)
                 .httpHeaders(httpHeaders)
-                .provider(NODO_DEI_PAGAMENTI_SP)
                 .httpStatusCode(status)
                 .executionTimeMs(Long.parseLong(executionTime))
                 .operationStatus(MDC.get(Constants.MDC_STATUS))
@@ -136,9 +133,7 @@ public class ReUtil {
         builder.outcome(outcome)
                 .httpMethod(httpMethod)
                 .httpUri(httpUri)
-                .httpHeaders(httpHeaders)
-                .provider(MDC.get(Constants.MDC_PROVIDER))
-                .consumer(NODO_DEI_PAGAMENTI_SP);
+                .httpHeaders(httpHeaders);
 
         return builder.build();
     }
@@ -176,8 +171,6 @@ public class ReUtil {
                 .httpMethod(httpMethod)
                 .httpUri(httpUri)
                 .httpHeaders(httpHeaders)
-                .provider(MDC.get(Constants.MDC_PROVIDER))
-                .consumer(NODO_DEI_PAGAMENTI_SP)
                 .httpStatusCode(status)
                 .executionTimeMs(Long.parseLong(executionTime));
         return builder.build();
