@@ -1,7 +1,5 @@
 package it.gov.pagopa.wispconverter.utility;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import gov.telematici.pagamenti.ws.nodoperpa.NodoInviaCarrelloRPT;
 import gov.telematici.pagamenti.ws.nodoperpa.NodoInviaRPT;
 import gov.telematici.pagamenti.ws.nodoperpa.ObjectFactory;
@@ -11,24 +9,28 @@ import it.gov.digitpa.schemas._2011.pagamenti.CtRichiestaPagamentoTelematico;
 import it.gov.pagopa.wispconverter.util.JaxbElementUtil;
 import it.gov.pagopa.wispconverter.utils.TestUtils;
 import jakarta.xml.bind.JAXBElement;
-import jakarta.xml.soap.*;
-import javax.xml.parsers.ParserConfigurationException;
+import jakarta.xml.soap.SOAPException;
+import jakarta.xml.soap.SOAPMessage;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 import org.xmlsoap.schemas.soap.envelope.Body;
 import org.xmlsoap.schemas.soap.envelope.Envelope;
 import org.xmlsoap.schemas.soap.envelope.Header;
 
+import javax.xml.parsers.ParserConfigurationException;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 public class BaseTest {
 
     @Test
     @SneakyThrows
     public void testSoapCarrello() throws ParserConfigurationException {
-        String rptpayload = TestUtils.getCarrelloPayload(1, "station", "100.00",false);
+        String rptpayload = TestUtils.getCarrelloPayload(1, "station", "100.00", false, "{idCarrello}");
         JaxbElementUtil jaxbElementUtil = new JaxbElementUtil();
-        SOAPMessage message =  jaxbElementUtil.getMessage(rptpayload);
-        IntestazioneCarrelloPPT intestazionePPT2 = jaxbElementUtil.convertToBean(message.getSOAPHeader().extractAllHeaderElements().next(),IntestazioneCarrelloPPT.class);
-        NodoInviaCarrelloRPT nodoInviaCarrelloRPT = jaxbElementUtil.convertToBean(message.getSOAPBody().extractContentAsDocument(),NodoInviaCarrelloRPT.class);
+        SOAPMessage message = jaxbElementUtil.getMessage(rptpayload);
+        IntestazioneCarrelloPPT intestazionePPT2 = jaxbElementUtil.convertToBean(message.getSOAPHeader().extractAllHeaderElements().next(), IntestazioneCarrelloPPT.class);
+        NodoInviaCarrelloRPT nodoInviaCarrelloRPT = jaxbElementUtil.convertToBean(message.getSOAPBody().extractContentAsDocument(), NodoInviaCarrelloRPT.class);
         assertTrue(nodoInviaCarrelloRPT.getIdentificativoPSP().contains("{psp}"));
     }
 
@@ -37,16 +39,16 @@ public class BaseTest {
     public void testSoapRPT() throws ParserConfigurationException {
         String rptpayload = TestUtils.getRptPayload(false, "station", "100.00", null);
         JaxbElementUtil jaxbElementUtil = new JaxbElementUtil();
-        SOAPMessage message =  jaxbElementUtil.getMessage(rptpayload);
-        IntestazionePPT intestazionePPT2 = jaxbElementUtil.convertToBean(message.getSOAPHeader().extractAllHeaderElements().next(),IntestazionePPT.class);
-        NodoInviaRPT nodoInviaRPT2 = jaxbElementUtil.convertToBean(message.getSOAPBody().extractContentAsDocument(),NodoInviaRPT.class);
+        SOAPMessage message = jaxbElementUtil.getMessage(rptpayload);
+        IntestazionePPT intestazionePPT2 = jaxbElementUtil.convertToBean(message.getSOAPHeader().extractAllHeaderElements().next(), IntestazionePPT.class);
+        NodoInviaRPT nodoInviaRPT2 = jaxbElementUtil.convertToBean(message.getSOAPBody().extractContentAsDocument(), NodoInviaRPT.class);
         assertTrue(nodoInviaRPT2.getIdentificativoPSP().contains("{psp}"));
     }
 
     @SneakyThrows
     @Test
     public void testRPT() throws ParserConfigurationException {
-        String rptpayload = TestUtils.getInnerRptPayload(false,  "100.00", null);
+        String rptpayload = TestUtils.getInnerRptPayload(false, "100.00", null);
         JaxbElementUtil jaxbElementUtil = new JaxbElementUtil();
         CtRichiestaPagamentoTelematico rpt = jaxbElementUtil.convertToBean(rptpayload, CtRichiestaPagamentoTelematico.class);
         assertTrue(rpt.getDominio().getIdentificativoDominio().contains("{pa}"));
@@ -91,8 +93,8 @@ public class BaseTest {
 
 
         SOAPMessage message = jaxbElementUtil.newMessage();
-        jaxbElementUtil.addBody(message,nodoinviarpt,NodoInviaRPT.class);
-        jaxbElementUtil.addHeader(message,intestazionePPT,IntestazionePPT.class);
+        jaxbElementUtil.addBody(message, nodoinviarpt, NodoInviaRPT.class);
+        jaxbElementUtil.addHeader(message, intestazionePPT, IntestazionePPT.class);
 
         String ss = jaxbElementUtil.toString(message);
         assertTrue(ss.contains("mycanale"));

@@ -18,7 +18,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
@@ -224,7 +223,7 @@ public class TestUtils {
                 .replace("{rpt}", Base64.getEncoder().encodeToString(rptreplace.getBytes(StandardCharsets.UTF_8)));
     }
 
-    public static String getCarrelloPayload(int numofrpt, String station, String amount, boolean multibeneficiario) {
+    public static String getCarrelloPayload(int numofrpt, String station, String amount, boolean multibeneficiario, String cartId) {
         String rpt = TestUtils.loadFileContent("/requests/rptCart.xml");
         String rptReplaceAmount = rpt.replaceAll("\\{amount}", amount);
         String iuv = "123456IUVMOCK%s";
@@ -245,6 +244,7 @@ public class TestUtils {
         String carrello = TestUtils.loadFileContent("/requests/nodoInviaCarrelloRPT.xml");
         return carrello
                 .replace("{station}", station)
+                .replace("{idCarrello}", cartId)
                 .replace("{multi}", multibeneficiario ? "<multiBeneficiario>true</multiBeneficiario>" : "")
                 .replace("{elementiRpt}", listaRpt.toString());
     }

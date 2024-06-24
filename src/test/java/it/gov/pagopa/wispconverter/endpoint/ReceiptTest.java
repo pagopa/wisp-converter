@@ -8,15 +8,9 @@ import it.gov.pagopa.wispconverter.Application;
 import it.gov.pagopa.wispconverter.controller.model.ReceiptRequest;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
-import it.gov.pagopa.wispconverter.repository.CacheRepository;
-import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
-import it.gov.pagopa.wispconverter.repository.RTRequestRepository;
-import it.gov.pagopa.wispconverter.repository.ReEventRepository;
+import it.gov.pagopa.wispconverter.repository.*;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
-import it.gov.pagopa.wispconverter.service.ConfigCacheService;
-import it.gov.pagopa.wispconverter.service.PaaInviaRTSenderService;
-import it.gov.pagopa.wispconverter.service.ReceiptTimerService;
-import it.gov.pagopa.wispconverter.service.ServiceBusService;
+import it.gov.pagopa.wispconverter.service.*;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
 import it.gov.pagopa.wispconverter.utils.TestUtils;
 import org.junit.jupiter.api.Test;
@@ -62,6 +56,8 @@ class ReceiptTest {
     @MockBean
     private RTRequestRepository rtRequestRepository;
     @MockBean
+    private IdempotencyKeyRepository idempotencyKeyRepository;
+    @MockBean
     private it.gov.pagopa.gen.wispconverter.client.iuvgenerator.invoker.ApiClient iuveneratorClient;
     @MockBean
     private it.gov.pagopa.gen.wispconverter.client.gpd.invoker.ApiClient gpdClient;
@@ -91,6 +87,8 @@ class ReceiptTest {
     private CacheRepository cacheRepository;
     @MockBean
     private ReceiptTimerService receiptTimerService;
+    @MockBean
+    private ReceiptService receiptService;
 
     private String getPaSendRTPayload() {
         String pasendrtv2 = TestUtils.loadFileContent("/requests/paSendRTV2.xml");
