@@ -5,10 +5,7 @@ import com.azure.messaging.servicebus.ServiceBusSenderClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.wispconverter.Application;
 import it.gov.pagopa.wispconverter.controller.model.ReceiptTimerRequest;
-import it.gov.pagopa.wispconverter.repository.CacheRepository;
-import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
-import it.gov.pagopa.wispconverter.repository.RTRequestRepository;
-import it.gov.pagopa.wispconverter.repository.ReEventRepository;
+import it.gov.pagopa.wispconverter.repository.*;
 import it.gov.pagopa.wispconverter.service.ConfigCacheService;
 import it.gov.pagopa.wispconverter.service.PaaInviaRTSenderService;
 import it.gov.pagopa.wispconverter.service.ReceiptTimerService;
@@ -82,6 +79,8 @@ public class ReceiptTimerTest {
     private MockMvc mockMvc;
     @MockBean
     private ReceiptTimerService receiptTimerService;
+    @MockBean
+    private IdempotencyKeyRepository idempotencyKeyRepository;
 
     /*
      * CREATE receipt/timer
@@ -122,7 +121,7 @@ public class ReceiptTimerTest {
         List<String> paymentTokens = List.of("token1", "token2");
 
         mockMvc.perform(delete("/receipt/timer")
-                        .param("paymentTokens", "token1", "token2")
+                        .param("paymentTokens", "token1,token2")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
 
@@ -137,7 +136,7 @@ public class ReceiptTimerTest {
         doThrow(new RuntimeException("Service exception")).when(receiptTimerService).cancelScheduledMessage(Mockito.eq(paymentTokens));
 
         mockMvc.perform(delete("/receipt/timer")
-                        .param("paymentTokens", "token1", "token2")
+                        .param("paymentTokens", "token1,token2")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isInternalServerError());
 
