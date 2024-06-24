@@ -8,12 +8,10 @@ import it.gov.pagopa.wispconverter.repository.model.RTRequestEntity;
 import it.gov.pagopa.wispconverter.service.ConfigCacheService;
 import it.gov.pagopa.wispconverter.service.PaaInviaRTService;
 import it.gov.pagopa.wispconverter.util.CommonUtility;
-import java.time.ZonedDateTime;
 import java.util.Map;
+import java.time.ZonedDateTime;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +22,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Slf4j
-public class RTConsumer {
+public class RTConsumer extends SBConsumer {
 
     @Value("${azure.sb.connectionString}")
     private String connectionString;
@@ -41,11 +39,9 @@ public class RTConsumer {
     @Autowired
     private ConfigCacheService configCacheService;
 
-    private ServiceBusProcessorClient receiverClient;
-
     @EventListener(ApplicationReadyEvent.class)
     public void initializeClient() {
-        if(receiverClient!=null){
+        if(receiverClient != null){
             log.info("[Scheduled] Starting RTConsumer {}", ZonedDateTime.now());
             receiverClient.start();
         }
@@ -53,22 +49,9 @@ public class RTConsumer {
 
     @PostConstruct
     public void post(){
-    if (StringUtils.isNotBlank(connectionString) && !connectionString.equals("-")) {
-      receiverClient =
-          new ServiceBusClientBuilder()
-              .connectionString(connectionString)
-              .processor()
-              .queueName(queueName)
-              .processMessage(this::processMessage)
-              .processError(this::processError)
-              .buildProcessorClient();
+        if (StringUtils.isNotBlank(connectionString) && !connectionString.equals("-")) {
+            receiverClient = CommonUtility.getServiceBusProcessorClient(connectionString, queueName, this::processMessage, this::processError);
         }
-
-    }
-
-    @PreDestroy
-    public void preDestroy(){
-        receiverClient.close();
     }
 
     public void processMessage(ServiceBusReceivedMessageContext context) {
@@ -125,36 +108,6 @@ public class RTConsumer {
             });
         } catch (Exception e){
             log.error("Generic error while processing message",e);
-        }
-    }
-
-    public void processError(ServiceBusErrorContext context) {
-        if (!(context.getException() instanceof ServiceBusException)) {
-            log.error("Non-ServiceBusException occurred", context.getException());
-            return;
-        }
-
-        ServiceBusException exception = (ServiceBusException) context.getException();
-        ServiceBusFailureReason reason = exception.getReason();
-
-        if (reason == ServiceBusFailureReason.MESSAGING_ENTITY_DISABLED
-                || reason == ServiceBusFailureReason.MESSAGING_ENTITY_NOT_FOUND
-                || reason == ServiceBusFailureReason.UNAUTHORIZED) {
-            log.error("An unrecoverable error occurred. Stopping processing with reason {}:{}",
-                    reason, exception.getMessage());
-        } else if (reason == ServiceBusFailureReason.MESSAGE_LOCK_LOST) {
-            log.error("Message lock lost for message: %s%n", context.getException());
-        } else if (reason == ServiceBusFailureReason.SERVICE_BUSY) {
-            try {
-                // Choosing an arbitrary amount of time to wait until trying again.
-                TimeUnit.SECONDS.sleep(1);
-            } catch (InterruptedException e) {
-                log.error("Unable to sleep for period of time");
-                Thread.currentThread().interrupt();
-            }
-        } else {
-            log.error("Error source {}, reason {}, message: {}", context.getErrorSource(),
-                    reason, context.getException().toString());
         }
     }
 }

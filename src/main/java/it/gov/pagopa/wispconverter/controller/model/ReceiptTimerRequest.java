@@ -18,5 +18,5 @@ public class ReceiptTimerRequest {
     private String paymentToken;
     private String fiscalCode;
     private String noticeNumber;
-    private String expirationTime;
+    private Long expirationTime; // milliseconds
 }

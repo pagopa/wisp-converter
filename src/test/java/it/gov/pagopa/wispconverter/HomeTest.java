@@ -9,6 +9,7 @@ import it.gov.pagopa.wispconverter.repository.CacheRepository;
 import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.RTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.ReEventRepository;
+import it.gov.pagopa.wispconverter.service.ReceiptTimerService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -47,6 +48,8 @@ class HomeTest {
     private ReEventRepository reEventRepository;
     @MockBean
     private ServiceBusSenderClient serviceBusSenderClient;
+    @MockBean
+    private ReceiptTimerService receiptTimerService;
 
     @Test
     void slash() throws Exception {

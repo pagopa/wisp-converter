@@ -8,19 +8,13 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import it.gov.pagopa.wispconverter.controller.model.ReceiptRequest;
-import it.gov.pagopa.wispconverter.controller.model.ReceiptTimerRequest;
 import it.gov.pagopa.wispconverter.service.ReceiptService;
 import it.gov.pagopa.wispconverter.util.Trace;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 
@@ -34,8 +28,6 @@ public class ReceiptController {
 
     private static final String BP_RECEIPT_OK = "receipt-ok";
     private static final String BP_RECEIPT_KO = "receipt-ko";
-    private static final String BP_TIMER_SET = "timer-set";
-    private static final String BP_TIMER_DELETE = "timer-delete";
     private final ReceiptService receiptService;
 
     @Operation(summary = "", description = "", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"Receipt"})
@@ -66,33 +58,5 @@ public class ReceiptController {
     public void receiptOk(@RequestBody ReceiptRequest request) throws IOException {
 
         receiptService.paaInviaRTOk(request.getContent());
-    }
-
-    @Operation(summary = "", description = "", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"Receipt"})
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Set paymentToken expiration time", content = @Content(schema = @Schema()))
-    })
-    @PostMapping(
-            value = "/timer",
-            produces = MediaType.APPLICATION_JSON_VALUE,
-            consumes = MediaType.APPLICATION_JSON_VALUE
-    )
-    @Trace(businessProcess = BP_TIMER_SET, reEnabled = true)
-    public void setTimer(@RequestBody ReceiptTimerRequest request) {
-        log.info("Set Timer arrived: " + request.toString());
-    }
-
-    @Operation(summary = "", description = "", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"Receipt"})
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Delete paymentToken expiration time", content = @Content(schema = @Schema()))
-    })
-    @DeleteMapping(
-            value = "/timer",
-            produces = MediaType.APPLICATION_JSON_VALUE,
-            consumes = MediaType.APPLICATION_JSON_VALUE
-    )
-    @Trace(businessProcess = BP_TIMER_SET, reEnabled = true)
-    public void deleteTimer(@RequestParam(name = "paymentToken") String paymentToken) {
-        log.info("Delete Timer arrived: " + paymentToken);
     }
 }
