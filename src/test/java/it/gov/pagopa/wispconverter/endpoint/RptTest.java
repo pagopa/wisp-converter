@@ -18,6 +18,7 @@ import it.gov.pagopa.wispconverter.repository.RTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.ReEventRepository;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
 import it.gov.pagopa.wispconverter.service.ConfigCacheService;
+import it.gov.pagopa.wispconverter.service.ReceiptTimerService;
 import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import it.gov.pagopa.wispconverter.utils.TestUtils;
 
@@ -48,7 +49,6 @@ import org.springframework.web.client.RestClientException;
 @AutoConfigureMockMvc
 class RptTest {
 
-
     @Autowired
     ObjectMapper objectMapper;
     @Autowired
@@ -72,6 +72,8 @@ class RptTest {
     private ServiceBusSenderClient serviceBusSenderClient;
     @MockBean
     private CacheRepository cacheRepository;
+    @MockBean
+    private ReceiptTimerService receiptTimerService;
 
     @Test
     void success_debtPositionUpdateValid() throws Exception {

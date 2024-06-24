@@ -1,6 +1,8 @@
 package it.gov.pagopa.wispconverter.servicebus;
 
-import com.azure.messaging.servicebus.*;
+import com.azure.messaging.servicebus.ServiceBusProcessorClient;
+import com.azure.messaging.servicebus.ServiceBusReceivedMessage;
+import com.azure.messaging.servicebus.ServiceBusReceivedMessageContext;
 import gov.telematici.pagamenti.ws.nodoperpa.ppthead.IntestazionePPT;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
@@ -10,10 +12,7 @@ import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
 import it.gov.pagopa.wispconverter.repository.model.enumz.ReceiptTypeEnum;
 import it.gov.pagopa.wispconverter.service.*;
 import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
-import it.gov.pagopa.wispconverter.util.JaxbElementUtil;
-import it.gov.pagopa.wispconverter.util.MDCUtil;
-import it.gov.pagopa.wispconverter.util.ReUtil;
-import it.gov.pagopa.wispconverter.util.ZipUtil;
+import it.gov.pagopa.wispconverter.util.*;
 import jakarta.xml.soap.SOAPMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -28,11 +27,10 @@ import javax.annotation.PreDestroy;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.ZonedDateTime;
-import java.util.concurrent.TimeUnit;
 
 @Component
 @Slf4j
-public class RTConsumer {
+public class RTConsumer extends SBConsumer {
 
     @Value("${azure.sb.connectionString}")
     private String connectionString;
@@ -75,15 +73,8 @@ public class RTConsumer {
     @PostConstruct
     public void post() {
         if (StringUtils.isNotBlank(connectionString) && !connectionString.equals("-")) {
-            receiverClient = new ServiceBusClientBuilder()
-                    .connectionString(connectionString)
-                    .processor()
-                    .queueName(queueName)
-                    .processMessage(this::processMessage)
-                    .processError(this::processError)
-                    .buildProcessorClient();
+            receiverClient = CommonUtility.getServiceBusProcessorClient(connectionString, queueName, this::processMessage, this::processError);
         }
-
     }
 
     @PreDestroy
@@ -141,7 +132,7 @@ public class RTConsumer {
         }
 
         // Unlock idempotency key after a successful operation
-        if(isIdempotencyKeyProcessable) {
+        if (isIdempotencyKeyProcessable) {
             try {
                 idempotencyService.unlockIdempotencyKey(idempotencyKey, receiptType, idempotencyStatus);
             } catch (AppException e) {
@@ -212,35 +203,6 @@ public class RTConsumer {
             }
         }
     }
-
-    public void processError(ServiceBusErrorContext context) {
-
-        if (!(context.getException() instanceof ServiceBusException exception)) {
-            log.error("Non-ServiceBusException occurred", context.getException());
-            return;
-        }
-
-        ServiceBusFailureReason reason = exception.getReason();
-
-        if (reason == ServiceBusFailureReason.MESSAGING_ENTITY_DISABLED || reason == ServiceBusFailureReason.MESSAGING_ENTITY_NOT_FOUND || reason == ServiceBusFailureReason.UNAUTHORIZED) {
-            log.error("An unrecoverable error occurred. Stopping processing with reason {}:{}", reason, exception.getMessage());
-        } else if (reason == ServiceBusFailureReason.MESSAGE_LOCK_LOST) {
-            log.error("Message lock lost for message: %s%n", context.getException());
-        } else if (reason == ServiceBusFailureReason.SERVICE_BUSY) {
-
-            try {
-                // Choosing an arbitrary amount of time to wait until trying again.
-                TimeUnit.SECONDS.sleep(1);
-            } catch (InterruptedException e) {
-                log.error("Unable to sleep for period of time");
-                Thread.currentThread().interrupt();
-            }
-
-        } else {
-            log.error("Error source {}, reason {}, message: {}", context.getErrorSource(), reason, context.getException().toString());
-        }
-    }
-
 
     private void generateREForSentRT() {
 

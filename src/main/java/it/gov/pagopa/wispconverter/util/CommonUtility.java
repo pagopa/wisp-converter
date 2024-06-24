@@ -1,5 +1,9 @@
 package it.gov.pagopa.wispconverter.util;
 
+import com.azure.messaging.servicebus.ServiceBusClientBuilder;
+import com.azure.messaging.servicebus.ServiceBusErrorContext;
+import com.azure.messaging.servicebus.ServiceBusProcessorClient;
+import com.azure.messaging.servicebus.ServiceBusReceivedMessageContext;
 import it.gov.pagopa.gen.wispconverter.client.cache.model.ServiceDto;
 import it.gov.pagopa.gen.wispconverter.client.cache.model.StationDto;
 import it.gov.pagopa.gen.wispconverter.client.gpd.model.PaymentOptionModelDto;
@@ -16,6 +20,7 @@ import lombok.NoArgsConstructor;
 import java.net.URI;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
@@ -109,6 +114,16 @@ public class CommonUtility {
         return paymentOption;
     }
 
+    public static ServiceBusProcessorClient getServiceBusProcessorClient(String connectionString,
+                                                                         String queueName, Consumer<ServiceBusReceivedMessageContext> processMessage, Consumer<ServiceBusErrorContext> processError) {
+        return new ServiceBusClientBuilder()
+                .connectionString(connectionString)
+                .processor()
+                .queueName(queueName)
+                .processMessage(processMessage)
+                .processError(processError)
+                .buildProcessorClient();
+    }
 
     public static void checkStationValidity(ConfigCacheService configCacheService, SessionDataDTO sessionData, String noticeNumber) {
 

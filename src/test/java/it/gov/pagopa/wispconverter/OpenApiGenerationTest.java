@@ -7,6 +7,7 @@ import it.gov.pagopa.wispconverter.controller.RedirectController;
 import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.RTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.ReEventRepository;
+import it.gov.pagopa.wispconverter.service.ReceiptTimerService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -53,6 +54,9 @@ class OpenApiGenerationTest {
 
     @MockBean
     private ServiceBusSenderClient serviceBusSenderClient;
+
+    @MockBean
+    private ReceiptTimerService receiptTimerService;
 
     @Test
     void swaggerSpringPlugin() throws Exception {

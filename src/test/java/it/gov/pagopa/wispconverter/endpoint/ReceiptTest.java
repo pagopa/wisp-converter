@@ -15,6 +15,7 @@ import it.gov.pagopa.wispconverter.repository.ReEventRepository;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
 import it.gov.pagopa.wispconverter.service.ConfigCacheService;
 import it.gov.pagopa.wispconverter.service.PaaInviaRTSenderService;
+import it.gov.pagopa.wispconverter.service.ReceiptTimerService;
 import it.gov.pagopa.wispconverter.service.ServiceBusService;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
 import it.gov.pagopa.wispconverter.utils.TestUtils;
@@ -46,7 +47,6 @@ import static org.mockito.Mockito.*;
 @SpringBootTest(classes = Application.class)
 @AutoConfigureMockMvc
 class ReceiptTest {
-
 
     @Autowired
     ObjectMapper objectMapper;
@@ -89,6 +89,8 @@ class ReceiptTest {
     private ReEventRepository reEventRepository;
     @MockBean
     private CacheRepository cacheRepository;
+    @MockBean
+    private ReceiptTimerService receiptTimerService;
 
     private String getPaSendRTPayload() {
         String pasendrtv2 = TestUtils.loadFileContent("/requests/paSendRTV2.xml");

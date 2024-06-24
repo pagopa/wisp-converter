@@ -1,24 +1,22 @@
-package it.gov.pagopa.wispconverter.service.model;
+package it.gov.pagopa.wispconverter.controller.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 @Data
-@Builder
+@Builder(toBuilder = true)
 @NoArgsConstructor
 @AllArgsConstructor
+@ToString
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class ReceiptDto {
+public class ReceiptTimerRequest {
 
     private String paymentToken;
     private String fiscalCode;
     private String noticeNumber;
-
-    @Override
-    public String toString() {
-        return "{\"paymentToken\": \"" + paymentToken + "\", \"fiscalCode\": \"" + fiscalCode + "\", \"noticeNumber\": \"" + noticeNumber + "\"}";
-    }
+    private Long expirationTime; // milliseconds
 }
