@@ -120,7 +120,7 @@ public class ReceiptTimerTest {
         List<String> paymentTokens = List.of("token1", "token2");
 
         mockMvc.perform(delete("/receipt/timer")
-                        .param("paymentTokens", "token1", "token2")
+                        .param("paymentTokens", "token1,token2")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
 
@@ -135,7 +135,7 @@ public class ReceiptTimerTest {
         doThrow(new RuntimeException("Service exception")).when(receiptTimerService).cancelScheduledMessage(Mockito.eq(paymentTokens));
 
         mockMvc.perform(delete("/receipt/timer")
-                        .param("paymentTokens", "token1", "token2")
+                        .param("paymentTokens", "token1,token2")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isInternalServerError());
 
