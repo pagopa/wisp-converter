@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Bean;
 @SpringBootApplication
 public class Application {
 
-    @Value("${azure.sb.connectionString}")
+    @Value("${azure.sb.wisp-paainviart-queue.connectionString}")
     private String connectionString;
 
     @Value("${azure.sb.paaInviaRT.name}")
