@@ -1,6 +1,5 @@
 package it.gov.pagopa.wispconverter.servicebus;
 
-import com.azure.messaging.servicebus.ServiceBusProcessorClient;
 import com.azure.messaging.servicebus.ServiceBusReceivedMessage;
 import com.azure.messaging.servicebus.ServiceBusReceivedMessageContext;
 import gov.telematici.pagamenti.ws.nodoperpa.ppthead.IntestazionePPT;
@@ -18,11 +17,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.io.IOException;
 import java.time.ZonedDateTime;
@@ -30,13 +26,6 @@ import java.time.ZonedDateTime;
 @Component
 @Slf4j
 public class RTConsumer extends SBConsumer {
-
-    @Value("${azure.sb.connectionString}")
-    private String connectionString;
-
-    @Value("${azure.sb.paaInviaRT.name}")
-    private String queueName;
-
     @Value("${wisp-converter.rt-send.max-retries:48}")
     private Integer maxRetries;
 
@@ -52,8 +41,6 @@ public class RTConsumer extends SBConsumer {
     @Autowired
     private PaaInviaRTSenderService paaInviaRTSenderService;
 
-    private ServiceBusProcessorClient receiverClient;
-
     private ServiceBusService serviceBusService;
 
     private ReService reService;
@@ -61,24 +48,8 @@ public class RTConsumer extends SBConsumer {
     @Autowired
     private JaxbElementUtil jaxbElementUtil;
 
-    @EventListener(ApplicationReadyEvent.class)
-    public void initializeClient() {
-        if (receiverClient != null) {
-            log.info("[Scheduled] Starting RTConsumer {}", ZonedDateTime.now());
-            receiverClient.start();
-        }
-    }
-
-    @PostConstruct
-    public void post() {
-        if (StringUtils.isNotBlank(connectionString) && !connectionString.equals("-")) {
-            receiverClient = CommonUtility.getServiceBusProcessorClient(connectionString, queueName, this::processMessage, this::processError);
-        }
-    }
-
     @PreDestroy
     public void preDestroy() {
-        receiverClient.close();
     }
 
     public void processMessage(ServiceBusReceivedMessageContext context) {

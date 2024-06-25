@@ -21,6 +21,9 @@ public class ServiceBusService {
     @Autowired
     private ServiceBusSenderClient serviceBusSenderClient;
 
+    /*
+        Service Bus send message to paainviart Queue
+    */
     public void sendMessage(String message, Integer scheduledTimeInHours) {
         ServiceBusMessage serviceBusMessage = new ServiceBusMessage(message);
         if (scheduledTimeInHours != null) {
