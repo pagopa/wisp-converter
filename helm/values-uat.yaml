@@ -76,8 +76,8 @@ microservice-chart:
     OTEL_TRACES_SAMPLER: "always_on"
     REDIS_PORT: "6380"
     COSMOS_URI: "https://pagopa-u-weu-nodo-wispconv-cosmos-account.documents.azure.com:443/"
-    PAAINVIART_SERVICE_BUS_NAME: "paainviart"
-    RECEIPT_TIMER_QUEUE_NAME: "wisp_payment_timeout"
+    PAAINVIART_SERVICE_BUS_NAME: "nodo_wisp_paainviart_queue"
+    RECEIPT_TIMER_QUEUE_NAME: "nodo_wisp_payment_timeout_queue"
     CACHED_REQUESTID_MAPPING_TTL_MINUTES: "1440"
     CACHE_REFRESH_CRON: "0 */60 * * * *"
     CLIENT_GPD_READ_TIMEOUT: '5000'
