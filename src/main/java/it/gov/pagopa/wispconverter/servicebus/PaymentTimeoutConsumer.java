@@ -24,7 +24,7 @@ import java.util.List;
 public class PaymentTimeoutConsumer extends SBConsumer {
 
     private final ObjectMapper mapper = new ObjectMapper();
-    @Value("${azure.sb.connectionString}")
+    @Value("${azure.sb.wisp-payment-timeout-queue.connectionString}")
     private String connectionString;
     @Value("${azure.sb.queue.receiptTimer.name}")
     private String queueName;

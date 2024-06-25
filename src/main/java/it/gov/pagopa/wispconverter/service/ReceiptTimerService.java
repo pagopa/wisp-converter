@@ -26,7 +26,7 @@ public class ReceiptTimerService {
 
     public static final String CACHING_KEY_TEMPLATE = "wisp_timer_%s";
 
-    @Value("${azure.sb.connectionString}")
+    @Value("${azure.sb.wisp-payment-timeout-queue.connectionString}")
     private String connectionString;
 
     @Value("${azure.sb.queue.receiptTimer.name}")

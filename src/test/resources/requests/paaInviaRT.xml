@@ -1,0 +1,19 @@
+<SOAP-ENV:Envelope
+        xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
+    <SOAP-ENV:Header>
+        <ns3:intestazionePPT xmlns:ns3="http://ws.pagamenti.telematici.gov/ppthead">
+            <identificativoIntermediarioPA>15376371009</identificativoIntermediarioPA>
+            <identificativoStazioneIntermediarioPA>15376371009_48</identificativoStazioneIntermediarioPA>
+            <identificativoDominio>15376371009</identificativoDominio>
+            <identificativoUnivocoVersamento>633836153345163</identificativoUnivocoVersamento>
+            <codiceContestoPagamento>437642378654347</codiceContestoPagamento>
+        </ns3:intestazionePPT>
+    </SOAP-ENV:Header>
+    <SOAP-ENV:Body>
+        <ns3:paaInviaRT xmlns:ns3="http://ws.pagamenti.telematici.gov/">
+            <rt>
+                
+            </rt>
+        </ns3:paaInviaRT>
+    </SOAP-ENV:Body>
+</SOAP-ENV:Envelope>

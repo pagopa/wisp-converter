@@ -6,10 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.wispconverter.Application;
 import it.gov.pagopa.wispconverter.controller.model.ReceiptTimerRequest;
 import it.gov.pagopa.wispconverter.repository.*;
-import it.gov.pagopa.wispconverter.service.ConfigCacheService;
-import it.gov.pagopa.wispconverter.service.PaaInviaRTSenderService;
-import it.gov.pagopa.wispconverter.service.ReceiptTimerService;
-import it.gov.pagopa.wispconverter.service.ServiceBusService;
+import it.gov.pagopa.wispconverter.service.*;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -75,12 +72,14 @@ public class ReceiptTimerTest {
     private ReEventRepository reEventRepository;
     @MockBean
     private CacheRepository cacheRepository;
+    @MockBean
+    private IdempotencyKeyRepository idempotencyKeyRepository;
     @Autowired
     private MockMvc mockMvc;
     @MockBean
     private ReceiptTimerService receiptTimerService;
     @MockBean
-    private IdempotencyKeyRepository idempotencyKeyRepository;
+    private ReceiptService receiptService;
 
     /*
      * CREATE receipt/timer
