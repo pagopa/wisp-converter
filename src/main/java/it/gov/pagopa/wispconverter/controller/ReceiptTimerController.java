@@ -54,9 +54,9 @@ public class ReceiptTimerController {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     @Trace(businessProcess = BP_TIMER_DELETE, reEnabled = true)
-  public void deleteTimer(@RequestParam() String tokens) {
-        List<String> paymentTokens = Arrays.asList(tokens.split(","));
-        log.info("Delete Timer arrived: " + paymentTokens);
-        receiptTimerService.cancelScheduledMessage(paymentTokens);
+  public void deleteTimer(@RequestParam() String paymentTokens) {
+        List<String> tokens = Arrays.asList(paymentTokens.split(","));
+        log.info("Delete Timer arrived: " + tokens);
+        receiptTimerService.cancelScheduledMessage(tokens);
     }
 }
