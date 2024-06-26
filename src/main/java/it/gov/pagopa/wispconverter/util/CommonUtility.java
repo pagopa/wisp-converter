@@ -125,33 +125,22 @@ public class CommonUtility {
                 .buildProcessorClient();
     }
 
-    public static void checkStationValidity(ConfigCacheService configCacheService, SessionDataDTO sessionData, String noticeNumber) {
+    public static void checkStationValidity(ConfigCacheService configCacheService, SessionDataDTO sessionData) {
 
-        checkStation(configCacheService, sessionData.getCommonFields().getCreditorInstitutionId(), noticeNumber, false, null);
+        checkStation(configCacheService, sessionData.getCommonFields().getStationId(), false, null);
     }
 
-    public static boolean isStationOnboardedOnGpd(ConfigCacheService configCacheService, SessionDataDTO sessionData, String noticeNumber, String gpdPath) {
+    public static boolean isStationOnboardedOnGpd(ConfigCacheService configCacheService, SessionDataDTO sessionData, String gpdPath) {
 
-        return checkStation(configCacheService, sessionData.getCommonFields().getCreditorInstitutionId(), noticeNumber, true, gpdPath);
+        return checkStation(configCacheService, sessionData.getCommonFields().getStationId(), true, gpdPath);
     }
 
-    private static boolean checkStation(ConfigCacheService configCacheService, String creditorInstitutionId, String noticeNumber, boolean checkIfOnboardedInGPD, String gpdPath) {
+    private static boolean checkStation(ConfigCacheService configCacheService, String stationId, boolean checkIfOnboardedInGPD, String gpdPath) {
 
         boolean isOk = true;
 
-        // extracting segregation code from notice number
-        if (noticeNumber == null) {
-            throw new AppException(AppErrorCodeMessageEnum.PAYMENT_POSITION_NOT_VALID, "null", "In order to check the station validity is required a notice number from which the segregation code must be extracted, but it is not correctly set in the payment position.");
-        }
-        long segregationCodeFromNoticeNumber;
-        try {
-            segregationCodeFromNoticeNumber = Long.parseLong(noticeNumber.substring(1, 3));
-        } catch (NumberFormatException e) {
-            throw new AppException(AppErrorCodeMessageEnum.PAYMENT_POSITION_NOT_VALID, noticeNumber, "In order to check the station validity is required a notice number from which the segregation code must be extracted, but it is not correctly set as numeric string in the payment position.");
-        }
-
         // retrieving station by station identifier
-        StationDto station = configCacheService.getStationsByCreditorInstitutionAndSegregationCodeFromCache(creditorInstitutionId, segregationCodeFromNoticeNumber);
+        StationDto station = configCacheService.getStationByIdFromCache(stationId);
 
         // check if station is correctly configured for a valid service
         ServiceDto service = station.getService();
