@@ -10,7 +10,7 @@ import org.mapstruct.ReportingPolicy;
 public interface CartMapper {
 
     @Mapping(source = "commonFields.sessionId", target = "idCart")
-    @Mapping(source = "commonFields.payerEmail", target = "emailNotice")
+    @Mapping(target = "emailNotice", expression = "java(null)")
     @Mapping(target = "allCCP", constant = "false")
     @Mapping(target = "paymentNotices", ignore = true)
     it.gov.pagopa.gen.wispconverter.client.checkout.model.CartRequestDto toCart(SessionDataDTO sessionData);
