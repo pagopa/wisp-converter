@@ -390,7 +390,7 @@ public class DebtPositionService {
         try {
 
             // validate the station, checking if exists one with the required segregation code and, if is onboarded on GPD, has the correct primitive version
-            CommonUtility.checkStationValidity(configCacheService, sessionData);
+            CommonUtility.checkStationValidity(configCacheService, sessionData, CommonUtility.getSinglePaymentOption(paymentPositionFromGPD).getNav());
 
             // merge the information of extracted payment position with the data from existing payment position, retrieved from GPD
             PaymentPositionModelDto updatedPaymentPosition = updateExtractedPaymentPositionWithExistingData(iuv, sessionData, paymentPositionFromGPD, extractedPaymentPosition);
@@ -467,7 +467,7 @@ public class DebtPositionService {
         }
 
         // validate the station, checking if exists one with the required segregation code and, if is onboarded on GPD, has the correct primitive version
-        CommonUtility.checkStationValidity(configCacheService, sessionData);
+        CommonUtility.checkStationValidity(configCacheService, sessionData, nav);
 
         // update the payment option to be used in bulk insert with the newly generated NAV code
         List<PaymentOptionModelDto> paymentOptions = extractedPaymentPosition.getPaymentOption();
