@@ -108,7 +108,7 @@ microservice-chart:
     create: true
     envSecrets:
       # required
-      APPLICATIONINSIGHTS_CONNECTION_STRING: 'ai-p-connection-string'
+      APPLICATIONINSIGHTS_CONNECTION_STRING: 'azure-insight-connection-string'
       SERVICE_BUS_PAYMENT_TIMEOUT_QUEUE_CONNECTION_STRING: 'wisp-payment-timeout-queue-connection-string'
       SERVICE_BUS_PAAINVIART_QUEUE_CONNECTION_STRING: 'wisp-paainviart-queue-connection-string'
       OTEL_EXPORTER_OTLP_HEADERS: elastic-apm-secret-token
