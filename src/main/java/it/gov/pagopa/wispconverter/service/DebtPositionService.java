@@ -466,9 +466,6 @@ public class DebtPositionService {
             MDC.put(Constants.MDC_NOTICE_NUMBER, nav);
         }
 
-        // validate the station, checking if exists one with the required segregation code and, if is onboarded on GPD, has the correct primitive version
-        CommonUtility.checkStationValidity(configCacheService, sessionData, nav);
-
         // update the payment option to be used in bulk insert with the newly generated NAV code
         List<PaymentOptionModelDto> paymentOptions = extractedPaymentPosition.getPaymentOption();
         if (paymentOptions == null || paymentOptions.isEmpty()) {
