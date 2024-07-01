@@ -6,5 +6,6 @@ public enum ClientEnum {
     GPD,
     DECOUPLER_CACHING,
     IUV_GENERATOR,
+    CREDITOR_INSTITUTION_ENDPOINT,
     UNDEFINED
 }
