@@ -30,6 +30,9 @@ public class ReceiptTimerServiceTest {
     @Mock
     private ServiceBusSenderClient serviceBusSenderClient;
 
+    @Mock
+    private ReService reService;
+
     @InjectMocks
     private ReceiptTimerService receiptTimerService;
 
@@ -38,6 +41,7 @@ public class ReceiptTimerServiceTest {
         ReflectionTestUtils.setField(receiptTimerService, "connectionString", MOCK_CONNECTION_STRING);
         ReflectionTestUtils.setField(receiptTimerService, "queueName", "your-queue-name");
         ReflectionTestUtils.setField(receiptTimerService, "serviceBusSenderClient", serviceBusSenderClient);
+        ReflectionTestUtils.setField(receiptTimerService, "reService", reService);
     }
 
     @Test
