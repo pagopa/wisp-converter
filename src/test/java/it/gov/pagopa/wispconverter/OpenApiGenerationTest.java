@@ -68,10 +68,15 @@ class OpenApiGenerationTest {
 
     @Test
     void swaggerSpringPlugin() throws Exception {
-        mvc.perform(MockMvcRequestBuilders.get("/v3/api-docs").accept(MediaType.APPLICATION_JSON))
+        saveOpenAPI("/v3/api-docs", "openapi.json");
+        saveOpenAPI("/v3/api-docs/redirect", "openapi_redirect.json");
+    }
+
+    private void saveOpenAPI(String fromUri, String toFile) throws Exception {
+        mvc.perform(MockMvcRequestBuilders.get(fromUri).accept(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.status().is2xxSuccessful())
                 .andDo(
-                        result -> {
+                        (result) -> {
                             assertNotNull(result);
                             assertNotNull(result.getResponse());
                             final String content = result.getResponse().getContentAsString();
@@ -83,7 +88,7 @@ class OpenApiGenerationTest {
                                     objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(swagger);
                             Path basePath = Paths.get("openapi/");
                             Files.createDirectories(basePath);
-                            Files.write(basePath.resolve("openapi.json"), formatted.getBytes());
+                            Files.write(basePath.resolve(toFile), formatted.getBytes());
                         });
     }
 }

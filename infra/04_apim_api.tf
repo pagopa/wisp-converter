@@ -91,7 +91,7 @@ module "wisp_converter_redirect_api_v1" {
   service_url = null
 
   content_format = "openapi"
-  content_value  = templatefile("../openapi/openapi.json", {
+  content_value  = templatefile("../openapi/openapi_redirect.json", {
     host = local.host
   })
 

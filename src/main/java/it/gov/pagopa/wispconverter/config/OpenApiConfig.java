@@ -10,6 +10,7 @@ import io.swagger.v3.oas.models.parameters.Parameter;
 import io.swagger.v3.oas.models.responses.ApiResponses;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import org.springdoc.core.customizers.OpenApiCustomizer;
+import org.springdoc.core.models.GroupedOpenApi;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -45,6 +46,19 @@ public class OpenApiConfig {
                                 .version(appVersion)
                                 .description(appDescription)
                                 .termsOfService("https://www.pagopa.gov.it/"));
+    }
+
+    @Bean
+    public Map<String, GroupedOpenApi> configureGroupOpenApi(Map<String, GroupedOpenApi> groupOpenApi) {
+        groupOpenApi.forEach((id, groupedOpenApi) -> {
+            groupedOpenApi.getOpenApiCustomizers().add(addCommonHeaders());
+            groupedOpenApi.getOpenApiCustomizers().add(customizeTitle(id)); // Add this line to customize title
+        });
+        return groupOpenApi;
+    }
+
+    private OpenApiCustomizer customizeTitle(String id) {
+        return openApi -> openApi.info(new Info().title("WISP-Converter-" + id));
     }
 
     @Bean
