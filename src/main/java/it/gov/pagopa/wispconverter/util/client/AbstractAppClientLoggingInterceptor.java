@@ -84,7 +84,9 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
         MDC.put(Constants.MDC_CLIENT_SERVICE_ID, clientServiceEnum.label);
         String operationId = MDC.get(Constants.MDC_OPERATION_ID);
         request(clientOperationId, operationId, request, body);
-        ClientEnum clientType = ClientEnum.valueOf(MDC.get(Constants.MDC_CLIENT_TYPE));
+
+        String invokedClient = MDC.get(Constants.MDC_CLIENT_TYPE);
+        ClientEnum clientType = ClientEnum.valueOf(invokedClient != null ? invokedClient : "UNDEFINED");
 
         ClientHttpResponse response;
         try {

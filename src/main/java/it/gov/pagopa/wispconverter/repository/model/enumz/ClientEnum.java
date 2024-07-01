@@ -5,5 +5,6 @@ public enum ClientEnum {
     CHECKOUT,
     GPD,
     DECOUPLER_CACHING,
-    IUV_GENERATOR
+    IUV_GENERATOR,
+    UNDEFINED
 }
