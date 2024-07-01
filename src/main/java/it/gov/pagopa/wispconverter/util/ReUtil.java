@@ -112,7 +112,7 @@ public class ReUtil {
         return builder.build();
     }
 
-    public static ReEventDto createREForClientInterfaceInRequestEvent(HttpRequest request, byte[] reqBody, OutcomeEnum outcome) {
+    public static ReEventDto createREForClientInterfaceInRequestEvent(HttpRequest request, byte[] reqBody, ClientEnum clientType, OutcomeEnum outcome) {
         String httpMethod = request.getMethod().toString();
         String httpUri = request.getURI().toString();
         String httpHeaders = formatClientHeaders(request.getHeaders());
@@ -133,12 +133,13 @@ public class ReUtil {
         builder.outcome(outcome)
                 .httpMethod(httpMethod)
                 .httpUri(httpUri)
-                .httpHeaders(httpHeaders);
+                .httpHeaders(httpHeaders)
+                .status(InternalStepStatus.getStatusFromClientCommunication(clientType, EventSubcategoryEnum.REQ));
 
         return builder.build();
     }
 
-    public static ReEventDto createREForClientInterfaceInResponseEvent(HttpRequest request, ClientHttpResponse response, OutcomeEnum outcome) {
+    public static ReEventDto createREForClientInterfaceInResponseEvent(HttpRequest request, ClientHttpResponse response, ClientEnum clientType, OutcomeEnum outcome) {
         String httpHeaders = null;
         String compressedPayload = null;
         Integer compressedPayloadPayloadLength = null;
@@ -172,7 +173,8 @@ public class ReUtil {
                 .httpUri(httpUri)
                 .httpHeaders(httpHeaders)
                 .httpStatusCode(status)
-                .executionTimeMs(Long.parseLong(executionTime));
+                .executionTimeMs(Long.parseLong(executionTime))
+                .status(InternalStepStatus.getStatusFromClientCommunication(clientType, EventSubcategoryEnum.RESP));
         return builder.build();
     }
 

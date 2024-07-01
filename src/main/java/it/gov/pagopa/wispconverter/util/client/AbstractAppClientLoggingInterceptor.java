@@ -1,9 +1,6 @@
 package it.gov.pagopa.wispconverter.util.client;
 
-import it.gov.pagopa.wispconverter.repository.model.enumz.CallTypeEnum;
-import it.gov.pagopa.wispconverter.repository.model.enumz.EventCategoryEnum;
-import it.gov.pagopa.wispconverter.repository.model.enumz.EventSubcategoryEnum;
-import it.gov.pagopa.wispconverter.repository.model.enumz.OutcomeEnum;
+import it.gov.pagopa.wispconverter.repository.model.enumz.*;
 import it.gov.pagopa.wispconverter.service.ReService;
 import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import it.gov.pagopa.wispconverter.util.CommonUtility;
@@ -87,6 +84,7 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
         MDC.put(Constants.MDC_CLIENT_SERVICE_ID, clientServiceEnum.label);
         String operationId = MDC.get(Constants.MDC_OPERATION_ID);
         request(clientOperationId, operationId, request, body);
+        ClientEnum clientType = ClientEnum.valueOf(MDC.get(Constants.MDC_CLIENT_TYPE));
 
         ClientHttpResponse response;
         try {
@@ -101,18 +99,18 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
 
             MDC.put(Constants.MDC_EVENT_SUB_CATEGORY, EventSubcategoryEnum.REQ.name());
             log.debug("[intercept] add RE CLIENT OUT - Sent");
-            ReEventDto reEventDtoClientIN = ReUtil.createREForClientInterfaceInRequestEvent(request, body, OutcomeEnum.SEND);
+            ReEventDto reEventDtoClientIN = ReUtil.createREForClientInterfaceInRequestEvent(request, body, clientType, OutcomeEnum.SEND);
             persistInterfaceEventInRE(reEventDtoClientIN);
 
             if (response.getStatusCode().is2xxSuccessful()) {
                 MDC.put(Constants.MDC_EVENT_SUB_CATEGORY, EventSubcategoryEnum.RESP.name());
                 log.debug("[intercept] add RE CLIENT IN - Sent - RECEIVED");
-                ReEventDto reEventDtoClientOUT = ReUtil.createREForClientInterfaceInResponseEvent(request, response, OutcomeEnum.RECEIVED);
+                ReEventDto reEventDtoClientOUT = ReUtil.createREForClientInterfaceInResponseEvent(request, response, clientType, OutcomeEnum.RECEIVED);
                 persistInterfaceEventInRE(reEventDtoClientOUT);
             } else {
                 MDC.put(Constants.MDC_EVENT_SUB_CATEGORY, EventSubcategoryEnum.RESP.name());
                 log.debug("[intercept] add RE CLIENT IN - Sent - RECEIVED_FAILURE");
-                ReEventDto reEventDtoClientOUT = ReUtil.createREForClientInterfaceInResponseEvent(request, response, OutcomeEnum.RECEIVED_FAILURE);
+                ReEventDto reEventDtoClientOUT = ReUtil.createREForClientInterfaceInResponseEvent(request, response, clientType, OutcomeEnum.RECEIVED_FAILURE);
                 persistInterfaceEventInRE(reEventDtoClientOUT);
             }
 
@@ -125,12 +123,12 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
 
             MDC.put(Constants.MDC_EVENT_SUB_CATEGORY, EventSubcategoryEnum.REQ.name());
             log.debug("[intercept] add RE CLIENT OUT - NOT Sent");
-            ReEventDto reEventDtoClientIN = ReUtil.createREForClientInterfaceInRequestEvent(request, body, OutcomeEnum.SEND_FAILURE);
+            ReEventDto reEventDtoClientIN = ReUtil.createREForClientInterfaceInRequestEvent(request, body, clientType, OutcomeEnum.SEND_FAILURE);
             persistInterfaceEventInRE(reEventDtoClientIN);
 
             MDC.put(Constants.MDC_EVENT_SUB_CATEGORY, EventSubcategoryEnum.RESP.name());
             log.debug("[intercept] add RE CLIENT IN - NOT Sent - NEVER_RECEIVED");
-            ReEventDto reEventDtoClientOUT = ReUtil.createREForClientInterfaceInResponseEvent(request, null, OutcomeEnum.NEVER_RECEIVED);
+            ReEventDto reEventDtoClientOUT = ReUtil.createREForClientInterfaceInResponseEvent(request, null, clientType, OutcomeEnum.NEVER_RECEIVED);
             persistInterfaceEventInRE(reEventDtoClientOUT);
 
             response(clientOperationId, operationId, executionClientTime, request, null);
@@ -143,6 +141,7 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
             MDC.remove(Constants.MDC_CALL_TYPE);
             MDC.remove(Constants.MDC_EVENT_CATEGORY);
             MDC.remove(Constants.MDC_STATUS_CODE);
+            MDC.remove(Constants.MDC_CLIENT_TYPE);
         }
 
         return response;
