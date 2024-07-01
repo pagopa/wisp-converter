@@ -139,6 +139,29 @@ public class ReUtil {
         return builder.build();
     }
 
+    public static ReEventDto createREForClientInterfaceInRequestEvent(String httpMethod, String uri, String headers, String reqBody, ClientEnum clientType, OutcomeEnum outcome) {
+
+        String compressedPayload = null;
+        Integer compressedPayloadPayloadLength = null;
+        try {
+            if (!reqBody.isBlank()) {
+                compressedPayload = AppBase64Util.base64Encode(ZipUtil.zip(reqBody));
+                compressedPayloadPayloadLength = compressedPayload.length();
+            }
+        } catch (IOException e) {
+            log.error(UNZIP_ERROR, e);
+        }
+
+        ReEventDto.ReEventDtoBuilder builder = createBaseREForInterfaceEvent(EventSubcategoryEnum.REQ, CallTypeEnum.CLIENT, compressedPayload, compressedPayloadPayloadLength);
+        builder.outcome(outcome)
+                .httpMethod(httpMethod)
+                .httpUri(uri)
+                .httpHeaders(headers)
+                .status(InternalStepStatus.getStatusFromClientCommunication(clientType, EventSubcategoryEnum.REQ));
+
+        return builder.build();
+    }
+
     public static ReEventDto createREForClientInterfaceInResponseEvent(HttpRequest request, ClientHttpResponse response, ClientEnum clientType, OutcomeEnum outcome) {
         String httpHeaders = null;
         String compressedPayload = null;
@@ -172,6 +195,34 @@ public class ReUtil {
                 .httpMethod(httpMethod)
                 .httpUri(httpUri)
                 .httpHeaders(httpHeaders)
+                .httpStatusCode(status)
+                .executionTimeMs(Long.parseLong(executionTime))
+                .status(InternalStepStatus.getStatusFromClientCommunication(clientType, EventSubcategoryEnum.RESP));
+        return builder.build();
+    }
+
+    public static ReEventDto createREForClientInterfaceInResponseEvent(String httpMethod, String uri, HttpHeaders headers, int status, String resBody, ClientEnum clientType, OutcomeEnum outcome) {
+
+        String compressedPayload = null;
+        Integer compressedPayloadPayloadLength = null;
+
+        try {
+            String payload = resBody;
+            if (!payload.isBlank()) {
+                compressedPayload = AppBase64Util.base64Encode(ZipUtil.zip(payload));
+                compressedPayloadPayloadLength = compressedPayload.length();
+            }
+        } catch (IOException e) {
+            log.error(UNZIP_ERROR, e);
+        }
+
+        String executionTime = MDC.get(Constants.MDC_CLIENT_EXECUTION_TIME);
+
+        ReEventDto.ReEventDtoBuilder builder = createBaseREForInterfaceEvent(EventSubcategoryEnum.RESP, CallTypeEnum.CLIENT, compressedPayload, compressedPayloadPayloadLength);
+        builder.outcome(outcome)
+                .httpMethod(httpMethod)
+                .httpUri(uri)
+                .httpHeaders(headers != null ? formatClientHeaders(headers) : null)
                 .httpStatusCode(status)
                 .executionTimeMs(Long.parseLong(executionTime))
                 .status(InternalStepStatus.getStatusFromClientCommunication(clientType, EventSubcategoryEnum.RESP));
