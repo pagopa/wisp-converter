@@ -38,6 +38,7 @@ public class Constants {
     public static final String MDC_PRIMITIVE = "primitive";
     public static final String MDC_IUV = "iuv";
     public static final String MDC_NOTICE_NUMBER = "noticeNumber";
+    public static final String MDC_PAYMENT_TOKEN = "paymentToken";
     public static final String MDC_CCP = "ccp";
     public static final String MDC_CART_ID = "cartId";
     public static final String MDC_DOMAIN_ID = "domainId";
