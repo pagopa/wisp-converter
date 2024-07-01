@@ -179,7 +179,7 @@ public class ReceiptService {
             CommonFieldsDTO commonFields = sessionData.getCommonFields();
 
             // retrieve station from cache and extract receipt from request
-            StationDto station = stations.get(paSendRTV2Request.getIdStation());
+            StationDto station = stations.get(commonFields.getStationId());
             CtReceiptV2 receipt = paSendRTV2Request.getReceipt();
 
             /*
