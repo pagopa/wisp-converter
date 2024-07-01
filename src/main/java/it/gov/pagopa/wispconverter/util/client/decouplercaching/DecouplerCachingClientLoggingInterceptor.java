@@ -1,11 +1,14 @@
 package it.gov.pagopa.wispconverter.util.client.decouplercaching;
 
+import it.gov.pagopa.wispconverter.repository.model.enumz.ClientEnum;
 import it.gov.pagopa.wispconverter.service.ReService;
+import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.client.AbstractAppClientLoggingInterceptor;
 import it.gov.pagopa.wispconverter.util.client.ClientServiceEnum;
 import it.gov.pagopa.wispconverter.util.client.RequestResponseLoggingProperties;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.http.HttpRequest;
 import org.springframework.http.client.ClientHttpResponse;
 
@@ -26,6 +29,7 @@ public class DecouplerCachingClientLoggingInterceptor extends AbstractAppClientL
         if (log.isDebugEnabled()) {
             log.debug(createRequestMessage(clientOperationId, operationId, request, reqBody));
         }
+        MDC.put(Constants.MDC_CLIENT_TYPE, ClientEnum.DECOUPLER_CACHING.toString());
     }
 
     @SneakyThrows
@@ -34,5 +38,6 @@ public class DecouplerCachingClientLoggingInterceptor extends AbstractAppClientL
         if (log.isDebugEnabled()) {
             log.debug(createResponseMessage(clientOperationId, operationId, clientExecutionTime, request, response));
         }
+        MDC.put(Constants.MDC_CLIENT_TYPE, ClientEnum.DECOUPLER_CACHING.toString());
     }
 }
