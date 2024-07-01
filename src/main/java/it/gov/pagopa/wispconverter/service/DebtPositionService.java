@@ -462,7 +462,7 @@ public class DebtPositionService {
         // generate a new NAV code calling IUVGenerator
         String nav = generateNavCodeFromIuvGenerator(creditorInstitutionId);
         generateREForCreatedNAV(sessionData, iuv, nav);
-        if (Constants.NODO_INVIA_CARRELLO_RPT.equals(MDC.get(Constants.MDC_PRIMITIVE))) {
+        if (!Constants.NODO_INVIA_CARRELLO_RPT.equals(MDC.get(Constants.MDC_PRIMITIVE))) {
             MDC.put(Constants.MDC_NOTICE_NUMBER, nav);
         }
 
