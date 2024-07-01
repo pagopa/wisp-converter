@@ -205,8 +205,8 @@ public class ReceiptService {
                             receipt.getFiscalCode(),
                             receipt.getCreditorReferenceId(),
                             rpt.getRpt().getTransferData().getCcp(),
-                            paSendRTV2Request.getIdBrokerPA(),
-                            paSendRTV2Request.getIdStation()
+                            commonFields.getCreditorInstitutionBrokerId(),
+                            commonFields.getStationId()
                     );
 
                     // Generating the paaInviaRT payload from the RPT
