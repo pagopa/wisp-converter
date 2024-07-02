@@ -6,348 +6,303 @@
     "title": "WISP Converter",
     "version": "0.0.34"
   },
-  "servers": [
-    {
-      "url": "http://localhost",
-      "description": "Generated server url"
-    }
-  ],
-  "tags": [
-    {
-      "description": "Application info APIs",
-      "name": "Home"
-    },
-    {
-      "description": "Create and Delete payment token timer",
-      "name": "ReceiptTimer"
-    },
-    {
-      "description": "Convert sendPaymentResultV2, closePaymentV2 or paSendRTV2 into paaInviaRT to EC",
-      "name": "Receipt"
-    },
-    {
-      "description": "Conversion and redirection APIs",
-      "name": "Redirect"
-    }
-  ],
-  "paths": {
-    "/info": {
-      "get": {
-        "operationId": "healthCheck",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AppInfoResponse"
+  "servers" : [ {
+    "url" : "http://localhost",
+    "description" : "Generated server url"
+  } ],
+  "tags" : [ {
+    "description" : "Application info APIs",
+    "name" : "Home"
+  }, {
+    "description" : "Create and Delete payment token timer",
+    "name" : "ReceiptTimer"
+  }, {
+    "description" : "Convert sendPaymentResultV2, closePaymentV2 or paSendRTV2 into paaInviaRT to EC",
+    "name" : "Receipt"
+  }, {
+    "description" : "Conversion and redirection APIs",
+    "name" : "Redirect"
+  } ],
+  "paths" : {
+    "/info" : {
+      "get" : {
+        "operationId" : "healthCheck",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AppInfoResponse"
                 }
               }
             },
-            "description": "OK.",
-            "headers": {
-              "X-Request-Id": {
-                "description": "This header identifies the call",
-                "schema": {
-                  "type": "string"
+            "description" : "OK.",
+            "headers" : {
+              "X-Request-Id" : {
+                "description" : "This header identifies the call",
+                "schema" : {
+                  "type" : "string"
                 }
               }
             }
           }
         },
-        "security": [
-          {
-            "ApiKey": []
-          }
-        ],
-        "summary": "Return OK if application is started",
-        "tags": [
-          "Home"
-        ]
+        "security" : [ {
+          "ApiKey" : [ ]
+        } ],
+        "summary" : "Return OK if application is started",
+        "tags" : [ "Home" ]
       },
-      "parameters": [
-        {
-          "description": "This header identifies the call, if not passed it is self-generated. This ID is returned in the response.",
-          "in": "header",
-          "name": "X-Request-Id",
-          "schema": {
-            "type": "string"
-          }
+      "parameters" : [ {
+        "description" : "This header identifies the call, if not passed it is self-generated. This ID is returned in the response.",
+        "in" : "header",
+        "name" : "X-Request-Id",
+        "schema" : {
+          "type" : "string"
         }
-      ]
+      } ]
     },
-    "/payments": {
-      "get": {
-        "operationId": "redirect",
-        "parameters": [
-          {
-            "example": "identificativoIntermediarioPA_sessionId",
-            "in": "query",
-            "name": "sessionId",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
+    "/payments" : {
+      "get" : {
+        "operationId" : "redirect",
+        "parameters" : [ {
+          "example" : "identificativoIntermediarioPA_sessionId",
+          "in" : "query",
+          "name" : "sessionId",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
           }
-        ],
-        "responses": {
-          "302": {
-            "description": "Redirect to Checkout service.",
-            "headers": {
-              "X-Request-Id": {
-                "description": "This header identifies the call",
-                "schema": {
-                  "type": "string"
+        } ],
+        "responses" : {
+          "302" : {
+            "description" : "Redirect to Checkout service.",
+            "headers" : {
+              "X-Request-Id" : {
+                "description" : "This header identifies the call",
+                "schema" : {
+                  "type" : "string"
                 }
               }
             }
           }
         },
-        "security": [
-          {
-            "ApiKey": []
-          }
-        ],
-        "tags": [
-          "Redirect"
-        ]
+        "security" : [ {
+          "ApiKey" : [ ]
+        } ],
+        "tags" : [ "Redirect" ]
       },
-      "parameters": [
-        {
-          "description": "This header identifies the call, if not passed it is self-generated. This ID is returned in the response.",
-          "in": "header",
-          "name": "X-Request-Id",
-          "schema": {
-            "type": "string"
-          }
+      "parameters" : [ {
+        "description" : "This header identifies the call, if not passed it is self-generated. This ID is returned in the response.",
+        "in" : "header",
+        "name" : "X-Request-Id",
+        "schema" : {
+          "type" : "string"
         }
-      ]
+      } ]
     },
-    "/receipt/ko": {
-      "parameters": [
-        {
-          "description": "This header identifies the call, if not passed it is self-generated. This ID is returned in the response.",
-          "in": "header",
-          "name": "X-Request-Id",
-          "schema": {
-            "type": "string"
-          }
+    "/receipt/ko" : {
+      "parameters" : [ {
+        "description" : "This header identifies the call, if not passed it is self-generated. This ID is returned in the response.",
+        "in" : "header",
+        "name" : "X-Request-Id",
+        "schema" : {
+          "type" : "string"
         }
-      ],
-      "post": {
-        "operationId": "receiptKo",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ReceiptRequest"
+      } ],
+      "post" : {
+        "operationId" : "receiptKo",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ReceiptRequest"
               }
             }
           },
-          "required": true
+          "required" : true
         },
-        "responses": {
-          "200": {
-            "description": "Successfully forwarded negative paaInviaRT to EC",
-            "headers": {
-              "X-Request-Id": {
-                "description": "This header identifies the call",
-                "schema": {
-                  "type": "string"
+        "responses" : {
+          "200" : {
+            "description" : "Successfully forwarded negative paaInviaRT to EC",
+            "headers" : {
+              "X-Request-Id" : {
+                "description" : "This header identifies the call",
+                "schema" : {
+                  "type" : "string"
                 }
               }
             }
           }
         },
-        "security": [
-          {
-            "ApiKey": []
-          }
-        ],
-        "tags": [
-          "Receipt"
-        ]
+        "security" : [ {
+          "ApiKey" : [ ]
+        } ],
+        "tags" : [ "Receipt" ]
       }
     },
-    "/receipt/ok": {
-      "parameters": [
-        {
-          "description": "This header identifies the call, if not passed it is self-generated. This ID is returned in the response.",
-          "in": "header",
-          "name": "X-Request-Id",
-          "schema": {
-            "type": "string"
-          }
+    "/receipt/ok" : {
+      "parameters" : [ {
+        "description" : "This header identifies the call, if not passed it is self-generated. This ID is returned in the response.",
+        "in" : "header",
+        "name" : "X-Request-Id",
+        "schema" : {
+          "type" : "string"
         }
-      ],
-      "post": {
-        "operationId": "receiptOk",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ReceiptRequest"
+      } ],
+      "post" : {
+        "operationId" : "receiptOk",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ReceiptRequest"
               }
             }
           },
-          "required": true
+          "required" : true
         },
-        "responses": {
-          "200": {
-            "description": "Successfully forwarded positive paaInviaRT to EC",
-            "headers": {
-              "X-Request-Id": {
-                "description": "This header identifies the call",
-                "schema": {
-                  "type": "string"
+        "responses" : {
+          "200" : {
+            "description" : "Successfully forwarded positive paaInviaRT to EC",
+            "headers" : {
+              "X-Request-Id" : {
+                "description" : "This header identifies the call",
+                "schema" : {
+                  "type" : "string"
                 }
               }
             }
           }
         },
-        "security": [
-          {
-            "ApiKey": []
-          }
-        ],
-        "tags": [
-          "Receipt"
-        ]
+        "security" : [ {
+          "ApiKey" : [ ]
+        } ],
+        "tags" : [ "Receipt" ]
       }
     },
-    "/receipt/timer": {
-      "delete": {
-        "description": "Delete a timer by paymentToken",
-        "operationId": "deleteTimer",
-        "parameters": [
-          {
-            "in": "query",
-            "name": "paymentTokens",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
+    "/receipt/timer" : {
+      "delete" : {
+        "description" : "Delete a timer by paymentToken",
+        "operationId" : "deleteTimer",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "paymentTokens",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
           }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successfully paymentToken expiration timer deleted",
-            "headers": {
-              "X-Request-Id": {
-                "description": "This header identifies the call",
-                "schema": {
-                  "type": "string"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Successfully paymentToken expiration timer deleted",
+            "headers" : {
+              "X-Request-Id" : {
+                "description" : "This header identifies the call",
+                "schema" : {
+                  "type" : "string"
                 }
               }
             }
           }
         },
-        "security": [
-          {
-            "ApiKey": []
-          }
-        ],
-        "summary": "deleteTimer",
-        "tags": [
-          "ReceiptTimer"
-        ]
+        "security" : [ {
+          "ApiKey" : [ ]
+        } ],
+        "summary" : "deleteTimer",
+        "tags" : [ "ReceiptTimer" ]
       },
-      "parameters": [
-        {
-          "description": "This header identifies the call, if not passed it is self-generated. This ID is returned in the response.",
-          "in": "header",
-          "name": "X-Request-Id",
-          "schema": {
-            "type": "string"
-          }
+      "parameters" : [ {
+        "description" : "This header identifies the call, if not passed it is self-generated. This ID is returned in the response.",
+        "in" : "header",
+        "name" : "X-Request-Id",
+        "schema" : {
+          "type" : "string"
         }
-      ],
-      "post": {
-        "description": "Create a timer linked with paymentToken and receipt data",
-        "operationId": "createTimer",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ReceiptTimerRequest"
+      } ],
+      "post" : {
+        "description" : "Create a timer linked with paymentToken and receipt data",
+        "operationId" : "createTimer",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ReceiptTimerRequest"
               }
             }
           },
-          "required": true
+          "required" : true
         },
-        "responses": {
-          "200": {
-            "description": "Successfully paymentToken expiration timer created",
-            "headers": {
-              "X-Request-Id": {
-                "description": "This header identifies the call",
-                "schema": {
-                  "type": "string"
+        "responses" : {
+          "200" : {
+            "description" : "Successfully paymentToken expiration timer created",
+            "headers" : {
+              "X-Request-Id" : {
+                "description" : "This header identifies the call",
+                "schema" : {
+                  "type" : "string"
                 }
               }
             }
           }
         },
-        "security": [
-          {
-            "ApiKey": []
-          }
-        ],
-        "summary": "createTimer",
-        "tags": [
-          "ReceiptTimer"
-        ]
+        "security" : [ {
+          "ApiKey" : [ ]
+        } ],
+        "summary" : "createTimer",
+        "tags" : [ "ReceiptTimer" ]
       }
     }
   },
-  "components": {
-    "schemas": {
-      "AppInfoResponse": {
-        "type": "object",
-        "properties": {
-          "environment": {
-            "type": "string"
+  "components" : {
+    "schemas" : {
+      "AppInfoResponse" : {
+        "type" : "object",
+        "properties" : {
+          "environment" : {
+            "type" : "string"
           },
-          "name": {
-            "type": "string"
+          "name" : {
+            "type" : "string"
           },
-          "version": {
-            "type": "string"
+          "version" : {
+            "type" : "string"
           }
         }
       },
-      "ReceiptRequest": {
-        "type": "object",
-        "properties": {
-          "content": {
-            "type": "string"
+      "ReceiptRequest" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "string"
           }
         }
       },
-      "ReceiptTimerRequest": {
-        "type": "object",
-        "properties": {
-          "expirationTime": {
-            "type": "integer",
-            "format": "int64"
+      "ReceiptTimerRequest" : {
+        "type" : "object",
+        "properties" : {
+          "expirationTime" : {
+            "type" : "integer",
+            "format" : "int64"
           },
-          "fiscalCode": {
-            "type": "string"
+          "fiscalCode" : {
+            "type" : "string"
           },
-          "noticeNumber": {
-            "type": "string"
+          "noticeNumber" : {
+            "type" : "string"
           },
-          "paymentToken": {
-            "type": "string"
+          "paymentToken" : {
+            "type" : "string"
           }
         }
       }
     },
-    "securitySchemes": {
-      "ApiKey": {
-        "description": "The API key to access this function app.",
-        "in": "header",
-        "name": "Ocp-Apim-Subscription-Key",
-        "type": "apiKey"
+    "securitySchemes" : {
+      "ApiKey" : {
+        "description" : "The API key to access this function app.",
+        "in" : "header",
+        "name" : "Ocp-Apim-Subscription-Key",
+        "type" : "apiKey"
       }
     }
   }
