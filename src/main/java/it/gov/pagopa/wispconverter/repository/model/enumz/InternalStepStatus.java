@@ -15,8 +15,8 @@ public enum InternalStepStatus {
     GENERATED_NEW_RT,
     NEGATIVE_RT_NOT_GENERABLE_FOR_GPD_STATION,
     NEGATIVE_RT_GENERATION_SKIPPED,
-    NEGATIVE_RT_SENDING_TO_CREDITOR_INSTITUTION,
-    POSITIVE_RT_SENDING_TO_CREDITOR_INSTITUTION,
+    NEGATIVE_RT_TRY_TO_SEND_TO_CREDITOR_INSTITUTION,
+    POSITIVE_RT_TRY_TO_SEND_TO_CREDITOR_INSTITUTION,
     NEGATIVE_RT_GENERATION_SUCCESS,
     POSITIVE_RT_GENERATION_SUCCESS,
     RT_SEND_SUCCESS,
@@ -38,6 +38,8 @@ public enum InternalStepStatus {
     COMMUNICATING_WITH_CHECKOUT_RESPONSE,
     COMMUNICATING_WITH_DECOUPLER_CACHING_REQUEST,
     COMMUNICATING_WITH_DECOUPLER_CACHING_RESPONSE,
+    COMMUNICATING_WITH_CREDITOR_INSTITUTION_REQUEST,
+    COMMUNICATING_WITH_CREDITOR_INSTITUTION_RESPONSE,
     ;
 
     public static InternalStepStatus getStatusFromClientCommunication(ClientEnum client, EventSubcategoryEnum point) {
@@ -69,6 +71,13 @@ public enum InternalStepStatus {
                     status = COMMUNICATING_WITH_DECOUPLER_CACHING_REQUEST;
                 } else if (EventSubcategoryEnum.RESP.equals(point)) {
                     status = COMMUNICATING_WITH_DECOUPLER_CACHING_RESPONSE;
+                }
+            }
+            case CREDITOR_INSTITUTION_ENDPOINT -> {
+                if (EventSubcategoryEnum.REQ.equals(point)) {
+                    status = COMMUNICATING_WITH_CREDITOR_INSTITUTION_REQUEST;
+                } else if (EventSubcategoryEnum.RESP.equals(point)) {
+                    status = COMMUNICATING_WITH_CREDITOR_INSTITUTION_RESPONSE;
                 }
             }
         }

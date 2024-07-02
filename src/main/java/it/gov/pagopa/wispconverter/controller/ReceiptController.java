@@ -57,6 +57,7 @@ public class ReceiptController {
         try {
             log.info("Invoking API operation receiptKo - args: {}", request.toString());
             receiptService.sendKoPaaInviaRtToCreditorInstitution(request.getContent());
+            log.info("Successful API operation receiptKo");
         } catch (Exception ex) {
             String operationId = MDC.get(Constants.MDC_OPERATION_ID);
             log.error(String.format("GenericException: operation-id=[%s]", operationId != null ? operationId : "n/a"), ex);
@@ -83,6 +84,7 @@ public class ReceiptController {
         try {
             log.info("Invoking API operation receiptOk - args: {}", request.toString());
             receiptService.sendOkPaaInviaRtToCreditorInstitution(request.getContent());
+            log.info("Successful API operation receiptOk");
         } catch (Exception ex) {
             String operationId = MDC.get(Constants.MDC_OPERATION_ID);
             log.error(String.format("GenericException: operation-id=[%s]", operationId != null ? operationId : "n/a"), ex);

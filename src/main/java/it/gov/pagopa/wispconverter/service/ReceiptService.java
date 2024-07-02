@@ -179,7 +179,7 @@ public class ReceiptService {
             CommonFieldsDTO commonFields = sessionData.getCommonFields();
 
             // retrieve station from cache and extract receipt from request
-            StationDto station = stations.get(paSendRTV2Request.getIdStation());
+            StationDto station = stations.get(commonFields.getStationId());
             CtReceiptV2 receipt = paSendRTV2Request.getReceipt();
 
             /*
@@ -294,9 +294,6 @@ public class ReceiptService {
 
                 idempotencyStatus = IdempotencyStatusEnum.FAILED;
             }
-
-            // Save an RE event in order to track the correctly sent RT request
-            generateREForGeneratedRT(mustSendNegativeRT, sessionData, receipt, iuv, noticeNumber);
 
             try {
                 // Unlock idempotency key after a successful operation
@@ -503,15 +500,8 @@ public class ReceiptService {
 
     private void generateREForSendingRT(boolean mustSendNegativeRT, SessionDataDTO sessionData, Object receipt, String iuv, String noticeNumber) {
 
-        InternalStepStatus status = mustSendNegativeRT ? InternalStepStatus.NEGATIVE_RT_SENDING_TO_CREDITOR_INSTITUTION : InternalStepStatus.POSITIVE_RT_SENDING_TO_CREDITOR_INSTITUTION;
-        String receiptInfo = "Sending receipt from " + receipt.toString();
-        generateREForSendRTProcess(sessionData, iuv, noticeNumber, status, receiptInfo);
-    }
-
-    private void generateREForGeneratedRT(boolean mustSendNegativeRT, SessionDataDTO sessionData, Object receipt, String iuv, String noticeNumber) {
-
-        InternalStepStatus status = mustSendNegativeRT ? InternalStepStatus.NEGATIVE_RT_SENDING_TO_CREDITOR_INSTITUTION : InternalStepStatus.POSITIVE_RT_SENDING_TO_CREDITOR_INSTITUTION;
-        String receiptInfo = "Generated receipt from: " + receipt.toString();
+        InternalStepStatus status = mustSendNegativeRT ? InternalStepStatus.NEGATIVE_RT_TRY_TO_SEND_TO_CREDITOR_INSTITUTION : InternalStepStatus.POSITIVE_RT_TRY_TO_SEND_TO_CREDITOR_INSTITUTION;
+        String receiptInfo = "Trying to send receipt from " + receipt.toString();
         generateREForSendRTProcess(sessionData, iuv, noticeNumber, status, receiptInfo);
     }
 

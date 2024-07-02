@@ -4,6 +4,7 @@ import gov.telematici.pagamenti.ws.papernodo.EsitoPaaInviaRT;
 import gov.telematici.pagamenti.ws.papernodo.FaultBean;
 import gov.telematici.pagamenti.ws.papernodo.PaaInviaRTRisposta;
 import it.gov.pagopa.wispconverter.exception.AppException;
+import it.gov.pagopa.wispconverter.util.JaxbElementUtil;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestClient;
@@ -22,6 +23,9 @@ class PaaInviaRTSenderServiceTest {
     @Test
     void esitoOK() {
         RestClient.Builder builder = mock(RestClient.Builder.class);
+        ReService reService = mock(ReService.class);
+        JaxbElementUtil jaxbElementUtil = mock(JaxbElementUtil.class);
+
         RestClient client = mock(RestClient.class);
         when(builder.build()).thenReturn(client);
         RestClient.RequestBodyUriSpec requestBodyUriSpec = mock(RestClient.RequestBodyUriSpec.class);
@@ -34,14 +38,18 @@ class PaaInviaRTSenderServiceTest {
         RestClient.ResponseSpec responseSpec = mock(RestClient.ResponseSpec.class);
         when(requestBodySpec.retrieve()).thenReturn(responseSpec);
 
+        /*
         EsitoPaaInviaRT esitoPaaInviaRT = new EsitoPaaInviaRT();
         esitoPaaInviaRT.setEsito("OK");
         PaaInviaRTRisposta paaInviaRTRisposta = new PaaInviaRTRisposta();
         paaInviaRTRisposta.setPaaInviaRTRisposta(esitoPaaInviaRT);
-        when(responseSpec.toEntity(PaaInviaRTRisposta.class))
+         */
+        String paaInviaRTRisposta = "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"><soap:Body><ns3:paaInviaRTRisposta xmlns:ns2=\"http://ws.pagamenti.telematici.gov/ppthead\" xmlns:ns3=\"http://ws.pagamenti.telematici.gov/\"><paaInviaRTRisposta><esito>OK</esito></paaInviaRTRisposta></ns3:paaInviaRTRisposta></soap:Body></soap:Envelope>";
+        when(responseSpec.toEntity(String.class))
                 .thenReturn(ResponseEntity.ok().body(paaInviaRTRisposta));
 
-        PaaInviaRTSenderService p = new PaaInviaRTSenderService(builder);
+        PaaInviaRTSenderService p = new PaaInviaRTSenderService(builder, reService, jaxbElementUtil);
+        org.springframework.test.util.ReflectionTestUtils.setField(p, "jaxbElementUtil", new JaxbElementUtil());
         p.sendToCreditorInstitution("", "");
         assertTrue(true);
     }
@@ -49,6 +57,8 @@ class PaaInviaRTSenderServiceTest {
     @Test
     void esitoKO() {
         RestClient.Builder builder = mock(RestClient.Builder.class);
+        ReService reService = mock(ReService.class);
+        JaxbElementUtil jaxbElementUtil = mock(JaxbElementUtil.class);
         RestClient client = mock(RestClient.class);
         when(builder.build()).thenReturn(client);
         RestClient.RequestBodyUriSpec requestBodyUriSpec = mock(RestClient.RequestBodyUriSpec.class);
@@ -69,7 +79,7 @@ class PaaInviaRTSenderServiceTest {
         when(responseSpec.toEntity(PaaInviaRTRisposta.class))
                 .thenReturn(ResponseEntity.ok().body(paaInviaRTRisposta));
 
-        PaaInviaRTSenderService p = new PaaInviaRTSenderService(builder);
+        PaaInviaRTSenderService p = new PaaInviaRTSenderService(builder, reService, jaxbElementUtil);
         try {
             p.sendToCreditorInstitution("", "");
             fail();
