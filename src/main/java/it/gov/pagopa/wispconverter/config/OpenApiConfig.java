@@ -25,6 +25,9 @@ import static it.gov.pagopa.wispconverter.util.Constants.HEADER_REQUEST_ID;
 @Configuration
 public class OpenApiConfig {
 
+    @Value("${info.application.version}")
+    private String appVersion;
+
     @Bean
     public OpenAPI customOpenAPI(
             @Value("${info.application.artifactId}") String appName,
@@ -52,13 +55,13 @@ public class OpenApiConfig {
     public Map<String, GroupedOpenApi> configureGroupOpenApi(Map<String, GroupedOpenApi> groupOpenApi) {
         groupOpenApi.forEach((id, groupedOpenApi) -> {
             groupedOpenApi.getOpenApiCustomizers().add(addCommonHeaders());
-            groupedOpenApi.getOpenApiCustomizers().add(customizeTitle(id)); // Add this line to customize title
+            groupedOpenApi.getOpenApiCustomizers().add(customizeInfo(id));
         });
         return groupOpenApi;
     }
 
-    private OpenApiCustomizer customizeTitle(String id) {
-        return openApi -> openApi.info(new Info().title("WISP-Converter-" + id));
+    private OpenApiCustomizer customizeInfo(String id) {
+        return openApi -> openApi.info(new Info().version(appVersion).title("WISP-Converter-" + id));
     }
 
     @Bean
