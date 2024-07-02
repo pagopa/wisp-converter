@@ -9,7 +9,9 @@ import it.gov.pagopa.wispconverter.repository.model.enumz.ClientEnum;
 import it.gov.pagopa.wispconverter.repository.model.enumz.OutcomeEnum;
 import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import it.gov.pagopa.wispconverter.util.Constants;
+import it.gov.pagopa.wispconverter.util.JaxbElementUtil;
 import it.gov.pagopa.wispconverter.util.ReUtil;
+import jakarta.xml.soap.SOAPMessage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +20,7 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +29,8 @@ public class PaaInviaRTSenderService {
     private final RestClient.Builder restClientBuilder;
 
     private final ReService reService;
+
+    private final JaxbElementUtil jaxbElementUtil;
 
     public void sendToCreditorInstitution(String url, String payload) {
 
@@ -37,19 +42,20 @@ public class PaaInviaRTSenderService {
             // Save an RE event in order to track the communication with creditor institution
             generateREForRequestToCreditorInstitution(url, payload);
 
-            ResponseEntity<PaaInviaRTRisposta> response = client.post()
+            // Communicating with creditor institution sending the paaInviaRT request
+            ResponseEntity<String> response = client.post()
                     .uri(URI.create(url))
                     .header("SOAPAction", "paaInviaRT")
                     .body(payload)
                     .retrieve()
-                    .toEntity(PaaInviaRTRisposta.class);
+                    .toEntity(String.class);
 
             // check SOAP response and extract body if it is valid
-            PaaInviaRTRisposta body = checkResponseValidity(response);
-            String responsePayload = response.getBody() != null ? response.getBody().toString() : "";
+            String bodyPayload = response.getBody();
+            PaaInviaRTRisposta body = checkResponseValidity(response, bodyPayload);
 
             // Save an RE event in order to track the response from creditor institution
-            generateREForResponseFromCreditorInstitution(url, response.getStatusCode().value(), response.getHeaders(), responsePayload, OutcomeEnum.RECEIVED);
+            generateREForResponseFromCreditorInstitution(url, response.getStatusCode().value(), response.getHeaders(), bodyPayload, OutcomeEnum.RECEIVED);
 
             // check the response and if the outcome is KO, throw an exception
             EsitoPaaInviaRT esitoPaaInviaRT = body.getPaaInviaRTRisposta();
@@ -86,18 +92,18 @@ public class PaaInviaRTSenderService {
     }
 
 
-    private PaaInviaRTRisposta checkResponseValidity(ResponseEntity<PaaInviaRTRisposta> response) {
-
-        PaaInviaRTRisposta body = response.getBody();
+    private PaaInviaRTRisposta checkResponseValidity(ResponseEntity<String> response, String rawBody) {
 
         // check the response received and, if is a 4xx or a 5xx HTTP error code throw an exception
         if (response.getStatusCode().is4xxClientError() || response.getStatusCode().is5xxServerError()) {
             throw new AppException(AppErrorCodeMessageEnum.CLIENT_PAAINVIART, "Error response: " + response.getStatusCode().value());
         }
         // validating the response body and, if something is null, throw an exception
-        if (body == null) {
+        if (rawBody == null) {
             throw new AppException(AppErrorCodeMessageEnum.RECEIPT_GENERATION_WRONG_RESPONSE_FROM_CREDITOR_INSTITUTION, "Passed null body");
         }
+        SOAPMessage soapMessage = jaxbElementUtil.getMessage(rawBody.getBytes(StandardCharsets.UTF_8));
+        PaaInviaRTRisposta body = this.jaxbElementUtil.getBody(soapMessage, PaaInviaRTRisposta.class);
         if (body.getPaaInviaRTRisposta() == null) {
             throw new AppException(AppErrorCodeMessageEnum.RECEIPT_GENERATION_WRONG_RESPONSE_FROM_CREDITOR_INSTITUTION, "Passed null paaInviaRTRisposta tag");
         }

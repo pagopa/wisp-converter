@@ -144,7 +144,7 @@ public class ReUtil {
         String compressedPayload = null;
         Integer compressedPayloadPayloadLength = null;
         try {
-            if (!reqBody.isBlank()) {
+            if (reqBody != null && !reqBody.isBlank()) {
                 compressedPayload = AppBase64Util.base64Encode(ZipUtil.zip(reqBody));
                 compressedPayloadPayloadLength = compressedPayload.length();
             }
@@ -201,14 +201,13 @@ public class ReUtil {
         return builder.build();
     }
 
-    public static ReEventDto createREForClientInterfaceInResponseEvent(String httpMethod, String uri, HttpHeaders headers, int status, String resBody, ClientEnum clientType, OutcomeEnum outcome) {
+    public static ReEventDto createREForClientInterfaceInResponseEvent(String httpMethod, String uri, HttpHeaders headers, int status, String payload, ClientEnum clientType, OutcomeEnum outcome) {
 
         String compressedPayload = null;
         Integer compressedPayloadPayloadLength = null;
 
         try {
-            String payload = resBody;
-            if (!payload.isBlank()) {
+            if (payload != null && !payload.isBlank()) {
                 compressedPayload = AppBase64Util.base64Encode(ZipUtil.zip(payload));
                 compressedPayloadPayloadLength = compressedPayload.length();
             }
@@ -224,7 +223,7 @@ public class ReUtil {
                 .httpUri(uri)
                 .httpHeaders(headers != null ? formatClientHeaders(headers) : null)
                 .httpStatusCode(status)
-                .executionTimeMs(Long.parseLong(executionTime))
+                .executionTimeMs(executionTime != null ? Long.parseLong(executionTime) : null)
                 .status(InternalStepStatus.getStatusFromClientCommunication(clientType, EventSubcategoryEnum.RESP));
         return builder.build();
     }
