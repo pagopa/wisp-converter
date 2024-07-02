@@ -33,10 +33,12 @@ public class Constants {
     public static final String MDC_CLIENT_OPERATION_ID = "clientOperationId";
     public static final String MDC_CLIENT_SERVICE_ID = "clientServiceId";
     public static final String MDC_CLIENT_EXECUTION_TIME = "clientExecutionTime";
+    public static final String MDC_CLIENT_TYPE = "clientType";
     public static final String MDC_SESSION_ID = "sessionId";
     public static final String MDC_PRIMITIVE = "primitive";
     public static final String MDC_IUV = "iuv";
     public static final String MDC_NOTICE_NUMBER = "noticeNumber";
+    public static final String MDC_PAYMENT_TOKEN = "paymentToken";
     public static final String MDC_CCP = "ccp";
     public static final String MDC_CART_ID = "cartId";
     public static final String MDC_DOMAIN_ID = "domainId";

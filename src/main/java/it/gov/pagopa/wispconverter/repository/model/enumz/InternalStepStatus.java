@@ -27,4 +27,51 @@ public enum InternalStepStatus {
     RT_SCHEDULED_SEND_FAILURE,
     RT_SEND_RESCHEDULING_FAILURE,
     RT_SEND_RESCHEDULING_SUCCESS,
+    RECEIPT_TIMER_GENERATION_CREATED_SCHEDULED_SEND,
+    RECEIPT_TIMER_GENERATION_CACHED_SEQUENCE_NUMBER,
+    RECEIPT_TIMER_GENERATION_DELETED_SCHEDULED_SEND,
+    COMMUNICATING_WITH_GPD_REQUEST,
+    COMMUNICATING_WITH_GPD_RESPONSE,
+    COMMUNICATING_WITH_IUV_GENERATOR_REQUEST,
+    COMMUNICATING_WITH_IUV_GENERATOR_RESPONSE,
+    COMMUNICATING_WITH_CHECKOUT_REQUEST,
+    COMMUNICATING_WITH_CHECKOUT_RESPONSE,
+    COMMUNICATING_WITH_DECOUPLER_CACHING_REQUEST,
+    COMMUNICATING_WITH_DECOUPLER_CACHING_RESPONSE,
+    ;
+
+    public static InternalStepStatus getStatusFromClientCommunication(ClientEnum client, EventSubcategoryEnum point) {
+        InternalStepStatus status = null;
+        switch (client) {
+            case GPD -> {
+                if (EventSubcategoryEnum.REQ.equals(point)) {
+                    status = COMMUNICATING_WITH_GPD_REQUEST;
+                } else if (EventSubcategoryEnum.RESP.equals(point)) {
+                    status = COMMUNICATING_WITH_GPD_RESPONSE;
+                }
+            }
+            case CHECKOUT -> {
+                if (EventSubcategoryEnum.REQ.equals(point)) {
+                    status = COMMUNICATING_WITH_CHECKOUT_REQUEST;
+                } else if (EventSubcategoryEnum.RESP.equals(point)) {
+                    status = COMMUNICATING_WITH_CHECKOUT_RESPONSE;
+                }
+            }
+            case IUV_GENERATOR -> {
+                if (EventSubcategoryEnum.REQ.equals(point)) {
+                    status = COMMUNICATING_WITH_IUV_GENERATOR_REQUEST;
+                } else if (EventSubcategoryEnum.RESP.equals(point)) {
+                    status = COMMUNICATING_WITH_IUV_GENERATOR_RESPONSE;
+                }
+            }
+            case DECOUPLER_CACHING -> {
+                if (EventSubcategoryEnum.REQ.equals(point)) {
+                    status = COMMUNICATING_WITH_DECOUPLER_CACHING_REQUEST;
+                } else if (EventSubcategoryEnum.RESP.equals(point)) {
+                    status = COMMUNICATING_WITH_DECOUPLER_CACHING_RESPONSE;
+                }
+            }
+        }
+        return status;
+    }
 }

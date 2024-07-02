@@ -44,7 +44,6 @@ public class MDCUtil {
         }
     }
 
-
     public static void setSessionDataInfoInMDC(IntestazionePPT header, String noticeNumber) {
 
         MDC.put(Constants.MDC_PRIMITIVE, Constants.PAA_INVIA_RT);
@@ -64,6 +63,13 @@ public class MDCUtil {
             String errorCode = (String) properties.get(ErrorUtil.EXTRA_FIELD_ERROR_CODE);
             MDC.put(Constants.MDC_ERROR_CODE, errorCode);
         }
+    }
+
+    public static void setReceiptTimerInfoInMDC(String domainId, String noticeNumber, String paymentToken) {
+
+        MDC.put(Constants.MDC_DOMAIN_ID, domainId);
+        MDC.put(Constants.MDC_PAYMENT_TOKEN, paymentToken);
+        MDC.put(Constants.MDC_NOTICE_NUMBER, noticeNumber);
     }
 
     public static void setMDCCloseSuccessOperation(int statusCode) {
