@@ -17,7 +17,7 @@ import org.springframework.data.util.Pair;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestClient;
 
 import java.net.URI;
@@ -83,12 +83,12 @@ public class PaaInviaRTSenderService {
         } catch (Exception e) {
 
             // Save an RE event in order to track the response from creditor institution
-            if (e instanceof HttpClientErrorException httpClientErrorException) {
+            if (e instanceof HttpStatusCodeException error) {
 
-                int statusCode = httpClientErrorException.getStatusCode().value();
-                String responseBody = httpClientErrorException.getResponseBodyAsString();
-                String otherInfo = httpClientErrorException.getStatusText();
-                generateREForResponseFromCreditorInstitution(url, statusCode, httpClientErrorException.getResponseHeaders(), responseBody, OutcomeEnum.RECEIVED_FAILURE, otherInfo);
+                int statusCode = error.getStatusCode().value();
+                String responseBody = error.getResponseBodyAsString();
+                String otherInfo = error.getStatusText();
+                generateREForResponseFromCreditorInstitution(url, statusCode, error.getResponseHeaders(), responseBody, OutcomeEnum.RECEIVED_FAILURE, otherInfo);
             }
 
             throw new AppException(AppErrorCodeMessageEnum.RECEIPT_GENERATION_GENERIC_ERROR, e);
