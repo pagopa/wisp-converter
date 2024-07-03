@@ -79,7 +79,7 @@ public class ReceiptTimerService {
         // insert {wisp_timer_<paymentToken>, sequenceNumber} for Duplicate Prevention Logic and for call cancelScheduledMessage(sequenceNumber)
         cacheRepository.insert(sequenceNumberKey, String.valueOf(sequenceNumber), message.getExpirationTime(), ChronoUnit.MILLIS);
         log.debug("Cache sequence number {} for payment-token: {}", sequenceNumber, sequenceNumberKey);
-        generateRE(InternalStepStatus.RECEIPT_TIMER_GENERATION_CREATED_SCHEDULED_SEND, "Cached sequence number: [" + sequenceNumber + "] for payment token: [" + sequenceNumberKey + "]");
+        generateRE(InternalStepStatus.RECEIPT_TIMER_GENERATION_CACHED_SEQUENCE_NUMBER, "Cached sequence number: [" + sequenceNumber + "] for payment token: [" + sequenceNumberKey + "]");
     }
 
     public void cancelScheduledMessage(List<String> paymentTokens) {
@@ -122,8 +122,8 @@ public class ReceiptTimerService {
         ReEventDto reEvent = ReUtil.getREBuilder()
                 .status(status)
                 .domainId(MDC.get(Constants.MDC_DOMAIN_ID))
-                .noticeNumber(Constants.MDC_NOTICE_NUMBER)
-                .paymentToken(Constants.MDC_PAYMENT_TOKEN)
+                .noticeNumber(MDC.get(Constants.MDC_NOTICE_NUMBER))
+                .paymentToken(MDC.get(Constants.MDC_PAYMENT_TOKEN))
                 .info(otherInfo)
                 .build();
         reService.addRe(reEvent);

@@ -17,7 +17,7 @@ import org.springframework.data.util.Pair;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestClient;
 
 import java.net.URI;
@@ -58,11 +58,11 @@ public class PaaInviaRTSenderService {
             PaaInviaRTRisposta body = checkResponseValidity(response, bodyPayload);
 
             // Save an RE event in order to track the response from creditor institution
-            generateREForResponseFromCreditorInstitution(url, response.getStatusCode().value(), response.getHeaders(), bodyPayload, OutcomeEnum.RECEIVED);
+            generateREForResponseFromCreditorInstitution(url, response.getStatusCode().value(), response.getHeaders(), bodyPayload, OutcomeEnum.RECEIVED, null);
 
             // check the response and if the outcome is KO, throw an exception
             EsitoPaaInviaRT esitoPaaInviaRT = body.getPaaInviaRTRisposta();
-            if (Constants.KO.equals(esitoPaaInviaRT.getEsito())) {
+            if (Constants.KO.equals(esitoPaaInviaRT.getEsito()) || esitoPaaInviaRT.getFault() != null || !Constants.OK.equals(esitoPaaInviaRT.getEsito())) {
                 FaultBean fault = esitoPaaInviaRT.getFault();
                 String faultCode = "ND";
                 String faultString = "ND";
@@ -83,11 +83,12 @@ public class PaaInviaRTSenderService {
         } catch (Exception e) {
 
             // Save an RE event in order to track the response from creditor institution
-            if (e instanceof HttpClientErrorException httpClientErrorException) {
+            if (e instanceof HttpStatusCodeException error) {
 
-                int statusCode = httpClientErrorException.getStatusCode().value();
-                String responseBody = httpClientErrorException.getResponseBodyAsString();
-                generateREForResponseFromCreditorInstitution(url, statusCode, httpClientErrorException.getResponseHeaders(), responseBody, OutcomeEnum.RECEIVED_FAILURE);
+                int statusCode = error.getStatusCode().value();
+                String responseBody = error.getResponseBodyAsString();
+                String otherInfo = error.getStatusText();
+                generateREForResponseFromCreditorInstitution(url, statusCode, error.getResponseHeaders(), responseBody, OutcomeEnum.RECEIVED_FAILURE, otherInfo);
             }
 
             throw new AppException(AppErrorCodeMessageEnum.RECEIPT_GENERATION_GENERIC_ERROR, e);
@@ -125,10 +126,11 @@ public class PaaInviaRTSenderService {
         reService.addRe(reEvent);
     }
 
-    private void generateREForResponseFromCreditorInstitution(String uri, int httpStatus, HttpHeaders headers, String body, OutcomeEnum outcome) {
+    private void generateREForResponseFromCreditorInstitution(String uri, int httpStatus, HttpHeaders headers, String body, OutcomeEnum outcome, String otherInfo) {
 
         // setting data in MDC for next use
         ReEventDto reEvent = ReUtil.createREForClientInterfaceInResponseEvent("POST", uri, headers, httpStatus, body, ClientEnum.CREDITOR_INSTITUTION_ENDPOINT, outcome);
+        reEvent.setInfo(otherInfo);
         reService.addRe(reEvent);
     }
 

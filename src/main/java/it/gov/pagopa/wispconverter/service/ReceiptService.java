@@ -80,8 +80,11 @@ public class ReceiptService {
     @Value("${wisp-converter.station-in-forwarder.partial-path}")
     private String stationInForwarderPartialPath;
 
-    @Value("${wisp-converter.rt-send.scheduling-time-in-hours}")
-    private Integer schedulingTimeInHours;
+    @Value("${wisp-converter.forwarder.api-key}")
+    private String forwarderSubscriptionKey;
+
+    @Value("${wisp-converter.rt-send.scheduling-time-in-minutes:60}")
+    private Integer schedulingTimeInMinutes;
 
 
     public void sendKoPaaInviaRtToCreditorInstitution(String payload) {
@@ -144,7 +147,10 @@ public class ReceiptService {
                         StationDto station = stations.get(commonFields.getStationId());
 
                         // send receipt to the creditor institution and, if not correctly sent, add to queue for retry
-                        sendReceiptToCreditorInstitution(sessionData, paaInviaRtPayload, receipt, rpt.getIuv(), noticeNumber, station, true);
+                        boolean isSuccessful = sendReceiptToCreditorInstitution(sessionData, paaInviaRtPayload, receipt, rpt.getIuv(), noticeNumber, station, true);
+                        if (!isSuccessful) {
+                            throw new AppException(AppErrorCodeMessageEnum.RECEIPT_KO_NOT_GENERATED_BUT_MAYBE_RESCHEDULED);
+                        }
                     }
                 }
             }
@@ -159,7 +165,7 @@ public class ReceiptService {
 
         } catch (Exception e) {
 
-            throw new AppException(AppErrorCodeMessageEnum.RECEIPT_KO_NOT_GENERATED, e);
+            throw new AppException(AppErrorCodeMessageEnum.RECEIPT_KO_NOT_SENT, e);
         }
     }
 
@@ -221,7 +227,10 @@ public class ReceiptService {
                     String paaInviaRtPayload = generatePayloadAsRawString(intestazionePPT, commonFields.getSignatureType(), rawGeneratedReceipt, objectFactory);
 
                     // send receipt to the creditor institution and, if not correctly sent, add to queue for retry
-                    sendReceiptToCreditorInstitution(sessionData, paaInviaRtPayload, receipt, rpt.getIuv(), noticeNumber, station, false);
+                    boolean isSuccessful = sendReceiptToCreditorInstitution(sessionData, paaInviaRtPayload, receipt, rpt.getIuv(), noticeNumber, station, false);
+                    if (!isSuccessful) {
+                        throw new AppException(AppErrorCodeMessageEnum.RECEIPT_OK_NOT_GENERATED_BUT_MAYBE_RESCHEDULED);
+                    }
                 }
             }
 
@@ -231,7 +240,7 @@ public class ReceiptService {
 
         } catch (Exception e) {
 
-            throw new AppException(AppErrorCodeMessageEnum.RECEIPT_OK_NOT_GENERATED, e);
+            throw new AppException(AppErrorCodeMessageEnum.RECEIPT_OK_NOT_SENT, e);
         }
     }
 
@@ -247,8 +256,10 @@ public class ReceiptService {
         return this.rptExtractorService.extractSessionData(rptRequestEntity.getPrimitive(), rptRequestEntity.getPayload());
     }
 
-    private void sendReceiptToCreditorInstitution(SessionDataDTO sessionData, String rawPayload, Object receipt,
-                                                  String iuv, String noticeNumber, StationDto station, boolean mustSendNegativeRT) {
+    private boolean sendReceiptToCreditorInstitution(SessionDataDTO sessionData, String rawPayload, Object receipt,
+                                                     String iuv, String noticeNumber, StationDto station, boolean mustSendNegativeRT) {
+
+        boolean isSuccessful = false;
 
         /*
           From station identifier (the common one defined, not the payment reference), retrieve the data
@@ -263,7 +274,7 @@ public class ReceiptService {
                 null,
                 null
         );
-        List<Pair<String, String>> headers = CommonUtility.constructHeadersForPaaInviaRT(url, station, stationInForwarderPartialPath);
+        List<Pair<String, String>> headers = CommonUtility.constructHeadersForPaaInviaRT(url, station, stationInForwarderPartialPath, forwarderSubscriptionKey);
 
         // idempotency key creation to check if the rt has already been sent
         String idempotencyKey = sessionData.getCommonFields().getSessionId() + "_" + noticeNumber;
@@ -287,17 +298,20 @@ public class ReceiptService {
 
                 // generate a new event in RE for store the successful sending of the receipt
                 generateREForSentRT(sessionData, iuv, noticeNumber);
-
                 idempotencyStatus = IdempotencyStatusEnum.SUCCESS;
+                isSuccessful = true;
 
             } catch (Exception e) {
 
                 // generate a new event in RE for store the unsuccessful sending of the receipt
-                generateREForNotSentRT(sessionData, iuv, noticeNumber, e.getMessage());
+                String message = e.getMessage();
+                if (e instanceof AppException appException) {
+                    message = appException.getError().getDetail();
+                }
+                generateREForNotSentRT(sessionData, iuv, noticeNumber, message);
 
                 // because of the not sent receipt, it is necessary to schedule a retry of the sending process for this receipt
                 scheduleRTSend(sessionData, url, headers, rawPayload, station, iuv, noticeNumber, idempotencyKey, receiptType);
-
                 idempotencyStatus = IdempotencyStatusEnum.FAILED;
             }
 
@@ -308,6 +322,8 @@ public class ReceiptService {
                 log.error("AppException: ", e);
             }
         }
+
+        return isSuccessful;
     }
 
 
@@ -410,7 +426,7 @@ public class ReceiptService {
         // Generate paaInviaRT object, as JAXB element, with the RT in base64 format
         PaaInviaRT paaInviaRT = objectFactory.createPaaInviaRT();
         paaInviaRT.setRt(receiptContent.getBytes(StandardCharsets.UTF_8));
-        paaInviaRT.setTipoFirma(signatureType);
+        paaInviaRT.setTipoFirma(signatureType == null ? "" : signatureType);
         JAXBElement<PaaInviaRT> paaInviaRTJaxb = objectFactory.createPaaInviaRT(paaInviaRT);
 
         // generating a SOAP message, including body and header, and then extract the raw string of the envelope
@@ -446,7 +462,7 @@ public class ReceiptService {
             rtCosmosService.saveRTRequestEntity(rtRequestEntity);
 
             // after the RT persist, send a message on the service bus
-            serviceBusService.sendMessage(rtRequestEntity.getPartitionKey() + "_" + rtRequestEntity.getId(), schedulingTimeInHours);
+            serviceBusService.sendMessage(rtRequestEntity.getPartitionKey() + "_" + rtRequestEntity.getId(), schedulingTimeInMinutes);
 
             // generate a new event in RE for store the successful scheduling of the RT send
             generateREForSuccessfulSchedulingSentRT(sessionData, iuv, noticeNumber);
@@ -466,7 +482,7 @@ public class ReceiptService {
         String psp = rptContent.getRpt().getPayeeInstitution().getSubjectUniqueIdentifier().getCode();
 
         // creating event to be persisted for RE
-        generateRE(InternalStepStatus.NEGATIVE_RT_NOT_GENERABLE_FOR_GPD_STATION, iuv, noticeNumber, rptContent.getCcp(), psp, null);
+        generateRE(InternalStepStatus.RT_NOT_GENERABLE_FOR_GPD_STATION, iuv, noticeNumber, rptContent.getCcp(), psp, null);
     }
 
     private void generateREForSentRT(SessionDataDTO sessionData, String iuv, String noticeNumber) {
@@ -512,9 +528,18 @@ public class ReceiptService {
 
     private void generateREForSendingRT(boolean mustSendNegativeRT, SessionDataDTO sessionData, Object receipt, String iuv, String noticeNumber) {
 
+        StringBuilder receiptContent = new StringBuilder("Trying to send the following receipt ");
+        if (receipt instanceof CtReceiptV2 ctReceiptV2) {
+            receiptContent.append(" [OK]: ")
+                    .append("{\"receiptId\": \"").append(ctReceiptV2.getReceiptId())
+                    .append("\", \"noticeNumber\":\"").append(ctReceiptV2.getNoticeNumber())
+                    .append("\", \"fiscalCode\":\"").append(ctReceiptV2.getFiscalCode())
+                    .append("\", ...}");
+        } else {
+            receiptContent.append(" [KO]: ").append(receipt.toString());
+        }
         InternalStepStatus status = mustSendNegativeRT ? InternalStepStatus.NEGATIVE_RT_TRY_TO_SEND_TO_CREDITOR_INSTITUTION : InternalStepStatus.POSITIVE_RT_TRY_TO_SEND_TO_CREDITOR_INSTITUTION;
-        String receiptInfo = "Trying to send receipt from " + receipt.toString();
-        generateREForSendRTProcess(sessionData, iuv, noticeNumber, status, receiptInfo);
+        generateREForSendRTProcess(sessionData, iuv, noticeNumber, status, receiptContent.toString());
     }
 
     private void generateREForSendRTProcess(SessionDataDTO sessionData, String iuv, String noticeNumber, InternalStepStatus status, String info) {

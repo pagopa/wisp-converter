@@ -30,8 +30,8 @@ public class RTConsumer extends SBConsumer {
     @Value("${wisp-converter.rt-send.max-retries:48}")
     private Integer maxRetries;
 
-    @Value("${wisp-converter.rt-send.scheduling-time-in-hours:1}")
-    private Integer schedulingTimeInHours;
+    @Value("${wisp-converter.rt-send.scheduling-time-in-minutes:60}")
+    private Integer schedulingTimeInMinutes;
 
     @Autowired
     private RtCosmosService rtCosmosService;
@@ -173,7 +173,7 @@ public class RTConsumer extends SBConsumer {
                 rtCosmosService.saveRTRequestEntity(receipt);
 
                 // because of the not sent receipt, it is necessary to schedule a retry of the sending process for this receipt
-                serviceBusService.sendMessage(compositedIdForReceipt, schedulingTimeInHours);
+                serviceBusService.sendMessage(compositedIdForReceipt, schedulingTimeInMinutes);
 
                 // generate a new event in RE for store the successful scheduling of the RT send
                 generateREForSuccessfulReschedulingSentRT();

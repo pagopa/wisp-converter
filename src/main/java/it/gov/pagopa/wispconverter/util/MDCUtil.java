@@ -70,6 +70,7 @@ public class MDCUtil {
         MDC.put(Constants.MDC_DOMAIN_ID, domainId);
         MDC.put(Constants.MDC_PAYMENT_TOKEN, paymentToken);
         MDC.put(Constants.MDC_NOTICE_NUMBER, noticeNumber);
+
     }
 
     public static void setMDCCloseSuccessOperation(int statusCode) {
