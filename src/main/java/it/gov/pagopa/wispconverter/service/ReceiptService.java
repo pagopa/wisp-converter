@@ -162,7 +162,7 @@ public class ReceiptService {
 
         } catch (Exception e) {
 
-            throw new AppException(AppErrorCodeMessageEnum.RECEIPT_KO_NOT_GENERATED, e);
+            throw new AppException(AppErrorCodeMessageEnum.RECEIPT_KO_NOT_SENT, e);
         }
     }
 
@@ -237,7 +237,7 @@ public class ReceiptService {
 
         } catch (Exception e) {
 
-            throw new AppException(AppErrorCodeMessageEnum.RECEIPT_OK_NOT_GENERATED, e);
+            throw new AppException(AppErrorCodeMessageEnum.RECEIPT_OK_NOT_SENT, e);
         }
     }
 

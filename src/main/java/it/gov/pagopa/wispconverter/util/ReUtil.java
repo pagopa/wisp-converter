@@ -261,9 +261,13 @@ public class ReUtil {
     }
 
     private static String formatClientHeaders(HttpHeaders headers) {
-        headers.forEach((s, h) -> {
-            headers.add(s, StringUtils.join(h, ","));
-        });
+        try {
+            headers.forEach((s, h) -> {
+                headers.add(s, StringUtils.join(h, ","));
+            });
+        } catch (UnsupportedOperationException e) {
+            log.trace("Impossible to add formatted header to existing Headers object:", e);
+        }
 
         return formatHeaders(headers);
     }

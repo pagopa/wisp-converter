@@ -58,7 +58,7 @@ public class PaaInviaRTSenderService {
             PaaInviaRTRisposta body = checkResponseValidity(response, bodyPayload);
 
             // Save an RE event in order to track the response from creditor institution
-            generateREForResponseFromCreditorInstitution(url, response.getStatusCode().value(), response.getHeaders(), bodyPayload, OutcomeEnum.RECEIVED);
+            generateREForResponseFromCreditorInstitution(url, response.getStatusCode().value(), response.getHeaders(), bodyPayload, OutcomeEnum.RECEIVED, null);
 
             // check the response and if the outcome is KO, throw an exception
             EsitoPaaInviaRT esitoPaaInviaRT = body.getPaaInviaRTRisposta();
@@ -87,7 +87,8 @@ public class PaaInviaRTSenderService {
 
                 int statusCode = httpClientErrorException.getStatusCode().value();
                 String responseBody = httpClientErrorException.getResponseBodyAsString();
-                generateREForResponseFromCreditorInstitution(url, statusCode, httpClientErrorException.getResponseHeaders(), responseBody, OutcomeEnum.RECEIVED_FAILURE);
+                String otherInfo = httpClientErrorException.getStatusText();
+                generateREForResponseFromCreditorInstitution(url, statusCode, httpClientErrorException.getResponseHeaders(), responseBody, OutcomeEnum.RECEIVED_FAILURE, otherInfo);
             }
 
             throw new AppException(AppErrorCodeMessageEnum.RECEIPT_GENERATION_GENERIC_ERROR, e);
@@ -125,10 +126,11 @@ public class PaaInviaRTSenderService {
         reService.addRe(reEvent);
     }
 
-    private void generateREForResponseFromCreditorInstitution(String uri, int httpStatus, HttpHeaders headers, String body, OutcomeEnum outcome) {
+    private void generateREForResponseFromCreditorInstitution(String uri, int httpStatus, HttpHeaders headers, String body, OutcomeEnum outcome, String otherInfo) {
 
         // setting data in MDC for next use
         ReEventDto reEvent = ReUtil.createREForClientInterfaceInResponseEvent("POST", uri, headers, httpStatus, body, ClientEnum.CREDITOR_INSTITUTION_ENDPOINT, outcome);
+        reEvent.setInfo(otherInfo);
         reService.addRe(reEvent);
     }
 
