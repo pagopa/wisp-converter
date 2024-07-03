@@ -62,7 +62,7 @@ public class PaaInviaRTSenderService {
 
             // check the response and if the outcome is KO, throw an exception
             EsitoPaaInviaRT esitoPaaInviaRT = body.getPaaInviaRTRisposta();
-            if (Constants.KO.equals(esitoPaaInviaRT.getEsito())) {
+            if (Constants.KO.equals(esitoPaaInviaRT.getEsito()) || esitoPaaInviaRT.getFault() != null || !Constants.OK.equals(esitoPaaInviaRT.getEsito())) {
                 FaultBean fault = esitoPaaInviaRT.getFault();
                 String faultCode = "ND";
                 String faultString = "ND";
