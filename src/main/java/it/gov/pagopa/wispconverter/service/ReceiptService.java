@@ -144,7 +144,10 @@ public class ReceiptService {
                         StationDto station = stations.get(commonFields.getStationId());
 
                         // send receipt to the creditor institution and, if not correctly sent, add to queue for retry
-                        sendReceiptToCreditorInstitution(sessionData, paaInviaRtPayload, receipt, rpt.getIuv(), noticeNumber, station, true);
+                        boolean isSuccessful = sendReceiptToCreditorInstitution(sessionData, paaInviaRtPayload, receipt, rpt.getIuv(), noticeNumber, station, true);
+                        if (!isSuccessful) {
+                            throw new AppException(AppErrorCodeMessageEnum.RECEIPT_KO_NOT_GENERATED_BUT_MAYBE_RESCHEDULED);
+                        }
                     }
                 }
             }
@@ -221,7 +224,10 @@ public class ReceiptService {
                     String paaInviaRtPayload = generatePayloadAsRawString(intestazionePPT, commonFields.getSignatureType(), rawGeneratedReceipt, objectFactory);
 
                     // send receipt to the creditor institution and, if not correctly sent, add to queue for retry
-                    sendReceiptToCreditorInstitution(sessionData, paaInviaRtPayload, receipt, rpt.getIuv(), noticeNumber, station, false);
+                    boolean isSuccessful = sendReceiptToCreditorInstitution(sessionData, paaInviaRtPayload, receipt, rpt.getIuv(), noticeNumber, station, false);
+                    if (!isSuccessful) {
+                        throw new AppException(AppErrorCodeMessageEnum.RECEIPT_OK_NOT_GENERATED_BUT_MAYBE_RESCHEDULED);
+                    }
                 }
             }
 
@@ -247,8 +253,10 @@ public class ReceiptService {
         return this.rptExtractorService.extractSessionData(rptRequestEntity.getPrimitive(), rptRequestEntity.getPayload());
     }
 
-    private void sendReceiptToCreditorInstitution(SessionDataDTO sessionData, String rawPayload, Object receipt,
-                                                  String iuv, String noticeNumber, StationDto station, boolean mustSendNegativeRT) {
+    private boolean sendReceiptToCreditorInstitution(SessionDataDTO sessionData, String rawPayload, Object receipt,
+                                                     String iuv, String noticeNumber, StationDto station, boolean mustSendNegativeRT) {
+
+        boolean isSuccessful = false;
 
         /*
           From station identifier (the common one defined, not the payment reference), retrieve the data
@@ -287,8 +295,8 @@ public class ReceiptService {
 
                 // generate a new event in RE for store the successful sending of the receipt
                 generateREForSentRT(sessionData, iuv, noticeNumber);
-
                 idempotencyStatus = IdempotencyStatusEnum.SUCCESS;
+                isSuccessful = true;
 
             } catch (Exception e) {
 
@@ -301,7 +309,6 @@ public class ReceiptService {
 
                 // because of the not sent receipt, it is necessary to schedule a retry of the sending process for this receipt
                 scheduleRTSend(sessionData, url, headers, rawPayload, station, iuv, noticeNumber, idempotencyKey, receiptType);
-
                 idempotencyStatus = IdempotencyStatusEnum.FAILED;
             }
 
@@ -312,6 +319,8 @@ public class ReceiptService {
                 log.error("AppException: ", e);
             }
         }
+
+        return isSuccessful;
     }
 
 
