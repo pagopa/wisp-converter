@@ -122,8 +122,8 @@ public class ReceiptTimerService {
         ReEventDto reEvent = ReUtil.getREBuilder()
                 .status(status)
                 .domainId(MDC.get(Constants.MDC_DOMAIN_ID))
-                .noticeNumber(Constants.MDC_NOTICE_NUMBER)
-                .paymentToken(Constants.MDC_PAYMENT_TOKEN)
+                .noticeNumber(MDC.get(Constants.MDC_NOTICE_NUMBER))
+                .paymentToken(MDC.get(Constants.MDC_PAYMENT_TOKEN))
                 .info(otherInfo)
                 .build();
         reService.addRe(reEvent);
