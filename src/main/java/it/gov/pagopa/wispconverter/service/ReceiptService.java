@@ -479,7 +479,7 @@ public class ReceiptService {
         String psp = rptContent.getRpt().getPayeeInstitution().getSubjectUniqueIdentifier().getCode();
 
         // creating event to be persisted for RE
-        generateRE(InternalStepStatus.NEGATIVE_RT_NOT_GENERABLE_FOR_GPD_STATION, iuv, noticeNumber, rptContent.getCcp(), psp, null);
+        generateRE(InternalStepStatus.RT_NOT_GENERABLE_FOR_GPD_STATION, iuv, noticeNumber, rptContent.getCcp(), psp, null);
     }
 
     private void generateREForSentRT(SessionDataDTO sessionData, String iuv, String noticeNumber) {
@@ -525,9 +525,18 @@ public class ReceiptService {
 
     private void generateREForSendingRT(boolean mustSendNegativeRT, SessionDataDTO sessionData, Object receipt, String iuv, String noticeNumber) {
 
+        StringBuilder receiptContent = new StringBuilder("Trying to send the following receipt ");
+        if (receipt instanceof CtReceiptV2 ctReceiptV2) {
+            receiptContent.append(" [OK]: ")
+                    .append("{\"receiptId\": \"").append(ctReceiptV2.getReceiptId())
+                    .append("\", \"noticeNumber\":\"").append(ctReceiptV2.getNoticeNumber())
+                    .append("\", \"fiscalCode\":\"").append(ctReceiptV2.getFiscalCode())
+                    .append("\", ...}");
+        } else {
+            receiptContent.append(" [KO]: ").append(receipt.toString());
+        }
         InternalStepStatus status = mustSendNegativeRT ? InternalStepStatus.NEGATIVE_RT_TRY_TO_SEND_TO_CREDITOR_INSTITUTION : InternalStepStatus.POSITIVE_RT_TRY_TO_SEND_TO_CREDITOR_INSTITUTION;
-        String receiptInfo = "Trying to send receipt from " + receipt.toString();
-        generateREForSendRTProcess(sessionData, iuv, noticeNumber, status, receiptInfo);
+        generateREForSendRTProcess(sessionData, iuv, noticeNumber, status, receiptContent.toString());
     }
 
     private void generateREForSendRTProcess(SessionDataDTO sessionData, String iuv, String noticeNumber, InternalStepStatus status, String info) {
