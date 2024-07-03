@@ -293,7 +293,11 @@ public class ReceiptService {
             } catch (Exception e) {
 
                 // generate a new event in RE for store the unsuccessful sending of the receipt
-                generateREForNotSentRT(sessionData, iuv, noticeNumber, e.getMessage());
+                String message = e.getMessage();
+                if (e instanceof AppException appException) {
+                    message = appException.getError().getDetail();
+                }
+                generateREForNotSentRT(sessionData, iuv, noticeNumber, message);
 
                 // because of the not sent receipt, it is necessary to schedule a retry of the sending process for this receipt
                 scheduleRTSend(sessionData, url, headers, rawPayload, station, iuv, noticeNumber, idempotencyKey, receiptType);
