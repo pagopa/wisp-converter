@@ -426,7 +426,7 @@ public class ReceiptService {
         // Generate paaInviaRT object, as JAXB element, with the RT in base64 format
         PaaInviaRT paaInviaRT = objectFactory.createPaaInviaRT();
         paaInviaRT.setRt(receiptContent.getBytes(StandardCharsets.UTF_8));
-        paaInviaRT.setTipoFirma(signatureType);
+        paaInviaRT.setTipoFirma(signatureType == null ? "" : signatureType);
         JAXBElement<PaaInviaRT> paaInviaRTJaxb = objectFactory.createPaaInviaRT(paaInviaRT);
 
         // generating a SOAP message, including body and header, and then extract the raw string of the envelope
