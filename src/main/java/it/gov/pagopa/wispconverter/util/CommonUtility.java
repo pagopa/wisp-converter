@@ -88,7 +88,7 @@ public class CommonUtility {
         }
     }
 
-    public static List<Pair<String, String>> constructHeadersForPaaInviaRT(String startingUrl, StationDto station, String stationInForwarderPartialPath) {
+    public static List<Pair<String, String>> constructHeadersForPaaInviaRT(String startingUrl, StationDto station, String stationInForwarderPartialPath, String forwarderSubscriptionKey) {
         List<Pair<String, String>> headers = new LinkedList<>();
         headers.add(Pair.of("SOAPAction", "paaInviaRT"));
         if (startingUrl.contains(stationInForwarderPartialPath) && station.getService() != null) {
@@ -96,6 +96,7 @@ public class CommonUtility {
             headers.add(Pair.of("X-Host-Url", stationService.getTargetHost() == null ? "ND" : stationService.getTargetHost()));
             headers.add(Pair.of("X-Host-Port", stationService.getTargetPort() == null ? "ND" : String.valueOf(stationService.getTargetPort())));
             headers.add(Pair.of("X-Host-Path", stationService.getTargetPath() == null ? "ND" : stationService.getTargetPath()));
+            headers.add(Pair.of("Ocp-Apim-Subscription-Key", forwarderSubscriptionKey));
         }
         return headers;
     }

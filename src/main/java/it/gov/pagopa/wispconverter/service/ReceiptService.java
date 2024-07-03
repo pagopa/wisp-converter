@@ -80,6 +80,9 @@ public class ReceiptService {
     @Value("${wisp-converter.station-in-forwarder.partial-path}")
     private String stationInForwarderPartialPath;
 
+    @Value("${wisp-converter.forwarder.api-key}")
+    private String forwarderSubscriptionKey;
+
     @Value("${wisp-converter.rt-send.scheduling-time-in-minutes:60}")
     private Integer schedulingTimeInMinutes;
 
@@ -271,7 +274,7 @@ public class ReceiptService {
                 null,
                 null
         );
-        List<Pair<String, String>> headers = CommonUtility.constructHeadersForPaaInviaRT(url, station, stationInForwarderPartialPath);
+        List<Pair<String, String>> headers = CommonUtility.constructHeadersForPaaInviaRT(url, station, stationInForwarderPartialPath, forwarderSubscriptionKey);
 
         // idempotency key creation to check if the rt has already been sent
         String idempotencyKey = sessionData.getCommonFields().getSessionId() + "_" + noticeNumber;
