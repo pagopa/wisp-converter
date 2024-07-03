@@ -79,7 +79,7 @@ public class ReceiptTimerService {
         // insert {wisp_timer_<paymentToken>, sequenceNumber} for Duplicate Prevention Logic and for call cancelScheduledMessage(sequenceNumber)
         cacheRepository.insert(sequenceNumberKey, String.valueOf(sequenceNumber), message.getExpirationTime(), ChronoUnit.MILLIS);
         log.debug("Cache sequence number {} for payment-token: {}", sequenceNumber, sequenceNumberKey);
-        generateRE(InternalStepStatus.RECEIPT_TIMER_GENERATION_CREATED_SCHEDULED_SEND, "Cached sequence number: [" + sequenceNumber + "] for payment token: [" + sequenceNumberKey + "]");
+        generateRE(InternalStepStatus.RECEIPT_TIMER_GENERATION_CACHED_SEQUENCE_NUMBER, "Cached sequence number: [" + sequenceNumber + "] for payment token: [" + sequenceNumberKey + "]");
     }
 
     public void cancelScheduledMessage(List<String> paymentTokens) {
