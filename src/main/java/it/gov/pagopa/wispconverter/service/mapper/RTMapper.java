@@ -185,6 +185,7 @@ public abstract class RTMapper {
     @Mapping(source = "ctTransferPAReceiptV2.remittanceInformation", target = "causaleVersamento")
     @Mapping(target = "ctReceiptV2.datiSpecificiRiscossione", qualifiedByName = "java(extractMetadata(ctReceiptV2.getMetadata().getMapEntry()))")
     @Mapping(source = "ctReceiptV2.fee", target = "commissioniApplicatePSP")
+    @Mapping(source = "ctTransferPAReceiptV2.transferCategory", target = "datiSpecificiRiscossione")
     public abstract CtDatiSingoloPagamentoRT toCtDatiSingoloPagamentoRTForOkRT(CtTransferPAReceiptV2 ctTransferPAReceiptV2, CtReceiptV2 ctReceiptV2);
 
     @Named("extractMetadata")
