@@ -24,10 +24,10 @@ public class ServiceBusService {
     /*
         Service Bus send message to paainviart Queue
     */
-    public void sendMessage(String message, Integer scheduledTimeInHours) {
+    public void sendMessage(String message, Integer scheduledTimeInMinutes) {
         ServiceBusMessage serviceBusMessage = new ServiceBusMessage(message);
-        if (scheduledTimeInHours != null) {
-            serviceBusMessage.setScheduledEnqueueTime(ZonedDateTime.now().plusHours(scheduledTimeInHours).toOffsetDateTime());
+        if (scheduledTimeInMinutes != null) {
+            serviceBusMessage.setScheduledEnqueueTime(ZonedDateTime.now().plusMinutes(scheduledTimeInMinutes).toOffsetDateTime());
         }
         log.debug("Rescheduling message [{}] at {}", message, serviceBusMessage.getScheduledEnqueueTime());
         serviceBusSenderClient.sendMessage(serviceBusMessage);

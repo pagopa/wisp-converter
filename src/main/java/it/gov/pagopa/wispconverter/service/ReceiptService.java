@@ -80,8 +80,8 @@ public class ReceiptService {
     @Value("${wisp-converter.station-in-forwarder.partial-path}")
     private String stationInForwarderPartialPath;
 
-    @Value("${wisp-converter.rt-send.scheduling-time-in-hours}")
-    private Integer schedulingTimeInHours;
+    @Value("${wisp-converter.rt-send.scheduling-time-in-minutes:60}")
+    private Integer schedulingTimeInMinutes;
 
 
     public void sendKoPaaInviaRtToCreditorInstitution(String payload) {
@@ -446,7 +446,7 @@ public class ReceiptService {
             rtCosmosService.saveRTRequestEntity(rtRequestEntity);
 
             // after the RT persist, send a message on the service bus
-            serviceBusService.sendMessage(rtRequestEntity.getPartitionKey() + "_" + rtRequestEntity.getId(), schedulingTimeInHours);
+            serviceBusService.sendMessage(rtRequestEntity.getPartitionKey() + "_" + rtRequestEntity.getId(), schedulingTimeInMinutes);
 
             // generate a new event in RE for store the successful scheduling of the RT send
             generateREForSuccessfulSchedulingSentRT(sessionData, iuv, noticeNumber);
