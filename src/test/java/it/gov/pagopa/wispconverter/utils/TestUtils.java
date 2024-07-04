@@ -200,18 +200,24 @@ public class TestUtils {
                 .replaceAll("\\{amount}", amount);
     }
 
-    public static String getRptPayload(boolean bollo, String station, String amount, String datiSpecificiRiscossione) {
+    public static String getRptPayload(boolean bollo, String station, String pa, String iuv, String amount, String datiSpecificiRiscossione) {
         if (datiSpecificiRiscossione == null) {
             datiSpecificiRiscossione = "9/tipodovuto_7/datospecifico";
         }
         String rpt = TestUtils.loadFileContent(bollo ? "/requests/rptBollo.xml" : "/requests/rpt.xml");
         String rptreplace = rpt
                 .replace("{datiSpecificiRiscossione}", datiSpecificiRiscossione)
+                .replace("{pa}", pa)
+                .replace("{iuv}", iuv)
                 .replaceAll("\\{amount}", amount);
         String nodoInviaRPT = TestUtils.loadFileContent("/requests/nodoInviaRPT.xml");
         return nodoInviaRPT
                 .replace("{station}", station)
                 .replace("{rpt}", Base64.getEncoder().encodeToString(rptreplace.getBytes(StandardCharsets.UTF_8)));
+    }
+
+    public static String getRptPayload(boolean bollo, String station, String amount, String datiSpecificiRiscossione) {
+        return getRptPayload(bollo, station, "{pa}", "123456IUVMOCK1", amount, datiSpecificiRiscossione);
     }
 
     public static String getRptNullIbanPayload(String station, String amount, String datiSpecificiRiscossione) {

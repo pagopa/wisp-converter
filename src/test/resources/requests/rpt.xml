@@ -24,7 +24,7 @@
         <dataEsecuzionePagamento>{dataEsecuzionePagamento}</dataEsecuzionePagamento>
         <importoTotaleDaVersare>{amount}</importoTotaleDaVersare>
         <tipoVersamento>{tipoVersamento}</tipoVersamento>
-        <identificativoUnivocoVersamento>123456IUVMOCK1</identificativoUnivocoVersamento>
+        <identificativoUnivocoVersamento>{iuv}</identificativoUnivocoVersamento>
         <codiceContestoPagamento>{ccp}</codiceContestoPagamento>
         <firmaRicevuta>0</firmaRicevuta>
         <datiSingoloVersamento>

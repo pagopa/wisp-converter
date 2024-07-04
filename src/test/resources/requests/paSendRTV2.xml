@@ -39,7 +39,7 @@
                         <transferCategory>0101100IM</transferCategory>
                         <metadata>
                             <mapEntry>
-                                <key>keytest</key>
+                                <key>datiSpecificiRiscossione</key>
                                 <value>1</value>
                             </mapEntry>
                         </metadata>

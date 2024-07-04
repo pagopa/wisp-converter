@@ -131,10 +131,11 @@ public class ReceiptService {
                             commonFields.getStationId());
 
                     /*
-                      For each RPT extracted from session data, is necessary to generate a single paaInviaRT SOAP request.
+                      For each RPT extracted from session data that is required by paSendRTV2, is necessary to generate a single paaInviaRT SOAP request.
                       Each paaInviaRT generated will be autonomously sent to creditor institution in order to track each RPT.
                      */
-                    for (RPTContentDTO rpt : sessionData.getAllRPTs()) {
+                    List<RPTContentDTO> rpts = extractRequiredRPTs(sessionData, cachedMapping.getIuv(), cachedMapping.getFiscalCode());
+                    for (RPTContentDTO rpt : rpts) {
 
                         // Generating the paaInviaRT payload from the RPT
                         String paymentOutcome = "Annullato da WISP"; // TODO change this with one of the following -> https://pagopa.atlassian.net/wiki/spaces/PN5/pages/913244345/WISP-Converter?focusedCommentId=1002078407
@@ -206,10 +207,11 @@ public class ReceiptService {
             } else {
 
                 /*
-                  For each RPT extracted from session data, is necessary to generate a single paaInviaRT SOAP request.
+                  For each RPT extracted from session data that is required by paSendRTV2, is necessary to generate a single paaInviaRT SOAP request.
                   Each paaInviaRT generated will be autonomously sent to creditor institution in order to track each RPT.
                 */
-                for (RPTContentDTO rpt : sessionData.getAllRPTs()) {
+                List<RPTContentDTO> rpts = extractRequiredRPTs(sessionData, receipt.getCreditorReferenceId(), receipt.getFiscalCode());
+                for (RPTContentDTO rpt : rpts) {
 
                     // generate the header for the paaInviaRT SOAP request. This object is different for each generated request
                     IntestazionePPT intestazionePPT = generateHeader(
@@ -326,6 +328,11 @@ public class ReceiptService {
         return isSuccessful;
     }
 
+    private List<RPTContentDTO> extractRequiredRPTs(SessionDataDTO sessionData, String iuv, String creditorInstiutionId) {
+        return sessionData.getAllRPTs().stream()
+                .filter(rpt -> rpt.getIuv().equals(iuv) && rpt.getRpt().getDomain().getDomainId().equals(creditorInstiutionId))
+                .toList();
+    }
 
     private CtRicevutaTelematica generateRTContentForKoReceipt(RPTContentDTO rpt, Map<String, ConfigurationKeyDto> configurations, Instant now, String paymentOutcome) {
 
