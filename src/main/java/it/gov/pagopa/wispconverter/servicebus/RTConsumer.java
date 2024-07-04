@@ -54,6 +54,7 @@ public class RTConsumer extends SBConsumer {
     @Autowired
     private PaaInviaRTSenderService paaInviaRTSenderService;
 
+    @Autowired
     private ServiceBusService serviceBusService;
 
     @Autowired
@@ -140,7 +141,7 @@ public class RTConsumer extends SBConsumer {
 
         try {
 
-            log.debug("Sending receipt [{}]", receiptId);
+            log.info("Sending receipt [{}]", receiptId);
 
             // unzip retrieved zipped payload from GZip format
             byte[] unzippedPayload = ZipUtil.unzip(AppBase64Util.base64Decode(receipt.getPayload()));
