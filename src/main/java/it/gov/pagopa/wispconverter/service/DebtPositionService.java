@@ -220,7 +220,7 @@ public class DebtPositionService {
             paymentOption.setTransfer(transfers);
 
             // finally, generate the payment position and add the payment option
-            PaymentPositionModelDto paymentPosition = mapper.toPaymentPosition(sessionData);
+            PaymentPositionModelDto paymentPosition = mapper.toPaymentPosition(rptContent);
             paymentPosition.setIupd(generateIUPD(creditorInstitutionId));
             paymentPosition.setPaymentOption(List.of(paymentOption));
             paymentPositions.add(paymentPosition);

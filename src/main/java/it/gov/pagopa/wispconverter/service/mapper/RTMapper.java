@@ -183,13 +183,12 @@ public abstract class RTMapper {
     @Mapping(source = "ctReceiptV2.paymentDateTime", target = "dataEsitoSingoloPagamento")
     @Mapping(source = "ctReceiptV2.receiptId", target = "identificativoUnivocoRiscossione")
     @Mapping(source = "ctTransferPAReceiptV2.remittanceInformation", target = "causaleVersamento")
-    @Mapping(target = "ctReceiptV2.datiSpecificiRiscossione", qualifiedByName = "java(extractMetadata(ctReceiptV2.getMetadata().getMapEntry()))")
+    @Mapping(target = "datiSpecificiRiscossione", expression = "java(ctTransferPAReceiptV2.getMetadata() != null ? extractMetadata(ctTransferPAReceiptV2.getMetadata().getMapEntry()) : \"\")")
     @Mapping(source = "ctReceiptV2.fee", target = "commissioniApplicatePSP")
-    @Mapping(source = "ctTransferPAReceiptV2.transferCategory", target = "datiSpecificiRiscossione")
     public abstract CtDatiSingoloPagamentoRT toCtDatiSingoloPagamentoRTForOkRT(CtTransferPAReceiptV2 ctTransferPAReceiptV2, CtReceiptV2 ctReceiptV2);
 
     @Named("extractMetadata")
-    private String extractMetadata(List<CtMapEntry> ctMapEntries) {
+    public String extractMetadata(List<CtMapEntry> ctMapEntries) {
         return ctMapEntries
                 .stream()
                 .filter(v -> v.getKey().equals("DatiSpecificiRiscossione"))
