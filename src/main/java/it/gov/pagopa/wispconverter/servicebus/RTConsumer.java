@@ -14,11 +14,13 @@ import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import it.gov.pagopa.wispconverter.util.*;
 import jakarta.xml.soap.SOAPMessage;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.io.IOException;
 import java.util.LinkedList;
@@ -32,6 +34,12 @@ public class RTConsumer extends SBConsumer {
 
     @Value("${wisp-converter.rt-send.scheduling-time-in-minutes:60}")
     private Integer schedulingTimeInMinutes;
+
+    @Value("${azure.sb.wisp-paainviart-queue.connectionString}")
+    private String connectionString;
+
+    @Value("${azure.sb.paaInviaRT.name}")
+    private String queueName;
 
     @Autowired
     private RtCosmosService rtCosmosService;
@@ -51,6 +59,16 @@ public class RTConsumer extends SBConsumer {
 
     @PreDestroy
     public void preDestroy() {
+    }
+
+    @PostConstruct
+    public void post() {
+        if (StringUtils.isNotBlank(connectionString) && !connectionString.equals("-")) {
+            receiverClient = CommonUtility
+                    .getServiceBusProcessorClient(
+                            connectionString, queueName, this::processMessage, this::processError
+                    );
+        }
     }
 
     public void processMessage(ServiceBusReceivedMessageContext context) {
