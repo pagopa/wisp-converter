@@ -26,11 +26,14 @@ public class AppException extends RuntimeException {
         return args.length > 0 ? args.clone() : null;
     }
 
-    private static String composeMessage(AppErrorCodeMessageEnum error, Object[] args){
-        if(error.getDetail() != null){
+    private static String composeMessage(AppErrorCodeMessageEnum error, Object[] args) {
+        if (error.getDetail() != null) {
             return MessageFormat.format(error.getDetail(), args);
         }
         return null;
     }
 
+    public static void main(String[] args) {
+        throw new AppException(AppErrorCodeMessageEnum.RECEIPT_GENERATION_ERROR_RESPONSE_FROM_CREDITOR_INSTITUTION, "pippo", "pluto", "topolino");
+    }
 }

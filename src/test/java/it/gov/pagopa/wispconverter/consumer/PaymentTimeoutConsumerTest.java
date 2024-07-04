@@ -3,6 +3,7 @@ package it.gov.pagopa.wispconverter.consumer;
 import com.azure.core.util.BinaryData;
 import com.azure.messaging.servicebus.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import it.gov.pagopa.wispconverter.service.ReService;
 import it.gov.pagopa.wispconverter.service.ReceiptService;
 import it.gov.pagopa.wispconverter.service.ReceiptTimerService;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
@@ -29,6 +30,9 @@ public class PaymentTimeoutConsumerTest {
 
     @Mock
     private ServiceBusProcessorClient receiverClient;
+
+    @Mock
+    private ReService reService;
 
     @MockBean
     private ReceiptTimerService receiptTimerService;
@@ -71,6 +75,8 @@ public class PaymentTimeoutConsumerTest {
         when(context.getMessage()).thenReturn(message);
         when(message.getMessageId()).thenReturn("messageId");
         when(message.getSequenceNumber()).thenReturn(1L);
+
+        doNothing().when(reService).addRe(any());
 
         // Mock the message body
         ReceiptDto receiptDto = new ReceiptDto();

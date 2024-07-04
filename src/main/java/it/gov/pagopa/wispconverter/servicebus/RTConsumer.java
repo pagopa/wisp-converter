@@ -9,18 +9,25 @@ import it.gov.pagopa.wispconverter.repository.model.RTRequestEntity;
 import it.gov.pagopa.wispconverter.repository.model.enumz.IdempotencyStatusEnum;
 import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
 import it.gov.pagopa.wispconverter.repository.model.enumz.ReceiptTypeEnum;
-import it.gov.pagopa.wispconverter.service.*;
-import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
+import it.gov.pagopa.wispconverter.service.IdempotencyService;
+import it.gov.pagopa.wispconverter.service.PaaInviaRTSenderService;
+import it.gov.pagopa.wispconverter.service.RtCosmosService;
+import it.gov.pagopa.wispconverter.service.ServiceBusService;
 import it.gov.pagopa.wispconverter.util.*;
 import jakarta.xml.soap.SOAPMessage;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PreDestroy;
+import javax.annotation.PostConstruct;
 import java.io.IOException;
+import java.time.ZonedDateTime;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -33,6 +40,12 @@ public class RTConsumer extends SBConsumer {
     @Value("${wisp-converter.rt-send.scheduling-time-in-minutes:60}")
     private Integer schedulingTimeInMinutes;
 
+    @Value("${azure.sb.wisp-paainviart-queue.connectionString}")
+    private String connectionString;
+
+    @Value("${azure.sb.paaInviaRT.name}")
+    private String queueName;
+
     @Autowired
     private RtCosmosService rtCosmosService;
 
@@ -42,20 +55,34 @@ public class RTConsumer extends SBConsumer {
     @Autowired
     private PaaInviaRTSenderService paaInviaRTSenderService;
 
+    @Autowired
     private ServiceBusService serviceBusService;
-
-    private ReService reService;
 
     @Autowired
     private JaxbElementUtil jaxbElementUtil;
 
-    @PreDestroy
-    public void preDestroy() {
+    @EventListener(ApplicationReadyEvent.class)
+    public void initializeClient() {
+        if (receiverClient != null) {
+            log.info("[Scheduled] Starting RTConsumer {}", ZonedDateTime.now());
+            receiverClient.start();
+        }
+    }
+
+    @PostConstruct
+    public void post() {
+        if (StringUtils.isNotBlank(connectionString) && !connectionString.equals("-")) {
+            receiverClient = CommonUtility
+                    .getServiceBusProcessorClient(
+                            connectionString, queueName, this::processMessage, this::processError
+                    );
+        }
     }
 
     public void processMessage(ServiceBusReceivedMessageContext context) {
 
         // retrieving content from context of arrived message
+        setSessionDataInfoInMDC("resend-rt");
         ServiceBusReceivedMessage message = context.getMessage();
         log.info("Processing " + message.getMessageId());
 
@@ -66,6 +93,7 @@ public class RTConsumer extends SBConsumer {
         String receiptId = idSections[1] + "_" + idSections[2];
 
         // get RT request entity from database
+        MDC.put(Constants.MDC_SESSION_ID, receiptId);
         RTRequestEntity rtRequestEntity = rtCosmosService.getRTRequestEntity(receiptId, rtInsertionDate);
         String idempotencyKey = rtRequestEntity.getIdempotencyKey();
         ReceiptTypeEnum receiptType = rtRequestEntity.getReceiptType();
@@ -116,7 +144,7 @@ public class RTConsumer extends SBConsumer {
 
         try {
 
-            log.debug("Sending receipt [{}]", receiptId);
+            log.info("Sending receipt [{}]", receiptId);
 
             // unzip retrieved zipped payload from GZip format
             byte[] unzippedPayload = ZipUtil.unzip(AppBase64Util.base64Decode(receipt.getPayload()));
@@ -183,6 +211,10 @@ public class RTConsumer extends SBConsumer {
                 // generate a new event in RE for store the unsuccessful scheduling of the RT send
                 generateREForFailedReschedulingSentRT(e);
             }
+        } else {
+
+            // generate a new event in RE for store the unsuccessful scheduling of the RT send
+            generateREForMaxRetriesOnReschedulingSentRT(receipt.getRetry());
         }
     }
 
@@ -206,12 +238,9 @@ public class RTConsumer extends SBConsumer {
         generateRE(InternalStepStatus.RT_SEND_RESCHEDULING_FAILURE, "Trying to re-schedule for next retry: failure. Caused by: " + exception.getMessage());
     }
 
-    private void generateRE(InternalStepStatus status, String otherInfo) {
+    private void generateREForMaxRetriesOnReschedulingSentRT(int retries) {
 
-        ReEventDto reEvent = ReUtil.getREBuilder()
-                .status(status)
-                .info(otherInfo)
-                .build();
-        reService.addRe(reEvent);
+        generateRE(InternalStepStatus.RT_SEND_RESCHEDULING_REACHED_MAX_RETRIES, "Reached max retries: [" + retries + "].");
     }
+
 }
