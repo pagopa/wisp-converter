@@ -3,6 +3,7 @@ package it.gov.pagopa.wispconverter.servicebus;
 import com.azure.messaging.servicebus.ServiceBusReceivedMessage;
 import com.azure.messaging.servicebus.ServiceBusReceivedMessageContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
 import it.gov.pagopa.wispconverter.service.ReceiptService;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
 import it.gov.pagopa.wispconverter.util.CommonUtility;
@@ -34,7 +35,7 @@ public class PaymentTimeoutConsumer extends SBConsumer {
     @EventListener(ApplicationReadyEvent.class)
     public void initializeClient() {
         if (receiverClient != null) {
-            log.debug("[Scheduled] Starting PaymentTimeoutConsumer {}", ZonedDateTime.now());
+            log.info("[Scheduled] Starting PaymentTimeoutConsumer {}", ZonedDateTime.now());
             receiverClient.start();
         }
     }
@@ -48,10 +49,12 @@ public class PaymentTimeoutConsumer extends SBConsumer {
 
     public void processMessage(ServiceBusReceivedMessageContext context) {
         ServiceBusReceivedMessage message = context.getMessage();
-        log.debug("Processing message. Session: {}, Sequence #: {}. Contents: {}", message.getMessageId(),
+        log.info("Processing message. Session: {}, Sequence #: {}. Contents: {}", message.getMessageId(),
                 message.getSequenceNumber(), message.getBody());
         try {
             ReceiptDto receiptDto = mapper.readValue(message.getBody().toStream(), ReceiptDto.class);
+            generateREForPaymentTokenTimeout(receiptDto);
+
             // transform to string list
             String inputPaaInviaRTKo = List.of(receiptDto).toString();
             receiptService.sendKoPaaInviaRtToCreditorInstitution(inputPaaInviaRTKo);
@@ -59,5 +62,9 @@ public class PaymentTimeoutConsumer extends SBConsumer {
             log.error("Error when read ReceiptDto value from message: '{}'. Body: '{}'",
                     message.getMessageId(), message.getBody());
         }
+    }
+    
+    private void generateREForPaymentTokenTimeout(ReceiptDto receipt) {
+        generateRE(InternalStepStatus.RECEIPT_TIMER_PAYMENT_TOKEN_TIMEOUT_TRIGGER, "Expired payment token. A KO receipt will be sent: " + receipt);
     }
 }

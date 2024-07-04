@@ -91,7 +91,7 @@ public class PaaInviaRTSenderService {
                 generateREForResponseFromCreditorInstitution(url, statusCode, error.getResponseHeaders(), responseBody, OutcomeEnum.RECEIVED_FAILURE, otherInfo);
             }
 
-            throw new AppException(AppErrorCodeMessageEnum.RECEIPT_GENERATION_GENERIC_ERROR, e);
+            throw new AppException(AppErrorCodeMessageEnum.RECEIPT_GENERATION_GENERIC_ERROR, e.getMessage());
         }
     }
 
