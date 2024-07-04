@@ -76,9 +76,9 @@ public class CheckoutService {
 
         // explicitly set all URLs for object
         it.gov.pagopa.gen.wispconverter.client.checkout.model.CartRequestReturnUrlsDto returnUrls = new it.gov.pagopa.gen.wispconverter.client.checkout.model.CartRequestReturnUrlsDto();
-        returnUrls.setReturnOkUrl(new URI(stationRedirectURL + "/success.html"));
-        returnUrls.setReturnCancelUrl(new URI(stationRedirectURL + "/cancel.html"));
-        returnUrls.setReturnErrorUrl(new URI(stationRedirectURL + "/error.html"));
+        returnUrls.setReturnOkUrl(new URI(String.format("%s?idSession=%s&esito=OK",stationRedirectURL, sessionData.getCommonFields().getSessionId())));
+        returnUrls.setReturnCancelUrl(new URI(String.format("%s?idSession=%s&esito=ERROR",stationRedirectURL, sessionData.getCommonFields().getSessionId())));
+        returnUrls.setReturnErrorUrl(new URI(String.format("%s?idSession=%s&esito=ERROR",stationRedirectURL, sessionData.getCommonFields().getSessionId())));
         cart.setReturnUrls(returnUrls);
 
         return cart;
