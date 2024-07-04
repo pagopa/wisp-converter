@@ -207,7 +207,7 @@ class ReceiptTest {
         // mocking RPT retrieve
         RPTRequestEntity rptRequestEntity = RPTRequestEntity.builder()
                 .primitive("nodoInviaRPT")
-                .payload(TestUtils.zipAndEncode(TestUtils.getRptPayload(false, STATION_ID, "100.00", "datispec")))
+                .payload(TestUtils.zipAndEncode(TestUtils.getRptPayload(false, STATION_ID, "77777777777", "48111111112222222", "100.00", "datispec")))
                 .build();
         when(rptRequestRepository.findById(anyString())).thenReturn(Optional.of(rptRequestEntity));
 
@@ -406,12 +406,12 @@ class ReceiptTest {
         setConfigCacheStoredData("/creditorinstitution/station", 2);
 
         // mocking decoupler cached keys
-        when(cacheRepository.read(anyString(), any())).thenReturn("wisp_nav2iuv_123456IUVMOCK1");
+        when(cacheRepository.read(anyString(), any())).thenReturn("wisp_{pa}_48111111112222222");
 
         // mocking RPT retrieve
         RPTRequestEntity rptRequestEntity = RPTRequestEntity.builder()
                 .primitive("nodoInviaRPT")
-                .payload(TestUtils.zipAndEncode(TestUtils.getRptPayload(false, STATION_ID, "100.00", "datispec")))
+                .payload(TestUtils.zipAndEncode(TestUtils.getRptPayload(false, STATION_ID, "{pa}", "48111111112222222", "100.00", "datispec")))
                 .build();
         when(rptRequestRepository.findById(anyString())).thenReturn(Optional.of(rptRequestEntity));
 
