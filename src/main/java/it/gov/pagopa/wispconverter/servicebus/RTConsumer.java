@@ -17,6 +17,7 @@ import it.gov.pagopa.wispconverter.util.*;
 import jakarta.xml.soap.SOAPMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -81,6 +82,7 @@ public class RTConsumer extends SBConsumer {
     public void processMessage(ServiceBusReceivedMessageContext context) {
 
         // retrieving content from context of arrived message
+        setSessionDataInfoInMDC("resend-rt");
         ServiceBusReceivedMessage message = context.getMessage();
         log.info("Processing " + message.getMessageId());
 
@@ -91,6 +93,7 @@ public class RTConsumer extends SBConsumer {
         String receiptId = idSections[1] + "_" + idSections[2];
 
         // get RT request entity from database
+        MDC.put(Constants.MDC_SESSION_ID, receiptId);
         RTRequestEntity rtRequestEntity = rtCosmosService.getRTRequestEntity(receiptId, rtInsertionDate);
         String idempotencyKey = rtRequestEntity.getIdempotencyKey();
         ReceiptTypeEnum receiptType = rtRequestEntity.getReceiptType();
@@ -208,6 +211,10 @@ public class RTConsumer extends SBConsumer {
                 // generate a new event in RE for store the unsuccessful scheduling of the RT send
                 generateREForFailedReschedulingSentRT(e);
             }
+        } else {
+
+            // generate a new event in RE for store the unsuccessful scheduling of the RT send
+            generateREForMaxRetriesOnReschedulingSentRT(receipt.getRetry());
         }
     }
 
@@ -231,5 +238,9 @@ public class RTConsumer extends SBConsumer {
         generateRE(InternalStepStatus.RT_SEND_RESCHEDULING_FAILURE, "Trying to re-schedule for next retry: failure. Caused by: " + exception.getMessage());
     }
 
+    private void generateREForMaxRetriesOnReschedulingSentRT(int retries) {
+
+        generateRE(InternalStepStatus.RT_SEND_RESCHEDULING_REACHED_MAX_RETRIES, "Reached max retries: [" + retries + "].");
+    }
 
 }
