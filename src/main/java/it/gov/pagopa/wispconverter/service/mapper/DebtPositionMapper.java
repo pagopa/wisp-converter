@@ -20,6 +20,7 @@ public interface DebtPositionMapper {
     @Mapping(source = "rpt.payer.province", target = "province")
     @Mapping(source = "rpt.payer.nation", target = "country")
     @Mapping(source = "rpt.payer.email", target = "email")
+    @Mapping(source = "rpt.payer.name", target = "companyName")
     @Mapping(target = "validityDate", expression = "java(null)")
     @Mapping(target = "switchToExpired", constant = "false")
     @Mapping(target = "payStandIn", constant = "false")
