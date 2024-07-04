@@ -10,6 +10,19 @@ import org.mapstruct.ReportingPolicy;
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface DebtPositionMapper {
 
+    @Mapping(source = "rpt.payer.subjectUniqueIdentifier.type", target = "type")
+    @Mapping(source = "rpt.payer.subjectUniqueIdentifier.code", target = "fiscalCode")
+    @Mapping(source = "rpt.payer.name", target = "fullName")
+    @Mapping(source = "rpt.payer.address", target = "streetName")
+    @Mapping(source = "rpt.payer.streetNumber", target = "civicNumber")
+    @Mapping(source = "rpt.payer.postalCode", target = "postalCode")
+    @Mapping(source = "rpt.payer.city", target = "city")
+    @Mapping(source = "rpt.payer.province", target = "province")
+    @Mapping(source = "rpt.payer.nation", target = "country")
+    @Mapping(source = "rpt.payer.email", target = "email")
+    @Mapping(target = "validityDate", expression = "java(null)")
+    @Mapping(target = "switchToExpired", constant = "false")
+    @Mapping(target = "payStandIn", constant = "false")
     it.gov.pagopa.gen.wispconverter.client.gpd.model.PaymentPositionModelDto toPaymentPosition(RPTContentDTO rptContentDTO);
 
     @Mapping(source = "commonFields.payerType", target = "type")
