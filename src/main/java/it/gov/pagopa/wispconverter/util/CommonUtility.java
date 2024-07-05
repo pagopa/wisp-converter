@@ -91,6 +91,7 @@ public class CommonUtility {
     public static List<Pair<String, String>> constructHeadersForPaaInviaRT(String startingUrl, StationDto station, String stationInForwarderPartialPath, String forwarderSubscriptionKey) {
         List<Pair<String, String>> headers = new LinkedList<>();
         headers.add(Pair.of("SOAPAction", "paaInviaRT"));
+        headers.add(Pair.of("Content-Type", "text/xml"));
         if (startingUrl.contains(stationInForwarderPartialPath) && station.getService() != null) {
             ServiceDto stationService = station.getService();
             headers.add(Pair.of("X-Host-Url", stationService.getTargetHost() == null ? "ND" : stationService.getTargetHost()));
