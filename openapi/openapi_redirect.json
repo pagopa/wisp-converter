@@ -2,7 +2,7 @@
   "openapi": "3.0.1",
   "info": {
     "title": "WISP-Converter-redirect",
-    "version": "0.0.39-1-fix-paainviart-namespace"
+    "version": "0.0.39-2-fix-paainviart-namespace"
   },
   "servers": [
     {
