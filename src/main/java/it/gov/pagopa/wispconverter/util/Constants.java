@@ -15,6 +15,7 @@ public class Constants {
     public static final String NODO_INVIA_RPT = "nodoInviaRPT";
     public static final String NODO_INVIA_CARRELLO_RPT = "nodoInviaCarrelloRPT";
     public static final String CLOSE_PAYMENT_V2 = "closePaymentV2";
+    public static final String SOAP_ENV = "soapenv";
 
     public static final String MDC_CONTROL_FLAG = "controlFlag";
     public static final String MDC_START_TIME = "startTime";

@@ -27,6 +27,7 @@ import it.gov.pagopa.wispconverter.service.model.session.RPTContentDTO;
 import it.gov.pagopa.wispconverter.service.model.session.SessionDataDTO;
 import it.gov.pagopa.wispconverter.util.*;
 import jakarta.xml.bind.JAXBElement;
+import jakarta.xml.soap.SOAPException;
 import jakarta.xml.soap.SOAPMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -441,8 +442,26 @@ public class ReceiptService {
 
         // generating a SOAP message, including body and header, and then extract the raw string of the envelope
         SOAPMessage message = jaxbElementUtil.newMessage();
-        jaxbElementUtil.addBody(message, paaInviaRTJaxb, PaaInviaRT.class);
-        jaxbElementUtil.addHeader(message, header, IntestazionePPT.class);
+        try {
+            message.getSOAPPart().getEnvelope().removeNamespaceDeclaration("SOAP-ENV");
+            message.getSOAPPart().getEnvelope().setPrefix(Constants.SOAP_ENV);
+            message.getSOAPPart().getEnvelope().addNamespaceDeclaration("ns2", "http://ws.pagamenti.telematici.gov/ppthead"); //
+            message.getSOAPPart().getEnvelope().addNamespaceDeclaration("ns3", "http://ws.pagamenti.telematici.gov/"); //
+
+            message.getSOAPHeader().setPrefix(Constants.SOAP_ENV);
+            message.getSOAPBody().setPrefix(Constants.SOAP_ENV);
+
+            jaxbElementUtil.addBody(message, paaInviaRTJaxb, PaaInviaRT.class);
+            message.getSOAPPart().getEnvelope().getBody().getFirstChild().setPrefix("ns3");
+
+            jaxbElementUtil.addHeader(message, header, IntestazionePPT.class);
+            message.getSOAPPart().getEnvelope().getHeader().getFirstChild().setPrefix("ns2");
+
+        } catch (SOAPException e) {
+            log.warn("Impossible to set 'soapenv' instead of 'SOAP-ENV' as namespace. ", e);
+            jaxbElementUtil.addBody(message, paaInviaRTJaxb, PaaInviaRT.class);
+            jaxbElementUtil.addHeader(message, header, IntestazionePPT.class);pa
+        }
         return jaxbElementUtil.toString(message);
     }
 
