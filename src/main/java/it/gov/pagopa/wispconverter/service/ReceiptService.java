@@ -460,7 +460,7 @@ public class ReceiptService {
         } catch (SOAPException e) {
             log.warn("Impossible to set 'soapenv' instead of 'SOAP-ENV' as namespace. ", e);
             jaxbElementUtil.addBody(message, paaInviaRTJaxb, PaaInviaRT.class);
-            jaxbElementUtil.addHeader(message, header, IntestazionePPT.class);pa
+            jaxbElementUtil.addHeader(message, header, IntestazionePPT.class);
         }
         return jaxbElementUtil.toString(message);
     }
