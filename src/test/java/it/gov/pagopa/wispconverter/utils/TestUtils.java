@@ -213,6 +213,8 @@ public class TestUtils {
         String nodoInviaRPT = TestUtils.loadFileContent("/requests/nodoInviaRPT.xml");
         return nodoInviaRPT
                 .replace("{station}", station)
+                .replace("{pa}", pa)
+                .replace("{iuv}", iuv)
                 .replace("{rpt}", Base64.getEncoder().encodeToString(rptreplace.getBytes(StandardCharsets.UTF_8)));
     }
 
