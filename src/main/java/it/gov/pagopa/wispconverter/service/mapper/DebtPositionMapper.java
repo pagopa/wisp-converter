@@ -43,7 +43,7 @@ public interface DebtPositionMapper {
     it.gov.pagopa.gen.wispconverter.client.gpd.model.PaymentPositionModelDto toPaymentPosition(SessionDataDTO sessionData);
 
     @Mapping(source = "iuv", target = "iuv")
-    @Mapping(target = "description", constant = "-") // TODO set 'causale' from RPT
+    @Mapping(target = "description", constant = "-")
     @Mapping(target = "isPartialPayment", constant = "false")
     @Mapping(target = "retentionDate", expression = "java(null)")
     @Mapping(target = "fee", constant = "0L")
