@@ -89,7 +89,7 @@ class RptTest {
     void success_debtPositionUpdateValid() throws Exception {
         String station = "mystation";
         StationCreditorInstitutionDto stationCreditorInstitutionDto = new StationCreditorInstitutionDto();
-        stationCreditorInstitutionDto.setCreditorInstitutionCode("{pa}");
+        stationCreditorInstitutionDto.setCreditorInstitutionCode("pa");
         stationCreditorInstitutionDto.setSegregationCode(12L);
         stationCreditorInstitutionDto.setStationCode(station);
         org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configData", TestUtils.configDataCreditorInstitutionStations(stationCreditorInstitutionDto));
@@ -105,7 +105,7 @@ class RptTest {
                 Optional.of(
                         RPTRequestEntity.builder().primitive("nodoInviaRPT")
                                 .payload(
-                                        TestUtils.zipAndEncode(TestUtils.getRptPayload(false, station, "100.00", null))
+                                        TestUtils.zipAndEncode(TestUtils.getRptPayload(false, station, "pa", "123456IUVMOCK1", "100.00", null))
                                 ).build()
                 )
         );
@@ -138,7 +138,7 @@ class RptTest {
     void success_debtPositionUpdateInvalid() throws Exception {
         String station = "mystation";
         StationCreditorInstitutionDto stationCreditorInstitutionDto = new StationCreditorInstitutionDto();
-        stationCreditorInstitutionDto.setCreditorInstitutionCode("{pa}");
+        stationCreditorInstitutionDto.setCreditorInstitutionCode("pa");
         stationCreditorInstitutionDto.setSegregationCode(12L);
         stationCreditorInstitutionDto.setStationCode(station);
         org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configData", TestUtils.configDataCreditorInstitutionStations(stationCreditorInstitutionDto));
@@ -154,7 +154,7 @@ class RptTest {
                 .thenReturn(Optional.of(
                                 RPTRequestEntity.builder()
                                         .primitive("nodoInviaRPT")
-                                        .payload(TestUtils.zipAndEncode(TestUtils.getRptPayload(false, station, "100.00", null)))
+                                        .payload(TestUtils.zipAndEncode(TestUtils.getRptPayload(false, station, "pa", "123456IUVMOCK1", "100.00", null)))
                                         .build()
                         )
                 );
@@ -181,7 +181,7 @@ class RptTest {
     void success_debtPositionCreate() throws Exception {
         String station = "mystation";
         StationCreditorInstitutionDto stationCreditorInstitutionDto = new StationCreditorInstitutionDto();
-        stationCreditorInstitutionDto.setCreditorInstitutionCode("{pa}");
+        stationCreditorInstitutionDto.setCreditorInstitutionCode("pa");
         stationCreditorInstitutionDto.setSegregationCode(12L);
         stationCreditorInstitutionDto.setStationCode(station);
         org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configData", TestUtils.configDataCreditorInstitutionStations(stationCreditorInstitutionDto));
@@ -201,7 +201,7 @@ class RptTest {
                 Optional.of(
                         RPTRequestEntity.builder().primitive("nodoInviaRPT")
                                 .payload(
-                                        TestUtils.zipAndEncode(TestUtils.getRptPayload(false, station, "100.00", "datispec"))
+                                        TestUtils.zipAndEncode(TestUtils.getRptPayload(false, station, "pa", "123456IUVMOCK1", "100.00", "datispec"))
                                 ).build()
                 )
         );
@@ -225,7 +225,7 @@ class RptTest {
     void success_bollo() throws Exception {
         String station = "mystation";
         StationCreditorInstitutionDto stationCreditorInstitutionDto = new StationCreditorInstitutionDto();
-        stationCreditorInstitutionDto.setCreditorInstitutionCode("{pa}");
+        stationCreditorInstitutionDto.setCreditorInstitutionCode("pa");
         stationCreditorInstitutionDto.setSegregationCode(0L);
         stationCreditorInstitutionDto.setStationCode(station);
         org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configData", TestUtils.configDataCreditorInstitutionStations(stationCreditorInstitutionDto));
@@ -245,7 +245,7 @@ class RptTest {
                 Optional.of(
                         RPTRequestEntity.builder().primitive("nodoInviaRPT")
                                 .payload(
-                                        TestUtils.zipAndEncode(TestUtils.getRptPayload(true, station, "100.00", null))
+                                        TestUtils.zipAndEncode(TestUtils.getRptPayload(true, station, "pa", "123456IUVMOCK1", "100.00", null))
                                 ).build()
                 )
         );
@@ -423,7 +423,7 @@ class RptTest {
     void fail_checkoutRequest() throws Exception {
         String station = "mystation";
         StationCreditorInstitutionDto stationCreditorInstitutionDto = new StationCreditorInstitutionDto();
-        stationCreditorInstitutionDto.setCreditorInstitutionCode("{pa}");
+        stationCreditorInstitutionDto.setCreditorInstitutionCode("pa");
         stationCreditorInstitutionDto.setSegregationCode(0L);
         stationCreditorInstitutionDto.setStationCode(station);
         org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configData", TestUtils.configDataCreditorInstitutionStations(stationCreditorInstitutionDto));
@@ -439,7 +439,7 @@ class RptTest {
                 Optional.of(
                         RPTRequestEntity.builder().primitive("nodoInviaRPT")
                                 .payload(
-                                        TestUtils.zipAndEncode(TestUtils.getRptPayload(false, station, "100.00", null))
+                                        TestUtils.zipAndEncode(TestUtils.getRptPayload(false, station, "pa", "123456IUVMOCK1", "100.00", null))
                                 ).build()
                 )
         );
