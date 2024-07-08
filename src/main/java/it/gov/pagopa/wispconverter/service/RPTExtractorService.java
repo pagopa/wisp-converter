@@ -10,6 +10,7 @@ import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
 import it.gov.pagopa.wispconverter.service.mapper.RPTMapper;
+import it.gov.pagopa.wispconverter.service.model.PaymentRequestDomainDTO;
 import it.gov.pagopa.wispconverter.service.model.paymentrequest.PaymentRequestDTO;
 import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import it.gov.pagopa.wispconverter.service.model.session.CommonFieldsDTO;
@@ -35,6 +36,8 @@ import java.util.stream.Collectors;
 @Slf4j
 @RequiredArgsConstructor
 public class RPTExtractorService {
+
+    private final ConfigCacheService cacheService;
 
     private final ReService reService;
 
@@ -88,6 +91,7 @@ public class RPTExtractorService {
                 .commonFields(CommonFieldsDTO.builder()
                         .sessionId(MDC.get(Constants.MDC_SESSION_ID))
                         .creditorInstitutionId(creditorInstitutionId)
+                        .creditorInstitutionName(cacheService.getCreditorInstitutionNameFromCache(creditorInstitutionId))
                         .pspId(soapBody.getIdentificativoPSP())
                         .creditorInstitutionBrokerId(soapHeader.getIdentificativoIntermediarioPA())
                         .stationId(soapHeader.getIdentificativoStazioneIntermediarioPA())
@@ -193,6 +197,7 @@ public class RPTExtractorService {
                         .sessionId(MDC.get(Constants.MDC_SESSION_ID))
                         .cartId(soapHeader.getIdentificativoCarrello())
                         .creditorInstitutionId(creditorInstitutionId)
+                        .creditorInstitutionName(cacheService.getCreditorInstitutionNameFromCache(creditorInstitutionId))
                         .pspId(soapBody.getIdentificativoPSP())
                         .creditorInstitutionBrokerId(soapHeader.getIdentificativoIntermediarioPA())
                         .stationId(soapHeader.getIdentificativoStazioneIntermediarioPA())
@@ -226,7 +231,13 @@ public class RPTExtractorService {
     private PaymentRequestDTO extractRPT(byte[] rptBytes) {
 
         CtRichiestaPagamentoTelematico rptElement = this.jaxbElementUtil.convertToBean(rptBytes, CtRichiestaPagamentoTelematico.class);
-        return mapper.toPaymentRequestDTO(rptElement);
+        PaymentRequestDTO paymentRequest = mapper.toPaymentRequestDTO(rptElement);
+
+        // explicitly set creditor institution name, taken from cached configuration
+        PaymentRequestDomainDTO domain = paymentRequest.getDomain();
+        domain.setDomainName(cacheService.getCreditorInstitutionNameFromCache(domain.getDomainId()));
+
+        return paymentRequest;
     }
 
     private void generateRE(SessionDataDTO sessionData) {

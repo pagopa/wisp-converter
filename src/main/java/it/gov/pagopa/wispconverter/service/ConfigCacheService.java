@@ -1,9 +1,6 @@
 package it.gov.pagopa.wispconverter.service;
 
-import it.gov.pagopa.gen.wispconverter.client.cache.model.CacheVersionDto;
-import it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigDataV1Dto;
-import it.gov.pagopa.gen.wispconverter.client.cache.model.StationCreditorInstitutionDto;
-import it.gov.pagopa.gen.wispconverter.client.cache.model.StationDto;
+import it.gov.pagopa.gen.wispconverter.client.cache.model.*;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import lombok.Getter;
@@ -49,6 +46,20 @@ public class ConfigCacheService {
             throw new AppException(AppErrorCodeMessageEnum.CLIENT_DECOUPLER_CACHING,
                     String.format("RestClientException ERROR [%s] - %s", e.getCause().getClass().getCanonicalName(), e.getMessage()));
         }
+    }
+
+    public String getCreditorInstitutionNameFromCache(String creditorInstitutionId) {
+
+        // get cached data
+        ConfigDataV1Dto cache = this.getConfigData();
+        if (cache == null) {
+            throw new AppException(AppErrorCodeMessageEnum.CONFIGURATION_INVALID_CACHE);
+        }
+
+        // retrieving station by station identifier
+        Map<String, CreditorInstitutionDto> creditorInstitutions = cache.getCreditorInstitutions();
+        CreditorInstitutionDto creditorInstitution = creditorInstitutions.get(creditorInstitutionId);
+        return creditorInstitution != null ? creditorInstitution.getBusinessName() : "-";
     }
 
     public StationDto getStationByIdFromCache(String stationId) {

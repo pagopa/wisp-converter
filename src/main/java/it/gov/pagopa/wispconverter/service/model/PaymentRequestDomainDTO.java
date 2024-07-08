@@ -11,5 +11,6 @@ import lombok.*;
 public class PaymentRequestDomainDTO {
 
     protected String domainId;
+    protected String domainName;
     protected String stationId;
 }

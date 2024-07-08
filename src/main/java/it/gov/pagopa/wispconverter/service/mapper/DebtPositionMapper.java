@@ -12,6 +12,7 @@ public interface DebtPositionMapper {
 
     @Mapping(source = "rpt.payer.subjectUniqueIdentifier.type", target = "type")
     @Mapping(source = "rpt.payer.subjectUniqueIdentifier.code", target = "fiscalCode")
+    @Mapping(source = "rpt.domain.domainName", target = "companyName")
     @Mapping(source = "rpt.payer.name", target = "fullName")
     @Mapping(source = "rpt.payer.address", target = "streetName")
     @Mapping(source = "rpt.payer.streetNumber", target = "civicNumber")
@@ -20,7 +21,6 @@ public interface DebtPositionMapper {
     @Mapping(source = "rpt.payer.province", target = "province")
     @Mapping(source = "rpt.payer.nation", target = "country")
     @Mapping(source = "rpt.payer.email", target = "email")
-    @Mapping(source = "rpt.payer.name", target = "companyName")
     @Mapping(target = "validityDate", expression = "java(null)")
     @Mapping(target = "switchToExpired", constant = "false")
     @Mapping(target = "payStandIn", constant = "false")
@@ -36,14 +36,14 @@ public interface DebtPositionMapper {
     @Mapping(source = "commonFields.payerAddressProvince", target = "province")
     @Mapping(source = "commonFields.payerAddressNation", target = "country")
     @Mapping(source = "commonFields.payerEmail", target = "email")
-    @Mapping(source = "commonFields.payerFullName", target = "companyName")
+    @Mapping(source = "commonFields.creditorInstitutionName", target = "companyName")
     @Mapping(target = "validityDate", expression = "java(null)")
     @Mapping(target = "switchToExpired", constant = "false")
     @Mapping(target = "payStandIn", constant = "false")
     it.gov.pagopa.gen.wispconverter.client.gpd.model.PaymentPositionModelDto toPaymentPosition(SessionDataDTO sessionData);
 
     @Mapping(source = "iuv", target = "iuv")
-    @Mapping(target = "description", constant = "-")
+    @Mapping(target = "description", constant = "-") // TODO set 'causale' from RPT
     @Mapping(target = "isPartialPayment", constant = "false")
     @Mapping(target = "retentionDate", expression = "java(null)")
     @Mapping(target = "fee", constant = "0L")
