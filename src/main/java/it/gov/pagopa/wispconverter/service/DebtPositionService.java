@@ -170,6 +170,7 @@ public class DebtPositionService {
                 .doubleValue() * 100);
         paymentOption.setAmount(amount);
         paymentOption.setTransfer(transfers);
+        paymentOption.setDescription(firstRPTContent.getRpt().getTransferData().getTransfer().get(0).getRemittanceInformation());
 
         // finally, generate the payment position and add the payment option
         PaymentPositionModelDto paymentPosition = mapper.toPaymentPosition(sessionData);
@@ -218,6 +219,7 @@ public class DebtPositionService {
             PaymentOptionModelDto paymentOption = mapper.toPaymentOption(rptContent);
             paymentOption.setAmount(amount);
             paymentOption.setTransfer(transfers);
+            paymentOption.setDescription(paymentExtractedFromRPT.getTransferData().getTransfer().get(0).getRemittanceInformation());
 
             // finally, generate the payment position and add the payment option
             PaymentPositionModelDto paymentPosition = mapper.toPaymentPosition(rptContent);
