@@ -50,11 +50,11 @@ public class RedirectController {
     @Trace(businessProcess = BP_REDIRECT, reEnabled = true)
     public String redirect(@Parameter(description = "", example = "identificativoIntermediarioPA_sessionId")
                            @NotBlank(message = "{redirect.session-id.not-blank}")
-                           @RequestParam("idSession") String sessionId,
+                           @RequestParam("idSession") String idSession,
                            HttpServletResponse response) {
         try {
-            log.info("Invoking API operation redirect - args: {}", sessionId.matches("[\\w\\-]*") ? sessionId : "...");
-            String redirectURI = converterService.convert(sessionId);
+            log.info("Invoking API operation redirect - args: {}", idSession.matches("[\\w\\-]*") ? idSession : "...");
+            String redirectURI = converterService.convert(idSession);
             log.info("Successful API operation redirect - result: {}", redirectURI);
             return "redirect:" + redirectURI;
         } catch (AppException appException) {
