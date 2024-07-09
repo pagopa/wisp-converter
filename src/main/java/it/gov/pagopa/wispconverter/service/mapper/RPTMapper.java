@@ -93,7 +93,7 @@ public interface RPTMapper {
     TransferDTO toTransferDTO(CtDatiSingoloVersamentoRPT datiSingoloVersamentoRPT);
 
     @Mapping(source = "tipoBollo", target = "type")
-    @Mapping(source = "hashDocumento", target = "documentHash")
+    @Mapping(target = "documentHash", expression = "java(java.util.Base64.getEncoder().encode(datiMarcaBolloDigitale.getHashDocumento()))")
     @Mapping(source = "provinciaResidenza", target = "province")
     DigitalStampDTO toDigitalStampDTO(CtDatiMarcaBolloDigitale datiMarcaBolloDigitale);
 }
