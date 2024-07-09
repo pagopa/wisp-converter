@@ -111,7 +111,7 @@ class RptTest {
         );
         when(redisSimpleTemplate.opsForValue()).thenReturn(mock(ValueOperations.class));
 
-        mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
+        mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?idSession=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.status().is(HttpStatus.FOUND.value()))
                 .andDo(
                         result -> {
@@ -161,7 +161,7 @@ class RptTest {
         when(cacheRepository.read(any(), any())).thenReturn("wisp_nav2iuv_dominio");
         when(redisSimpleTemplate.opsForValue()).thenReturn(mock(ValueOperations.class));
 
-        mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
+        mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?idSession=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.status().is2xxSuccessful())
                 .andDo(
                         result -> {
@@ -207,7 +207,7 @@ class RptTest {
         );
         when(redisSimpleTemplate.opsForValue()).thenReturn(mock(ValueOperations.class));
 
-        mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
+        mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?idSession=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.status().is(HttpStatus.FOUND.value()))
                 .andDo(
                         result -> {
@@ -251,7 +251,7 @@ class RptTest {
         );
         when(redisSimpleTemplate.opsForValue()).thenReturn(mock(ValueOperations.class));
 
-        mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
+        mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?idSession=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.status().is(HttpStatus.FOUND.value()))
                 .andDo(
                         result -> {
@@ -267,7 +267,7 @@ class RptTest {
 
     @Test
     void fail_rptNotFound() throws Exception {
-        MvcResult resultActions = mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
+        MvcResult resultActions = mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?idSession=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.status().is2xxSuccessful()).andDo(
                         result -> {
                             assertNotNull(result);
@@ -305,7 +305,7 @@ class RptTest {
                 )
         );
 
-        MvcResult resultActions = mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
+        MvcResult resultActions = mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?idSession=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.status().is2xxSuccessful()).andDo(
                         result -> {
                             assertNotNull(result);
@@ -337,7 +337,7 @@ class RptTest {
         when(redisSimpleTemplate.opsForValue()).thenReturn(mock(ValueOperations.class));
         when(rptRequestRepository.findById(any())).thenThrow(new RuntimeException("fail"));
 
-        MvcResult resultActions = mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
+        MvcResult resultActions = mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?idSession=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.status().is2xxSuccessful()).andDo(
                         result -> {
                             assertNotNull(result);
@@ -376,7 +376,7 @@ class RptTest {
         );
         when(redisSimpleTemplate.opsForValue()).thenReturn(mock(ValueOperations.class));
 
-        mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
+        mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?idSession=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.status().is2xxSuccessful());
 
         verify(iuvGeneratorClient, times(1)).invokeAPI(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
@@ -410,7 +410,7 @@ class RptTest {
                 )
         );
 
-        mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
+        mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?idSession=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.status().is2xxSuccessful());
 
         verify(iuvGeneratorClient, times(1)).invokeAPI(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
@@ -445,7 +445,7 @@ class RptTest {
         );
         when(redisSimpleTemplate.opsForValue()).thenReturn(mock(ValueOperations.class));
 
-        mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
+        mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?idSession=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.status().is2xxSuccessful());
 
         verify(iuvGeneratorClient, times(1)).invokeAPI(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
@@ -468,7 +468,7 @@ class RptTest {
         );
         when(redisSimpleTemplate.opsForValue()).thenReturn(mock(ValueOperations.class));
 
-        MvcResult resultActions = mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
+        MvcResult resultActions = mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?idSession=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.status().is2xxSuccessful()).andDo(
                         result -> {
                             assertNotNull(result);
@@ -500,7 +500,7 @@ class RptTest {
         );
         when(redisSimpleTemplate.opsForValue()).thenReturn(mock(ValueOperations.class));
 
-        MvcResult resultActions = mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
+        MvcResult resultActions = mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?idSession=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.status().is2xxSuccessful()).andDo(
                         result -> {
                             assertNotNull(result);
@@ -531,7 +531,7 @@ class RptTest {
         );
         when(redisSimpleTemplate.opsForValue()).thenReturn(mock(ValueOperations.class));
 
-        MvcResult resultActions = mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
+        MvcResult resultActions = mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?idSession=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.status().is2xxSuccessful()).andDo(
                         result -> {
                             assertNotNull(result);
