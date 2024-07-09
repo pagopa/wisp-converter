@@ -115,7 +115,7 @@ class CarrelloTest {
         when(redisSimpleTemplate.opsForValue()).thenReturn(mock(ValueOperations.class));
 
 
-        mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
+        mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?idSession=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.status().is(HttpStatus.FOUND.value()))
                 .andDo(
                         result -> {
@@ -159,7 +159,7 @@ class CarrelloTest {
         when(redisSimpleTemplate.opsForValue()).thenReturn(mock(ValueOperations.class));
 
 
-        mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?sessionId=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
+        mvc.perform(MockMvcRequestBuilders.get(REDIRECT_PATH + "?idSession=aaaaaaaaaaaa").accept(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.status().is2xxSuccessful())
                 .andDo(
                         result -> {
