@@ -20,6 +20,8 @@ import org.springframework.web.client.RestClientException;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -70,7 +72,7 @@ public class CheckoutService {
         cart.setPaymentNotices(sessionData.getAllPaymentNotices().stream()
                 .map(mapper::toPaymentNotice)
                 .toList());
-        
+
         // explicitly set all URLs for object
         String uriContent = extractReturnUrl(sessionData);
         it.gov.pagopa.gen.wispconverter.client.checkout.model.CartRequestReturnUrlsDto returnUrls = new it.gov.pagopa.gen.wispconverter.client.checkout.model.CartRequestReturnUrlsDto();
@@ -87,8 +89,18 @@ public class CheckoutService {
         // retrieving URL for redirect from station
         String stationRedirectURL = getRedirectURL(sessionData.getCommonFields().getStationId());
 
-        // generating
+        // extracting the creditor institution either from common field or from the payment notices
         String creditorInstitution = sessionData.getCommonFields().getCreditorInstitutionId();
+        if (creditorInstitution == null) {
+            Set<String> creditorInstitutionsFromPaymentNotices = sessionData.getAllPaymentNotices().stream()
+                    .map(PaymentNoticeContentDTO::getFiscalCode)
+                    .collect(Collectors.toSet());
+            if (creditorInstitutionsFromPaymentNotices.size() == 1) {
+                creditorInstitution = creditorInstitutionsFromPaymentNotices.stream().findFirst().orElse(null);
+            }
+        }
+
+        // generating the URI
         StringBuilder uriBuilder = new StringBuilder(stationRedirectURL).append("?");
         if (creditorInstitution != null) {
             uriBuilder.append("idDominio=").append(creditorInstitution).append("&");
