@@ -143,17 +143,17 @@ public class CommonUtility {
                 .buildProcessorClient();
     }
 
-    public static void checkStationValidity(ConfigCacheService configCacheService, SessionDataDTO sessionData, String noticeNumber) {
+    public static void checkStationValidity(ConfigCacheService configCacheService, SessionDataDTO sessionData, String creditorInstitutionId, String noticeNumber) {
 
-        checkStation(configCacheService, sessionData, noticeNumber, false, true, null);
+        checkStation(configCacheService, sessionData, creditorInstitutionId, noticeNumber, false, true, null);
     }
 
-    public static boolean isStationOnboardedOnGpd(ConfigCacheService configCacheService, SessionDataDTO sessionData, String gpdPath) {
+    public static boolean isStationOnboardedOnGpd(ConfigCacheService configCacheService, SessionDataDTO sessionData, String creditorInstitutionId, String gpdPath) {
 
-        return checkStation(configCacheService, sessionData, null, true, false, gpdPath);
+        return checkStation(configCacheService, sessionData, creditorInstitutionId, null, true, false, gpdPath);
     }
 
-    private static boolean checkStation(ConfigCacheService configCacheService, SessionDataDTO sessionData, String noticeNumber, boolean checkIfOnboardedInGPD, boolean checkNoticeNumber, String gpdPath) {
+    private static boolean checkStation(ConfigCacheService configCacheService, SessionDataDTO sessionData, String creditorInstitutionId, String noticeNumber, boolean checkIfOnboardedInGPD, boolean checkNoticeNumber, String gpdPath) {
 
         boolean isOk = true;
         CommonFieldsDTO commonFields = sessionData.getCommonFields();
@@ -168,7 +168,7 @@ public class CommonUtility {
             }
             try {
                 long segregationCodeFromNoticeNumber = Long.parseLong(noticeNumber.substring(1, 3));
-                station = configCacheService.getStationsByCreditorInstitutionAndSegregationCodeFromCache(commonFields.getCreditorInstitutionId(), segregationCodeFromNoticeNumber);
+                station = configCacheService.getStationsByCreditorInstitutionAndSegregationCodeFromCache(creditorInstitutionId, segregationCodeFromNoticeNumber);
             } catch (NumberFormatException e) {
                 throw new AppException(AppErrorCodeMessageEnum.PAYMENT_POSITION_NOT_VALID, noticeNumber, "In order to check the station validity is required a notice number from which the segregation code must be extracted, but it is not correctly set as numeric string in the payment position.");
             }
