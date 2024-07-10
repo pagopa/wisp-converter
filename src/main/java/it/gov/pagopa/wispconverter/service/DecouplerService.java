@@ -138,7 +138,7 @@ public class DecouplerService {
                 if (splitKey.length == 3) {
                     PaymentNoticeContentDTO paymentNotice = sessionData.getPaymentNoticeByNoticeNumber(splitKey[2]);
                     String infoAboutCachedKey = "Decoupler key = [(key:" + key + "; value:<baseNodeId>)]";
-                    generateRE(InternalStepStatus.GENERATED_CACHE_ABOUT_RPT_FOR_DECOUPLER, paymentNotice.getIuv(), paymentNotice.getNoticeNumber(), paymentNotice.getCcp(), infoAboutCachedKey);
+                    generateRE(InternalStepStatus.GENERATED_CACHE_ABOUT_RPT_FOR_DECOUPLER, paymentNotice.getFiscalCode(), paymentNotice.getIuv(), paymentNotice.getNoticeNumber(), paymentNotice.getCcp(), infoAboutCachedKey);
                 }
             }
         }
@@ -148,14 +148,15 @@ public class DecouplerService {
 
         // creating event to be persisted for RE
         if (Boolean.TRUE.equals(isTracingOnREEnabled)) {
-            generateRE(InternalStepStatus.GENERATED_CACHE_ABOUT_RPT_FOR_RT_GENERATION, paymentNotice.getIuv(), paymentNotice.getNoticeNumber(), paymentNotice.getCcp(), infoAboutCachedKey);
+            generateRE(InternalStepStatus.GENERATED_CACHE_ABOUT_RPT_FOR_RT_GENERATION, paymentNotice.getFiscalCode(), paymentNotice.getIuv(), paymentNotice.getNoticeNumber(), paymentNotice.getCcp(), infoAboutCachedKey);
         }
     }
 
-    private void generateRE(InternalStepStatus status, String iuv, String nav, String ccp, String otherInfo) {
+    private void generateRE(InternalStepStatus status, String domainId, String iuv, String nav, String ccp, String otherInfo) {
 
         ReEventDto reEvent = ReUtil.getREBuilder()
                 .status(status)
+                .domainId(domainId)
                 .iuv(iuv)
                 .noticeNumber(nav)
                 .ccp(ccp)

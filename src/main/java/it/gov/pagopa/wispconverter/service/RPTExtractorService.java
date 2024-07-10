@@ -240,6 +240,7 @@ public class RPTExtractorService {
             for (RPTContentDTO rpt : sessionData.getAllRPTs()) {
                 ReEventDto reEventFromRPT = ReUtil.getREBuilder()
                         .status(InternalStepStatus.EXTRACTED_DATA_FROM_RPT)
+                        .domainId(rpt.getRpt().getDomain().getDomainId())
                         .iuv(rpt.getIuv())
                         .ccp(rpt.getCcp())
                         .build();

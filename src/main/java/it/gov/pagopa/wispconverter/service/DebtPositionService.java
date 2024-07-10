@@ -537,7 +537,7 @@ public class DebtPositionService {
                     gpdClientInstance.createMultiplePositions(creditorInstitutionId, multiplePaymentPositions, MDC.get(Constants.MDC_REQUEST_ID), true);
 
                     // generate and save events in RE for trace the bulk insertion of payment positions
-                    generateREForBulkInsert(extractedPaymentPositions, creditorInstitutionId);
+                    generateREForBulkInsert(paymentPositionsToCreateForCreditorInstitution, creditorInstitutionId);
                 }
 
             } catch (RestClientException e) {

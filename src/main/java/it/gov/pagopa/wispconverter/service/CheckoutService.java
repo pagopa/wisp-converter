@@ -107,6 +107,7 @@ public class CheckoutService {
                 PaymentNoticeContentDTO paymentNotice = sessionData.getPaymentNoticeByNoticeNumber(paymentNoticeFromCart.getNoticeNumber());
                 ReEventDto reEvent = ReUtil.getREBuilder()
                         .status(InternalStepStatus.SAVED_RPT_IN_CART_RECEIVED_REDIRECT_URL_FROM_CHECKOUT)
+                        .domainId(paymentNotice.getFiscalCode())
                         .iuv(paymentNotice.getIuv())
                         .noticeNumber(paymentNotice.getNoticeNumber())
                         .ccp(paymentNotice.getCcp())
