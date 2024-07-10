@@ -70,19 +70,31 @@ public class CheckoutService {
         cart.setPaymentNotices(sessionData.getAllPaymentNotices().stream()
                 .map(mapper::toPaymentNotice)
                 .toList());
+        
+        // explicitly set all URLs for object
+        String uriContent = extractReturnUrl(sessionData);
+        it.gov.pagopa.gen.wispconverter.client.checkout.model.CartRequestReturnUrlsDto returnUrls = new it.gov.pagopa.gen.wispconverter.client.checkout.model.CartRequestReturnUrlsDto();
+        returnUrls.setReturnOkUrl(new URI(String.format(uriContent, "OK")));
+        returnUrls.setReturnCancelUrl(new URI(String.format(uriContent, "ERROR")));
+        returnUrls.setReturnErrorUrl(new URI(String.format(uriContent, "ERROR")));
+        cart.setReturnUrls(returnUrls);
+
+        return cart;
+    }
+
+    private String extractReturnUrl(SessionDataDTO sessionData) {
 
         // retrieving URL for redirect from station
         String stationRedirectURL = getRedirectURL(sessionData.getCommonFields().getStationId());
 
-        // explicitly set all URLs for object
+        // generating
         String creditorInstitution = sessionData.getCommonFields().getCreditorInstitutionId();
-        it.gov.pagopa.gen.wispconverter.client.checkout.model.CartRequestReturnUrlsDto returnUrls = new it.gov.pagopa.gen.wispconverter.client.checkout.model.CartRequestReturnUrlsDto();
-        returnUrls.setReturnOkUrl(new URI(String.format("%s?idDominio=%s&idSession=%s&esito=OK", stationRedirectURL, creditorInstitution, sessionData.getCommonFields().getSessionId())));
-        returnUrls.setReturnCancelUrl(new URI(String.format("%s?idDominio=%s&idSession=%s&esito=ERROR", stationRedirectURL, creditorInstitution, sessionData.getCommonFields().getSessionId())));
-        returnUrls.setReturnErrorUrl(new URI(String.format("%s?idDominio=%s&idSession=%s&esito=ERROR", stationRedirectURL, creditorInstitution, sessionData.getCommonFields().getSessionId())));
-        cart.setReturnUrls(returnUrls);
-
-        return cart;
+        StringBuilder uriBuilder = new StringBuilder(stationRedirectURL).append("?");
+        if (creditorInstitution != null) {
+            uriBuilder.append("idDominio=").append(creditorInstitution).append("&");
+        }
+        uriBuilder.append("idSession=").append(sessionData.getCommonFields().getSessionId()).append("&esito=%s");
+        return uriBuilder.toString();
     }
 
     private String getRedirectURL(String stationId) {
