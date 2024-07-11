@@ -117,7 +117,7 @@ public class ReceiptService {
                   If it is not onboarded on GPD, it must be used for generate RT to sent to creditor institution via
                   institution's custom endpoint.
                 */
-                if (CommonUtility.isStationOnboardedOnGpd(configCacheService, sessionData, stationInGpdPartialPath)) {
+                if (CommonUtility.isStationOnboardedOnGpd(configCacheService, sessionData, receipt.getFiscalCode(), stationInGpdPartialPath)) {
 
                     generateREForNotGenerableRT(sessionData, cachedMapping.getIuv(), noticeNumber);
 
@@ -201,7 +201,7 @@ public class ReceiptService {
               If it is not onboarded on GPD, it must be used for generate RT to sent to creditor institution via
               institution's custom endpoint.
             */
-            if (CommonUtility.isStationOnboardedOnGpd(configCacheService, sessionData, stationInGpdPartialPath)) {
+            if (CommonUtility.isStationOnboardedOnGpd(configCacheService, sessionData, receipt.getFiscalCode(), stationInGpdPartialPath)) {
 
                 generateREForNotGenerableRT(sessionData, cachedMapping.getIuv(), noticeNumber);
 

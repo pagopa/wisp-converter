@@ -82,7 +82,6 @@ public class DebtPositionService {
 
         // initialize standard data
         List<String> iuvToSaveInBulkOperation = new LinkedList<>();
-        String creditorInstitutionId = sessionData.getCommonFields().getCreditorInstitutionId();
 
         // instantiating client for GPD-core service
         DebtPositionsApiApi gpdClientInstance = new DebtPositionsApiApi(gpdClient);
@@ -99,6 +98,8 @@ public class DebtPositionService {
 
             // extract IUV from analyzed payment position (or throw an exception if not existing)
             String iuv = CommonUtility.getSinglePaymentOption(extractedPaymentPosition).getIuv();
+            RPTContentDTO rptByIUV = sessionData.getRPTByIUV(iuv);
+            String creditorInstitutionId = rptByIUV.getRpt().getDomain().getDomainId();
 
             /*
               Using the extracted IUV, check if a payment position already exists in GPD.
@@ -108,11 +109,11 @@ public class DebtPositionService {
             switch (response.getFirst()) {
 
                 case EXISTS_INVALID ->
-                        handleInvalidPaymentPositions(gpdClientInstance, sessionData, response.getSecond().orElse(null));
+                        handleInvalidPaymentPositions(gpdClientInstance, sessionData, response.getSecond().orElse(null), creditorInstitutionId);
                 case EXISTS_VALID ->
-                        handleValidPaymentPosition(gpdClientInstance, sessionData, extractedPaymentPosition, response.getSecond().orElse(null), iuv);
+                        handleValidPaymentPosition(gpdClientInstance, sessionData, extractedPaymentPosition, response.getSecond().orElse(null), iuv, creditorInstitutionId);
                 case NOT_EXISTS ->
-                        handleNewPaymentPosition(sessionData, extractedPaymentPosition, iuvToSaveInBulkOperation, iuv);
+                        handleNewPaymentPosition(sessionData, extractedPaymentPosition, iuvToSaveInBulkOperation, iuv, creditorInstitutionId);
             }
         }
 
@@ -175,6 +176,7 @@ public class DebtPositionService {
         // finally, generate the payment position and add the payment option
         PaymentPositionModelDto paymentPosition = mapper.toPaymentPosition(sessionData);
         paymentPosition.setIupd(generateIUPD(sessionData.getCommonFields().getCreditorInstitutionId()));
+        paymentPosition.setCompanyName(configCacheService.getCreditorInstitutionNameFromCache(sessionData.getCommonFields().getCreditorInstitutionId()));
         paymentPosition.setPaymentOption(List.of(paymentOption));
 
         // update payment notices to be used for communication with Checkout
@@ -193,7 +195,6 @@ public class DebtPositionService {
     private List<PaymentPositionModelDto> extractPaymentPositionsForNonMultiBeneficiary(SessionDataDTO sessionData) {
 
         List<PaymentPositionModelDto> paymentPositions = new LinkedList<>();
-        String creditorInstitutionId = sessionData.getCommonFields().getCreditorInstitutionId();
 
         // execute the mapping of the transfer from all RPTs in session data
         for (RPTContentDTO rptContent : sessionData.getAllRPTs()) {
@@ -210,7 +211,8 @@ public class DebtPositionService {
             List<TransferModelDto> transfers = new ArrayList<>();
             for (TransferDTO transfer : paymentExtractedFromRPT.getTransferData().getTransfer()) {
 
-                transfers.add(extractTransferForPaymentOption(transfer, null, transferIdCounter));
+                String domainId = paymentExtractedFromRPT.getDomain().getDomainId();
+                transfers.add(extractTransferForPaymentOption(transfer, domainId, transferIdCounter));
                 transferIdCounter++;
             }
 
@@ -222,8 +224,10 @@ public class DebtPositionService {
             paymentOption.setDescription(paymentExtractedFromRPT.getTransferData().getTransfer().get(0).getRemittanceInformation());
 
             // finally, generate the payment position and add the payment option
+            String creditorInstitutionId = paymentExtractedFromRPT.getDomain().getDomainId();
             PaymentPositionModelDto paymentPosition = mapper.toPaymentPosition(rptContent);
             paymentPosition.setIupd(generateIUPD(creditorInstitutionId));
+            paymentPosition.setCompanyName(configCacheService.getCreditorInstitutionNameFromCache(creditorInstitutionId));
             paymentPosition.setPaymentOption(List.of(paymentOption));
             paymentPositions.add(paymentPosition);
 
@@ -326,9 +330,7 @@ public class DebtPositionService {
         return Pair.of(status, body);
     }
 
-    private void handleInvalidPaymentPositions(DebtPositionsApiApi gpdClientInstance, SessionDataDTO sessionData, PaymentPositionModelBaseResponseDto retrievedPaymentPosition) {
-
-        String creditorInstitutionId = sessionData.getCommonFields().getCreditorInstitutionId();
+    private void handleInvalidPaymentPositions(DebtPositionsApiApi gpdClientInstance, SessionDataDTO sessionData, PaymentPositionModelBaseResponseDto retrievedPaymentPosition, String creditorInstitutionId) {
 
         // check if retrieved payment is correct, otherwise throw an exception
         String iuvFromRetrievedPaymentPosition = CommonUtility.getSinglePaymentOption(retrievedPaymentPosition).getIuv();
@@ -373,7 +375,7 @@ public class DebtPositionService {
         if (!receiptsToSend.isEmpty()) {
 
             // save the mapped keys in the Redis cache for receipt generation
-            decouplerService.saveMappedKeyForReceiptGeneration(sessionData.getCommonFields().getSessionId(), sessionData, creditorInstitutionId);
+            decouplerService.saveMappedKeyForReceiptGeneration(sessionData.getCommonFields().getSessionId(), sessionData);
 
             // generate and send the KO receipts to creditor institution via configured station
             receiptService.sendKoPaaInviaRtToCreditorInstitution(receiptsToSend.toString());
@@ -386,13 +388,12 @@ public class DebtPositionService {
         throw new AppException(AppErrorCodeMessageEnum.PAYMENT_POSITION_NOT_IN_PAYABLE_STATE, invalidIuvs);
     }
 
-    private void handleValidPaymentPosition(DebtPositionsApiApi gpdClientInstance, SessionDataDTO sessionData, PaymentPositionModelDto extractedPaymentPosition, PaymentPositionModelBaseResponseDto paymentPositionFromGPD, String iuv) {
+    private void handleValidPaymentPosition(DebtPositionsApiApi gpdClientInstance, SessionDataDTO sessionData, PaymentPositionModelDto extractedPaymentPosition, PaymentPositionModelBaseResponseDto paymentPositionFromGPD, String iuv, String creditorInstitutionId) {
 
-        String creditorInstitutionId = sessionData.getCommonFields().getCreditorInstitutionId();
         try {
 
             // validate the station, checking if exists one with the required segregation code and, if is onboarded on GPD, has the correct primitive version
-            CommonUtility.checkStationValidity(configCacheService, sessionData, CommonUtility.getSinglePaymentOption(paymentPositionFromGPD).getNav());
+            CommonUtility.checkStationValidity(configCacheService, sessionData, creditorInstitutionId, CommonUtility.getSinglePaymentOption(paymentPositionFromGPD).getNav());
 
             // merge the information of extracted payment position with the data from existing payment position, retrieved from GPD
             PaymentPositionModelDto updatedPaymentPosition = updateExtractedPaymentPositionWithExistingData(iuv, sessionData, paymentPositionFromGPD, extractedPaymentPosition);
@@ -457,9 +458,7 @@ public class DebtPositionService {
         return updatedPaymentPosition;
     }
 
-    private void handleNewPaymentPosition(SessionDataDTO sessionData, PaymentPositionModelDto extractedPaymentPosition, List<String> iuvToSaveInBulkOperation, String iuv) {
-
-        String creditorInstitutionId = sessionData.getCommonFields().getCreditorInstitutionId();
+    private void handleNewPaymentPosition(SessionDataDTO sessionData, PaymentPositionModelDto extractedPaymentPosition, List<String> iuvToSaveInBulkOperation, String iuv, String creditorInstitutionId) {
 
         // generate a new NAV code calling IUVGenerator
         String nav = generateNavCodeFromIuvGenerator(creditorInstitutionId);
@@ -509,19 +508,37 @@ public class DebtPositionService {
         // execute the handle if and only if there is at least one payment position to be added
         if (!iuvToSaveInBulkOperation.isEmpty()) {
 
+            // clusterizing IUV codes by creditor institution
+            Map<String, Set<String>> iuvCI = new HashMap<>();
+            for (String iuv : iuvToSaveInBulkOperation) {
+                RPTContentDTO rpt = sessionData.getRPTByIUV(iuv);
+                if (rpt != null) {
+                    String creditorInstitutionId = rpt.getRpt().getDomain().getDomainId();
+                    Set<String> c = iuvCI.computeIfAbsent(creditorInstitutionId, k -> new HashSet<>());
+                    c.add(iuv);
+                }
+            }
+
             try {
+                for (Map.Entry<String, Set<String>> entry : iuvCI.entrySet()) {
 
-                String creditorInstitutionId = sessionData.getCommonFields().getCreditorInstitutionId();
+                    // extracting payment positions by creditor institution
+                    String creditorInstitutionId = entry.getKey();
+                    Set<String> iuvsForCreditorInstitution = entry.getValue();
+                    List<PaymentPositionModelDto> paymentPositionsToCreateForCreditorInstitution = extractedPaymentPositions.stream()
+                            .filter(pp -> iuvsForCreditorInstitution.contains(CommonUtility.getSinglePaymentOption(pp).getIuv()))
+                            .toList();
 
-                // generate request and communicating with GPD-core service in order to execute the bulk insertion
-                it.gov.pagopa.gen.wispconverter.client.gpd.model.MultiplePaymentPositionModelDto multiplePaymentPositions = new MultiplePaymentPositionModelDto();
-                multiplePaymentPositions.setPaymentPositions(extractedPaymentPositions);
+                    // generate request and communicating with GPD-core service in order to execute the bulk insertion
+                    it.gov.pagopa.gen.wispconverter.client.gpd.model.MultiplePaymentPositionModelDto multiplePaymentPositions = new MultiplePaymentPositionModelDto();
+                    multiplePaymentPositions.setPaymentPositions(paymentPositionsToCreateForCreditorInstitution);
 
-                // communicating with GPD service in order to update the existing payment position
-                gpdClientInstance.createMultiplePositions(creditorInstitutionId, multiplePaymentPositions, MDC.get(Constants.MDC_REQUEST_ID), true);
+                    // communicating with GPD service in order to update the existing payment position
+                    gpdClientInstance.createMultiplePositions(creditorInstitutionId, multiplePaymentPositions, MDC.get(Constants.MDC_REQUEST_ID), true);
 
-                // generate and save events in RE for trace the bulk insertion of payment positions
-                generateREForBulkInsert(extractedPaymentPositions);
+                    // generate and save events in RE for trace the bulk insertion of payment positions
+                    generateREForBulkInsert(paymentPositionsToCreateForCreditorInstitution, creditorInstitutionId);
+                }
 
             } catch (RestClientException e) {
                 throw new AppException(AppErrorCodeMessageEnum.CLIENT_GPD, String.format(REST_CLIENT_LOG_STRING, e.getCause().getClass().getCanonicalName(), e.getMessage()));
@@ -548,7 +565,7 @@ public class DebtPositionService {
     }
 
 
-    private void generateREForBulkInsert(List<PaymentPositionModelDto> paymentPositions) {
+    private void generateREForBulkInsert(List<PaymentPositionModelDto> paymentPositions, String domainId) {
 
         for (PaymentPositionModelDto paymentPosition : paymentPositions) {
 
@@ -559,6 +576,7 @@ public class DebtPositionService {
                 ReEventDto reEventDto = ReUtil.getREBuilder()
                         .status(InternalStepStatus.CREATED_NEW_PAYMENT_POSITION_IN_GPD)
                         .iuv(paymentOption.getIuv())
+                        .domainId(domainId)
                         .noticeNumber(paymentOption.getNav())
                         .info(String.format("Generated by bulk creation. IUPD = [%s]", paymentPosition.getIupd()))
                         .build();
@@ -573,7 +591,7 @@ public class DebtPositionService {
         // creating event to be persisted for RE
         if (Boolean.TRUE.equals(isTracingOnREEnabled)) {
             PaymentNoticeContentDTO paymentNotice = sessionDataDTO.getPaymentNoticeByIUV(iuv);
-            generateRE(InternalStepStatus.FOUND_INVALID_PAYMENT_POSITION_IN_GPD, iuv, paymentNotice.getNoticeNumber(), paymentNotice.getCcp(), null);
+            generateRE(InternalStepStatus.FOUND_INVALID_PAYMENT_POSITION_IN_GPD, iuv, paymentNotice.getNoticeNumber(), paymentNotice.getCcp(), paymentNotice.getFiscalCode(), null);
         }
     }
 
@@ -582,7 +600,7 @@ public class DebtPositionService {
         // creating event to be persisted for RE
         if (Boolean.TRUE.equals(isTracingOnREEnabled)) {
             PaymentNoticeContentDTO paymentNotice = sessionDataDTO.getPaymentNoticeByIUV(iuv);
-            generateRE(InternalStepStatus.GENERATED_NAV_FOR_NEW_PAYMENT_POSITION, iuv, nav, paymentNotice.getCcp(), null);
+            generateRE(InternalStepStatus.GENERATED_NAV_FOR_NEW_PAYMENT_POSITION, iuv, nav, paymentNotice.getCcp(), paymentNotice.getFiscalCode(), null);
         }
     }
 
@@ -591,17 +609,18 @@ public class DebtPositionService {
         // creating event to be persisted for RE
         if (Boolean.TRUE.equals(isTracingOnREEnabled)) {
             PaymentNoticeContentDTO paymentNotice = sessionDataDTO.getPaymentNoticeByIUV(iuv);
-            generateRE(InternalStepStatus.UPDATED_EXISTING_PAYMENT_POSITION_IN_GPD, iuv, paymentNotice.getNoticeNumber(), paymentNotice.getCcp(), null);
+            generateRE(InternalStepStatus.UPDATED_EXISTING_PAYMENT_POSITION_IN_GPD, iuv, paymentNotice.getNoticeNumber(), paymentNotice.getCcp(), paymentNotice.getFiscalCode(), null);
         }
     }
 
-    private void generateRE(InternalStepStatus status, String iuv, String noticeNumber, String ccp, String otherInfo) {
+    private void generateRE(InternalStepStatus status, String iuv, String noticeNumber, String ccp, String domainId, String otherInfo) {
 
         // setting data in MDC for next use
         ReEventDto reEvent = ReUtil.getREBuilder()
                 .status(status)
                 .iuv(iuv)
                 .ccp(ccp)
+                .domainId(domainId)
                 .noticeNumber(noticeNumber)
                 .info(otherInfo)
                 .build();

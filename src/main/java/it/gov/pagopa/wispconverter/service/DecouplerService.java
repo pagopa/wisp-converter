@@ -18,6 +18,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
 
+import java.util.List;
+
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -42,13 +44,12 @@ public class DecouplerService {
     public void storeRequestMappingInCache(SessionDataDTO sessionData, String sessionId) {
 
         try {
-            String creditorInstitutionId = sessionData.getCommonFields().getCreditorInstitutionId();
 
             // call APIM endpoint (formed only by a policy) in order to store mapped NAVs in APIM-internal cache
-            saveMappedKeyForDecoupler(sessionData, creditorInstitutionId);
+            saveMappedKeyForDecoupler(sessionData);
 
             // save in Redis cache (accessible for this app) the mapping of the request identifier needed for RT generation in next steps
-            saveMappedKeyForReceiptGeneration(sessionId, sessionData, creditorInstitutionId);
+            saveMappedKeyForReceiptGeneration(sessionId, sessionData);
 
         } catch (RestClientException e) {
             throw new AppException(AppErrorCodeMessageEnum.CLIENT_DECOUPLER_CACHING, String.format("RestClientException ERROR [%s] - %s", e.getCause().getClass().getCanonicalName(), e.getMessage()));
@@ -88,7 +89,7 @@ public class DecouplerService {
                 .build();
     }
 
-    private void saveMappedKeyForDecoupler(SessionDataDTO sessionData, String creditorInstitutionId) {
+    private void saveMappedKeyForDecoupler(SessionDataDTO sessionData) {
 
         // generate client instance for APIM endpoint
         it.gov.pagopa.gen.wispconverter.client.decouplercaching.api.DefaultApi apiInstance = new it.gov.pagopa.gen.wispconverter.client.decouplercaching.api.DefaultApi(decouplerCachingClient);
@@ -98,23 +99,28 @@ public class DecouplerService {
           The stored data are internal to APIM and cannot be retrieved from this app.
          */
         DecouplerCachingKeysDto decouplerCachingKeys = new DecouplerCachingKeysDto();
-        sessionData.getNAVs().forEach(noticeNumber -> decouplerCachingKeys.addKeysItem(String.format(CACHING_KEY_TEMPLATE, creditorInstitutionId, noticeNumber)));
+
+        List<String> noticeNumbers = sessionData.getNAVs();
+        for (String noticeNumber : noticeNumbers) {
+            PaymentNoticeContentDTO paymentNotice = sessionData.getPaymentNoticeByNoticeNumber(noticeNumber);
+            decouplerCachingKeys.addKeysItem(String.format(CACHING_KEY_TEMPLATE, paymentNotice.getFiscalCode(), noticeNumber));
+        }
         apiInstance.saveMapping(decouplerCachingKeys, MDC.get(Constants.MDC_REQUEST_ID));
 
         // generate and save re events internal for change status
         generateREForSavedMappingForDecoupler(sessionData, decouplerCachingKeys);
     }
 
-    public void saveMappedKeyForReceiptGeneration(String sessionId, SessionDataDTO sessionData, String creditorInstitutionId) {
+    public void saveMappedKeyForReceiptGeneration(String sessionId, SessionDataDTO sessionData) {
 
         for (PaymentNoticeContentDTO paymentNoticeContentDTO : sessionData.getAllPaymentNotices()) {
 
             // save the IUV-based key that contains the session identifier
-            String requestIDForRTHandling = String.format(CACHING_KEY_TEMPLATE, creditorInstitutionId, paymentNoticeContentDTO.getIuv());
+            String requestIDForRTHandling = String.format(CACHING_KEY_TEMPLATE, paymentNoticeContentDTO.getFiscalCode(), paymentNoticeContentDTO.getIuv());
             this.cacheRepository.insert(requestIDForRTHandling, sessionId, this.requestIDMappingTTL);
 
             // save the mapping that permits to convert a NAV-based key in a IUV-based one
-            String navToIuvMappingForRTHandling = String.format(MAP_CACHING_KEY_TEMPLATE, creditorInstitutionId, paymentNoticeContentDTO.getNoticeNumber());
+            String navToIuvMappingForRTHandling = String.format(MAP_CACHING_KEY_TEMPLATE, paymentNoticeContentDTO.getFiscalCode(), paymentNoticeContentDTO.getNoticeNumber());
             this.cacheRepository.insert(navToIuvMappingForRTHandling, requestIDForRTHandling, this.requestIDMappingTTL);
 
             // generate and save re events internal for change status
@@ -132,7 +138,7 @@ public class DecouplerService {
                 if (splitKey.length == 3) {
                     PaymentNoticeContentDTO paymentNotice = sessionData.getPaymentNoticeByNoticeNumber(splitKey[2]);
                     String infoAboutCachedKey = "Decoupler key = [(key:" + key + "; value:<baseNodeId>)]";
-                    generateRE(InternalStepStatus.GENERATED_CACHE_ABOUT_RPT_FOR_DECOUPLER, paymentNotice.getIuv(), paymentNotice.getNoticeNumber(), paymentNotice.getCcp(), infoAboutCachedKey);
+                    generateRE(InternalStepStatus.GENERATED_CACHE_ABOUT_RPT_FOR_DECOUPLER, paymentNotice.getFiscalCode(), paymentNotice.getIuv(), paymentNotice.getNoticeNumber(), paymentNotice.getCcp(), infoAboutCachedKey);
                 }
             }
         }
@@ -142,14 +148,15 @@ public class DecouplerService {
 
         // creating event to be persisted for RE
         if (Boolean.TRUE.equals(isTracingOnREEnabled)) {
-            generateRE(InternalStepStatus.GENERATED_CACHE_ABOUT_RPT_FOR_RT_GENERATION, paymentNotice.getIuv(), paymentNotice.getNoticeNumber(), paymentNotice.getCcp(), infoAboutCachedKey);
+            generateRE(InternalStepStatus.GENERATED_CACHE_ABOUT_RPT_FOR_RT_GENERATION, paymentNotice.getFiscalCode(), paymentNotice.getIuv(), paymentNotice.getNoticeNumber(), paymentNotice.getCcp(), infoAboutCachedKey);
         }
     }
 
-    private void generateRE(InternalStepStatus status, String iuv, String nav, String ccp, String otherInfo) {
+    private void generateRE(InternalStepStatus status, String domainId, String iuv, String nav, String ccp, String otherInfo) {
 
         ReEventDto reEvent = ReUtil.getREBuilder()
                 .status(status)
+                .domainId(domainId)
                 .iuv(iuv)
                 .noticeNumber(nav)
                 .ccp(ccp)

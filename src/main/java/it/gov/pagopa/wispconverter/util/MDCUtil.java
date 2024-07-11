@@ -23,7 +23,6 @@ public class MDCUtil {
             MDC.put(Constants.MDC_CONTROL_FLAG, "TRUE");
 
             MDC.put(Constants.MDC_CART_ID, commonFields.getCartId());
-            MDC.put(Constants.MDC_DOMAIN_ID, commonFields.getCreditorInstitutionId());
             MDC.put(Constants.MDC_STATION_ID, commonFields.getStationId());
             MDC.put(Constants.MDC_CHANNEL_ID, commonFields.getChannelId());
             MDC.put(Constants.MDC_PSP_ID, commonFields.getPspId());

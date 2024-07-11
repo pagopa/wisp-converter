@@ -36,7 +36,6 @@ public interface DebtPositionMapper {
     @Mapping(source = "commonFields.payerAddressProvince", target = "province")
     @Mapping(source = "commonFields.payerAddressNation", target = "country")
     @Mapping(source = "commonFields.payerEmail", target = "email")
-    @Mapping(source = "commonFields.creditorInstitutionName", target = "companyName")
     @Mapping(target = "validityDate", expression = "java(null)")
     @Mapping(target = "switchToExpired", constant = "false")
     @Mapping(target = "payStandIn", constant = "false")

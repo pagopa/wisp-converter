@@ -20,6 +20,8 @@ import org.springframework.web.client.RestClientException;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -71,17 +73,40 @@ public class CheckoutService {
                 .map(mapper::toPaymentNotice)
                 .toList());
 
-        // retrieving URL for redirect from station
-        String stationRedirectURL = getRedirectURL(sessionData.getCommonFields().getStationId());
-
         // explicitly set all URLs for object
+        String uriContent = extractReturnUrl(sessionData);
         it.gov.pagopa.gen.wispconverter.client.checkout.model.CartRequestReturnUrlsDto returnUrls = new it.gov.pagopa.gen.wispconverter.client.checkout.model.CartRequestReturnUrlsDto();
-        returnUrls.setReturnOkUrl(new URI(String.format("%s?idDominio=%s&idSession=%s&esito=OK",stationRedirectURL, sessionData.getCommonFields().getCreditorInstitutionId(), sessionData.getCommonFields().getSessionId())));
-        returnUrls.setReturnCancelUrl(new URI(String.format("%s?idDominio=%s&idSession=%s&esito=ERROR",stationRedirectURL, sessionData.getCommonFields().getCreditorInstitutionId(), sessionData.getCommonFields().getSessionId())));
-        returnUrls.setReturnErrorUrl(new URI(String.format("%s?idDominio=%s&idSession=%s&esito=ERROR",stationRedirectURL, sessionData.getCommonFields().getCreditorInstitutionId(), sessionData.getCommonFields().getSessionId())));
+        returnUrls.setReturnOkUrl(new URI(String.format(uriContent, "OK")));
+        returnUrls.setReturnCancelUrl(new URI(String.format(uriContent, "ERROR")));
+        returnUrls.setReturnErrorUrl(new URI(String.format(uriContent, "ERROR")));
         cart.setReturnUrls(returnUrls);
 
         return cart;
+    }
+
+    private String extractReturnUrl(SessionDataDTO sessionData) {
+
+        // retrieving URL for redirect from station
+        String stationRedirectURL = getRedirectURL(sessionData.getCommonFields().getStationId());
+
+        // extracting the creditor institution either from common field or from the payment notices
+        String creditorInstitution = sessionData.getCommonFields().getCreditorInstitutionId();
+        if (creditorInstitution == null) {
+            Set<String> creditorInstitutionsFromPaymentNotices = sessionData.getAllPaymentNotices().stream()
+                    .map(PaymentNoticeContentDTO::getFiscalCode)
+                    .collect(Collectors.toSet());
+            if (creditorInstitutionsFromPaymentNotices.size() == 1) {
+                creditorInstitution = creditorInstitutionsFromPaymentNotices.stream().findFirst().orElse(null);
+            }
+        }
+
+        // generating the URI
+        StringBuilder uriBuilder = new StringBuilder(stationRedirectURL).append("?");
+        if (creditorInstitution != null) {
+            uriBuilder.append("idDominio=").append(creditorInstitution).append("&");
+        }
+        uriBuilder.append("idSession=").append(sessionData.getCommonFields().getSessionId()).append("&esito=%s");
+        return uriBuilder.toString();
     }
 
     private String getRedirectURL(String stationId) {
@@ -106,6 +131,7 @@ public class CheckoutService {
                 PaymentNoticeContentDTO paymentNotice = sessionData.getPaymentNoticeByNoticeNumber(paymentNoticeFromCart.getNoticeNumber());
                 ReEventDto reEvent = ReUtil.getREBuilder()
                         .status(InternalStepStatus.SAVED_RPT_IN_CART_RECEIVED_REDIRECT_URL_FROM_CHECKOUT)
+                        .domainId(paymentNotice.getFiscalCode())
                         .iuv(paymentNotice.getIuv())
                         .noticeNumber(paymentNotice.getNoticeNumber())
                         .ccp(paymentNotice.getCcp())

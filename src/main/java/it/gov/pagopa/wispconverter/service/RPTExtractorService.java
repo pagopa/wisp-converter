@@ -91,7 +91,6 @@ public class RPTExtractorService {
                 .commonFields(CommonFieldsDTO.builder()
                         .sessionId(MDC.get(Constants.MDC_SESSION_ID))
                         .creditorInstitutionId(creditorInstitutionId)
-                        .creditorInstitutionName(cacheService.getCreditorInstitutionNameFromCache(creditorInstitutionId))
                         .pspId(soapBody.getIdentificativoPSP())
                         .creditorInstitutionBrokerId(soapHeader.getIdentificativoIntermediarioPA())
                         .stationId(soapHeader.getIdentificativoStazioneIntermediarioPA())
@@ -133,7 +132,7 @@ public class RPTExtractorService {
 
         // initializing common fields
         boolean isMultibeneficiary = soapBody.isMultiBeneficiario() != null && soapBody.isMultiBeneficiario();
-        String creditorInstitutionId = null;
+        String creditorInstitutionId = isMultibeneficiary ? soapBody.getListaRPT().getElementoListaRPT().get(0).getIdentificativoDominio() : null;
         String payerType = null;
         String payerFiscalCode = null;
         String fullName = null;
@@ -152,11 +151,6 @@ public class RPTExtractorService {
 
             // generating RPT
             PaymentRequestDTO rpt = extractRPT(elementoListaRPT.getRpt());
-
-            // Validating creditor institution code
-            creditorInstitutionId = isMultibeneficiary ?
-                    soapHeader.getIdentificativoCarrello().substring(0, 11) :
-                    checkUniqueness(creditorInstitutionId, rpt.getDomain().getDomainId(), AppErrorCodeMessageEnum.VALIDATION_INVALID_CREDITOR_INSTITUTION);
 
             /*
               Validating common fields.
@@ -197,7 +191,6 @@ public class RPTExtractorService {
                         .sessionId(MDC.get(Constants.MDC_SESSION_ID))
                         .cartId(soapHeader.getIdentificativoCarrello())
                         .creditorInstitutionId(creditorInstitutionId)
-                        .creditorInstitutionName(cacheService.getCreditorInstitutionNameFromCache(creditorInstitutionId))
                         .pspId(soapBody.getIdentificativoPSP())
                         .creditorInstitutionBrokerId(soapHeader.getIdentificativoIntermediarioPA())
                         .stationId(soapHeader.getIdentificativoStazioneIntermediarioPA())
@@ -247,6 +240,7 @@ public class RPTExtractorService {
             for (RPTContentDTO rpt : sessionData.getAllRPTs()) {
                 ReEventDto reEventFromRPT = ReUtil.getREBuilder()
                         .status(InternalStepStatus.EXTRACTED_DATA_FROM_RPT)
+                        .domainId(rpt.getRpt().getDomain().getDomainId())
                         .iuv(rpt.getIuv())
                         .ccp(rpt.getCcp())
                         .build();
