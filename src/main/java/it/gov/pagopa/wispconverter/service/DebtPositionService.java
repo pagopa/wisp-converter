@@ -98,8 +98,8 @@ public class DebtPositionService {
 
             // extract IUV from analyzed payment position (or throw an exception if not existing)
             String iuv = CommonUtility.getSinglePaymentOption(extractedPaymentPosition).getIuv();
-            RPTContentDTO rptByIUV = sessionData.getRPTByIUV(iuv);
-            String creditorInstitutionId = rptByIUV.getRpt().getDomain().getDomainId();
+            List<RPTContentDTO> rpts = sessionData.getRPTByIUV(iuv);
+            String creditorInstitutionId = rpts.stream().map(rpt -> rpt.getRpt().getDomain().getDomainId()).findFirst().orElse(null);
 
             /*
               Using the extracted IUV, check if a payment position already exists in GPD.
@@ -509,18 +509,18 @@ public class DebtPositionService {
         if (!iuvToSaveInBulkOperation.isEmpty()) {
 
             // clusterizing IUV codes by creditor institution
-            Map<String, Set<String>> iuvCI = new HashMap<>();
+            Map<String, Set<String>> iuvClusteredByCI = new HashMap<>();
             for (String iuv : iuvToSaveInBulkOperation) {
-                RPTContentDTO rpt = sessionData.getRPTByIUV(iuv);
-                if (rpt != null) {
-                    String creditorInstitutionId = rpt.getRpt().getDomain().getDomainId();
-                    Set<String> c = iuvCI.computeIfAbsent(creditorInstitutionId, k -> new HashSet<>());
-                    c.add(iuv);
+                List<RPTContentDTO> rpts = sessionData.getRPTByIUV(iuv);
+                if (!rpts.isEmpty()) {
+                    String creditorInstitutionId = rpts.stream().map(rpt -> rpt.getRpt().getDomain().getDomainId()).findFirst().orElse("");
+                    Set<String> cluster = iuvClusteredByCI.computeIfAbsent(creditorInstitutionId, k -> new HashSet<>());
+                    cluster.add(iuv);
                 }
             }
 
             try {
-                for (Map.Entry<String, Set<String>> entry : iuvCI.entrySet()) {
+                for (Map.Entry<String, Set<String>> entry : iuvClusteredByCI.entrySet()) {
 
                     // extracting payment positions by creditor institution
                     String creditorInstitutionId = entry.getKey();

@@ -3,6 +3,7 @@ package it.gov.pagopa.wispconverter.service.model.session;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -59,8 +60,14 @@ public class SessionDataDTO {
                 .toList();
     }
 
-    public RPTContentDTO getRPTByIUV(String iuv) {
-        return this.rpts.get(iuv);
+    public List<RPTContentDTO> getRPTByIUV(String iuv) {
+        List<RPTContentDTO> rptContents = new ArrayList<>();
+        for (Map.Entry<String, RPTContentDTO> entry : this.rpts.entrySet()) {
+            if (entry.getKey().contains(iuv)) {
+                rptContents.add(entry.getValue());
+            }
+        }
+        return rptContents;
     }
 
 }
