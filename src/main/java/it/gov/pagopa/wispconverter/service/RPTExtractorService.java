@@ -214,7 +214,6 @@ public class RPTExtractorService {
                         .containsDigitalStamp(rptContents.stream().anyMatch(RPTContentDTO::getContainsDigitalStamp))
                         .build())
                 .paymentNotices(new HashMap<>())
-                //.rpts(rptContents.stream().collect(Collectors.toMap(RPTContentDTO::getIuv, Function.identity()))) // TODO resolve
                 .rpts(rpts)
                 .build();
     }

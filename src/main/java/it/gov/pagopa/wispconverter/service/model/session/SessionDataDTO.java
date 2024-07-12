@@ -3,10 +3,7 @@ package it.gov.pagopa.wispconverter.service.model.session;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Data
 @Builder(toBuilder = true)
@@ -51,7 +48,7 @@ public class SessionDataDTO {
     }
 
     public Collection<RPTContentDTO> getAllRPTs() {
-        return this.rpts.values();
+        return this.rpts.values().stream().sorted(Comparator.comparingInt(RPTContentDTO::getIndex)).toList();
     }
 
     public List<String> getNAVs() {
@@ -67,7 +64,7 @@ public class SessionDataDTO {
                 rptContents.add(entry.getValue());
             }
         }
-        return rptContents;
+        return rptContents.stream().sorted(Comparator.comparingInt(RPTContentDTO::getIndex)).toList();
     }
 
 }
