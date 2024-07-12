@@ -197,11 +197,11 @@ public class DebtPositionService {
         List<PaymentPositionModelDto> paymentPositions = new LinkedList<>();
 
         // execute the mapping of the transfer from all RPTs in session data
-        int transferIdCounter = 1;
         for (RPTContentDTO rptContent : sessionData.getAllRPTs()) {
 
             // extracting the payment from analyzed RPT in order to generate the transfers.
             PaymentRequestDTO paymentExtractedFromRPT = rptContent.getRpt();
+            int transferIdCounter = 1;
 
             /*
               Generating transfer for the future GPD's payment option.
