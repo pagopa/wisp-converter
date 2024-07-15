@@ -59,11 +59,7 @@ microservice-chart:
       - type: cpu
         metricType: Utilization
         metadata:
-          value: "70"
-      - type: memory
-        metricType: Utilization
-        metadata:
-          value: "90"
+          value: "80"
     advanced:
       horizontalPodAutoscalerConfig:
         behavior:
