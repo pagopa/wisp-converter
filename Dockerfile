@@ -26,4 +26,5 @@ ENV JAVA_OPTS="${JAVA_OPTS}"
 EXPOSE 8080
 
 #ENTRYPOINT ["java","-javaagent:opentelemetry-javaagent.jar","--enable-preview","org.springframework.boot.loader.JarLauncher"]
-ENTRYPOINT ["java","--enable-preview","org.springframework.boot.loader.launch.JarLauncher"]
+#ENTRYPOINT ["java","--enable-preview","org.springframework.boot.loader.launch.JarLauncher"]
+ENTRYPOINT exec java $JAVA_OPTS --enable-preview org.springframework.boot.loader.launch.JarLauncher
