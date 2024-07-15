@@ -507,52 +507,67 @@ public class ReceiptService {
     private void generateREForNotGenerableRT(SessionDataDTO sessionData, String iuv, String noticeNumber) {
 
         // extract psp on which the payment will be sent
-        RPTContentDTO rptContent = sessionData.getRPTByIUV(iuv);
-        String psp = rptContent.getRpt().getPayeeInstitution().getSubjectUniqueIdentifier().getCode();
+        List<RPTContentDTO> rpts = sessionData.getRPTByIUV(iuv);
+        for (RPTContentDTO rptContent : rpts) {
 
-        // creating event to be persisted for RE
-        generateRE(InternalStepStatus.RT_NOT_GENERABLE_FOR_GPD_STATION, iuv, noticeNumber, rptContent.getCcp(), psp, null);
+            String psp = rptContent.getRpt().getPayeeInstitution().getSubjectUniqueIdentifier().getCode();
+
+            // creating event to be persisted for RE
+            generateRE(InternalStepStatus.RT_NOT_GENERABLE_FOR_GPD_STATION, iuv, noticeNumber, rptContent.getCcp(), psp, null);
+        }
     }
 
     private void generateREForSentRT(SessionDataDTO sessionData, String iuv, String noticeNumber) {
 
         // extract psp on which the payment will be sent
-        RPTContentDTO rptContent = sessionData.getRPTByIUV(iuv);
-        String psp = rptContent.getRpt().getPayeeInstitution().getSubjectUniqueIdentifier().getCode();
+        List<RPTContentDTO> rpts = sessionData.getRPTByIUV(iuv);
+        for (RPTContentDTO rptContent : rpts) {
 
-        // creating event to be persisted for RE
-        generateRE(InternalStepStatus.RT_SEND_SUCCESS, iuv, noticeNumber, rptContent.getCcp(), psp, null);
+            String psp = rptContent.getRpt().getPayeeInstitution().getSubjectUniqueIdentifier().getCode();
+
+            // creating event to be persisted for RE
+            generateRE(InternalStepStatus.RT_SEND_SUCCESS, iuv, noticeNumber, rptContent.getCcp(), psp, null);
+        }
     }
 
     private void generateREForNotSentRT(SessionDataDTO sessionData, String iuv, String noticeNumber, String otherInfo) {
 
         // extract psp on which the payment will be sent
-        RPTContentDTO rptContent = sessionData.getRPTByIUV(iuv);
-        String psp = rptContent.getRpt().getPayeeInstitution().getSubjectUniqueIdentifier().getCode();
+        List<RPTContentDTO> rpts = sessionData.getRPTByIUV(iuv);
+        for (RPTContentDTO rptContent : rpts) {
 
-        // creating event to be persisted for RE
-        generateRE(InternalStepStatus.RT_SEND_FAILURE, iuv, noticeNumber, rptContent.getCcp(), psp, otherInfo);
+            String psp = rptContent.getRpt().getPayeeInstitution().getSubjectUniqueIdentifier().getCode();
+
+            // creating event to be persisted for RE
+            generateRE(InternalStepStatus.RT_SEND_FAILURE, iuv, noticeNumber, rptContent.getCcp(), psp, otherInfo);
+        }
     }
 
     private void generateREForSuccessfulSchedulingSentRT(SessionDataDTO sessionData, String iuv, String noticeNumber) {
 
         // extract psp on which the payment will be sent
-        RPTContentDTO rptContent = sessionData.getRPTByIUV(iuv);
-        String psp = rptContent.getRpt().getPayeeInstitution().getSubjectUniqueIdentifier().getCode();
+        List<RPTContentDTO> rpts = sessionData.getRPTByIUV(iuv);
+        for (RPTContentDTO rptContent : rpts) {
 
-        // creating event to be persisted for RE
-        generateRE(InternalStepStatus.RT_SEND_SCHEDULING_SUCCESS, iuv, noticeNumber, rptContent.getCcp(), psp, null);
+            String psp = rptContent.getRpt().getPayeeInstitution().getSubjectUniqueIdentifier().getCode();
+
+            // creating event to be persisted for RE
+            generateRE(InternalStepStatus.RT_SEND_SCHEDULING_SUCCESS, iuv, noticeNumber, rptContent.getCcp(), psp, null);
+        }
     }
 
     private void generateREForFailedSchedulingSentRT(SessionDataDTO sessionData, String iuv, String noticeNumber, Throwable e) {
 
         // extract psp on which the payment will be sent
-        RPTContentDTO rptContent = sessionData.getRPTByIUV(iuv);
-        String psp = rptContent.getRpt().getPayeeInstitution().getSubjectUniqueIdentifier().getCode();
+        List<RPTContentDTO> rpts = sessionData.getRPTByIUV(iuv);
+        for (RPTContentDTO rptContent : rpts) {
 
-        // creating event to be persisted for RE
-        String otherInfo = "Caused by: " + e.getMessage();
-        generateRE(InternalStepStatus.RT_SEND_SCHEDULING_FAILURE, iuv, noticeNumber, rptContent.getCcp(), psp, otherInfo);
+            String psp = rptContent.getRpt().getPayeeInstitution().getSubjectUniqueIdentifier().getCode();
+
+            // creating event to be persisted for RE
+            String otherInfo = "Caused by: " + e.getMessage();
+            generateRE(InternalStepStatus.RT_SEND_SCHEDULING_FAILURE, iuv, noticeNumber, rptContent.getCcp(), psp, otherInfo);
+        }
     }
 
     private void generateREForSendingRT(boolean mustSendNegativeRT, SessionDataDTO sessionData, Object receipt, String iuv, String noticeNumber) {
@@ -574,11 +589,14 @@ public class ReceiptService {
     private void generateREForSendRTProcess(SessionDataDTO sessionData, String iuv, String noticeNumber, InternalStepStatus status, String info) {
 
         // extract psp on which the payment will be sent
-        RPTContentDTO rptContent = sessionData.getRPTByIUV(iuv);
-        String psp = rptContent.getRpt().getPayeeInstitution().getSubjectUniqueIdentifier().getCode();
+        List<RPTContentDTO> rpts = sessionData.getRPTByIUV(iuv);
+        for (RPTContentDTO rptContent : rpts) {
 
-        // creating event to be persisted for RE
-        generateRE(status, iuv, noticeNumber, rptContent.getCcp(), psp, info);
+            String psp = rptContent.getRpt().getPayeeInstitution().getSubjectUniqueIdentifier().getCode();
+
+            // creating event to be persisted for RE
+            generateRE(status, iuv, noticeNumber, rptContent.getCcp(), psp, info);
+        }
     }
 
     private void generateRE(InternalStepStatus status, String iuv, String noticeNumber, String ccp, String psp, String otherInfo) {
