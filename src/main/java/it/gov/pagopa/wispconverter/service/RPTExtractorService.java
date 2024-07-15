@@ -25,12 +25,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import java.util.*;
 
 @Service
 @Slf4j
@@ -185,6 +180,16 @@ public class RPTExtractorService {
             rptIndex++;
         }
 
+        // populating RPT, adding index if multibeneficiary in order to avoid duplication
+        Map<String, RPTContentDTO> rpts = new HashMap<>();
+        for (RPTContentDTO rpt : rptContents) {
+            String iuv = rpt.getIuv();
+            if (isMultibeneficiary) {
+                iuv += "-" + rpt.getIndex();
+            }
+            rpts.put(iuv, rpt);
+        }
+
         // finally, generate session data
         return SessionDataDTO.builder()
                 .commonFields(CommonFieldsDTO.builder()
@@ -209,7 +214,7 @@ public class RPTExtractorService {
                         .containsDigitalStamp(rptContents.stream().anyMatch(RPTContentDTO::getContainsDigitalStamp))
                         .build())
                 .paymentNotices(new HashMap<>())
-                .rpts(rptContents.stream().collect(Collectors.toMap(RPTContentDTO::getIuv, Function.identity())))
+                .rpts(rpts)
                 .build();
     }
 
