@@ -2,7 +2,7 @@
   "openapi": "3.0.1",
   "info": {
     "title": "WISP-Converter-redirect",
-    "version": "0.0.51-1-dockerfile-for-ai"
+    "version": "0.0.51-2-dockerfile-for-ai"
   },
   "servers": [
     {
