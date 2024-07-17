@@ -21,9 +21,9 @@ RUN true
 COPY --chown=spring:spring  --from=builder spring-boot-loader/ ./
 COPY --chown=spring:spring  --from=builder application/ ./
 
-ENV JAVA_OPTS="${JAVA_OPTS}"
+#ENV JAVA_OPTS="${JAVA_OPTS}"
 
 EXPOSE 8080
 
 # this mode is required in order to inject the JAVA_OPTS from environment
-ENTRYPOINT exec java $JAVA_OPTS --enable-preview org.springframework.boot.loader.launch.JarLauncher
+#ENTRYPOINT exec java $JAVA_OPTS --enable-preview org.springframework.boot.loader.launch.JarLauncher
