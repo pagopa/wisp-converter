@@ -24,6 +24,7 @@ public interface DebtPositionMapper {
     @Mapping(target = "validityDate", expression = "java(null)")
     @Mapping(target = "switchToExpired", constant = "false")
     @Mapping(target = "payStandIn", constant = "false")
+    @Mapping(target = "pull", constant = "false")
     it.gov.pagopa.gen.wispconverter.client.gpd.model.PaymentPositionModelDto toPaymentPosition(RPTContentDTO rptContentDTO);
 
     @Mapping(source = "commonFields.payerType", target = "type")
