@@ -186,16 +186,12 @@ public class CommonUtility {
             throw new AppException(AppErrorCodeMessageEnum.CONFIGURATION_INVALID_STATION_REDIRECT_URL, station.getStationCode());
         }
 
-        System.out.println("checkIfOnboardedInGPD: " + checkIfOnboardedInGPD + " gpdPath: " + gpdPath + " path" + service.getPath());
-
         // check if station is onboarded on GPD and is correctly configured for v2 primitives
         if (checkIfOnboardedInGPD) {
             isOk = service.getPath().contains(gpdPath);
-            System.out.println("isok1: " + isOk);
-            if (isOk && station.getPrimitiveVersion() != 2) {
+            if (!isOk || station.getPrimitiveVersion() != 2) {
                 throw new AppException(AppErrorCodeMessageEnum.CONFIGURATION_INVALID_GPD_STATION, station.getStationCode());
             }
-            System.out.println("isok1: " + isOk + " prim: " + station.getPrimitiveVersion());
         }
 
         return isOk;

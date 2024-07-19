@@ -102,8 +102,6 @@ public class ConfigCacheService {
             throw new AppException(AppErrorCodeMessageEnum.CONFIGURATION_INVALID_STATION, stationCreditorInstitution.getStationCode());
         }
 
-        log.info("Station: {}", station);
-
         return station;
     }
 
