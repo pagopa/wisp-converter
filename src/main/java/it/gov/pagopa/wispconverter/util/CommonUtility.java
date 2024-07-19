@@ -189,7 +189,10 @@ public class CommonUtility {
         // check if station is onboarded on GPD and is correctly configured for v2 primitives
         if (checkIfOnboardedInGPD) {
             isOk = service.getPath().contains(gpdPath);
-            if (!isOk || station.getPrimitiveVersion() != 2) {
+            if (!isOk) {
+                throw new AppException(AppErrorCodeMessageEnum.CONFIGURATION_NOT_GPD_STATION, station.getStationCode());
+            }
+            if (station.getPrimitiveVersion() != 2) {
                 throw new AppException(AppErrorCodeMessageEnum.CONFIGURATION_INVALID_GPD_STATION, station.getStationCode());
             }
         }
