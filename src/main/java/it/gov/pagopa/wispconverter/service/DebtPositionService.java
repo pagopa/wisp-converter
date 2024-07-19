@@ -74,6 +74,9 @@ public class DebtPositionService {
     @Value("${wisp-converter.payment-position-valid-status}")
     private Set<String> paymentPositionValidStatuses;
 
+    @Value("${wisp-converter.station-in-gpd.partial-path}")
+    private String stationInGpdPartialPath;
+
     @Value("${wisp-converter.re-tracing.internal.payment-position-analysis.enabled}")
     private Boolean isTracingOnREEnabled;
 
@@ -374,11 +377,17 @@ public class DebtPositionService {
          */
         if (!receiptsToSend.isEmpty()) {
 
-            // save the mapped keys in the Redis cache for receipt generation
-            decouplerService.saveMappedKeyForReceiptGeneration(sessionData.getCommonFields().getSessionId(), sessionData);
+            try {
+                // save the mapped keys in the Redis cache for receipt generation
+                decouplerService.saveMappedKeyForReceiptGeneration(sessionData.getCommonFields().getSessionId(), sessionData);
 
-            // generate and send the KO receipts to creditor institution via configured station
-            receiptService.sendKoPaaInviaRtToCreditorInstitution(receiptsToSend.toString());
+                // generate and send the KO receipts to creditor institution via configured station
+                receiptService.sendKoPaaInviaRtToCreditorInstitution(receiptsToSend.toString());
+
+            } catch (AppException e) {
+
+                log.error("An error occurred while ");
+            }
         }
 
         // finally, throw an exception for notify the error, including all the IUVs
@@ -393,7 +402,7 @@ public class DebtPositionService {
         try {
 
             // validate the station, checking if exists one with the required segregation code and, if is onboarded on GPD, has the correct primitive version
-            CommonUtility.checkStationValidity(configCacheService, sessionData, creditorInstitutionId, CommonUtility.getSinglePaymentOption(paymentPositionFromGPD).getNav());
+            CommonUtility.checkStationValidityIfOnboardedOnGPD(configCacheService, sessionData, creditorInstitutionId, CommonUtility.getSinglePaymentOption(paymentPositionFromGPD).getNav(), stationInGpdPartialPath);
 
             // merge the information of extracted payment position with the data from existing payment position, retrieved from GPD
             PaymentPositionModelDto updatedPaymentPosition = updateExtractedPaymentPositionWithExistingData(iuv, sessionData, paymentPositionFromGPD, extractedPaymentPosition);

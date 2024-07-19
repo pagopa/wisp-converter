@@ -148,6 +148,11 @@ public class CommonUtility {
         checkStation(configCacheService, sessionData, creditorInstitutionId, noticeNumber, false, true, null);
     }
 
+    public static void checkStationValidityIfOnboardedOnGPD(ConfigCacheService configCacheService, SessionDataDTO sessionData, String creditorInstitutionId, String noticeNumber, String gpdPath) {
+
+        checkStation(configCacheService, sessionData, creditorInstitutionId, noticeNumber, true, true, gpdPath);
+    }
+
     public static boolean isStationOnboardedOnGpd(ConfigCacheService configCacheService, SessionDataDTO sessionData, String creditorInstitutionId, String gpdPath) {
 
         return checkStation(configCacheService, sessionData, creditorInstitutionId, null, true, false, gpdPath);
