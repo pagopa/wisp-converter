@@ -288,7 +288,7 @@ class ReceiptTest {
         mvc.perform(MockMvcRequestBuilders.post("/receipt/ko")
                         .accept(MediaType.APPLICATION_JSON)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new ReceiptRequest(receipts.toString()))))
+                        .content(objectMapper.writeValueAsString(receipts)))
                 .andExpect(MockMvcResultMatchers.status().is2xxSuccessful())
                 .andDo(result -> {
                     assertNotNull(result);
@@ -323,7 +323,7 @@ class ReceiptTest {
         mvc.perform(MockMvcRequestBuilders.post("/receipt/ko")
                         .accept(MediaType.APPLICATION_JSON)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new ReceiptRequest(receipts.toString()))))
+                        .content(objectMapper.writeValueAsString(receipts)))
                 .andExpect(MockMvcResultMatchers.status().is2xxSuccessful())
                 .andDo(result -> {
                     assertNotNull(result);
@@ -359,7 +359,7 @@ class ReceiptTest {
         mvc.perform(MockMvcRequestBuilders.post("/receipt/ko")
                         .accept(MediaType.APPLICATION_JSON)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new ReceiptRequest(receipts.toString()))))
+                        .content(objectMapper.writeValueAsString(receipts)))
                 .andExpect(MockMvcResultMatchers.status().is4xxClientError())
                 .andDo(result -> {
                     assertNotNull(result);
@@ -427,7 +427,7 @@ class ReceiptTest {
         mvc.perform(MockMvcRequestBuilders.post("/receipt/ko")
                         .accept(MediaType.APPLICATION_JSON)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new ReceiptRequest(receipts.toString()))))
+                        .content(objectMapper.writeValueAsString(receipts)))
                 .andExpect(MockMvcResultMatchers.status().is4xxClientError())
                 .andDo(
                         result -> {

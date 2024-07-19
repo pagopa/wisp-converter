@@ -52,11 +52,11 @@ public class ReceiptController {
             consumes = MediaType.APPLICATION_JSON_VALUE
     )
     @Trace(businessProcess = BP_RECEIPT_KO, reEnabled = true)
-    public void receiptKo(@RequestBody ReceiptRequest request) throws IOException {
+    public void receiptKo(@RequestBody String request) throws IOException {
 
         try {
-            log.info("Invoking API operation receiptKo - args: {}", request.toString());
-            receiptService.sendKoPaaInviaRtToCreditorInstitution(request.getContent());
+            log.info("Invoking API operation receiptKo - args: {}", request);
+            receiptService.sendKoPaaInviaRtToCreditorInstitution(request);
             log.info("Successful API operation receiptKo");
         } catch (Exception ex) {
             String operationId = MDC.get(Constants.MDC_OPERATION_ID);
