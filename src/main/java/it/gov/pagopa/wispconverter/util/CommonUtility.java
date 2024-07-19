@@ -143,12 +143,7 @@ public class CommonUtility {
                 .buildProcessorClient();
     }
 
-    public static void checkStationValidity(ConfigCacheService configCacheService, SessionDataDTO sessionData, String creditorInstitutionId, String noticeNumber) {
-
-        checkStation(configCacheService, sessionData, creditorInstitutionId, noticeNumber, false, true, null);
-    }
-
-    public static void checkStationValidityIfOnboardedOnGPD(ConfigCacheService configCacheService, SessionDataDTO sessionData, String creditorInstitutionId, String noticeNumber, String gpdPath) {
+    public static void checkStationValidity(ConfigCacheService configCacheService, SessionDataDTO sessionData, String creditorInstitutionId, String noticeNumber, String gpdPath) {
 
         checkStation(configCacheService, sessionData, creditorInstitutionId, noticeNumber, true, true, gpdPath);
     }
@@ -174,6 +169,7 @@ public class CommonUtility {
             try {
                 long segregationCodeFromNoticeNumber = Long.parseLong(noticeNumber.substring(1, 3));
                 station = configCacheService.getStationsByCreditorInstitutionAndSegregationCodeFromCache(creditorInstitutionId, segregationCodeFromNoticeNumber);
+
             } catch (NumberFormatException e) {
                 throw new AppException(AppErrorCodeMessageEnum.PAYMENT_POSITION_NOT_VALID, noticeNumber, "In order to check the station validity is required a notice number from which the segregation code must be extracted, but it is not correctly set as numeric string in the payment position.");
             }

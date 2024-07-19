@@ -95,12 +95,16 @@ public class ConfigCacheService {
                 .findFirst()
                 .orElseThrow(() -> new AppException(AppErrorCodeMessageEnum.CONFIGURATION_INVALID_CREDITOR_INSTITUTION_STATION, segregationCode, creditorInstitutionId));
 
+        log.info("Retrieving station with creditor institution " + creditorInstitutionId + " and segcode " + segregationCode + ". Retrieved: " + stationCreditorInstitution.getStationCode());
+
         // retrieving station by station identifier
         Map<String, StationDto> stations = cache.getStations();
         StationDto station = stations.get(stationCreditorInstitution.getStationCode());
         if (station == null) {
             throw new AppException(AppErrorCodeMessageEnum.CONFIGURATION_INVALID_STATION, stationCreditorInstitution.getStationCode());
         }
+
+        log.info("Station: {}", station);
 
         return station;
     }
