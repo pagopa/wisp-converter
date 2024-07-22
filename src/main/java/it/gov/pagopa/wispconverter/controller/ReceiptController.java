@@ -1,5 +1,6 @@
 package it.gov.pagopa.wispconverter.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -11,6 +12,7 @@ import it.gov.pagopa.wispconverter.controller.model.ReceiptRequest;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.service.ReceiptService;
+import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
 import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.ErrorUtil;
 import it.gov.pagopa.wispconverter.util.Trace;
@@ -26,6 +28,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
+import java.util.List;
 
 @RestController
 @RequestMapping("/receipt")
@@ -40,6 +43,8 @@ public class ReceiptController {
 
     private final ReceiptService receiptService;
 
+    private final ObjectMapper mapper;
+
     private final ErrorUtil errorUtil;
 
     @Operation(summary = "", description = "", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"Receipt"})
@@ -52,11 +57,11 @@ public class ReceiptController {
             consumes = MediaType.APPLICATION_JSON_VALUE
     )
     @Trace(businessProcess = BP_RECEIPT_KO, reEnabled = true)
-    public void receiptKo(@RequestBody ReceiptRequest request) throws IOException {
+    public void receiptKo(@RequestBody String request) throws Exception {
 
         try {
-            log.info("Invoking API operation receiptKo - args: {}", request.toString());
-            receiptService.sendKoPaaInviaRtToCreditorInstitution(request.getContent());
+            log.info("Invoking API operation receiptKo - args: {}", request);
+            receiptService.sendKoPaaInviaRtToCreditorInstitution(List.of(mapper.readValue(request, ReceiptDto.class)).toString());
             log.info("Successful API operation receiptKo");
         } catch (Exception ex) {
             String operationId = MDC.get(Constants.MDC_OPERATION_ID);

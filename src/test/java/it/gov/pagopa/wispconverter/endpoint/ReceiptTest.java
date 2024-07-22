@@ -35,7 +35,6 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.web.client.RestClient;
 
-import java.util.List;
 import java.util.Optional;
 
 import static org.junit.Assert.assertNotNull;
@@ -280,15 +279,15 @@ class ReceiptTest {
 
 
         // executing request
-        List<ReceiptDto> receipts = List.of(ReceiptDto.builder()
+        ReceiptDto receipts = ReceiptDto.builder()
                 .fiscalCode("{pa}")
                 .noticeNumber("3480000000000000")
                 .paymentToken("token01")
-                .build());
+                .build();
         mvc.perform(MockMvcRequestBuilders.post("/receipt/ko")
                         .accept(MediaType.APPLICATION_JSON)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new ReceiptRequest(receipts.toString()))))
+                        .content(objectMapper.writeValueAsString(receipts)))
                 .andExpect(MockMvcResultMatchers.status().is2xxSuccessful())
                 .andDo(result -> {
                     assertNotNull(result);
@@ -315,15 +314,15 @@ class ReceiptTest {
 
 
         // executing request
-        List<ReceiptDto> receipts = List.of(ReceiptDto.builder()
+        ReceiptDto receipts = ReceiptDto.builder()
                 .fiscalCode("{pa}")
                 .noticeNumber("3480000000000000")
                 .paymentToken("token01")
-                .build());
+                .build();
         mvc.perform(MockMvcRequestBuilders.post("/receipt/ko")
                         .accept(MediaType.APPLICATION_JSON)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new ReceiptRequest(receipts.toString()))))
+                        .content(objectMapper.writeValueAsString(receipts)))
                 .andExpect(MockMvcResultMatchers.status().is2xxSuccessful())
                 .andDo(result -> {
                     assertNotNull(result);
@@ -351,15 +350,15 @@ class ReceiptTest {
 
 
         // executing request
-        List<ReceiptDto> receipts = List.of(ReceiptDto.builder()
+        ReceiptDto receipts = ReceiptDto.builder()
                 .fiscalCode("{pa}")
                 .noticeNumber("3480000000000000")
                 .paymentToken("token01")
-                .build());
+                .build();
         mvc.perform(MockMvcRequestBuilders.post("/receipt/ko")
                         .accept(MediaType.APPLICATION_JSON)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new ReceiptRequest(receipts.toString()))))
+                        .content(objectMapper.writeValueAsString(receipts)))
                 .andExpect(MockMvcResultMatchers.status().is4xxClientError())
                 .andDo(result -> {
                     assertNotNull(result);
@@ -368,7 +367,7 @@ class ReceiptTest {
     }
 
     @ParameterizedTest
-    @CsvSource(value = {"[{\"paymentToken\": \"fake\",\"noticeNumber\": \"fake\"}", "NULL"}, nullValues = {"NULL"})
+    @CsvSource(value = {"{\"paymentToken\": \"fake\",\"noticeNumber\": \"fake\"", "NULL"}, nullValues = {"NULL"})
     @SneakyThrows
     void sendKoReceipt_malformedRequest(String request) {
 
@@ -390,8 +389,8 @@ class ReceiptTest {
         mvc.perform(MockMvcRequestBuilders.post("/receipt/ko")
                         .accept(MediaType.APPLICATION_JSON)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new ReceiptRequest(request))))
-                .andExpect(MockMvcResultMatchers.status().is4xxClientError())
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(MockMvcResultMatchers.status().is5xxServerError())
                 .andDo(result -> {
                     assertNotNull(result);
                     assertNotNull(result.getResponse());
@@ -416,18 +415,18 @@ class ReceiptTest {
         when(rptRequestRepository.findById(anyString())).thenReturn(Optional.of(rptRequestEntity));
 
         // mocking error response from creditor institution
-        List<ReceiptDto> receipts = List.of(ReceiptDto.builder()
+        ReceiptDto receipts = ReceiptDto.builder()
                 .fiscalCode("{pa}")
                 .noticeNumber("3480000000000000")
                 .paymentToken("token01")
-                .build());
+                .build();
         doThrow(new AppException(AppErrorCodeMessageEnum.RECEIPT_GENERATION_ERROR_RESPONSE_FROM_CREDITOR_INSTITUTION, "PAA_ERRORE_RESPONSE", "PAA_ERRORE_RESPONSE", "Errore PA"))
                 .when(paaInviaRTSenderService).sendToCreditorInstitution(anyString(), any(), anyString());
 
         mvc.perform(MockMvcRequestBuilders.post("/receipt/ko")
                         .accept(MediaType.APPLICATION_JSON)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new ReceiptRequest(receipts.toString()))))
+                        .content(objectMapper.writeValueAsString(receipts)))
                 .andExpect(MockMvcResultMatchers.status().is4xxClientError())
                 .andDo(
                         result -> {

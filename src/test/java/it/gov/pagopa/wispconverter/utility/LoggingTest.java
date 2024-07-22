@@ -22,7 +22,6 @@ import java.io.ByteArrayInputStream;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -104,7 +103,7 @@ public class LoggingTest {
     public void testServerLogger() {
 
         Method method = ReceiptController.class.getMethod("receiptOk", ReceiptRequest.class);
-        HandlerMethod handlerMethod = new HandlerMethod(new ReceiptController(null, null), method);
+        HandlerMethod handlerMethod = new HandlerMethod(new ReceiptController(null, null, null), method);
 
         HttpServletRequest httpRequest = mock(HttpServletRequest.class);
         HttpServletResponse httpResponse = mock(HttpServletResponse.class);
@@ -132,7 +131,7 @@ public class LoggingTest {
     public void testServerLogger2() {
 
         Method method = ReceiptController.class.getMethod("receiptOk", ReceiptRequest.class);
-        HandlerMethod handlerMethod = new HandlerMethod(new ReceiptController(null, null), method);
+        HandlerMethod handlerMethod = new HandlerMethod(new ReceiptController(null, null, null), method);
 
         HttpServletRequest httpRequest = mock(HttpServletRequest.class);
         HttpServletResponse httpResponse = mock(HttpServletResponse.class);
