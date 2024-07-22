@@ -385,8 +385,7 @@ public class DebtPositionService {
                 receiptService.sendKoPaaInviaRtToCreditorInstitution(receiptsToSend.toString());
 
             } catch (AppException e) {
-
-                log.error("An error occurred while ");
+                log.error("An error occurred while sending paaInviaRT to creditor institution. The receipt will be re-sent in future.");
             }
         }
 
