@@ -20,7 +20,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.http.MediaType;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -60,7 +59,19 @@ public class ReceiptController {
     @Trace(businessProcess = BP_RECEIPT_KO, reEnabled = true)
     public void receiptKo(@RequestBody String request) throws Exception {
 
-        asyncReceiptKO(request);
+        try {
+            log.info("Invoking API operation receiptKo - args: {}", request);
+            receiptService.sendKoPaaInviaRtToCreditorInstitution(List.of(mapper.readValue(request, ReceiptDto.class)).toString());
+            log.info("Successful API operation receiptKo");
+        } catch (Exception ex) {
+            String operationId = MDC.get(Constants.MDC_OPERATION_ID);
+            log.error(String.format("GenericException: operation-id=[%s]", operationId != null ? operationId : "n/a"), ex);
+
+            AppException appException = new AppException(ex, AppErrorCodeMessageEnum.ERROR, ex.getMessage());
+            ErrorResponse errorResponse = errorUtil.forAppException(appException);
+            log.error("Failed API operation receiptKo - error: {}", errorResponse);
+            throw ex;
+        }
     }
 
     @Operation(summary = "", description = "", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"Receipt"})
@@ -86,23 +97,6 @@ public class ReceiptController {
             AppException appException = new AppException(ex, AppErrorCodeMessageEnum.ERROR, ex.getMessage());
             ErrorResponse errorResponse = errorUtil.forAppException(appException);
             log.error("Failed API operation receiptOk - error: {}", errorResponse);
-            throw ex;
-        }
-    }
-
-    @Async
-    private void asyncReceiptKO(String request) throws Exception {
-        try {
-            log.info("Invoking API operation receiptKo - args: {}", request);
-            receiptService.sendKoPaaInviaRtToCreditorInstitution(List.of(mapper.readValue(request, ReceiptDto.class)).toString());
-            log.info("Successful API operation receiptKo");
-        } catch (Exception ex) {
-            String operationId = MDC.get(Constants.MDC_OPERATION_ID);
-            log.error(String.format("GenericException: operation-id=[%s]", operationId != null ? operationId : "n/a"), ex);
-
-            AppException appException = new AppException(ex, AppErrorCodeMessageEnum.ERROR, ex.getMessage());
-            ErrorResponse errorResponse = errorUtil.forAppException(appException);
-            log.error("Failed API operation receiptKo - error: {}", errorResponse);
             throw ex;
         }
     }
