@@ -154,6 +154,11 @@ public class CommonUtility {
         try {
             isOnboardedOnGPD = checkStation(configCacheService, sessionData, creditorInstitutionId, null, false, gpdPath);
         } catch (AppException e) {
+
+            // if the exception has this code, the station is onboarded on GPD but has a wrong configuration
+            if (AppErrorCodeMessageEnum.CONFIGURATION_INVALID_GPD_STATION.equals(e.getError())) {
+                throw e;
+            }
             isOnboardedOnGPD = false;
         }
         return isOnboardedOnGPD;

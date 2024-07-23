@@ -279,12 +279,12 @@ public class TestUtils {
         }
     }
 
-    public static PaymentPositionModelBaseResponseDto getValidPaymentPositionModelBaseResponseDto() {
+    public static PaymentPositionModelBaseResponseDto getValidPaymentPositionModelBaseResponseDto(String segCode) {
         PaymentPositionModelBaseResponseDto paymentPositionModelBaseResponseDto = new PaymentPositionModelBaseResponseDto();
         paymentPositionModelBaseResponseDto.setOrganizationFiscalCode("org12345678");
         paymentPositionModelBaseResponseDto.setIupd("abcd-efgh-ilmn-opqr");
         paymentPositionModelBaseResponseDto.setStatus(PaymentPositionModelBaseResponseDto.StatusEnum.VALID);
-        paymentPositionModelBaseResponseDto.setPaymentOption(List.of(getPaymentOptionModelResponseDto()));
+        paymentPositionModelBaseResponseDto.setPaymentOption(List.of(getPaymentOptionModelResponseDto(segCode)));
         return paymentPositionModelBaseResponseDto;
     }
 
@@ -302,6 +302,14 @@ public class TestUtils {
         paymentOptionModelResponseDto.setIuv("123456IUVMOCK1");
         paymentOptionModelResponseDto.setAmount(200L);
         paymentOptionModelResponseDto.setNav("3123456IUVMOCK1");
+        return paymentOptionModelResponseDto;
+    }
+
+    public static PaymentOptionModelResponseDto getPaymentOptionModelResponseDto(String segCode) {
+        PaymentOptionModelResponseDto paymentOptionModelResponseDto = new PaymentOptionModelResponseDto();
+        paymentOptionModelResponseDto.setIuv(segCode + "3456IUVMOCK1");
+        paymentOptionModelResponseDto.setAmount(200L);
+        paymentOptionModelResponseDto.setNav("3" + segCode + "3456IUVMOCK1");
         return paymentOptionModelResponseDto;
     }
 
