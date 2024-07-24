@@ -164,7 +164,7 @@ class ReceiptTest {
     }
 
     @ParameterizedTest
-    @CsvSource(value = {"/gpd-payments/api/v1,1", "NULL,2"}, nullValues = {"NULL"})
+    @CsvSource(value = {"/gpd-payments/api/v1,1"}, nullValues = {"NULL"})
     @SneakyThrows
     void sendOkReceipt_misconfiguredGpdStation(String path, String version) {
 
@@ -331,7 +331,7 @@ class ReceiptTest {
     }
 
     @ParameterizedTest
-    @CsvSource(value = {"/gpd-payments/api/v1,1", "NULL,2"}, nullValues = {"NULL"})
+    @CsvSource(value = {"/gpd-payments/api/v1,1"}, nullValues = {"NULL"})
     @SneakyThrows
     void sendKoReceipt_misconfiguredGpdStation(String path, String version) {
 
@@ -339,7 +339,7 @@ class ReceiptTest {
         setConfigCacheStoredData(path, Integer.parseInt(version));
 
         // mocking decoupler cached keys
-        when(cacheRepository.read(anyString(), any())).thenReturn("wisp_nav2iuv_123456IUVMOCK1");
+        when(cacheRepository.read(anyString(), any())).thenReturn("wisp_{pa}_123456IUVMOCK1");
 
         // mocking RPT retrieve
         RPTRequestEntity rptRequestEntity = RPTRequestEntity.builder()

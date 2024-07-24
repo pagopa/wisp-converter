@@ -154,6 +154,11 @@ public class CommonUtility {
         try {
             isOnboardedOnGPD = checkStation(configCacheService, sessionData, creditorInstitutionId, null, false, gpdPath);
         } catch (AppException e) {
+
+            // if the exception has this code, the station is onboarded on GPD but has a wrong configuration
+            if (AppErrorCodeMessageEnum.CONFIGURATION_INVALID_GPD_STATION.equals(e.getError())) {
+                throw e;
+            }
             isOnboardedOnGPD = false;
         }
         return isOnboardedOnGPD;
@@ -195,10 +200,10 @@ public class CommonUtility {
         // check if station is onboarded on GPD and is correctly configured for v2 primitives
         isOk = service.getPath().contains(gpdPath);
         if (!isOk) {
-            throw new AppException(AppErrorCodeMessageEnum.CONFIGURATION_NOT_GPD_STATION, station.getStationCode());
+            throw new AppException(AppErrorCodeMessageEnum.CONFIGURATION_NOT_GPD_STATION, noticeNumber, station.getStationCode());
         }
         if (station.getPrimitiveVersion() != 2) {
-            throw new AppException(AppErrorCodeMessageEnum.CONFIGURATION_INVALID_GPD_STATION, station.getStationCode());
+            throw new AppException(AppErrorCodeMessageEnum.CONFIGURATION_INVALID_GPD_STATION, station.getStationCode(), noticeNumber);
         }
         return isOk;
     }

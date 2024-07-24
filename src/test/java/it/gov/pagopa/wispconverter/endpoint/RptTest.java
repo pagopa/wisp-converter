@@ -28,6 +28,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
@@ -47,6 +48,8 @@ import static org.mockito.Mockito.*;
 @SpringBootTest(classes = Application.class)
 @AutoConfigureMockMvc
 class RptTest {
+
+    private static final String STATION_ID = "mystation";
 
     @Autowired
     ObjectMapper objectMapper;
@@ -85,27 +88,39 @@ class RptTest {
     @MockBean
     private ReceiptService receiptService;
 
+    private void setConfigCacheStoredData(String servicePath, int primitiveVersion) {
+        StationCreditorInstitutionDto stationCreditorInstitutionDto = new StationCreditorInstitutionDto();
+        stationCreditorInstitutionDto.setCreditorInstitutionCode("pa");
+        stationCreditorInstitutionDto.setSegregationCode(48L);
+        stationCreditorInstitutionDto.setStationCode(STATION_ID);
+        ReflectionTestUtils.setField(configCacheService, "configData", TestUtils.configDataCreditorInstitutionStations(stationCreditorInstitutionDto, servicePath, primitiveVersion));
+    }
+
     @Test
     void success_debtPositionUpdateValid() throws Exception {
-        String station = "mystation";
+        /*String station = "mystation";
         StationCreditorInstitutionDto stationCreditorInstitutionDto = new StationCreditorInstitutionDto();
         stationCreditorInstitutionDto.setCreditorInstitutionCode("pa");
         stationCreditorInstitutionDto.setSegregationCode(12L);
         stationCreditorInstitutionDto.setStationCode(station);
-        org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configData", TestUtils.configDataCreditorInstitutionStations(stationCreditorInstitutionDto));
+        org.springframework.test.util.ReflectionTestUtils.setField(configCacheService, "configData", TestUtils.configDataCreditorInstitutionStations(stationCreditorInstitutionDto));*/
+
+        // mocking cached configuration
+        setConfigCacheStoredData("/gpd-payments/api/v1", 2);
+
         HttpHeaders headers = new HttpHeaders();
         headers.add("location", "locationheader");
         it.gov.pagopa.gen.wispconverter.client.checkout.model.CartResponseDto cartResponseDto = new it.gov.pagopa.gen.wispconverter.client.checkout.model.CartResponseDto();
         cartResponseDto.setCheckoutRedirectUrl(URI.create("http://www.google.com"));
         TestUtils.setMock(checkoutClient, ResponseEntity.status(HttpStatus.FOUND).headers(headers).body(cartResponseDto));
-        TestUtils.setMockGet(gpdClient, ResponseEntity.ok().body(getValidPaymentPositionModelBaseResponseDto()));
+        TestUtils.setMockGet(gpdClient, ResponseEntity.ok().body(getValidPaymentPositionModelBaseResponseDto("48")));
         TestUtils.setMockPut(gpdClient, ResponseEntity.ok().body(getPaymentPositionModelDto()));
         TestUtils.setMock(decouplerCachingClient, ResponseEntity.ok().build());
         when(rptRequestRepository.findById(any())).thenReturn(
                 Optional.of(
                         RPTRequestEntity.builder().primitive("nodoInviaRPT")
                                 .payload(
-                                        TestUtils.zipAndEncode(TestUtils.getRptPayload(false, station, "pa", "123456IUVMOCK1", "100.00", null))
+                                        TestUtils.zipAndEncode(TestUtils.getRptPayload(false, STATION_ID, "pa", "483456IUVMOCK1", "100.00", null))
                                 ).build()
                 )
         );
@@ -154,7 +169,7 @@ class RptTest {
                 .thenReturn(Optional.of(
                                 RPTRequestEntity.builder()
                                         .primitive("nodoInviaRPT")
-                                        .payload(TestUtils.zipAndEncode(TestUtils.getRptPayload(false, station, "pa", "123456IUVMOCK1", "100.00", null)))
+                                        .payload(TestUtils.zipAndEncode(TestUtils.getRptPayload(false, station, "pa", "348456IUVMOCK1", "100.00", null)))
                                         .build()
                         )
                 );
@@ -169,7 +184,7 @@ class RptTest {
                             assertNotNull(result.getResponse());
                         });
 
-        verify(gpdClient, times(1)).invokeAPI(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
+        verify(gpdClient, times(2)).invokeAPI(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
         verify(decouplerCachingClient, times(0)).invokeAPI(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
         verify(checkoutClient, times(0)).invokeAPI(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
 

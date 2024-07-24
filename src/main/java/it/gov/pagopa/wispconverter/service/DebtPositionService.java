@@ -114,7 +114,7 @@ public class DebtPositionService {
                 case EXISTS_INVALID ->
                         handleInvalidPaymentPositions(gpdClientInstance, sessionData, response.getSecond().orElse(null), creditorInstitutionId);
                 case EXISTS_VALID ->
-                        handleValidPaymentPosition(gpdClientInstance, sessionData, extractedPaymentPosition, response.getSecond().orElse(null), iuv, creditorInstitutionId);
+                        handleValidPaymentPosition(gpdClientInstance, sessionData, extractedPaymentPosition, response.getSecond().orElse(null), iuv, creditorInstitutionId, extractedPaymentPositions);
                 case NOT_EXISTS ->
                         handleNewPaymentPosition(sessionData, extractedPaymentPosition, iuvToSaveInBulkOperation, iuv, creditorInstitutionId);
             }
@@ -370,24 +370,8 @@ public class DebtPositionService {
             generateREForInvalidPaymentPosition(sessionData, iuv);
         }
 
-        /*
-          In order to send the KO receipts for the analyzed payments, it is required to save mapped keys in cache.
-          The mapped keys permits to map a NAV code to a starting IUV code.
-          The receipt send is executed only if there are analyzed receipts in the list, otherwise skip this step.
-         */
-        if (!receiptsToSend.isEmpty()) {
-
-            try {
-                // save the mapped keys in the Redis cache for receipt generation
-                decouplerService.saveMappedKeyForReceiptGeneration(sessionData.getCommonFields().getSessionId(), sessionData);
-
-                // generate and send the KO receipts to creditor institution via configured station
-                receiptService.sendKoPaaInviaRtToCreditorInstitution(receiptsToSend.toString());
-
-            } catch (AppException e) {
-                log.error("An error occurred while sending paaInviaRT to creditor institution. The receipt will be re-sent in future.");
-            }
-        }
+        // sending receipts
+        sendReceiptForInvalidDebtPositions(sessionData, receiptsToSend);
 
         // finally, throw an exception for notify the error, including all the IUVs
         String invalidIuvs = sessionData.getAllPaymentNotices().stream()
@@ -396,10 +380,9 @@ public class DebtPositionService {
         throw new AppException(AppErrorCodeMessageEnum.PAYMENT_POSITION_NOT_IN_PAYABLE_STATE, invalidIuvs);
     }
 
-    private void handleValidPaymentPosition(DebtPositionsApiApi gpdClientInstance, SessionDataDTO sessionData, PaymentPositionModelDto extractedPaymentPosition, PaymentPositionModelBaseResponseDto paymentPositionFromGPD, String iuv, String creditorInstitutionId) {
+    private void handleValidPaymentPosition(DebtPositionsApiApi gpdClientInstance, SessionDataDTO sessionData, PaymentPositionModelDto extractedPaymentPosition, PaymentPositionModelBaseResponseDto paymentPositionFromGPD, String iuv, String creditorInstitutionId, List<PaymentPositionModelDto> extractedPaymentPositions) {
 
         try {
-
             // validate the station, checking if exists one with the required segregation code and, if is onboarded on GPD, has the correct primitive version
             CommonUtility.checkStationValidity(configCacheService, sessionData, creditorInstitutionId, CommonUtility.getSinglePaymentOption(paymentPositionFromGPD).getNav(), stationInGpdPartialPath);
 
@@ -412,8 +395,35 @@ public class DebtPositionService {
             // generate and save events in RE for trace the update of the existing payment position
             generateREForUpdatedPaymentPosition(sessionData, iuv);
 
+        } catch (AppException e) {
+
+            // if an error occurred during check station or payment position update, it is needed to send the receipts
+            List<ReceiptDto> receiptsToSend = new LinkedList<>();
+            for (RPTContentDTO rpt : sessionData.getAllRPTs()) {
+
+                PaymentPositionModelDto paymentPosition = extractedPaymentPositions.stream()
+                        .filter(pp -> CommonUtility.getSinglePaymentOption(pp).getIuv().equals(rpt.getIuv()))
+                        .findFirst()
+                        .orElse(null);
+
+                PaymentOptionModelDto paymentOption = CommonUtility.getSinglePaymentOption(paymentPosition);
+                ReceiptDto receipt = new ReceiptDto();
+                receipt.setFiscalCode(rpt.getRpt().getDomain().getDomainId());
+                receipt.setNoticeNumber(paymentOption.getNav());
+                receipt.setPaymentToken(rpt.getCcp());
+                receiptsToSend.add(receipt);
+            }
+
+            // execute the send for all receipts
+            sendReceiptForInvalidDebtPositions(sessionData, receiptsToSend);
+
+            // re-throw the same exception in order to log the events in RE
+            throw e;
+
         } catch (RestClientException e) {
+
             throw new AppException(AppErrorCodeMessageEnum.CLIENT_GPD, String.format(REST_CLIENT_LOG_STRING, e.getCause().getClass().getCanonicalName(), e.getMessage()));
+
         }
     }
 
@@ -554,6 +564,27 @@ public class DebtPositionService {
         }
     }
 
+    private void sendReceiptForInvalidDebtPositions(SessionDataDTO sessionData, List<ReceiptDto> receiptsToSend) {
+        try {
+
+            /*
+              In order to send the KO receipts for the analyzed payments, it is required to save mapped keys in cache.
+              The mapped keys permits to map a NAV code to a starting IUV code.
+              The receipt send is executed only if there are analyzed receipts in the list, otherwise skip this step.
+             */
+            if (!receiptsToSend.isEmpty()) {
+
+                // save the mapped keys in the Redis cache for receipt generation
+                decouplerService.saveMappedKeyForReceiptGeneration(sessionData.getCommonFields().getSessionId(), sessionData);
+
+                // generate and send the KO receipts to creditor institution via configured station
+                receiptService.sendKoPaaInviaRtToCreditorInstitution(receiptsToSend.toString());
+            }
+
+        } catch (AppException e) {
+            log.error("An error occurred while sending paaInviaRT to creditor institution. The receipt will be re-sent in future.");
+        }
+    }
 
     private String generateIUPD(String creditorInstitutionBroker) {
         return "wisp_" + creditorInstitutionBroker + "_" + UUID.randomUUID();
