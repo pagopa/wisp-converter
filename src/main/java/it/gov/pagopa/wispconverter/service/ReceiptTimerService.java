@@ -88,6 +88,8 @@ public class ReceiptTimerService {
 
     private void cancelScheduledMessage(String paymentToken) {
 
+        MDCUtil.setReceiptTimerInfoInMDC(null, null, paymentToken);
+
         log.debug("Cancel scheduled message for payment-token {}", paymentToken);
         String sequenceNumberKey = String.format(CACHING_KEY_TEMPLATE, paymentToken);
         String sequenceNumberString = cacheRepository.read(sequenceNumberKey, String.class);
