@@ -254,6 +254,7 @@ public class ReUtil {
                 .iuv(MDC.get(Constants.MDC_IUV))
                 .noticeNumber(MDC.get(Constants.MDC_NOTICE_NUMBER))
                 .ccp(MDC.get(Constants.MDC_CCP))
+                .paymentToken(MDC.get(Constants.MDC_PAYMENT_TOKEN))
                 .domainId(MDC.get(Constants.MDC_DOMAIN_ID))
                 .psp(MDC.get(Constants.MDC_PSP_ID))
                 .station(MDC.get(Constants.MDC_STATION_ID))
