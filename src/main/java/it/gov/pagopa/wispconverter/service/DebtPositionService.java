@@ -634,7 +634,17 @@ public class DebtPositionService {
         // creating event to be persisted for RE
         if (Boolean.TRUE.equals(isTracingOnREEnabled)) {
             PaymentNoticeContentDTO paymentNotice = sessionDataDTO.getPaymentNoticeByIUV(iuv);
-            generateRE(InternalStepStatus.FOUND_INVALID_PAYMENT_POSITION_IN_GPD, iuv, paymentNotice.getNoticeNumber(), paymentNotice.getCcp(), paymentNotice.getFiscalCode(), null);
+            generateRE(InternalStepStatus.GENERATING_RT_FOR_INVALID_PAYMENT_POSITION_IN_GPD, iuv, paymentNotice.getNoticeNumber(), paymentNotice.getCcp(), paymentNotice.getFiscalCode(), null);
+        }
+    }
+
+    private void generateREForNotExistingPaymentPosition(SessionDataDTO sessionDataDTO, String iuv) {
+
+        // creating event to be persisted for RE
+        if (Boolean.TRUE.equals(isTracingOnREEnabled)) {
+            PaymentNoticeContentDTO paymentNotice = sessionDataDTO.getPaymentNoticeByIUV(iuv);
+            String otherInfo = String.format("The RPT with IUV [%s] is not related to a payment position in GPD, so no notice number can be extracted for RT generation.", iuv);
+            generateRE(InternalStepStatus.RT_NOT_GENERABLE_FOR_NOT_EXISTING_PAYMENT_POSITION, iuv, paymentNotice.getNoticeNumber(), paymentNotice.getCcp(), paymentNotice.getFiscalCode(), otherInfo);
         }
     }
 
