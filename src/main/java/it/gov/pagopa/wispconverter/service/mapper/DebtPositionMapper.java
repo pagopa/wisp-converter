@@ -50,7 +50,7 @@ public interface DebtPositionMapper {
     @Mapping(target = "dueDate", expression = "java(java.time.OffsetDateTime.now().plusDays(1))")
     it.gov.pagopa.gen.wispconverter.client.gpd.model.PaymentOptionModelDto toPaymentOption(RPTContentDTO rptContentDTO);
 
-    @Mapping(target = "hashDocument", expression = "java(new String(digitalStampDTO.getDocumentHash()))")
+    @Mapping(target = "hashDocument", expression = "java(new String(java.util.Base64.getEncoder().encode(digitalStampDTO.getDocumentHash())))")
     @Mapping(source = "type", target = "stampType")
     @Mapping(source = "province", target = "provincialResidence")
     it.gov.pagopa.gen.wispconverter.client.gpd.model.StampDto toStamp(DigitalStampDTO digitalStampDTO);
