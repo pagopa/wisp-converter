@@ -346,28 +346,32 @@ public class DebtPositionService {
         List<ReceiptDto> receiptsToSend = new LinkedList<>();
         for (PaymentNoticeContentDTO paymentNotice : sessionData.getAllPaymentNotices()) {
 
-            // communicate with GPD in order to retrieve the debt position
             String iuv = paymentNotice.getIuv();
-            PaymentPositionModelBaseResponseDto paymentPosition = retrievedPaymentPosition;
-            if (!iuv.equals(iuvFromRetrievedPaymentPosition)) {
-                paymentPosition = gpdClientInstance.getDebtPositionByIUV(creditorInstitutionId, iuv, MDC.get(Constants.MDC_REQUEST_ID));
-                if (paymentPosition.getPaymentOption() == null || paymentPosition.getPaymentOption().isEmpty()) {
-                    throw new AppException(AppErrorCodeMessageEnum.PAYMENT_OPTION_NOT_EXTRACTABLE, iuvFromRetrievedPaymentPosition);
+            try {
+                // communicate with GPD in order to retrieve the debt position
+                PaymentPositionModelBaseResponseDto paymentPosition = retrievedPaymentPosition;
+                if (!iuv.equals(iuvFromRetrievedPaymentPosition)) {
+                    paymentPosition = gpdClientInstance.getDebtPositionByIUV(creditorInstitutionId, iuv, MDC.get(Constants.MDC_REQUEST_ID));
+                    if (paymentPosition.getPaymentOption() == null || paymentPosition.getPaymentOption().isEmpty()) {
+                        throw new AppException(AppErrorCodeMessageEnum.PAYMENT_OPTION_NOT_EXTRACTABLE, iuvFromRetrievedPaymentPosition);
+                    }
                 }
+
+                // update the payment notice, setting the NAV code from the retrieved existing payment position
+                paymentNotice.setNoticeNumber(CommonUtility.getSinglePaymentOption(paymentPosition).getNav());
+
+                // Generate the receipt to be sent to creditor institution. On next steps, it will be validated about station to be sent.
+                ReceiptDto receipt = new ReceiptDto();
+                receipt.setFiscalCode(paymentNotice.getFiscalCode());
+                receipt.setNoticeNumber(paymentNotice.getNoticeNumber());
+                receipt.setPaymentToken(paymentNotice.getCcp());
+                receiptsToSend.add(receipt);
+
+                // save event in RE for trace the error due to invalid payment position status
+                generateREForInvalidPaymentPosition(sessionData, iuv);
+            } catch (AppException e) {
+                generateREForNotExistingPaymentPosition(sessionData, iuv);
             }
-
-            // update the payment notice, setting the NAV code from the retrieved existing payment position
-            paymentNotice.setNoticeNumber(CommonUtility.getSinglePaymentOption(paymentPosition).getNav());
-
-            // Generate the receipt to be sent to creditor institution. On next steps, it will be validated about station to be sent.
-            ReceiptDto receipt = new ReceiptDto();
-            receipt.setFiscalCode(paymentNotice.getFiscalCode());
-            receipt.setNoticeNumber(paymentNotice.getNoticeNumber());
-            receipt.setPaymentToken(paymentNotice.getCcp());
-            receiptsToSend.add(receipt);
-
-            // save event in RE for trace the error due to invalid payment position status
-            generateREForInvalidPaymentPosition(sessionData, iuv);
         }
 
         // sending receipts
@@ -631,6 +635,16 @@ public class DebtPositionService {
         if (Boolean.TRUE.equals(isTracingOnREEnabled)) {
             PaymentNoticeContentDTO paymentNotice = sessionDataDTO.getPaymentNoticeByIUV(iuv);
             generateRE(InternalStepStatus.FOUND_INVALID_PAYMENT_POSITION_IN_GPD, iuv, paymentNotice.getNoticeNumber(), paymentNotice.getCcp(), paymentNotice.getFiscalCode(), null);
+        }
+    }
+
+    private void generateREForNotExistingPaymentPosition(SessionDataDTO sessionDataDTO, String iuv) {
+
+        // creating event to be persisted for RE
+        if (Boolean.TRUE.equals(isTracingOnREEnabled)) {
+            PaymentNoticeContentDTO paymentNotice = sessionDataDTO.getPaymentNoticeByIUV(iuv);
+            String otherInfo = String.format("The RPT with IUV [%s] is not related to a payment position in GPD, so no notice number can be extracted for RT generation.", iuv);
+            generateRE(InternalStepStatus.RT_NOT_GENERABLE_FOR_NOT_EXISTING_PAYMENT_POSITION, iuv, paymentNotice.getNoticeNumber(), paymentNotice.getCcp(), paymentNotice.getFiscalCode(), otherInfo);
         }
     }
 
