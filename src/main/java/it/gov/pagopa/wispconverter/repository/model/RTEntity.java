@@ -32,4 +32,6 @@ public class RTEntity {
 
     // ricevuta-telematica-base-64
     private String rt;
+
+    private Long rtTimestamp;
 }
