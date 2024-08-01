@@ -41,5 +41,6 @@ hs_err_pid*
 
 integration-test/reports/*
 integration-test/results/*
+**/__pycache__/*
 
 .DS_Store
