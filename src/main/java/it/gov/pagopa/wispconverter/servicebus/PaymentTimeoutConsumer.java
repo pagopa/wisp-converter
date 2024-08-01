@@ -65,6 +65,7 @@ public class PaymentTimeoutConsumer extends SBConsumer {
             log.error("Error when read ReceiptDto value from message: '{}'. Body: '{}'",
                     message.getMessageId(), message.getBody());
         }
+        MDC.clear();
     }
 
     private void generateREForPaymentTokenTimeout(ReceiptDto receipt) {
