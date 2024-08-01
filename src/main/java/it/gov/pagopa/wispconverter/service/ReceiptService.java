@@ -59,7 +59,9 @@ public class ReceiptService {
 
     private final RptCosmosService rptCosmosService;
 
-    private final RtCosmosService rtCosmosService;
+    private final RtReceiptCosmosService rtReceiptCosmosService;
+
+    private final RtRequestCosmosService rtRequestCosmosService;
 
     private final RPTExtractorService rptExtractorService;
 
@@ -148,6 +150,9 @@ public class ReceiptService {
                         // retrieve station from common station identifier
                         StationDto station = stations.get(commonFields.getStationId());
 
+                        // save receipt-rt
+                        rtReceiptCosmosService.saveRTEntity(sessionData, rawGeneratedReceipt, ReceiptTypeEnum.KO);
+
                         // send receipt to the creditor institution and, if not correctly sent, add to queue for retry
                         boolean isSuccessful = sendReceiptToCreditorInstitution(sessionData, paaInviaRtPayload, receipt, rpt.getIuv(), noticeNumber, station, true);
                         if (!isSuccessful) {
@@ -228,6 +233,9 @@ public class ReceiptService {
                             .createRT(generateRTContentForOkReceipt(rpt, paSendRTV2Request));
                     String rawGeneratedReceipt = jaxbElementUtil.objectToString(generatedReceipt);
                     String paaInviaRtPayload = generatePayloadAsRawString(intestazionePPT, commonFields.getSignatureType(), rawGeneratedReceipt, objectFactory);
+
+                    // save receipt-rt
+                    rtReceiptCosmosService.saveRTEntity(sessionData, rawGeneratedReceipt, ReceiptTypeEnum.OK);
 
                     // send receipt to the creditor institution and, if not correctly sent, add to queue for retry
                     boolean isSuccessful = sendReceiptToCreditorInstitution(sessionData, paaInviaRtPayload, receipt, rpt.getIuv(), noticeNumber, station, false);
@@ -488,7 +496,7 @@ public class ReceiptService {
                     .idempotencyKey(idempotencyKey)
                     .receiptType(receiptType)
                     .build();
-            rtCosmosService.saveRTRequestEntity(rtRequestEntity);
+            rtRequestCosmosService.saveRTRequestEntity(rtRequestEntity);
 
             // after the RT persist, send a message on the service bus
             serviceBusService.sendMessage(rtRequestEntity.getPartitionKey() + "_" + rtRequestEntity.getId(), schedulingTimeInMinutes);

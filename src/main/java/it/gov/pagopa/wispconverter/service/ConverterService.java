@@ -21,13 +21,17 @@ public class ConverterService {
 
     private final RptCosmosService rptCosmosService;
 
-    public String convert(String sessionId) {
+    private final RtReceiptCosmosService rtReceiptCosmosService;
 
+    public String convert(String sessionId) {
         // get RPT request entity from database
         RPTRequestEntity rptRequestEntity = rptCosmosService.getRPTRequestEntity(sessionId);
 
         // unmarshalling and mapping RPT content from request entity, generating session data
         SessionDataDTO sessionData = this.rptExtractorService.extractSessionData(rptRequestEntity.getPrimitive(), rptRequestEntity.getPayload());
+
+        // prepare receipt-rt saving (nodoChiediCopiaRT)
+        rtReceiptCosmosService.saveRTEntity(sessionData);
 
         // calling GPD creation API in order to generate the debt position associated to RPTs
         this.debtPositionService.createDebtPositions(sessionData);
