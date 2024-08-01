@@ -13,7 +13,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.ZonedDateTime;
+import java.util.Arrays;
+import java.util.Base64;
 
 
 @Service
@@ -30,12 +33,8 @@ public class RtReceiptCosmosService {
 
     @Transactional
     public void saveRTEntity(SessionDataDTO sessionData, String rawRt, ReceiptTypeEnum receiptType) {
-        try {
-            String encodedRt = AppBase64Util.base64Encode(ZipUtil.zip(rawRt));
-            rtRepository.save(getRTEntity(sessionData, encodedRt, receiptType, ZonedDateTime.now().toInstant().toEpochMilli()));
-        } catch (IOException e) {
-            log.error("An exception occurred while saveRTEntity: " + e.getMessage());
-        }
+        String encodedRt = Arrays.toString(Base64.getEncoder().encode(rawRt.getBytes(StandardCharsets.UTF_8)));
+        rtRepository.save(getRTEntity(sessionData, encodedRt, receiptType, ZonedDateTime.now().toInstant().toEpochMilli()));
     }
 
     private RTEntity getRTEntity(SessionDataDTO sessionData, String rt, ReceiptTypeEnum receiptType, Long rtTimestamp) {
