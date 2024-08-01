@@ -19,7 +19,7 @@
       "healthcheck": "/info"
     },
     "technical-support": {
-      "url": "https://api.uat.platform.pagopa.it/nodo-auth/node-for-psp/v1",
+      "url": "https://api.uat.platform.pagopa.it/technical-support/wisp-converter/api/v1",
       "subscription_key": "INTEGRATION_TEST_TECHNICALSUPPORT_SUBSCRIPTION_KEY"
     }
   },

@@ -1,4 +1,5 @@
-NODOINVIARPT_STRUCTURE = """<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ppt="http://ws.pagamenti.telematici.gov/ppthead" xmlns:ws="http://ws.pagamenti.telematici.gov/">
+NODOINVIARPT_STRUCTURE = """<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ppt="http://ws.pagamenti.telematici.gov/ppthead" xmlns:ws="http://ws.pagamenti.telematici.gov/">
     <soapenv:Header>
         <ppt:intestazionePPT>
             <identificativoIntermediarioPA>{creditor_institution_broker}</identificativoIntermediarioPA>
@@ -32,7 +33,7 @@ RPT_STRUCTURE = """<pay_i:RPT xmlns:pay_i="http://www.digitpa.gov.it/schemas/201
     {payer_delegate}
     {payer}
     {payee_institution}
-    {transferset}
+    {payment}
 </pay_i:RPT>""";
 
 # All injected data refers to 'payer' sublevel
@@ -85,13 +86,13 @@ RPT_PAYEEINSTITUTION_STRUCTURE = """<pay_i:enteBeneficiario>
     </pay_i:enteBeneficiario>""";
 
 RPT_TRANSFER_SET_STRUCTURE = """<pay_i:datiVersamento>
-        <pay_i:dataEsecuzionePagamento>{transferset_payment_date}</pay_i:dataEsecuzionePagamento>
-        <pay_i:importoTotaleDaVersare>{transferset_total_amount}</pay_i:importoTotaleDaVersare>
-        <pay_i:tipoVersamento>{transferset_payment_type}</pay_i:tipoVersamento>
-        <pay_i:identificativoUnivocoVersamento>{transferset_iuv}</pay_i:identificativoUnivocoVersamento>
-        <pay_i:codiceContestoPagamento>{transferset_ccp}</pay_i:codiceContestoPagamento>
-        <pay_i:ibanAddebito>{transferset_debtor_iban}</pay_i:ibanAddebito>
-        <pay_i:bicAddebito>{transferset_debtor_bic}</pay_i:bicAddebito>
+        <pay_i:dataEsecuzionePagamento>{payment_payment_date}</pay_i:dataEsecuzionePagamento>
+        <pay_i:importoTotaleDaVersare>{payment_total_amount}</pay_i:importoTotaleDaVersare>
+        <pay_i:tipoVersamento>{payment_payment_type}</pay_i:tipoVersamento>
+        <pay_i:identificativoUnivocoVersamento>{payment_iuv}</pay_i:identificativoUnivocoVersamento>
+        <pay_i:codiceContestoPagamento>{payment_ccp}</pay_i:codiceContestoPagamento>
+        <pay_i:ibanAddebito>{payment_debtor_iban}</pay_i:ibanAddebito>
+        <pay_i:bicAddebito>{payment_debtor_bic}</pay_i:bicAddebito>
         <pay_i:firmaRicevuta>0</pay_i:firmaRicevuta>
         {transfers}
     </pay_i:datiVersamento>"""
@@ -123,14 +124,15 @@ RPT_SINGLE_MBD_TRANSFER_STRUCTURE = """<pay_i:datiSingoloVersamento>
 
 
 SESSION_DATA = "session_data"
+SESSION_DATA_TEST_DATA = "test_data"
 
-REQUEST_FROM_TRIGGER_ACTION = "REQUEST_FROM_TRIGGER_ACTION"
-RESPONSE_BODY_FROM_TRIGGER_ACTION = "RESPONSE_BODY_FROM_TRIGGER_ACTION"
-RESPONSE_STATUS_FROM_TRIGGER_ACTION = "RESPONSE_STATUS_FROM_TRIGGER_ACTION"
-RESPONSE_BODY = "RESPONSE_BODY"
-RESPONSE_STATUS = "RESPONSE_STATUS"
+SESSION_DATA_TRIGGER_ACTION_REQ = "flow_data.trigger_action.request"
+SESSION_DATA_RES_BODY = "flow_data.other_action.response.body"
+SESSION_DATA_RES_CODE = "flow_data.other_action.response.status_code"
 
-SESSION_ID = "id_session"
+SESSION_DATA_SESSION_ID = "flow_data.common.session_id"
+SESSION_DATA_IUVS = "flow_data.common.iuvs"
+SESSION_DATA_NOTICE_NUMBERS = "flow_data.common.notice_numbers"
 
 NODOINVIARPT = "nodoInviaRPT"
 

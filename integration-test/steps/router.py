@@ -18,4 +18,8 @@ def get_rest_url(context, action):
         case "redirect":
             service_data = services.get("wisp-converter")
             return service_data['url'] + "/payments?idSession=", ""
+        case "search_in_re_by_iuv":            
+            service_data = services.get("technical-support")
+            url = service_data['url'] + "/organizations/{creditor_institution}/iuv/{iuv}?dateFrom={date_from}&dateTo={date_to}"
+            return url, service_data['subscription_key']
         

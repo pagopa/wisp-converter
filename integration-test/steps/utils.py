@@ -1,18 +1,21 @@
+from enum import Enum
 import re
-import os
 import requests
 import logging
 import datetime
-import contextlib
 import string
 import random
 from http.client import HTTPConnection
+from allure_commons._allure import attach
+import xml.etree.ElementTree as xmlutils
 
-def obfuscate_secrets(request):
-    return re.sub(r'', "<password>***</password>", request)
-    
+import constants as constants
 
+class ResponseType(Enum):
+    XML = 1
+    JSON = 2
 
+   
 def debug_requests_on():
     '''Switches on logging of the requests module.'''
     HTTPConnection.debuglevel = 1
@@ -36,38 +39,36 @@ def debug_requests_off():
     requests_log.propagate = False
 
 
-def get_global_conf(context, field):
-    return context.config.userdata.get("global_configuration").get(field)
+def execute_request(url, method, headers, payload=None, type=ResponseType.XML):
+    if payload is not None:
+        attach(obfuscate_secrets(payload), name="Sent request")
+    #debug_requests_on()
+    response = requests.request(method=method, url=url, headers=headers, data=payload, verify=False, allow_redirects=False)
+    #debug_requests_off()
+    object_response = None
+    if response.text is not None and len(response.text) > 0:
+        formatted_response = remove_namespace(response.text)
+        attach(obfuscate_secrets(formatted_response), name="Received response")
+        
+        if type == ResponseType.XML:
+            object_response = xmlutils.fromstring(formatted_response)
+        elif type == ResponseType.JSON:
+            object_response = response.json()
+        
+    return response.status_code, object_response, response.headers
 
 
-def replace_local_variables(payload, context):
-    pattern = re.compile('\\$\\w+\\$')
-    match = pattern.findall(payload)
-    for field in match:
-        value = getattr(context, field.replace('$', '').split('.')[0])
-        payload = payload.replace(field, value)
-    return payload
+def obfuscate_secrets(request):
+    request_without_secrets = re.sub(r'<password>(.*)<\/password>', "<password>***</password>", request)
+    request_without_secrets = re.sub(r'\"password\":\s{0,1}\"(.*)\"', "\"password\": \"***\"", request_without_secrets)
+    return request_without_secrets
 
 
-def replace_global_variables(payload, context):
-    pattern = re.compile('#\\w+#')
-    match = pattern.findall(payload)
-    for field in match:
-        name = field.replace('#', '').split('.')[0]
-        if name in context.config.userdata.get("global_configuration"):
-            value = get_global_conf(context, name)
-            payload = payload.replace(field, value)
-    return payload
-
-
-
-def execute_request(url, method, headers, payload=None):
-    debug_requests_on()
-    req = requests.request(method=method, url=url, headers=headers, data=payload, verify=False)
-    debug_requests_off()
-    return req
-
-
+def remove_namespace(content):
+    content_without_ns = re.sub(r'(<\/?)(\w+:)', r'\1', content)
+    content_without_ns = re.sub(r'\sxmlns[^"]+"[^"]+"', '', content_without_ns)
+    return content_without_ns
+    
 
 def generate_iuv():
     return get_random_digit_string(15)

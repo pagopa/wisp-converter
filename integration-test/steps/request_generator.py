@@ -4,8 +4,9 @@ from constants import *
 import utils
 
 
-def generate_rpt(session_data):
+def generate_nodoinviarpt(session_data):
 
+    payment_index = 0
     payer = RPT_PAYER_STRUCTURE.format(
         payer_type=session_data['payer']['type'],
         payer_fiscal_code=session_data['payer']['fiscal_code'],
@@ -49,7 +50,7 @@ def generate_rpt(session_data):
         payer_delegate=payer_delegate,
         payer=payer,
         payee_institution=payee_institution,
-        transferset=generate_transfers(session_data)
+        payment=generate_transfers(session_data, payment_index)
     )
     request = NODOINVIARPT_STRUCTURE.format(
         creditor_institution_broker=session_data['creditor_institution_broker'],
@@ -59,28 +60,27 @@ def generate_rpt(session_data):
         psp=session_data['psp'],
         channel=session_data['channel'],
         password=session_data['station_password'],
-        iuv=session_data['transferset']['iuv'],
-        ccp=session_data['transferset']['ccp'],
+        iuv=session_data['payments'][payment_index]['iuv'],
+        ccp=session_data['payments'][payment_index]['ccp'],
         rpt=base64.b64encode(rpt.encode('utf-8')).decode('utf-8')
     )
     return request
 
 
-def generate_transfers(session_data):
+def generate_transfers(session_data, payment_index):
 
-    transfers_content = "";
+    transfers_content = ""
+    payment = session_data['payments'][payment_index]
     
-    transfer_set = session_data['transferset']
-    for transfer in transfer_set['transfers']:
+    for transfer in payment['transfers']:
 
-        transfer_content = ""
-            
+        transfer_content = ""                
         if transfer['is_mbd'] == False:
             transfer_content = RPT_SINGLE_TRANSFER_STRUCTURE.format(
                 payer_fiscal_code=session_data['payer']['fiscal_code'],
                 transfer_iuv=transfer['iuv'],
-                transfer_amount=transfer['amount'],
-                transfer_fee=transfer['fee'],
+                transfer_amount="{:.2f}".format(transfer['amount']),
+                transfer_fee="{:.2f}".format(transfer['fee']),
                 transfer_creditor_iban=transfer['creditor_iban'],
                 transfer_creditor_bic=transfer['creditor_bic'],
                 transfer_creditor_iban2=transfer['creditor_iban2'],
@@ -92,8 +92,8 @@ def generate_transfers(session_data):
             transfer_content = RPT_SINGLE_MBD_TRANSFER_STRUCTURE.format(
                 payer_fiscal_code=session_data['payer']['fiscal_code'],
                 transfer_iuv=transfer['iuv'],
-                transfer_amount=transfer['amount'],
-                transfer_fee=transfer['fee'],
+                transfer_amount="{:.2f}".format(transfer['amount']),
+                transfer_fee="{:.2f}".format(transfer['fee']),
                 transfer_payer_info=transfer['payer_info'],
                 transfer_taxonomy=transfer['taxonomy'],
                 transfer_stamp_type=transfer['stamp_type'],
@@ -101,15 +101,15 @@ def generate_transfers(session_data):
                 transfer_stamp_province=transfer['stamp_province']
             )
         transfers_content += transfer_content
-          
+            
     return RPT_TRANSFER_SET_STRUCTURE.format(
-        transferset_payment_date=transfer_set['payment_date'],
-        transferset_total_amount=transfer_set['total_amount'],
-        transferset_payment_type=transfer_set['payment_type'],
-        transferset_iuv=transfer_set['iuv'],
-        transferset_ccp=transfer_set['ccp'],
-        transferset_debtor_iban=session_data['payer_delegate']['iban'],
-        transferset_debtor_bic=session_data['payer_delegate']['bic'],
+        payment_payment_date=payment['payment_date'],
+        payment_total_amount="{:.2f}".format(payment['total_amount']),
+        payment_payment_type=payment['payment_type'],
+        payment_iuv=payment['iuv'],
+        payment_ccp=payment['ccp'],
+        payment_debtor_iban=session_data['payer_delegate']['iban'],
+        payment_debtor_bic=session_data['payer_delegate']['bic'],
         transfers=transfers_content
     )
 
@@ -119,85 +119,88 @@ def generate_transfers(session_data):
 
 
 
-def create_transferset(session_data, number_of_transfers, multibeneficiary=False, number_of_mbd=0):
+def create_payments(session_data, number_of_payments, number_of_transfers, multibeneficiary=False, number_of_mbd=0):
 
-    iuv = utils.generate_iuv()
-    payer_info = "CP1.1"
-    taxonomy = "9/0301109AP"
-    transfers = []
+    session_data['payments'] = []
+    for payment_index in range(number_of_payments):
 
-    # generating transfer for multibeneficiary
-    if multibeneficiary:
-        transfers.append({
-            'iuv': iuv,
-            'amount': utils.generate_random_monetary_amount(10.00, 599.99),
-            'fee': utils.generate_random_monetary_amount(0.10, 2.50),
-            'creditor_iban': session_data['payee_institutions_1']['iban'],
-            'creditor_bic': session_data['payee_institutions_1']['bic'],
-            'creditor_iban2': session_data['payee_institutions_1']['iban'],
-            'creditor_bic2': session_data['payee_institutions_1']['bic'],
-            'payer_info': payer_info,
-            'taxonomy': taxonomy,
-            'is_mbd': False
-        })
-        transfers.append({
-            'iuv': iuv,
-            'amount': utils.generate_random_monetary_amount(10.00, 599.99),
-            'fee': utils.generate_random_monetary_amount(0.10, 2.50),
-            'creditor_iban': session_data['payee_institutions_2']['iban'],
-            'creditor_bic': session_data['payee_institutions_2']['bic'],
-            'creditor_iban2': session_data['payee_institutions_2']['iban'],
-            'creditor_bic2': session_data['payee_institutions_2']['bic'],
-            'payer_info': payer_info,
-            'taxonomy': taxonomy,
-            'is_mbd': False
-        })
-    
-    # generating transfer for non-multibeneficiary
-    else:
-        no_mbd_transfers = number_of_transfers - number_of_mbd
-        for i in range(number_of_transfers):
-            # generating MBD transfer
-            if no_mbd_transfers > 0:
-                transfers.append({
-                    'iuv': iuv,
-                    'amount': utils.generate_random_monetary_amount(10.00, 599.99),
-                    'fee': utils.generate_random_monetary_amount(0.10, 2.50),
-                    'creditor_iban': session_data['payee_institutions_1']['iban'],
-                    'creditor_bic': session_data['payee_institutions_1']['bic'],
-                    'creditor_iban2': session_data['payee_institutions_1']['iban'],
-                    'creditor_bic2': session_data['payee_institutions_1']['bic'],
-                    'payer_info': payer_info,
-                    'taxonomy': taxonomy,
-                    'is_mbd': False
-                })
-                no_mbd_transfers -= 1
-            
-            else:
+        iuv = utils.generate_iuv()
+        payer_info = "CP1.1"
+        taxonomy = "9/0301109AP"
+        transfers = []
+
+        # generating transfer for multibeneficiary
+        if multibeneficiary:
+            transfers.append({
+                'iuv': iuv,
+                'amount': utils.generate_random_monetary_amount(10.00, 599.99),
+                'fee': utils.generate_random_monetary_amount(0.10, 2.50),
+                'creditor_iban': session_data['payee_institutions_1']['iban'],
+                'creditor_bic': session_data['payee_institutions_1']['bic'],
+                'creditor_iban2': session_data['payee_institutions_1']['iban'],
+                'creditor_bic2': session_data['payee_institutions_1']['bic'],
+                'payer_info': payer_info,
+                'taxonomy': taxonomy,
+                'is_mbd': False
+            })
+            transfers.append({
+                'iuv': iuv,
+                'amount': utils.generate_random_monetary_amount(10.00, 599.99),
+                'fee': utils.generate_random_monetary_amount(0.10, 2.50),
+                'creditor_iban': session_data['payee_institutions_2']['iban'],
+                'creditor_bic': session_data['payee_institutions_2']['bic'],
+                'creditor_iban2': session_data['payee_institutions_2']['iban'],
+                'creditor_bic2': session_data['payee_institutions_2']['bic'],
+                'payer_info': payer_info,
+                'taxonomy': taxonomy,
+                'is_mbd': False
+            })
+        
+        # generating transfer for non-multibeneficiary
+        else:
+            no_mbd_transfers = number_of_transfers - number_of_mbd
+            for i in range(number_of_transfers):
                 # generating MBD transfer
-                transfers.append({
-                    'iuv': iuv,
-                    'amount': 16.00,
-                    'fee': utils.generate_random_monetary_amount(0.10, 0.50),
-                    'stamp_hash': "cXVlc3RhIMOoIHVuYSBtYXJjYSBkYSBib2xsbw==",
-                    'stamp_type': "01",
-                    'stamp_province': "RM",
-                    'payer_info': payer_info,
-                    'taxonomy': "9/0301116TS/9/24B0060000000017",
-                    'is_mbd': True
-                })
+                if no_mbd_transfers > 0:
+                    transfers.append({
+                        'iuv': iuv,
+                        'amount': utils.generate_random_monetary_amount(10.00, 599.99),
+                        'fee': utils.generate_random_monetary_amount(0.10, 2.50),
+                        'creditor_iban': session_data['payee_institutions_1']['iban'],
+                        'creditor_bic': session_data['payee_institutions_1']['bic'],
+                        'creditor_iban2': session_data['payee_institutions_1']['iban'],
+                        'creditor_bic2': session_data['payee_institutions_1']['bic'],
+                        'payer_info': payer_info,
+                        'taxonomy': taxonomy,
+                        'is_mbd': False
+                    })
+                    no_mbd_transfers -= 1
+                
+                else:
+                    # generating MBD transfer
+                    transfers.append({
+                        'iuv': iuv,
+                        'amount': 16.00,
+                        'fee': utils.generate_random_monetary_amount(0.10, 0.50),
+                        'stamp_hash': "cXVlc3RhIMOoIHVuYSBtYXJjYSBkYSBib2xsbw==",
+                        'stamp_type': "01",
+                        'stamp_province': "RM",
+                        'payer_info': payer_info,
+                        'taxonomy': "9/0301116TS/9/24B0060000000017",
+                        'is_mbd': True
+                    })
 
-    # populate transfer set
-    transferset = {
-        'iuv': iuv,
-        'ccp': utils.generate_ccp(),
-        'payment_date': utils.get_current_date(),
-        'total_amount': sum(transfer["amount"] for transfer in transfers),
-        'total_fee': sum(transfer["fee"] for transfer in transfers),
-        'payment_type': "BBT",
-        'transfers': transfers        
-    }
-    session_data['transferset'] = transferset
+        # populate payment common data
+        payment = {
+            'iuv': iuv,
+            'ccp': utils.generate_ccp(),
+            'payment_date': utils.get_current_date(),
+            'total_amount': sum(transfer["amount"] for transfer in transfers),
+            'total_fee': sum(transfer["fee"] for transfer in transfers),
+            'payment_type': "BBT",
+            'transfers': transfers        
+        }
+        session_data['payments'].append(payment)
 
     return session_data
 

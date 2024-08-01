@@ -2,8 +2,9 @@ Feature: User pays a single payment on nodoInviaRPT
 
   Background:
     Given systems up
+    And a new session
 
-  @runnable
+  @runnable @happypath
   Scenario: User pays a single payment on nodoInviaRPT
 
     # Start process, sending nodoInviaRPT to wisp-soap-converter 
@@ -12,7 +13,7 @@ Feature: User pays a single payment on nodoInviaRPT
     Then the user receives the HTTP status code 200 
     And the user receives a response with outcome OK
     And the user receives a response with the redirect URL
-
+ 
     # Executing NM1-to-NMU conversion in wisp-converter
     Given a valid session identifier to be redirected to WISP dismantling
     When the user continue the session in WISP dismantling
@@ -20,10 +21,10 @@ Feature: User pays a single payment on nodoInviaRPT
     And the user can be redirected to Checkout
 
     # # Simulating the step when Checkout uses notice number from sent cart
-    # Given the first IUV code of the sent RPTs
-    # When the user searches for flow steps by IUV
-    # Then the user receives the HTTP status code 200 
-    # And the notice number can be retrieved 
+    Given the first IUV code of the sent RPTs
+    When the user searches for flow steps by IUVs
+    Then the user receives the HTTP status code 200 
+    And the notice number can be retrieved 
 
     # # Send a checkPosition request as creditor institution
     # Given a valid checkPosition request
