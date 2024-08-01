@@ -33,7 +33,7 @@ public class RtReceiptCosmosService {
 
     @Transactional
     public void saveRTEntity(SessionDataDTO sessionData, String rawRt, ReceiptTypeEnum receiptType) {
-        String encodedRt = Arrays.toString(Base64.getEncoder().encode(rawRt.getBytes(StandardCharsets.UTF_8)));
+        String encodedRt = Base64.getEncoder().encodeToString(rawRt.getBytes(StandardCharsets.UTF_8));
         rtRepository.save(getRTEntity(sessionData, encodedRt, receiptType, ZonedDateTime.now().toInstant().toEpochMilli()));
     }
 
