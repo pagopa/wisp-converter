@@ -1,0 +1,66 @@
+{
+    "test_data": {
+        "creditor_institution_broker": "<creditor_institution_broker>",
+        "creditor_institution": "<creditor_institution>",
+        "station": "<station>",
+        "station_password": "<station_password>",
+        "psp": "<psp>",
+        "psp_broker": "<psp_broker>",
+        "channel": "<channel>",
+        "channel_password": "<channel_password>",
+        "payer": {
+            "type": "F",
+            "fiscal_code": "VRDMRN92A12H501Z",
+            "name": "Marina Verdi",
+            "email": "marina.verdi@mail.com",
+            "address": "Via della Conciliazione",
+            "address_number": "1",
+            "address_zipcode": "00100",
+            "address_location": "Roma",
+            "address_province": "RM",
+            "address_nation": "IT"
+        },
+        "payer_delegate": {
+            "type": "F",
+            "fiscal_code": "RSSMRA70A01H501Z",
+            "name": "Maria Rossi",
+            "email": "maria.rossi@mail.com",
+            "address": "Via della Conciliazione",
+            "address_number": "1",
+            "address_zipcode": "00100",
+            "address_location": "Roma",
+            "address_province": "RM",
+            "address_nation": "IT",
+            "iban": "IT12A1234512345123456789012",
+            "bic": "ARTIITM1045"
+        },
+        "payee_institutions_1": {
+                "fiscal_code": "15376371009",
+                "name": "PagoPA S.p.A",
+                "operative_code": "123",
+                "operative_denomination": "XXX",
+                "address": "Piazza Colonna",
+                "address_number": "370",
+                "address_zipcode": "00187",
+                "address_location": "Roma",
+                "address_province": "RM",
+                "address_nation": "IT",
+                "iban": "<creditor_institution_iban>",
+                "bic": "ARTIITM1050"
+        },
+        "payee_institutions_2": {
+                "fiscal_code": "<creditor_institution_multibeneficiary>",
+                "name": "EC_TE S.p.A",
+                "operative_code": "123",
+                "operative_denomination": "XXX",
+                "address": "Corso Italia",
+                "address_number": "1",
+                "address_zipcode": "00187",
+                "address_location": "Roma",
+                "address_province": "RM",
+                "address_nation": "IT",
+                "iban": "<creditor_institution_multibeneficiary_iban>",
+                "bic": "ARTIITM1045"
+        }
+    }
+}
