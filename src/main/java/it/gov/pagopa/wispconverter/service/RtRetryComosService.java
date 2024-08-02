@@ -3,7 +3,7 @@ package it.gov.pagopa.wispconverter.service;
 import com.azure.cosmos.models.PartitionKey;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
-import it.gov.pagopa.wispconverter.repository.RTRequestRepository;
+import it.gov.pagopa.wispconverter.repository.RTRetryRepository;
 import it.gov.pagopa.wispconverter.repository.model.RTRequestEntity;
 import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
 import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
@@ -23,25 +23,25 @@ public class RtRetryComosService {
 
     private final ReService reService;
 
-    private final RTRequestRepository rtRequestRepository;
+    private final RTRetryRepository rtRetryRepository;
 
     @Value("${wisp-converter.re-tracing.internal.rt-retrieving.enabled}")
     private Boolean isTracingOnREEnabled;
 
     @Transactional
     public void saveRTRequestEntity(RTRequestEntity rtRequestEntity) {
-        rtRequestRepository.save(rtRequestEntity);
+        rtRetryRepository.save(rtRequestEntity);
     }
 
     @Transactional
     public void deleteRTRequestEntity(RTRequestEntity rtRequestEntity) {
-        rtRequestRepository.delete(rtRequestEntity);
+        rtRetryRepository.delete(rtRequestEntity);
     }
 
     public RTRequestEntity getRTRequestEntity(String id, String partitionKey) {
 
         // searching RT by id and partition key: if no element is found throw an exception, in the RE will be saved an exception event of failure
-        Optional<RTRequestEntity> optRTReqEntity = rtRequestRepository.findById(id, new PartitionKey(partitionKey));
+        Optional<RTRequestEntity> optRTReqEntity = rtRetryRepository.findById(id, new PartitionKey(partitionKey));
         RTRequestEntity rtRequestEntity = optRTReqEntity.orElseThrow(() -> new AppException(AppErrorCodeMessageEnum.PERSISTENCE_RT_NOT_FOUND, id, partitionKey));
 
         // generate and save RE event internal for change status

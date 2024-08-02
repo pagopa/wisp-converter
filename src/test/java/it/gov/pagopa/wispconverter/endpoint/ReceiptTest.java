@@ -58,7 +58,7 @@ class ReceiptTest {
     @MockBean
     private RPTRequestRepository rptRequestRepository;
     @MockBean
-    private RTRequestRepository rtRequestRepository;
+    private RTRetryRepository rtRetryRepository;
     @MockBean
     private RTRepository rtRepository;
     @MockBean

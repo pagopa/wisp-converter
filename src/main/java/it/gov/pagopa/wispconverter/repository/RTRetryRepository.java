@@ -5,6 +5,6 @@ import it.gov.pagopa.wispconverter.repository.model.RTRequestEntity;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface RTRequestRepository extends CosmosRepository<RTRequestEntity, String> {
+public interface RTRetryRepository extends CosmosRepository<RTRequestEntity, String> {
 
 }

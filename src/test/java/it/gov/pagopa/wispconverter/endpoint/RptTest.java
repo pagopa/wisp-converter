@@ -63,7 +63,7 @@ class RptTest {
     private IdempotencyKeyRepository idempotencyKeyRepository;
 
     @MockBean
-    private RTRequestRepository rtRequestRepository;
+    private RTRetryRepository rtRetryRepository;
     @MockBean
     private RTRepository rtRepository;
     @MockBean
