@@ -92,7 +92,7 @@ class ConsumerTest {
 
         PaaInviaRTSenderService paaInviaRTSenderService = mock(PaaInviaRTSenderService.class);
 
-        ReflectionTestUtils.setField(rtConsumer, "rtCosmosService", rtRetryComosService);
+        ReflectionTestUtils.setField(rtConsumer, "rtRetryComosService", rtRetryComosService);
         ReflectionTestUtils.setField(rtConsumer, "paaInviaRTSenderService", paaInviaRTSenderService);
         ReflectionTestUtils.setField(rtConsumer, "serviceBusService", serviceBusService);
         ReflectionTestUtils.setField(rtConsumer, "reService", reService);
@@ -154,7 +154,7 @@ class ConsumerTest {
 
         PaaInviaRTSenderService paaInviaRTSenderService = mock(PaaInviaRTSenderService.class);
 
-        ReflectionTestUtils.setField(rtConsumer, "rtCosmosService", rtRetryComosService);
+        ReflectionTestUtils.setField(rtConsumer, "rtRetryComosService", rtRetryComosService);
         ReflectionTestUtils.setField(rtConsumer, "paaInviaRTSenderService", paaInviaRTSenderService);
         ReflectionTestUtils.setField(rtConsumer, "serviceBusService", serviceBusService);
         ReflectionTestUtils.setField(rtConsumer, "reService", reService);
@@ -208,7 +208,7 @@ class ConsumerTest {
         PaaInviaRTSenderService paaInviaRTSenderService = mock(PaaInviaRTSenderService.class);
         doThrow(new AppException(AppErrorCodeMessageEnum.PARSING_GENERIC_ERROR)).when(paaInviaRTSenderService).sendToCreditorInstitution(any(), any(), any());
 
-        ReflectionTestUtils.setField(rtConsumer, "rtCosmosService", rtRetryComosService);
+        ReflectionTestUtils.setField(rtConsumer, "rtRetryComosService", rtRetryComosService);
         ReflectionTestUtils.setField(rtConsumer, "paaInviaRTSenderService", paaInviaRTSenderService);
         ReflectionTestUtils.setField(rtConsumer, "serviceBusService", serviceBusService);
         ReflectionTestUtils.setField(rtConsumer, "reService", reService);
@@ -265,7 +265,7 @@ class ConsumerTest {
         PaaInviaRTSenderService paaInviaRTSenderService = mock(PaaInviaRTSenderService.class);
         doThrow(new AppException(AppErrorCodeMessageEnum.PARSING_GENERIC_ERROR)).when(paaInviaRTSenderService).sendToCreditorInstitution(any(), any(), any());
 
-        ReflectionTestUtils.setField(rtConsumer, "rtCosmosService", rtRetryComosService);
+        ReflectionTestUtils.setField(rtConsumer, "rtRetryComosService", rtRetryComosService);
         ReflectionTestUtils.setField(rtConsumer, "paaInviaRTSenderService", paaInviaRTSenderService);
         ReflectionTestUtils.setField(rtConsumer, "serviceBusService", serviceBusService);
         ReflectionTestUtils.setField(rtConsumer, "reService", reService);
