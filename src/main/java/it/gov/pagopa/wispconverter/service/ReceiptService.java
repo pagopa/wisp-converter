@@ -151,7 +151,7 @@ public class ReceiptService {
                         StationDto station = stations.get(commonFields.getStationId());
 
                         // save receipt-rt
-                        rtReceiptCosmosService.saveRTEntity(sessionData, rawGeneratedReceipt, ReceiptTypeEnum.KO);
+                        rtReceiptCosmosService.saveRTEntity(rpt, rawGeneratedReceipt, ReceiptTypeEnum.KO);
 
                         // send receipt to the creditor institution and, if not correctly sent, add to queue for retry
                         boolean isSuccessful = sendReceiptToCreditorInstitution(sessionData, paaInviaRtPayload, receipt, rpt.getIuv(), noticeNumber, station, true);
@@ -235,7 +235,7 @@ public class ReceiptService {
                     String paaInviaRtPayload = generatePayloadAsRawString(intestazionePPT, commonFields.getSignatureType(), rawGeneratedReceipt, objectFactory);
 
                     // save receipt-rt
-                    rtReceiptCosmosService.saveRTEntity(sessionData, rawGeneratedReceipt, ReceiptTypeEnum.OK);
+                    rtReceiptCosmosService.saveRTEntity(rpt, rawGeneratedReceipt, ReceiptTypeEnum.OK);
 
                     // send receipt to the creditor institution and, if not correctly sent, add to queue for retry
                     boolean isSuccessful = sendReceiptToCreditorInstitution(sessionData, paaInviaRtPayload, receipt, rpt.getIuv(), noticeNumber, station, false);

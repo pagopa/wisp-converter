@@ -1,5 +1,6 @@
 package it.gov.pagopa.wispconverter.service;
 
+import com.azure.cosmos.CosmosException;
 import it.gov.pagopa.wispconverter.repository.RTRepository;
 import it.gov.pagopa.wispconverter.repository.model.RTEntity;
 import it.gov.pagopa.wispconverter.repository.model.enumz.ReceiptTypeEnum;
@@ -25,21 +26,26 @@ public class RtReceiptCosmosService {
 
     @Transactional
     public void saveRTEntity(SessionDataDTO sessionData) {
-        rtRepository.save(getRTEntity(sessionData, null, null, null));
+        for(RPTContentDTO rptContentDTO : sessionData.getAllRPTs()) {
+            try {
+                rtRepository.save(getRTEntity(rptContentDTO, null, null, null));
+            } catch (CosmosException e) {
+                log.error("An exception occurred while saveRTEntity: " + e.getMessage());
+            }
+        }
     }
 
     @Transactional
-    public void saveRTEntity(SessionDataDTO sessionData, String rawRt, ReceiptTypeEnum receiptType) {
+    public void saveRTEntity(RPTContentDTO rptContentDTO, String rawRt, ReceiptTypeEnum receiptType) {
         try {
             String encodedRt = AppBase64Util.base64Encode(ZipUtil.zip(rawRt));
-            rtRepository.save(getRTEntity(sessionData, encodedRt, receiptType, ZonedDateTime.now().toInstant().toEpochMilli()));
-        } catch (IOException e) {
+            rtRepository.save(getRTEntity(rptContentDTO, encodedRt, receiptType, ZonedDateTime.now().toInstant().toEpochMilli()));
+        } catch (IOException | CosmosException e) {
             log.error("An exception occurred while saveRTEntity: " + e.getMessage());
         }
     }
 
-    private RTEntity getRTEntity(SessionDataDTO sessionData, String rt, ReceiptTypeEnum receiptType, Long rtTimestamp) {
-        RPTContentDTO rptContentDTO = sessionData.getFirstRPT();
+    private RTEntity getRTEntity(RPTContentDTO rptContentDTO, String rt, ReceiptTypeEnum receiptType, Long rtTimestamp) {
         String IUV = rptContentDTO.getIuv();
         String ccp = rptContentDTO.getCcp();
         String domainId = rptContentDTO.getRpt().getDomain().getDomainId();
