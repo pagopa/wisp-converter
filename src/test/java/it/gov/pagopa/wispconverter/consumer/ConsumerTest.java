@@ -78,8 +78,8 @@ class ConsumerTest {
 
         RTRequestRepository rtRequestRepository = mock(RTRequestRepository.class);
         when(rtRequestRepository.findById(any(), any())).thenReturn(Optional.ofNullable(getStoredReceipt(0, receiptType, "http://endpoint:443")));
-        RtRequestCosmosService rtRequestCosmosService = new RtRequestCosmosService(reService, rtRequestRepository);
-        ReflectionTestUtils.setField(rtRequestCosmosService, "isTracingOnREEnabled", true);
+        RtRetryComosService rtRetryComosService = new RtRetryComosService(reService, rtRequestRepository);
+        ReflectionTestUtils.setField(rtRetryComosService, "isTracingOnREEnabled", true);
 
         ServiceBusService serviceBusService = new ServiceBusService();
         ServiceBusSenderClient serviceBusSenderClient = mock(ServiceBusSenderClient.class);
@@ -92,7 +92,7 @@ class ConsumerTest {
 
         PaaInviaRTSenderService paaInviaRTSenderService = mock(PaaInviaRTSenderService.class);
 
-        ReflectionTestUtils.setField(rtConsumer, "rtCosmosService", rtRequestCosmosService);
+        ReflectionTestUtils.setField(rtConsumer, "rtCosmosService", rtRetryComosService);
         ReflectionTestUtils.setField(rtConsumer, "paaInviaRTSenderService", paaInviaRTSenderService);
         ReflectionTestUtils.setField(rtConsumer, "serviceBusService", serviceBusService);
         ReflectionTestUtils.setField(rtConsumer, "reService", reService);
@@ -140,8 +140,8 @@ class ConsumerTest {
 
         RTRequestRepository rtRequestRepository = mock(RTRequestRepository.class);
         when(rtRequestRepository.findById(any(), any())).thenReturn(Optional.ofNullable(getStoredReceipt(0, receiptType, "http://endpoint:443")));
-        RtRequestCosmosService rtRequestCosmosService = new RtRequestCosmosService(reService, rtRequestRepository);
-        ReflectionTestUtils.setField(rtRequestCosmosService, "isTracingOnREEnabled", true);
+        RtRetryComosService rtRetryComosService = new RtRetryComosService(reService, rtRequestRepository);
+        ReflectionTestUtils.setField(rtRetryComosService, "isTracingOnREEnabled", true);
 
         ServiceBusService serviceBusService = new ServiceBusService();
         ServiceBusSenderClient serviceBusSenderClient = mock(ServiceBusSenderClient.class);
@@ -154,7 +154,7 @@ class ConsumerTest {
 
         PaaInviaRTSenderService paaInviaRTSenderService = mock(PaaInviaRTSenderService.class);
 
-        ReflectionTestUtils.setField(rtConsumer, "rtCosmosService", rtRequestCosmosService);
+        ReflectionTestUtils.setField(rtConsumer, "rtCosmosService", rtRetryComosService);
         ReflectionTestUtils.setField(rtConsumer, "paaInviaRTSenderService", paaInviaRTSenderService);
         ReflectionTestUtils.setField(rtConsumer, "serviceBusService", serviceBusService);
         ReflectionTestUtils.setField(rtConsumer, "reService", reService);
@@ -193,8 +193,8 @@ class ConsumerTest {
 
         RTRequestRepository rtRequestRepository = mock(RTRequestRepository.class);
         when(rtRequestRepository.findById(any(), any())).thenReturn(Optional.ofNullable(getStoredReceipt(0, receiptType, "http://endpoint:443")));
-        RtRequestCosmosService rtRequestCosmosService = new RtRequestCosmosService(reService, rtRequestRepository);
-        ReflectionTestUtils.setField(rtRequestCosmosService, "isTracingOnREEnabled", true);
+        RtRetryComosService rtRetryComosService = new RtRetryComosService(reService, rtRequestRepository);
+        ReflectionTestUtils.setField(rtRetryComosService, "isTracingOnREEnabled", true);
 
         ServiceBusService serviceBusService = new ServiceBusService();
         ServiceBusSenderClient serviceBusSenderClient = mock(ServiceBusSenderClient.class);
@@ -208,7 +208,7 @@ class ConsumerTest {
         PaaInviaRTSenderService paaInviaRTSenderService = mock(PaaInviaRTSenderService.class);
         doThrow(new AppException(AppErrorCodeMessageEnum.PARSING_GENERIC_ERROR)).when(paaInviaRTSenderService).sendToCreditorInstitution(any(), any(), any());
 
-        ReflectionTestUtils.setField(rtConsumer, "rtCosmosService", rtRequestCosmosService);
+        ReflectionTestUtils.setField(rtConsumer, "rtCosmosService", rtRetryComosService);
         ReflectionTestUtils.setField(rtConsumer, "paaInviaRTSenderService", paaInviaRTSenderService);
         ReflectionTestUtils.setField(rtConsumer, "serviceBusService", serviceBusService);
         ReflectionTestUtils.setField(rtConsumer, "reService", reService);
@@ -250,8 +250,8 @@ class ConsumerTest {
 
         RTRequestRepository rtRequestRepository = mock(RTRequestRepository.class);
         when(rtRequestRepository.findById(any(), any())).thenReturn(Optional.ofNullable(getStoredReceipt(48, receiptType, "http://endpoint:443")));
-        RtRequestCosmosService rtRequestCosmosService = new RtRequestCosmosService(reService, rtRequestRepository);
-        ReflectionTestUtils.setField(rtRequestCosmosService, "isTracingOnREEnabled", true);
+        RtRetryComosService rtRetryComosService = new RtRetryComosService(reService, rtRequestRepository);
+        ReflectionTestUtils.setField(rtRetryComosService, "isTracingOnREEnabled", true);
 
         ServiceBusService serviceBusService = new ServiceBusService();
         ServiceBusSenderClient serviceBusSenderClient = mock(ServiceBusSenderClient.class);
@@ -265,7 +265,7 @@ class ConsumerTest {
         PaaInviaRTSenderService paaInviaRTSenderService = mock(PaaInviaRTSenderService.class);
         doThrow(new AppException(AppErrorCodeMessageEnum.PARSING_GENERIC_ERROR)).when(paaInviaRTSenderService).sendToCreditorInstitution(any(), any(), any());
 
-        ReflectionTestUtils.setField(rtConsumer, "rtCosmosService", rtRequestCosmosService);
+        ReflectionTestUtils.setField(rtConsumer, "rtCosmosService", rtRetryComosService);
         ReflectionTestUtils.setField(rtConsumer, "paaInviaRTSenderService", paaInviaRTSenderService);
         ReflectionTestUtils.setField(rtConsumer, "serviceBusService", serviceBusService);
         ReflectionTestUtils.setField(rtConsumer, "reService", reService);

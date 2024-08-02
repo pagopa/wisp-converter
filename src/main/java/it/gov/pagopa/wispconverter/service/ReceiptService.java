@@ -61,7 +61,7 @@ public class ReceiptService {
 
     private final RtReceiptCosmosService rtReceiptCosmosService;
 
-    private final RtRequestCosmosService rtRequestCosmosService;
+    private final RtRetryComosService rtRetryComosService;
 
     private final RPTExtractorService rptExtractorService;
 
@@ -496,7 +496,7 @@ public class ReceiptService {
                     .idempotencyKey(idempotencyKey)
                     .receiptType(receiptType)
                     .build();
-            rtRequestCosmosService.saveRTRequestEntity(rtRequestEntity);
+            rtRetryComosService.saveRTRequestEntity(rtRequestEntity);
 
             // after the RT persist, send a message on the service bus
             serviceBusService.sendMessage(rtRequestEntity.getPartitionKey() + "_" + rtRequestEntity.getId(), schedulingTimeInMinutes);

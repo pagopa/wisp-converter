@@ -19,7 +19,7 @@ import java.util.Optional;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class RtRequestCosmosService {
+public class RtRetryComosService {
 
     private final ReService reService;
 
