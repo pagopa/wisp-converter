@@ -65,6 +65,8 @@ class RptTest {
     @MockBean
     private RTRequestRepository rtRequestRepository;
     @MockBean
+    private RTRepository rtRepository;
+    @MockBean
     private it.gov.pagopa.gen.wispconverter.client.iuvgenerator.invoker.ApiClient iuvGeneratorClient;
     @MockBean
     private it.gov.pagopa.gen.wispconverter.client.gpd.invoker.ApiClient gpdClient;

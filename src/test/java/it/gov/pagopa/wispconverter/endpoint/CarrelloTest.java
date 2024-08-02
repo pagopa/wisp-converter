@@ -5,10 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.gen.wispconverter.client.cache.model.StationCreditorInstitutionDto;
 import it.gov.pagopa.gen.wispconverter.client.iuvgenerator.model.IUVGenerationResponseDto;
 import it.gov.pagopa.wispconverter.Application;
-import it.gov.pagopa.wispconverter.repository.IdempotencyKeyRepository;
-import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
-import it.gov.pagopa.wispconverter.repository.RTRequestRepository;
-import it.gov.pagopa.wispconverter.repository.ReEventRepository;
+import it.gov.pagopa.wispconverter.repository.*;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
 import it.gov.pagopa.wispconverter.service.ConfigCacheService;
 import it.gov.pagopa.wispconverter.service.ReceiptService;
@@ -58,6 +55,8 @@ class CarrelloTest {
     private RPTRequestRepository rptRequestRepository;
     @MockBean
     private RTRequestRepository rtRequestRepository;
+    @MockBean
+    private RTRepository rtRepository;
     @MockBean
     private IdempotencyKeyRepository idempotencyKeyRepository;
     @MockBean

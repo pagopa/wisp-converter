@@ -41,6 +41,8 @@ class HomeTest {
     @MockBean
     private RTRequestRepository rtRequestRepository;
     @MockBean
+    private RTRepository rtRepository;
+    @MockBean
     private CacheRepository cacheRepository;
     @MockBean
     private ReEventRepository reEventRepository;
