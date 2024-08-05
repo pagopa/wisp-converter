@@ -13,6 +13,7 @@ import it.gov.pagopa.wispconverter.util.JaxbElementUtil;
 import it.gov.pagopa.wispconverter.util.ReUtil;
 import jakarta.xml.soap.SOAPMessage;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.util.Pair;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +24,7 @@ import org.springframework.web.client.RestClient;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -33,6 +35,9 @@ public class PaaInviaRTSenderService {
     private final ReService reService;
 
     private final JaxbElementUtil jaxbElementUtil;
+
+    @Value("${wisp-converter.rt-send.avoid-scheduling-on-states}")
+    private Set<String> avoidSchedulingOnStates;
 
     public void sendToCreditorInstitution(String url, List<Pair<String, String>> headers, String payload) {
 
@@ -62,7 +67,9 @@ public class PaaInviaRTSenderService {
 
             // check the response and if the outcome is KO, throw an exception
             EsitoPaaInviaRT esitoPaaInviaRT = body.getPaaInviaRTRisposta();
-            if (Constants.KO.equals(esitoPaaInviaRT.getEsito()) || esitoPaaInviaRT.getFault() != null || !Constants.OK.equals(esitoPaaInviaRT.getEsito())) {
+            if (Constants.KO.equals(esitoPaaInviaRT.getEsito())
+                    || (esitoPaaInviaRT.getFault() != null && !avoidSchedulingOnStates.contains(esitoPaaInviaRT.getFault().getFaultCode()))
+                    || !Constants.OK.equals(esitoPaaInviaRT.getEsito())) {
                 FaultBean fault = esitoPaaInviaRT.getFault();
                 String faultCode = "ND";
                 String faultString = "ND";
