@@ -4,7 +4,7 @@ microservice-chart:
   fullnameOverride: ""
   image:
     repository: ghcr.io/pagopa/pagopa-wisp-converter
-    tag: "0.1.4"
+    tag: "0.1.4-2-PAGOPA-2023"
     pullPolicy: Always
   livenessProbe:
     httpGet:
@@ -108,6 +108,7 @@ microservice-chart:
     STATION_IN_GPD_PARTIAL_PATH: 'gpd-payments/api/v1'
     RT_SEND_MAX_RETRIES: '48'
     RT_SEND_SCHEDULING_TIME_IN_MINUTES: '60'
+    RT_SEND_AVOID_SCHEDULING_ON_STATES: 'PAA_RT_DUPLICATA'
     RE_TRACING_INTERFACE_IUVGENERATOR_ENABLED: 'true'
     RE_TRACING_INTERFACE_PAYMENTPOSITIONANALYSIS_ENABLED: 'true'
     RE_TRACING_INTERFACE_DECOUPLERCACHING_ENABLED: 'true'
