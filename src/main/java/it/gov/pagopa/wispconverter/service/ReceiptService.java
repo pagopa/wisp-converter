@@ -123,20 +123,20 @@ public class ReceiptService {
 
                 } else {
 
-                    // generate the header for the paaInviaRT SOAP request. This object is common for each generated request
-                    IntestazionePPT header = generateHeader(
-                            cachedMapping.getFiscalCode(),
-                            cachedMapping.getIuv(),
-                            receipt.getPaymentToken(),
-                            commonFields.getCreditorInstitutionBrokerId(),
-                            commonFields.getStationId());
-
                     /*
                       For each RPT extracted from session data that is required by paSendRTV2, is necessary to generate a single paaInviaRT SOAP request.
                       Each paaInviaRT generated will be autonomously sent to creditor institution in order to track each RPT.
                      */
                     List<RPTContentDTO> rpts = extractRequiredRPTs(sessionData, cachedMapping.getIuv(), cachedMapping.getFiscalCode());
                     for (RPTContentDTO rpt : rpts) {
+
+                        // generate the header for the paaInviaRT SOAP request. This object is common for each generated request
+                        IntestazionePPT header = generateHeader(
+                                cachedMapping.getFiscalCode(),
+                                cachedMapping.getIuv(),
+                                rpt.getCcp(),
+                                commonFields.getCreditorInstitutionBrokerId(),
+                                commonFields.getStationId());
 
                         // Generating the paaInviaRT payload from the RPT
                         String paymentOutcome = "Annullato da WISP"; // TODO change this with one of the following -> https://pagopa.atlassian.net/wiki/spaces/PN5/pages/913244345/WISP-Converter?focusedCommentId=1002078407
