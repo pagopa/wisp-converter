@@ -1,3 +1,6 @@
+from enum import Enum
+
+
 NODOINVIARPT_STRUCTURE = """<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
 <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ppt="http://ws.pagamenti.telematici.gov/ppthead" xmlns:ws="http://ws.pagamenti.telematici.gov/">
     <soapenv:Header>
@@ -122,18 +125,45 @@ RPT_SINGLE_MBD_TRANSFER_STRUCTURE = """<pay_i:datiSingoloVersamento>
         \t</pay_i:datiMarcaBolloDigitale>
     \t</pay_i:datiSingoloVersamento>""";
 
+ACTIVATE_PAYMENT_NOTICE = """<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:nod="http://pagopa-api.pagopa.gov.it/node/nodeForPsp.xsd">
+	<soapenv:Header />
+	<soapenv:Body>
+		<nod:activatePaymentNoticeV2Request>
+			<idPSP>{psp}</idPSP>
+			<idBrokerPSP>{psp_broker}</idBrokerPSP>
+			<idChannel>{channel}</idChannel>
+			<password>{password}</password>
+			<idempotencyKey>{idempotency_key}</idempotencyKey>
+			<qrCode>
+				<fiscalCode>{fiscal_code}</fiscalCode>
+				<noticeNumber>{notice_number}</noticeNumber>
+			</qrCode>
+			<expirationTime>900000</expirationTime>
+			<amount>{amount}</amount>
+			<paymentNote>{payment_note}</paymentNote>
+		</nod:activatePaymentNoticeV2Request>
+	</soapenv:Body>
+</soapenv:Envelope>
+"""
 
 SESSION_DATA = "session_data"
 SESSION_DATA_TEST_DATA = "test_data"
 
-SESSION_DATA_TRIGGER_ACTION_REQ = "flow_data.trigger_action.request"
-SESSION_DATA_RES_BODY = "flow_data.other_action.response.body"
-SESSION_DATA_RES_CODE = "flow_data.other_action.response.status_code"
+SESSION_DATA_REQ_BODY = "flow_data.action.request.body"
+SESSION_DATA_RES_BODY = "flow_data.action.response.body"
+SESSION_DATA_RES_CODE = "flow_data.action.response.status_code"
+SESSION_DATA_RES_CONTENTTYPE = "flow_data.action.response.content_type"
 
 SESSION_DATA_SESSION_ID = "flow_data.common.session_id"
 SESSION_DATA_IUVS = "flow_data.common.iuvs"
-SESSION_DATA_NOTICE_NUMBERS = "flow_data.common.notice_numbers"
+SESSION_DATA_NAVS = "flow_data.common.navs"
+SESSION_DATA_PAYMENT_NOTICES = "flow_data.common.payment_notices"
 
 NODOINVIARPT = "nodoInviaRPT"
 
 OCP_APIM_SUBSCRIPTION_KEY = "Ocp-Apim-Subscription-Key"
+
+
+class ResponseType(Enum):
+    XML = 1
+    JSON = 2

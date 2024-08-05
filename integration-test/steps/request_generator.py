@@ -1,8 +1,11 @@
 import base64
+import json
 import logging
 from constants import *
-import utils
+import utility.utils as utils
 
+
+# ==============================================
 
 def generate_nodoinviarpt(session_data):
 
@@ -56,9 +59,9 @@ def generate_nodoinviarpt(session_data):
         creditor_institution_broker=session_data['creditor_institution_broker'],
         creditor_institution=session_data['creditor_institution'],
         station=session_data['station'],
-        psp_broker=session_data['psp_broker'],
-        psp=session_data['psp'],
-        channel=session_data['channel'],
+        psp_broker=session_data['psp_broker_wisp'],
+        psp=session_data['psp_wisp'],
+        channel=session_data['channel_wisp'],
         password=session_data['station_password'],
         iuv=session_data['payments'][payment_index]['iuv'],
         ccp=session_data['payments'][payment_index]['ccp'],
@@ -66,6 +69,7 @@ def generate_nodoinviarpt(session_data):
     )
     return request
 
+# ==============================================
 
 def generate_transfers(session_data, payment_index):
 
@@ -113,11 +117,7 @@ def generate_transfers(session_data, payment_index):
         transfers=transfers_content
     )
 
-
-
-
-
-
+# ==============================================
 
 def create_payments(session_data, number_of_payments, number_of_transfers, multibeneficiary=False, number_of_mbd=0):
 
@@ -204,4 +204,40 @@ def create_payments(session_data, number_of_payments, number_of_transfers, multi
 
     return session_data
 
+# ==============================================
 
+def generate_checkposition(payment_notices):
+
+    checkposition = {"positionslist":[]}
+    for payment_notice in payment_notices:
+        checkposition["positionslist"].append({
+            "fiscalCode": payment_notice['domain_id'],
+            "noticeNumber": payment_notice['notice_number']
+        })
+    content = json.dumps(checkposition, separators=(',', ':'))
+    return content
+
+# ==============================================
+
+
+def generate_activatepaymentnotice(test_data, payment_notices, payment):
+
+    iuv = payment['iuv']
+    total_amount = payment['total_amount']
+    notice_number = None
+    for payment_notice in payment_notices:
+        if payment_notice['iuv'] == iuv:
+            notice_number = payment_notice['notice_number']    
+    idempotency_key = notice_number + '_' + utils.get_random_digit_string(10) 
+    
+    return ACTIVATE_PAYMENT_NOTICE.format(
+        psp=test_data['psp_wisp'],
+        psp_broker=test_data['psp_broker_wisp'],
+        channel=test_data['channel_checkout'],
+        password=test_data['channel_checkout_password'],
+        idempotency_key=idempotency_key,
+        fiscal_code=payment_notice['domain_id'],
+        notice_number=notice_number,
+        amount="{:.2f}".format(total_amount),
+        payment_note="Integration test"
+    )

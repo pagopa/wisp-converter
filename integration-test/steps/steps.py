@@ -1,15 +1,13 @@
 import copy
-import re
+import time
 from urllib.parse import parse_qs, urlparse
 from behave import *
-from datetime import timezone, timedelta
 import logging
-import requests
 from allure_commons._allure import attach
 import behave as behave
 
-import session as session
-import utils as utils
+import utility.session as session
+import utility.utils as utils
 import request_generator as requestgen
 import constants as constants
 import router as router
@@ -42,9 +40,9 @@ def system_up(context):
                 headers = {'Content-Type': 'application/json'}
                 if subscription_key is not None:
                     headers[constants.OCP_APIM_SUBSCRIPTION_KEY] = subscription_key
-                resp = requests.get(url, headers=headers, verify=False)
-                logging.debug(f"[Health check] Received response: {resp.status_code}")
-                responses &= (resp.status_code == 200)
+                status_code, _, _ = utils.execute_request(url, "get", headers, payload=None, type=constants.ResponseType.JSON)
+                logging.debug(f"[Health check] Received response: {status_code}")
+                responses &= (status_code == 200)
 
         if responses:
             context.precondition_cache.add("systems up")
@@ -59,6 +57,14 @@ def system_up(context):
 # =============== [GIVEN] steps ================
 # ==============================================
 
+@given('a waiting time of {time_in_seconds} second{notes}')
+def wait_for_n_seconds(context, time_in_seconds, notes):
+    logging.info(f"Waiting {time_in_seconds}{notes}")
+    time.sleep(int(time_in_seconds))
+    logging.info(f"Wait time ended")
+
+# ==============================================
+
 @given('a single RPT with {number_of_transfers} transfers')
 def generate_single_rpt(context, number_of_transfers):
 
@@ -68,9 +74,47 @@ def generate_single_rpt(context, number_of_transfers):
     # generate request
     request = requestgen.generate_nodoinviarpt(session_data)
     
-    # update context with request and edited session data
+    # update context with request and edit session data
     session.set_test_data(context, session_data)
-    session.set_flow_data(context, constants.SESSION_DATA_TRIGGER_ACTION_REQ, request)
+    session.set_flow_data(context, constants.SESSION_DATA_REQ_BODY, request)
+
+# ==============================================
+
+@given('a valid checkPosition request')
+def generate_checkposition(context):
+
+    # generate request
+    payment_notices = session.get_flow_data(context, constants.SESSION_DATA_PAYMENT_NOTICES)
+    request = requestgen.generate_checkposition(payment_notices)
+
+    # update context with request and edit session data
+    session.set_flow_data(context, constants.SESSION_DATA_REQ_BODY, request)
+
+# ==============================================
+
+@given('a valid activatePaymentNoticeV2 request on {index} RPT')
+def generate_activatepaymentnotice(context, index):
+
+    rpt_index = -1
+    match index:
+        case "first":
+            rpt_index = 0
+        case "second":
+            rpt_index = 1
+        case "third":
+            rpt_index = 2
+        case "fourth":
+            rpt_index = 3
+        case "fifth":
+            rpt_index = 4
+
+    # generate request
+    test_data = session.get_test_data(context)
+    payment_notices = session.get_flow_data(context, constants.SESSION_DATA_PAYMENT_NOTICES)
+    request = requestgen.generate_activatepaymentnotice(test_data, payment_notices, test_data['payments'][rpt_index])
+
+    # update context with request and edit session data
+    session.set_flow_data(context, constants.SESSION_DATA_REQ_BODY, request)
 
 # ==============================================
 
@@ -79,8 +123,8 @@ def get_valid_sessionid(context):
 
     session_id = session.get_flow_data(context, constants.SESSION_DATA_SESSION_ID)
     split_session_id = session_id.split("_")
-    utils.assert_show_message(len(split_session_id[0]) == 11, f"The session ID must contains the broker code as first part of the session identifier.")
-    utils.assert_show_message(len(split_session_id[1]) == 36, f"The session ID must contains an UUID as second part of the session identifier.")
+    utils.assert_show_message(len(split_session_id[0]) == 11, f"The session ID must contains the broker code as first part of the session identifier. Session ID: [{session_id}]")
+    utils.assert_show_message(len(split_session_id[1]) == 36, f"The session ID must contains an UUID as second part of the session identifier. Session ID: [{session_id}]")
 
 # ==============================================
 
@@ -100,7 +144,6 @@ def get_iuv_from_session(context, index):
         case "fifth":
             rpt_index = 4
 
-
     test_data = session.get_test_data(context)
     utils.assert_show_message('payments' in test_data and len(test_data['payments']) >= rpt_index + 1, f"No valid payments are defined in the session data.")
 
@@ -117,38 +160,75 @@ def get_iuv_from_session(context, index):
 # ==============================================
 
 
+@given('the {index} notice number of the sent RPTs')
+def get_iuv_from_session(context, index):
+
+    rpt_index = -1
+    match index:
+        case "first":
+            rpt_index = 0
+        case "second":
+            rpt_index = 1
+        case "third":
+            rpt_index = 2
+        case "fourth":
+            rpt_index = 3
+        case "fifth":
+            rpt_index = 4
+
+    test_data = session.get_test_data(context)
+    utils.assert_show_message('payments' in test_data and len(test_data['payments']) >= rpt_index + 1, f"No valid payments are defined in the session data.")
+
+    payment = test_data['payments'][rpt_index]
+    utils.assert_show_message('notice_number' in payment, f"No valid notice number is defined for payment with index {rpt_index}.") 
+    notice_number = payment['notice_number']
+
+    navs = session.get_flow_data(context, constants.SESSION_DATA_NAVS)
+    if navs is None:
+        navs = []
+    navs.insert(rpt_index, notice_number)
+    session.set_flow_data(context, constants.SESSION_DATA_NAVS, navs)
+
+# ==============================================
+
+
 
 # ==============================================
 # ================ [WHEN] steps ================
 # ==============================================
 
-@when('the user sends a {primitive} action')
-def send_nodoinviarpt(context, primitive):
+@when('the {actor} sends a {primitive} action')
+def send_primitive(context, actor, primitive):
 
-    request = session.get_flow_data(context, constants.SESSION_DATA_TRIGGER_ACTION_REQ)
-    url, subkey = router.get_soap_url(context, primitive)    
-    headers = {'Content-Type': 'application/xml', 'SOAPAction': primitive, constants.OCP_APIM_SUBSCRIPTION_KEY: subkey}
-    status_code, body_response, _ = utils.execute_request(url, "post", headers, request)
+    request = session.get_flow_data(context, constants.SESSION_DATA_REQ_BODY)
+    url, subkey, content_type = router.get_primitive_url(context, primitive)
 
+    headers = {}
+    if content_type == constants.ResponseType.XML:
+        headers = {'Content-Type': 'application/xml', 'SOAPAction': primitive, constants.OCP_APIM_SUBSCRIPTION_KEY: subkey}
+    elif content_type == constants.ResponseType.JSON:
+        headers = {'Content-Type': 'application/json', constants.OCP_APIM_SUBSCRIPTION_KEY: subkey}
+    
+    status_code, body_response, _ = utils.execute_request(url, "post", headers, request, content_type)
     session.set_flow_data(context, constants.SESSION_DATA_RES_CODE, status_code)
     session.set_flow_data(context, constants.SESSION_DATA_RES_BODY, body_response)
-    
+    session.set_flow_data(context, constants.SESSION_DATA_RES_CONTENTTYPE, content_type)
+
 # ==============================================
 
 @when('the user continue the session in WISP dismantling')
 def send_sessionid_to_wispdismantling(context):
 
-    session_data = session.get_test_data(context)
-
     url, _ = router.get_rest_url(context, "redirect")    
     headers = {'Content-Type': 'application/xml'}
     url += session.get_flow_data(context, constants.SESSION_DATA_SESSION_ID)
-    status_code, _, response_headers = utils.execute_request(url, "get", headers)
+    status_code, _, response_headers = utils.execute_request(url, "get", headers, allow_redirect=False)
     location_header = response_headers['Location']
     attach(location_header, name="Received response")
 
     session.set_flow_data(context, constants.SESSION_DATA_RES_CODE, status_code)
     session.set_flow_data(context, constants.SESSION_DATA_RES_BODY, location_header)
+    session.set_flow_data(context, constants.SESSION_DATA_RES_CONTENTTYPE, constants.ResponseType.XML)
 
 # ==============================================
 
@@ -170,7 +250,35 @@ def search_in_re_by_iuv(context):
             date_from=today,
             date_to=today
         )
-        status_code, body_response, _ = utils.execute_request(url, "get", headers, type=utils.ResponseType.JSON)
+        status_code, body_response, _ = utils.execute_request(url, "get", headers, type=constants.ResponseType.JSON)
+        utils.assert_show_message('data' in body_response, f"The response does not contains data.")
+        utils.assert_show_message(len(body_response['data']) > 0, f"There are not event data in the response.")
+        re_events.extend(body_response['data'])
+
+    session.set_flow_data(context, constants.SESSION_DATA_RES_CODE, status_code)
+    session.set_flow_data(context, constants.SESSION_DATA_RES_BODY, re_events)
+    
+# ==============================================
+
+@when('the user searches for flow steps by notice numbers')
+def search_in_re_by_nav(context):
+
+    navs = session.get_flow_data(context, constants.SESSION_DATA_NAVS)
+    creditor_institution = session.get_test_data(context)['creditor_institution']
+    today = utils.get_current_date()
+
+    re_events = []
+    base_url, subkey = router.get_rest_url(context, "search_in_re_by_nav")
+    headers = {'Content-Type': 'application/json', constants.OCP_APIM_SUBSCRIPTION_KEY: subkey}
+
+    for nav in navs:
+        url = base_url.format(
+            creditor_institution=creditor_institution,
+            nav=nav,
+            date_from=today,
+            date_to=today
+        )
+        status_code, body_response, _ = utils.execute_request(url, "get", headers, type=constants.ResponseType.JSON)
         utils.assert_show_message('data' in body_response, f"The response does not contains data.")
         utils.assert_show_message(len(body_response['data']) > 0, f"There are not event data in the response.")
         re_events.extend(body_response['data'])
@@ -186,25 +294,71 @@ def search_in_re_by_iuv(context):
 # ================ [THEN] steps ================
 # ==============================================
 
-@then('the user receives the HTTP status code {status_code}')
-def check_status_code(context, status_code):
+@then('the {actor} receives the HTTP status code {status_code}')
+def check_status_code(context, actor, status_code):
 
     status_code = session.get_flow_data(context, constants.SESSION_DATA_RES_CODE)
     utils.assert_show_message(status_code == int(status_code), f"The status code is not 200. Current value: {status_code}.")
 
 # ==============================================
 
-@then('the user receives a response with outcome {outcome}')
-def check_outcome(context, outcome):
+@then('the response contains the field {field_name} with value {field_value}')
+def check_field(context, field_name, field_value):
 
     response = session.get_flow_data(context, constants.SESSION_DATA_RES_BODY)
-    esito = response.find('.//esito')
-    utils.assert_show_message(esito is not None, f"The field 'esito' in response does not exists.")
-    utils.assert_show_message(esito.text == outcome, f"The field 'esito' in response is not {outcome}. Current value: {esito.text}.")
+    content_type = session.get_flow_data(context, constants.SESSION_DATA_RES_CONTENTTYPE)
+    if content_type == constants.ResponseType.XML:
+        field_value_in_object = response.find(f'.//{field_name}')
+        utils.assert_show_message(field_value_in_object is not None, f"The field [{field_name}] does not exists.")
+        field_value_in_object = field_value_in_object.text
+    elif content_type == constants.ResponseType.JSON:
+        field_value_in_object = utils.get_nested_field(response, field_name)
+        utils.assert_show_message(field_value_in_object is not None, f"The field [{field_name}] does not exists.")
+        
+    utils.assert_show_message(field_value_in_object == field_value, f"The field [{field_name}] is not equals to {field_value}. Current value: {field_value_in_object}.")
+    
+# ==============================================
+
+@then('the response contains the field {field_name} as not empty list')
+def check_field(context, field_name):
+
+    response = session.get_flow_data(context, constants.SESSION_DATA_RES_BODY)
+    content_type = session.get_flow_data(context, constants.SESSION_DATA_RES_CONTENTTYPE)
+    if content_type == constants.ResponseType.XML:
+        field_value_in_object = response.find(f'.//{field_name}')
+    elif content_type == constants.ResponseType.JSON:
+        field_value_in_object = utils.get_nested_field(response, field_name)
+    
+    utils.assert_show_message(field_value_in_object is not None, f"The field [{field_name}] does not exists.")
+    utils.assert_show_message(len(field_value_in_object) > 0, f"The field [{field_name}] is empty but is required to be not empty.")
 
 # ==============================================
 
-@then('the user receives a response with the redirect URL')
+@then('the response contains the field {field_name} with non-null value')
+def check_field(context, field_name):
+
+    response = session.get_flow_data(context, constants.SESSION_DATA_RES_BODY)
+    content_type = session.get_flow_data(context, constants.SESSION_DATA_RES_CONTENTTYPE)
+    if content_type == constants.ResponseType.XML:
+        field_value_in_object = response.find(f'.//{field_name}')
+    elif content_type == constants.ResponseType.JSON:
+        field_value_in_object = utils.get_nested_field(response, field_name)
+    utils.assert_show_message(field_value_in_object is not None, f"The field [{field_name}] does not exists.")
+    
+
+@then('there is a {business_process} event with field {field_name} with value {field_value}')
+def check_field(context, business_process, field_name, field_value):
+
+    re_events = session.get_flow_data(context, constants.SESSION_DATA_RES_BODY)
+    needed_process_events = [re_event for re_event in re_events if 'businessProcess' in re_event and re_event['businessProcess'] == business_process]
+    utils.assert_show_message(len(needed_process_events) > 0, f"There are not events with business process {business_process}.")
+
+    needed_events = [re_event for re_event in needed_process_events if field_name in re_event and re_event[field_name] == field_value]
+    utils.assert_show_message(len(needed_events) > 0, f"There are not events with business process {business_process} and field {field_name} with value [{field_value}].")
+    
+# ==============================================
+
+@then('the response contains the redirect URL')
 def check_redirect_url(context):
 
     response = session.get_flow_data(context, constants.SESSION_DATA_RES_BODY)
@@ -230,15 +384,53 @@ def check_redirect_url(context):
 # ==============================================  
 
 @then('the notice number can be retrieved')
-def retrieve_notice_number_from_re_event(context):
+def retrieve_payment_notice_from_re_event(context):
 
     re_events = session.get_flow_data(context, constants.SESSION_DATA_RES_BODY)
     needed_events = [re_event for re_event in re_events if 'status' in re_event and re_event['status'] == "SAVED_RPT_IN_CART_RECEIVED_REDIRECT_URL_FROM_CHECKOUT"]
     utils.assert_show_message(len(needed_events) > 0, f"The redirect process is not ended successfully or there are missing events in RE")
 
-    notice_numbers = set([re_event['noticeNumber'] for re_event in needed_events])
-    utils.assert_show_message(len(notice_numbers) > 0, f"Impossible to extract notice numbers from events in RE")
-    utils.assert_show_message(len(notice_numbers) == len(needed_events), f"Impossible to extract unique notice numbers from IUV codes")
+    notices = set([(re_event['domainId'], re_event['iuv'], re_event['noticeNumber']) for re_event in needed_events])
+    utils.assert_show_message(len(notices) > 0, f"Impossible to extract payment notices from events in RE")
+    utils.assert_show_message(len(notices) == len(needed_events), f"Impossible to extract unique payment notices from IUV codes")
 
-    session.set_flow_data(context, constants.SESSION_DATA_NOTICE_NUMBERS, notice_numbers)
+    payment_notices = []
+    for payment_notice in notices:
+        payment_notices.append({
+            "domain_id": payment_notice[0],
+            "iuv": payment_notice[1],
+            "notice_number": payment_notice[2],
+            "payment_token": None
+        })
 
+    session.set_flow_data(context, constants.SESSION_DATA_PAYMENT_NOTICES, payment_notices)
+
+# ==============================================  
+
+@then('the payment token can be retrieved and associated to {index} RPT')
+def retrieve_payment_token_from_activatepaymentnotice(context, index):
+
+    rpt_index = -1
+    match index:
+        case "first":
+            rpt_index = 0
+        case "second":
+            rpt_index = 1
+        case "third":
+            rpt_index = 2
+        case "fourth":
+            rpt_index = 3
+        case "fifth":
+            rpt_index = 4
+
+    response = session.get_flow_data(context, constants.SESSION_DATA_RES_BODY)
+    field_value_in_object = response.find('.//paymentToken')
+    
+    payment_notices = session.get_flow_data(context, constants.SESSION_DATA_PAYMENT_NOTICES)
+    utils.assert_show_message(len(payment_notices) >= rpt_index + 1, f"Not enough payment notices are defined in the session data for correctly point at index {rpt_index}.")
+
+    payment_notice = payment_notices[rpt_index]
+    utils.assert_show_message('iuv' in payment_notice, f"No valid payment is defined at index {rpt_index}.") 
+    payment_notice['payment_token'] = field_value_in_object.text
+    session.set_flow_data(context, constants.SESSION_DATA_PAYMENT_NOTICES, payment_notices)
+    logging.debug(payment_notices)
