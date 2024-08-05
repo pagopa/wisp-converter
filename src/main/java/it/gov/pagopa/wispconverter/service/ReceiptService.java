@@ -149,10 +149,7 @@ public class ReceiptService {
                         StationDto station = stations.get(commonFields.getStationId());
 
                         // send receipt to the creditor institution and, if not correctly sent, add to queue for retry
-                        boolean isSuccessful = sendReceiptToCreditorInstitution(sessionData, paaInviaRtPayload, receipt, rpt.getIuv(), noticeNumber, station, true);
-                        if (!isSuccessful) {
-                            throw new AppException(AppErrorCodeMessageEnum.RECEIPT_KO_NOT_GENERATED_BUT_MAYBE_RESCHEDULED);
-                        }
+                        sendReceiptToCreditorInstitution(sessionData, paaInviaRtPayload, receipt, rpt.getIuv(), noticeNumber, station, true);
                     }
                 }
             }
@@ -230,10 +227,7 @@ public class ReceiptService {
                     String paaInviaRtPayload = generatePayloadAsRawString(intestazionePPT, commonFields.getSignatureType(), rawGeneratedReceipt, objectFactory);
 
                     // send receipt to the creditor institution and, if not correctly sent, add to queue for retry
-                    boolean isSuccessful = sendReceiptToCreditorInstitution(sessionData, paaInviaRtPayload, receipt, rpt.getIuv(), noticeNumber, station, false);
-                    if (!isSuccessful) {
-                        throw new AppException(AppErrorCodeMessageEnum.RECEIPT_OK_NOT_GENERATED_BUT_MAYBE_RESCHEDULED);
-                    }
+                    sendReceiptToCreditorInstitution(sessionData, paaInviaRtPayload, receipt, rpt.getIuv(), noticeNumber, station, false);
                 }
             }
 
@@ -311,6 +305,8 @@ public class ReceiptService {
                 if (e instanceof AppException appException) {
                     message = appException.getError().getDetail();
                 }
+
+                log.error("Exception: " + AppErrorCodeMessageEnum.RECEIPT_KO_NOT_GENERATED_BUT_MAYBE_RESCHEDULED.getDetail());
                 generateREForNotSentRT(sessionData, iuv, noticeNumber, message);
 
                 // because of the not sent receipt, it is necessary to schedule a retry of the sending process for this receipt
