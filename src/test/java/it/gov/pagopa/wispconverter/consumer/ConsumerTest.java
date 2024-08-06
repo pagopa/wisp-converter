@@ -7,7 +7,7 @@ import com.azure.messaging.servicebus.*;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.IdempotencyKeyRepository;
-import it.gov.pagopa.wispconverter.repository.RTRequestRepository;
+import it.gov.pagopa.wispconverter.repository.RTRetryRepository;
 import it.gov.pagopa.wispconverter.repository.model.IdempotencyKeyEntity;
 import it.gov.pagopa.wispconverter.repository.model.RTRequestEntity;
 import it.gov.pagopa.wispconverter.repository.model.enumz.IdempotencyStatusEnum;
@@ -76,10 +76,10 @@ class ConsumerTest {
 
         JaxbElementUtil jaxbElementUtil = new JaxbElementUtil();
 
-        RTRequestRepository rtRequestRepository = mock(RTRequestRepository.class);
-        when(rtRequestRepository.findById(any(), any())).thenReturn(Optional.ofNullable(getStoredReceipt(0, receiptType, "http://endpoint:443")));
-        RtCosmosService rtCosmosService = new RtCosmosService(reService, rtRequestRepository);
-        ReflectionTestUtils.setField(rtCosmosService, "isTracingOnREEnabled", true);
+        RTRetryRepository rtRetryRepository = mock(RTRetryRepository.class);
+        when(rtRetryRepository.findById(any(), any())).thenReturn(Optional.ofNullable(getStoredReceipt(0, receiptType, "http://endpoint:443")));
+        RtRetryComosService rtRetryComosService = new RtRetryComosService(reService, rtRetryRepository);
+        ReflectionTestUtils.setField(rtRetryComosService, "isTracingOnREEnabled", true);
 
         ServiceBusService serviceBusService = new ServiceBusService();
         ServiceBusSenderClient serviceBusSenderClient = mock(ServiceBusSenderClient.class);
@@ -92,7 +92,7 @@ class ConsumerTest {
 
         PaaInviaRTSenderService paaInviaRTSenderService = mock(PaaInviaRTSenderService.class);
 
-        ReflectionTestUtils.setField(rtConsumer, "rtCosmosService", rtCosmosService);
+        ReflectionTestUtils.setField(rtConsumer, "rtRetryComosService", rtRetryComosService);
         ReflectionTestUtils.setField(rtConsumer, "paaInviaRTSenderService", paaInviaRTSenderService);
         ReflectionTestUtils.setField(rtConsumer, "serviceBusService", serviceBusService);
         ReflectionTestUtils.setField(rtConsumer, "reService", reService);
@@ -103,9 +103,9 @@ class ConsumerTest {
         rtConsumer.processMessage(messageContext);
 
         //verify(idempotencyService, times(1)).lockIdempotencyKey(any(), any());
-        verify(rtRequestRepository, times(1)).findById(any(), any());
-        verify(rtRequestRepository, times(1)).delete(any());
-        verify(rtRequestRepository, times(0)).save(any());
+        verify(rtRetryRepository, times(1)).findById(any(), any());
+        verify(rtRetryRepository, times(1)).delete(any());
+        verify(rtRetryRepository, times(0)).save(any());
         verify(serviceBusSenderClient, times(0)).sendMessage(any(), any());
         verify(idempotencyKeyRepository, times(2)).save(any());
     }
@@ -138,10 +138,10 @@ class ConsumerTest {
 
         JaxbElementUtil jaxbElementUtil = new JaxbElementUtil();
 
-        RTRequestRepository rtRequestRepository = mock(RTRequestRepository.class);
-        when(rtRequestRepository.findById(any(), any())).thenReturn(Optional.ofNullable(getStoredReceipt(0, receiptType, "http://endpoint:443")));
-        RtCosmosService rtCosmosService = new RtCosmosService(reService, rtRequestRepository);
-        ReflectionTestUtils.setField(rtCosmosService, "isTracingOnREEnabled", true);
+        RTRetryRepository rtRetryRepository = mock(RTRetryRepository.class);
+        when(rtRetryRepository.findById(any(), any())).thenReturn(Optional.ofNullable(getStoredReceipt(0, receiptType, "http://endpoint:443")));
+        RtRetryComosService rtRetryComosService = new RtRetryComosService(reService, rtRetryRepository);
+        ReflectionTestUtils.setField(rtRetryComosService, "isTracingOnREEnabled", true);
 
         ServiceBusService serviceBusService = new ServiceBusService();
         ServiceBusSenderClient serviceBusSenderClient = mock(ServiceBusSenderClient.class);
@@ -154,7 +154,7 @@ class ConsumerTest {
 
         PaaInviaRTSenderService paaInviaRTSenderService = mock(PaaInviaRTSenderService.class);
 
-        ReflectionTestUtils.setField(rtConsumer, "rtCosmosService", rtCosmosService);
+        ReflectionTestUtils.setField(rtConsumer, "rtRetryComosService", rtRetryComosService);
         ReflectionTestUtils.setField(rtConsumer, "paaInviaRTSenderService", paaInviaRTSenderService);
         ReflectionTestUtils.setField(rtConsumer, "serviceBusService", serviceBusService);
         ReflectionTestUtils.setField(rtConsumer, "reService", reService);
@@ -164,9 +164,9 @@ class ConsumerTest {
 
         rtConsumer.processMessage(messageContext);
 
-        verify(rtRequestRepository, times(1)).findById(any(), any());
-        verify(rtRequestRepository, times(0)).delete(any());
-        verify(rtRequestRepository, times(isCompleted ? 0 : 1)).save(any());
+        verify(rtRetryRepository, times(1)).findById(any(), any());
+        verify(rtRetryRepository, times(0)).delete(any());
+        verify(rtRetryRepository, times(isCompleted ? 0 : 1)).save(any());
         verify(serviceBusSenderClient, times(0)).sendMessage(any(), any());
         verify(idempotencyKeyRepository, times(0)).save(any());
     }
@@ -191,10 +191,10 @@ class ConsumerTest {
 
         JaxbElementUtil jaxbElementUtil = new JaxbElementUtil();
 
-        RTRequestRepository rtRequestRepository = mock(RTRequestRepository.class);
-        when(rtRequestRepository.findById(any(), any())).thenReturn(Optional.ofNullable(getStoredReceipt(0, receiptType, "http://endpoint:443")));
-        RtCosmosService rtCosmosService = new RtCosmosService(reService, rtRequestRepository);
-        ReflectionTestUtils.setField(rtCosmosService, "isTracingOnREEnabled", true);
+        RTRetryRepository rtRetryRepository = mock(RTRetryRepository.class);
+        when(rtRetryRepository.findById(any(), any())).thenReturn(Optional.ofNullable(getStoredReceipt(0, receiptType, "http://endpoint:443")));
+        RtRetryComosService rtRetryComosService = new RtRetryComosService(reService, rtRetryRepository);
+        ReflectionTestUtils.setField(rtRetryComosService, "isTracingOnREEnabled", true);
 
         ServiceBusService serviceBusService = new ServiceBusService();
         ServiceBusSenderClient serviceBusSenderClient = mock(ServiceBusSenderClient.class);
@@ -208,7 +208,7 @@ class ConsumerTest {
         PaaInviaRTSenderService paaInviaRTSenderService = mock(PaaInviaRTSenderService.class);
         doThrow(new AppException(AppErrorCodeMessageEnum.PARSING_GENERIC_ERROR)).when(paaInviaRTSenderService).sendToCreditorInstitution(any(), any(), any());
 
-        ReflectionTestUtils.setField(rtConsumer, "rtCosmosService", rtCosmosService);
+        ReflectionTestUtils.setField(rtConsumer, "rtRetryComosService", rtRetryComosService);
         ReflectionTestUtils.setField(rtConsumer, "paaInviaRTSenderService", paaInviaRTSenderService);
         ReflectionTestUtils.setField(rtConsumer, "serviceBusService", serviceBusService);
         ReflectionTestUtils.setField(rtConsumer, "reService", reService);
@@ -219,9 +219,9 @@ class ConsumerTest {
         rtConsumer.processMessage(messageContext);
 
         verify(idempotencyService, times(1)).lockIdempotencyKey(any(), any());
-        verify(rtRequestRepository, times(1)).findById(any(), any());
-        verify(rtRequestRepository, times(0)).delete(any());
-        verify(rtRequestRepository, times(1)).save(any());
+        verify(rtRetryRepository, times(1)).findById(any(), any());
+        verify(rtRetryRepository, times(0)).delete(any());
+        verify(rtRetryRepository, times(1)).save(any());
         verify(serviceBusSenderClient, times(0)).sendMessage(any(), any());
         verify(idempotencyService, times(1)).unlockIdempotencyKey(any(), any(), any());
 
@@ -248,10 +248,10 @@ class ConsumerTest {
 
         JaxbElementUtil jaxbElementUtil = new JaxbElementUtil();
 
-        RTRequestRepository rtRequestRepository = mock(RTRequestRepository.class);
-        when(rtRequestRepository.findById(any(), any())).thenReturn(Optional.ofNullable(getStoredReceipt(48, receiptType, "http://endpoint:443")));
-        RtCosmosService rtCosmosService = new RtCosmosService(reService, rtRequestRepository);
-        ReflectionTestUtils.setField(rtCosmosService, "isTracingOnREEnabled", true);
+        RTRetryRepository rtRetryRepository = mock(RTRetryRepository.class);
+        when(rtRetryRepository.findById(any(), any())).thenReturn(Optional.ofNullable(getStoredReceipt(48, receiptType, "http://endpoint:443")));
+        RtRetryComosService rtRetryComosService = new RtRetryComosService(reService, rtRetryRepository);
+        ReflectionTestUtils.setField(rtRetryComosService, "isTracingOnREEnabled", true);
 
         ServiceBusService serviceBusService = new ServiceBusService();
         ServiceBusSenderClient serviceBusSenderClient = mock(ServiceBusSenderClient.class);
@@ -265,7 +265,7 @@ class ConsumerTest {
         PaaInviaRTSenderService paaInviaRTSenderService = mock(PaaInviaRTSenderService.class);
         doThrow(new AppException(AppErrorCodeMessageEnum.PARSING_GENERIC_ERROR)).when(paaInviaRTSenderService).sendToCreditorInstitution(any(), any(), any());
 
-        ReflectionTestUtils.setField(rtConsumer, "rtCosmosService", rtCosmosService);
+        ReflectionTestUtils.setField(rtConsumer, "rtRetryComosService", rtRetryComosService);
         ReflectionTestUtils.setField(rtConsumer, "paaInviaRTSenderService", paaInviaRTSenderService);
         ReflectionTestUtils.setField(rtConsumer, "serviceBusService", serviceBusService);
         ReflectionTestUtils.setField(rtConsumer, "reService", reService);
@@ -276,9 +276,9 @@ class ConsumerTest {
         rtConsumer.processMessage(messageContext);
 
         verify(idempotencyService, times(1)).lockIdempotencyKey(any(), any());
-        verify(rtRequestRepository, times(1)).findById(any(), any());
-        verify(rtRequestRepository, times(0)).delete(any());
-        verify(rtRequestRepository, times(0)).save(any());
+        verify(rtRetryRepository, times(1)).findById(any(), any());
+        verify(rtRetryRepository, times(0)).delete(any());
+        verify(rtRetryRepository, times(0)).save(any());
         verify(serviceBusSenderClient, times(0)).sendMessage(any(), any());
         verify(idempotencyService, times(1)).unlockIdempotencyKey(any(), any(), any());
     }

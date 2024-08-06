@@ -63,7 +63,9 @@ class RptTest {
     private IdempotencyKeyRepository idempotencyKeyRepository;
 
     @MockBean
-    private RTRequestRepository rtRequestRepository;
+    private RTRetryRepository rtRetryRepository;
+    @MockBean
+    private RTRepository rtRepository;
     @MockBean
     private it.gov.pagopa.gen.wispconverter.client.iuvgenerator.invoker.ApiClient iuvGeneratorClient;
     @MockBean

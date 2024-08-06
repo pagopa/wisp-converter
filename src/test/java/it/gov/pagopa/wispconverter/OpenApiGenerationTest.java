@@ -4,10 +4,7 @@ import com.azure.cosmos.CosmosAsyncClient;
 import com.azure.messaging.servicebus.ServiceBusSenderClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.wispconverter.controller.RedirectController;
-import it.gov.pagopa.wispconverter.repository.IdempotencyKeyRepository;
-import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
-import it.gov.pagopa.wispconverter.repository.RTRequestRepository;
-import it.gov.pagopa.wispconverter.repository.ReEventRepository;
+import it.gov.pagopa.wispconverter.repository.*;
 import it.gov.pagopa.wispconverter.service.ReceiptService;
 import it.gov.pagopa.wispconverter.service.ReceiptTimerService;
 import org.junit.jupiter.api.Test;
@@ -46,7 +43,10 @@ class OpenApiGenerationTest {
     private RPTRequestRepository rptRequestRepository;
 
     @MockBean
-    private RTRequestRepository rtRequestRepository;
+    private RTRetryRepository rtRetryRepository;
+
+    @MockBean
+    private RTRepository rtRepository;
 
     @MockBean
     private IdempotencyKeyRepository idempotencyKeyRepository;
