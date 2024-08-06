@@ -125,20 +125,20 @@ public class ReceiptService {
 
                 } else {
 
-                    // generate the header for the paaInviaRT SOAP request. This object is common for each generated request
-                    IntestazionePPT header = generateHeader(
-                            cachedMapping.getFiscalCode(),
-                            cachedMapping.getIuv(),
-                            receipt.getPaymentToken(),
-                            commonFields.getCreditorInstitutionBrokerId(),
-                            commonFields.getStationId());
-
                     /*
                       For each RPT extracted from session data that is required by paSendRTV2, is necessary to generate a single paaInviaRT SOAP request.
                       Each paaInviaRT generated will be autonomously sent to creditor institution in order to track each RPT.
                      */
                     List<RPTContentDTO> rpts = extractRequiredRPTs(sessionData, cachedMapping.getIuv(), cachedMapping.getFiscalCode());
                     for (RPTContentDTO rpt : rpts) {
+
+                        // generate the header for the paaInviaRT SOAP request. This object is common for each generated request
+                        IntestazionePPT header = generateHeader(
+                                cachedMapping.getFiscalCode(),
+                                cachedMapping.getIuv(),
+                                rpt.getCcp(),
+                                commonFields.getCreditorInstitutionBrokerId(),
+                                commonFields.getStationId());
 
                         // Generating the paaInviaRT payload from the RPT
                         String paymentOutcome = "Annullato da WISP"; // TODO change this with one of the following -> https://pagopa.atlassian.net/wiki/spaces/PN5/pages/913244345/WISP-Converter?focusedCommentId=1002078407
@@ -154,10 +154,7 @@ public class ReceiptService {
                         rtReceiptCosmosService.saveRTEntity(rpt, rawGeneratedReceipt, ReceiptTypeEnum.KO);
 
                         // send receipt to the creditor institution and, if not correctly sent, add to queue for retry
-                        boolean isSuccessful = sendReceiptToCreditorInstitution(sessionData, paaInviaRtPayload, receipt, rpt.getIuv(), noticeNumber, station, true);
-                        if (!isSuccessful) {
-                            throw new AppException(AppErrorCodeMessageEnum.RECEIPT_KO_NOT_GENERATED_BUT_MAYBE_RESCHEDULED);
-                        }
+                        sendReceiptToCreditorInstitution(sessionData, paaInviaRtPayload, receipt, rpt.getIuv(), noticeNumber, station, true);
                     }
                 }
             }
@@ -238,10 +235,7 @@ public class ReceiptService {
                     rtReceiptCosmosService.saveRTEntity(rpt, rawGeneratedReceipt, ReceiptTypeEnum.OK);
 
                     // send receipt to the creditor institution and, if not correctly sent, add to queue for retry
-                    boolean isSuccessful = sendReceiptToCreditorInstitution(sessionData, paaInviaRtPayload, receipt, rpt.getIuv(), noticeNumber, station, false);
-                    if (!isSuccessful) {
-                        throw new AppException(AppErrorCodeMessageEnum.RECEIPT_OK_NOT_GENERATED_BUT_MAYBE_RESCHEDULED);
-                    }
+                    sendReceiptToCreditorInstitution(sessionData, paaInviaRtPayload, receipt, rpt.getIuv(), noticeNumber, station, false);
                 }
             }
 
@@ -319,6 +313,8 @@ public class ReceiptService {
                 if (e instanceof AppException appException) {
                     message = appException.getError().getDetail();
                 }
+
+                log.error("Exception: " + AppErrorCodeMessageEnum.RECEIPT_KO_NOT_GENERATED_BUT_MAYBE_RESCHEDULED.getDetail());
                 generateREForNotSentRT(sessionData, iuv, noticeNumber, message);
 
                 // because of the not sent receipt, it is necessary to schedule a retry of the sending process for this receipt
