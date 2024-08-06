@@ -139,7 +139,7 @@ def create_payments(session_data, number_of_payments, number_of_transfers, multi
                 'creditor_bic': session_data['payee_institutions_1']['bic'],
                 'creditor_iban2': session_data['payee_institutions_1']['iban'],
                 'creditor_bic2': session_data['payee_institutions_1']['bic'],
-                'payer_info': payer_info,
+                'payer_info': payer_info + f" - Rata {payment_index}",
                 'taxonomy': taxonomy,
                 'is_mbd': False
             })
@@ -151,7 +151,7 @@ def create_payments(session_data, number_of_payments, number_of_transfers, multi
                 'creditor_bic': session_data['payee_institutions_2']['bic'],
                 'creditor_iban2': session_data['payee_institutions_2']['iban'],
                 'creditor_bic2': session_data['payee_institutions_2']['bic'],
-                'payer_info': payer_info,
+                'payer_info': payer_info + f" - Rata {payment_index}",
                 'taxonomy': taxonomy,
                 'is_mbd': False
             })
@@ -170,7 +170,7 @@ def create_payments(session_data, number_of_payments, number_of_transfers, multi
                         'creditor_bic': session_data['payee_institutions_1']['bic'],
                         'creditor_iban2': session_data['payee_institutions_1']['iban'],
                         'creditor_bic2': session_data['payee_institutions_1']['bic'],
-                        'payer_info': payer_info,
+                        'payer_info': payer_info + f" - Rata {payment_index}",
                         'taxonomy': taxonomy,
                         'is_mbd': False
                     })
@@ -185,7 +185,7 @@ def create_payments(session_data, number_of_payments, number_of_transfers, multi
                         'stamp_hash': "cXVlc3RhIMOoIHVuYSBtYXJjYSBkYSBib2xsbw==",
                         'stamp_type': "01",
                         'stamp_province': "RM",
-                        'payer_info': payer_info,
+                        'payer_info': payer_info + f" - MBD {payment_index}",
                         'taxonomy': "9/0301116TS/9/24B0060000000017",
                         'is_mbd': True
                     })
@@ -242,8 +242,6 @@ def generate_activatepaymentnotice(test_data, payment_notices, payment):
     )
 
 def generate_closepayment(test_data, payment_notices, outcome):
-
-    logging.debug( sum(payment['total_amount'] for payment in test_data['payments']) )
 
     transactionId = utils.get_random_alphanumeric_string(32)
     amount = sum(payment['total_amount'] for payment in test_data['payments'])

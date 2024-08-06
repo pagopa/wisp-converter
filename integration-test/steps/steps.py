@@ -20,8 +20,11 @@ import router as router
 
 @given('a new session')
 def clear_session(context):
-
+  
+    logging.debug("=======================================================")
+    logging.debug("[Clear session] Start clearing previous data on session")
     session.clear_session(context)
+    logging.debug("[Clear session] End clearing previous data on session")
 
 # ==============================================
 
@@ -54,22 +57,41 @@ def system_up(context):
 
 
 # ==============================================
+# =============== Generic steps ================
+# ==============================================
+
+@step('the execution of "{scenario_name}" was successful')
+def step_impl(context, scenario_name):
+
+    all_scenarios = [scenario for feature in context._runner.features for scenario in feature.walk_scenarios()]
+    phase = ([scenario for scenario in all_scenarios if scenario_name in scenario.name] or [None])[0]
+    text_step = ''.join([step.keyword + " " + step.name + "\n\"\"\"\n" + (step.text or '') + "\n\"\"\"\n" for step in phase.steps])
+    context.execute_steps(text_step)
+
+# ==============================================
+
+
+
+# ==============================================
 # =============== [GIVEN] steps ================
 # ==============================================
 
 @given('a waiting time of {time_in_seconds} second{notes}')
 def wait_for_n_seconds(context, time_in_seconds, notes):
-    logging.info(f"Waiting {time_in_seconds}{notes}")
+    logging.info(f"Waiting [{time_in_seconds}] second{notes}")
     time.sleep(int(time_in_seconds))
     logging.info(f"Wait time ended")
 
 # ==============================================
 
-@given('a single RPT with {number_of_transfers} transfers')
-def generate_single_rpt(context, number_of_transfers):
+@given('a single RPT with {number_of_transfers} transfers of which {number_of_stamps} are stamps')
+def generate_single_rpt(context, number_of_transfers, number_of_stamps):
+
+    if number_of_stamps == "none":
+        number_of_stamps = "0"
 
     session_data = copy.deepcopy(context.config.userdata.get("test_data"))
-    session_data = requestgen.create_payments(session_data, 1, int(number_of_transfers))
+    session_data = requestgen.create_payments(session_data, 1, int(number_of_transfers), number_of_mbd=int(number_of_stamps))
 
     # generate request
     request = requestgen.generate_nodoinviarpt(session_data)
