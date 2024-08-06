@@ -195,8 +195,8 @@ def create_payments(session_data, number_of_payments, number_of_transfers, multi
             'iuv': iuv,
             'ccp': utils.generate_ccp(),
             'payment_date': utils.get_current_date(),
-            'total_amount': sum(transfer["amount"] for transfer in transfers),
-            'total_fee': sum(transfer["fee"] for transfer in transfers),
+            'total_amount': int(sum(transfer["amount"] for transfer in transfers) * 100) / 100,
+            'total_fee': int(sum(transfer["fee"] for transfer in transfers) * 100) / 100,
             'payment_type': "BBT",
             'transfers': transfers        
         }
@@ -219,7 +219,6 @@ def generate_checkposition(payment_notices):
 
 # ==============================================
 
-
 def generate_activatepaymentnotice(test_data, payment_notices, payment):
 
     iuv = payment['iuv']
@@ -241,3 +240,71 @@ def generate_activatepaymentnotice(test_data, payment_notices, payment):
         amount="{:.2f}".format(total_amount),
         payment_note="Integration test"
     )
+
+def generate_closepayment(test_data, payment_notices, outcome):
+
+    logging.debug( sum(payment['total_amount'] for payment in test_data['payments']) )
+
+    transactionId = utils.get_random_alphanumeric_string(32)
+    amount = sum(payment['total_amount'] for payment in test_data['payments'])
+    fees = sum(payment['total_fee'] for payment in test_data['payments'])
+    grand_total = (amount + fees) * 100
+    auth_code = utils.get_random_digit_string(6)
+    rrn = utils.get_random_digit_string(12)
+    now = utils.get_current_datetime() + ".000Z";
+
+    closepayment = {
+        "paymentTokens": [payment_notice['payment_token'] for payment_notice in payment_notices],
+        "outcome": outcome,
+        "idPSP": "BCITITMM",
+        "idBrokerPSP": "00799960158",
+        "idChannel": test_data['channel_payment'],
+        "paymentMethod": "CP",
+        "transactionId": transactionId,
+        "totalAmount": grand_total / 100,
+        "fee": fees,
+        "timestampOperation": now,
+        "transactionDetails": {
+            "transaction": {
+                "transactionId": transactionId,
+                "transactionStatus": "Confermato",
+                "creationDate": now,
+                "grandTotal": int(grand_total),
+                "amount": int(amount * 100),
+                "fee": int(fees * 100),
+                "authorizationCode": auth_code,
+                "rrn": rrn,
+                "psp": {
+                    "idPsp": test_data['psp_payment'],
+                    "idChannel": test_data['channel_payment'],
+                    "businessName": test_data['psp_name'],
+                    "brokerName": test_data['psp_broker_payment'],
+                    "pspOnUs": False
+                },
+                "timestampOperation": now,
+                "paymentGateway": "NPG"
+            },
+            "info": {
+                "type": "CP",
+                "brandLogo": "https://assets.cdn.platform.pagopa.it/creditcard/mastercard.png",
+                "brand": "MC",
+                "paymentMethodName": "CARDS",
+                "clientId": "CHECKOUT"
+            },
+            "user": {
+                "type": "GUEST"
+            }
+        },
+        "additionalPaymentInformations": {
+            "outcomePaymentGateway": outcome,
+            "fee": "{:.2f}".format(fees),
+            "totalAmount": "{:.2f}".format(grand_total / 100),
+            "timestampOperation": now,
+            "rrn": rrn,
+            "authorizationCode": auth_code,
+            "email": "test@mail.it"
+        }
+    }
+    
+    content = json.dumps(closepayment, separators=(',', ':'))
+    return content

@@ -19,7 +19,8 @@ def get_primitive_url(context, primitive):
             return service_data['url'], service_data['subscription_key'], const.ResponseType.XML
         case "closepaymentv2":
             service_data = services.get("nodo-per-pm-v2")
-            return service_data['url'], service_data['subscription_key'], const.ResponseType.JSON
+            url = service_data['url'] + "/closepayment"
+            return url, service_data['subscription_key'], const.ResponseType.JSON
         case "sendpaymentoutcomev2":
             service_data = services.get("node-for-psp")
             return service_data['url'], service_data['subscription_key'], const.ResponseType.XML
@@ -36,8 +37,8 @@ def get_rest_url(context, action):
             service_data = services.get("technical-support")
             url = service_data['url'] + "/organizations/{creditor_institution}/iuv/{iuv}?dateFrom={date_from}&dateTo={date_to}"
             return url, service_data['subscription_key']
-        case "search_in_re_by_nav":
-            service_data = services.get("technical-support")
-            url = service_data['url'] + "/organizations/{creditor_institution}/notice-number/{nav}?dateFrom={date_from}&dateTo={date_to}"
-            return url, service_data['subscription_key']
+        #case "search_in_re_by_nav":
+        #    service_data = services.get("technical-support")
+        #    url = service_data['url'] + "/organizations/{creditor_institution}/notice-number/{nav}?dateFrom={date_from}&dateTo={date_to}"
+        #    return url, service_data['subscription_key']
         

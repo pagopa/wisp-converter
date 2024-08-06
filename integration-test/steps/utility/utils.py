@@ -80,6 +80,11 @@ def get_random_digit_string(length):
 
 # ==============================================
 
+def get_random_alphanumeric_string(length):
+    return ''.join(random.choice(string.ascii_letters + string.digits) for i in range(length))
+
+# ==============================================
+
 def generate_random_monetary_amount(min, max):    
     random_amount = random.uniform(min, max)
     return round(random_amount, 2)

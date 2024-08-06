@@ -118,6 +118,19 @@ def generate_activatepaymentnotice(context, index):
 
 # ==============================================
 
+@given('a valid closePaymentV2 request with outcome {outcome}')
+def generate_activatepaymentnotice(context, outcome):
+    
+    # generate request
+    test_data = session.get_test_data(context)
+    payment_notices = session.get_flow_data(context, constants.SESSION_DATA_PAYMENT_NOTICES)
+    request = requestgen.generate_closepayment(test_data, payment_notices, outcome)
+
+    # update context with request and edit session data
+    session.set_flow_data(context, constants.SESSION_DATA_REQ_BODY, request)
+
+# ==============================================
+
 @given('a valid session identifier to be redirected to WISP dismantling')
 def get_valid_sessionid(context):
 
@@ -153,41 +166,9 @@ def get_iuv_from_session(context, index):
 
     iuvs = session.get_flow_data(context, constants.SESSION_DATA_IUVS)
     if iuvs is None:
-        iuvs = []
-    iuvs.insert(rpt_index, iuv)
+        iuvs = [None, None, None, None, None]
+    iuvs[rpt_index] = iuv
     session.set_flow_data(context, constants.SESSION_DATA_IUVS, iuvs)
-
-# ==============================================
-
-
-@given('the {index} notice number of the sent RPTs')
-def get_iuv_from_session(context, index):
-
-    rpt_index = -1
-    match index:
-        case "first":
-            rpt_index = 0
-        case "second":
-            rpt_index = 1
-        case "third":
-            rpt_index = 2
-        case "fourth":
-            rpt_index = 3
-        case "fifth":
-            rpt_index = 4
-
-    test_data = session.get_test_data(context)
-    utils.assert_show_message('payments' in test_data and len(test_data['payments']) >= rpt_index + 1, f"No valid payments are defined in the session data.")
-
-    payment = test_data['payments'][rpt_index]
-    utils.assert_show_message('notice_number' in payment, f"No valid notice number is defined for payment with index {rpt_index}.") 
-    notice_number = payment['notice_number']
-
-    navs = session.get_flow_data(context, constants.SESSION_DATA_NAVS)
-    if navs is None:
-        navs = []
-    navs.insert(rpt_index, notice_number)
-    session.set_flow_data(context, constants.SESSION_DATA_NAVS, navs)
 
 # ==============================================
 
@@ -244,44 +225,17 @@ def search_in_re_by_iuv(context):
     headers = {'Content-Type': 'application/json', constants.OCP_APIM_SUBSCRIPTION_KEY: subkey}
 
     for iuv in iuvs:
-        url = base_url.format(
-            creditor_institution=creditor_institution,
-            iuv=iuv,
-            date_from=today,
-            date_to=today
-        )
-        status_code, body_response, _ = utils.execute_request(url, "get", headers, type=constants.ResponseType.JSON)
-        utils.assert_show_message('data' in body_response, f"The response does not contains data.")
-        utils.assert_show_message(len(body_response['data']) > 0, f"There are not event data in the response.")
-        re_events.extend(body_response['data'])
-
-    session.set_flow_data(context, constants.SESSION_DATA_RES_CODE, status_code)
-    session.set_flow_data(context, constants.SESSION_DATA_RES_BODY, re_events)
-    
-# ==============================================
-
-@when('the user searches for flow steps by notice numbers')
-def search_in_re_by_nav(context):
-
-    navs = session.get_flow_data(context, constants.SESSION_DATA_NAVS)
-    creditor_institution = session.get_test_data(context)['creditor_institution']
-    today = utils.get_current_date()
-
-    re_events = []
-    base_url, subkey = router.get_rest_url(context, "search_in_re_by_nav")
-    headers = {'Content-Type': 'application/json', constants.OCP_APIM_SUBSCRIPTION_KEY: subkey}
-
-    for nav in navs:
-        url = base_url.format(
-            creditor_institution=creditor_institution,
-            nav=nav,
-            date_from=today,
-            date_to=today
-        )
-        status_code, body_response, _ = utils.execute_request(url, "get", headers, type=constants.ResponseType.JSON)
-        utils.assert_show_message('data' in body_response, f"The response does not contains data.")
-        utils.assert_show_message(len(body_response['data']) > 0, f"There are not event data in the response.")
-        re_events.extend(body_response['data'])
+        if iuv is not None:
+            url = base_url.format(
+                creditor_institution=creditor_institution,
+                iuv=iuv,
+                date_from=today,
+                date_to=today
+            )
+            status_code, body_response, _ = utils.execute_request(url, "get", headers, type=constants.ResponseType.JSON)
+            utils.assert_show_message('data' in body_response, f"The response does not contains data.")
+            utils.assert_show_message(len(body_response['data']) > 0, f"There are not event data in the response.")
+            re_events.extend(body_response['data'])
 
     session.set_flow_data(context, constants.SESSION_DATA_RES_CODE, status_code)
     session.set_flow_data(context, constants.SESSION_DATA_RES_BODY, re_events)
@@ -433,4 +387,3 @@ def retrieve_payment_token_from_activatepaymentnotice(context, index):
     utils.assert_show_message('iuv' in payment_notice, f"No valid payment is defined at index {rpt_index}.") 
     payment_notice['payment_token'] = field_value_in_object.text
     session.set_flow_data(context, constants.SESSION_DATA_PAYMENT_NOTICES, payment_notices)
-    logging.debug(payment_notices)

@@ -11,6 +11,7 @@
         "channel_checkout": "<channel_checkout>",
         "channel_checkout_password": "<channel_checkout_password>",
         "psp_payment": "<psp_payment>",
+        "psp_name": "<psp_name>",
         "psp_broker_payment": "<psp_broker_payment>",
         "channel_payment": "<channel_payment>",
         "payer": {
