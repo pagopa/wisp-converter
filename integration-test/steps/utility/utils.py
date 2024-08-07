@@ -27,7 +27,8 @@ def execute_request(url, method, headers, payload=None, type=constants.ResponseT
         if type == constants.ResponseType.XML:
             formatted_response = remove_namespace(response.text)
             attach(obfuscate_secrets("URL: " + url + "\nResponse:\n" + formatted_response), name=f'{url} - Received response', attachment_type=attachment_type.TEXT)
-            object_response = xmlutils.fromstring(formatted_response)
+            if formatted_response is not None:
+                object_response = xmlutils.fromstring(formatted_response)
         elif type == constants.ResponseType.JSON:
             object_response = response.json()
             attach(obfuscate_secrets("URL: " + url + "\nResponse:\n" +  json.dumps(object_response, indent=2)), name=f'{url} - Received response',  attachment_type=attachment_type.TEXT)
@@ -82,6 +83,23 @@ def get_random_digit_string(length):
 
 def get_random_alphanumeric_string(length):
     return ''.join(random.choice(string.ascii_letters + string.digits) for i in range(length))
+
+# ==============================================
+
+def get_index_from_cardinal(cardinal):    
+    index = -1
+    match cardinal:
+        case "first":
+            index = 0
+        case "second":
+            index = 1
+        case "third":
+            index = 2
+        case "fourth":
+            index = 3
+        case "fifth":
+            index = 4
+    return index
 
 # ==============================================
 

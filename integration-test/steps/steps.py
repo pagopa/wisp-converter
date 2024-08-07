@@ -1,4 +1,5 @@
 import copy
+import re
 import time
 from urllib.parse import parse_qs, urlparse
 from behave import *
@@ -78,20 +79,22 @@ def step_impl(context, scenario_name):
 
 @given('a waiting time of {time_in_seconds} second{notes}')
 def wait_for_n_seconds(context, time_in_seconds, notes):
+
     logging.info(f"Waiting [{time_in_seconds}] second{notes}")
     time.sleep(int(time_in_seconds))
     logging.info(f"Wait time ended")
 
 # ==============================================
 
-@given('a single RPT with {number_of_transfers} transfers of which {number_of_stamps} are stamps')
-def generate_single_rpt(context, number_of_transfers, number_of_stamps):
+@given('a single RPT of type {payment_type} with {number_of_transfers} transfers of which {number_of_stamps} are stamps')
+def generate_single_rpt(context, payment_type, number_of_transfers, number_of_stamps):
 
     if number_of_stamps == "none":
         number_of_stamps = "0"
 
+    payment_types = [payment_type]
     session_data = copy.deepcopy(context.config.userdata.get("test_data"))
-    session_data = requestgen.create_payments(session_data, 1, int(number_of_transfers), number_of_mbd=int(number_of_stamps))
+    session_data = requestgen.create_payments(session_data, 1, payment_types, int(number_of_transfers), number_of_mbd=int(number_of_stamps))
 
     # generate request
     request = requestgen.generate_nodoinviarpt(session_data)
@@ -117,18 +120,7 @@ def generate_checkposition(context):
 @given('a valid activatePaymentNoticeV2 request on {index} RPT')
 def generate_activatepaymentnotice(context, index):
 
-    rpt_index = -1
-    match index:
-        case "first":
-            rpt_index = 0
-        case "second":
-            rpt_index = 1
-        case "third":
-            rpt_index = 2
-        case "fourth":
-            rpt_index = 3
-        case "fifth":
-            rpt_index = 4
+    rpt_index = utils.get_index_from_cardinal(index)
 
     # generate request
     test_data = session.get_test_data(context)
@@ -166,18 +158,7 @@ def get_valid_sessionid(context):
 @given('the {index} IUV code of the sent RPTs')
 def get_iuv_from_session(context, index):
 
-    rpt_index = -1
-    match index:
-        case "first":
-            rpt_index = 0
-        case "second":
-            rpt_index = 1
-        case "third":
-            rpt_index = 2
-        case "fourth":
-            rpt_index = 3
-        case "fifth":
-            rpt_index = 4
+    rpt_index = utils.get_index_from_cardinal(index)
 
     test_data = session.get_test_data(context)
     utils.assert_show_message('payments' in test_data and len(test_data['payments']) >= rpt_index + 1, f"No valid payments are defined in the session data.")
@@ -264,6 +245,24 @@ def search_in_re_by_iuv(context):
     
 # ==============================================
 
+@when('the user searches for payment position in GPD by {index} IUV')
+def search_paymentposition_by_iuv(context, index):
+
+    rpt_index = utils.get_index_from_cardinal(index)
+    payment_notices = session.get_flow_data(context, constants.SESSION_DATA_PAYMENT_NOTICES)    
+    payment_notice = payment_notices[rpt_index]
+
+    base_url, subkey = router.get_rest_url(context, "get_paymentposition_by_iuv")
+    url = base_url.format(creditor_institution=payment_notice['domain_id'], iuv=payment_notice['iuv'])
+    headers = {'Content-Type': 'application/json', constants.OCP_APIM_SUBSCRIPTION_KEY: subkey}
+    status_code, body_response, _ = utils.execute_request(url, "get", headers, type=constants.ResponseType.JSON)
+
+    session.set_flow_data(context, constants.SESSION_DATA_RES_CODE, status_code)
+    session.set_flow_data(context, constants.SESSION_DATA_RES_BODY, body_response)
+    session.set_flow_data(context, constants.SESSION_DATA_RES_CONTENTTYPE, constants.ResponseType.JSON)
+    
+# ==============================================
+
 
 
 # ==============================================
@@ -321,6 +320,7 @@ def check_field(context, field_name):
         field_value_in_object = utils.get_nested_field(response, field_name)
     utils.assert_show_message(field_value_in_object is not None, f"The field [{field_name}] does not exists.")
     
+# ==============================================
 
 @then('there is a {business_process} event with field {field_name} with value {field_value}')
 def check_field(context, business_process, field_name, field_value):
@@ -334,19 +334,24 @@ def check_field(context, business_process, field_name, field_value):
     
 # ==============================================
 
-@then('the response contains the redirect URL')
-def check_redirect_url(context):
+@then('the response contains the {url_type} URL')
+def check_redirect_url(context, url_type):
 
     response = session.get_flow_data(context, constants.SESSION_DATA_RES_BODY)
-    redirect_url = response.find('.//url')
-    utils.assert_show_message(redirect_url is not None, f"The field 'redirect_url' in response doesn't exists.")
+    url = response.find('.//url')
+    utils.assert_show_message(url is not None, f"The field 'redirect_url' in response doesn't exists.")
+    extracted_url = url.text
 
-    parsed_url = urlparse(redirect_url.text)
+    parsed_url = urlparse(extracted_url)
     query_params = parse_qs(parsed_url.query)
     id_session = query_params['idSession'][0] if len(query_params['idSession']) > 0 else None
     utils.assert_show_message(id_session is not None, f"The field 'idSession' in response is not correctly set.")
-
     session.set_flow_data(context, constants.SESSION_DATA_SESSION_ID, id_session)
+
+    if "redirect" in url_type:
+        utils.assert_show_message("wisp-converter" in extracted_url, f"The URL is not the one defined for WISP dismantling.")
+    elif "old WISP" in url_type:
+        utils.assert_show_message("wallet" in extracted_url, f"The URL is not the one defined for old WISP.")
 
 # ==============================================
 
@@ -386,18 +391,7 @@ def retrieve_payment_notice_from_re_event(context):
 @then('the payment token can be retrieved and associated to {index} RPT')
 def retrieve_payment_token_from_activatepaymentnotice(context, index):
 
-    rpt_index = -1
-    match index:
-        case "first":
-            rpt_index = 0
-        case "second":
-            rpt_index = 1
-        case "third":
-            rpt_index = 2
-        case "fourth":
-            rpt_index = 3
-        case "fifth":
-            rpt_index = 4
+    rpt_index = utils.get_index_from_cardinal(index)
 
     response = session.get_flow_data(context, constants.SESSION_DATA_RES_BODY)
     field_value_in_object = response.find('.//paymentToken')
@@ -409,3 +403,74 @@ def retrieve_payment_token_from_activatepaymentnotice(context, index):
     utils.assert_show_message('iuv' in payment_notice, f"No valid payment is defined at index {rpt_index}.") 
     payment_notice['payment_token'] = field_value_in_object.text
     session.set_flow_data(context, constants.SESSION_DATA_PAYMENT_NOTICES, payment_notices)
+
+# ==============================================  
+
+@then('the response contains a single payment option')
+def check_single_paymentoption(context):
+
+    response = session.get_flow_data(context, constants.SESSION_DATA_RES_BODY)
+    utils.assert_show_message('paymentOption' in response, f"No field 'paymentOption' is defined for the retrieved payment position.") 
+    payment_options = utils.get_nested_field(response, "paymentOption")
+    utils.assert_show_message(len(payment_options) == 1, f"There is not only one payment option in the payment position. Found number {len(payment_options)}.") 
+
+# ==============================================  
+
+@then('the response contains the payment option correctly generated from {index} RPT')
+def check_paymentoption_amounts(context, index):
+
+    rpt_index = utils.get_index_from_cardinal(index)
+
+    response = session.get_flow_data(context, constants.SESSION_DATA_RES_BODY)
+    payment_options = utils.get_nested_field(response, "paymentOption")
+    payment_option = payment_options[0]    
+    test_data = session.get_test_data(context)
+    payment = test_data['payments'][rpt_index]
+
+    utils.assert_show_message(response['pull'] == False, f"The payment option must be not defined for pull payments.")
+    utils.assert_show_message(int(payment_option['amount']) == int(payment['total_amount'] * 100), f"The total amount calculated for {index} RPT is not equals to the one defined in GPD payment position. GPD's: [{int(payment_option['amount'])}], RPT's: [{int(payment['total_amount'] * 100)}]") 
+    utils.assert_show_message(payment_option['notificationFee'] == 0, f"The notification fee in the {index} payment position defined for GPD must be always 0.") 
+    utils.assert_show_message(payment_option['isPartialPayment'] == False, f"The payment option must be not defined as partial payment.") 
+
+# ==============================================  
+
+@then('the response contains the status in {status} for the payment option')
+def check_paymentposition_status(context, status):
+
+    response = session.get_flow_data(context, constants.SESSION_DATA_RES_BODY)
+    payment_options = utils.get_nested_field(response, "paymentOption")
+    payment_option = payment_options[0]
+    utils.assert_show_message(payment_option['status'] == status, f"The payment option must be equals to [{status}]. Current status: [{payment_option['status']}]")
+
+# ==============================================  
+
+@then('the response contains the transfers correctly generated from {index} RPT in nodoInviaRPT')
+def check_paymentposition_transfers(context, index):
+
+    rpt_index = utils.get_index_from_cardinal(index)
+    
+    response = session.get_flow_data(context, constants.SESSION_DATA_RES_BODY)
+    payment_options = utils.get_nested_field(response, "paymentOption")
+    transfers_from_po = payment_options[0]['transfer']
+
+    test_data = session.get_test_data(context)
+    transfers_from_rpt = test_data['payments'][rpt_index]['transfers']
+
+    utils.assert_show_message(len(transfers_from_po) == len(transfers_from_rpt), f"There are not the same amount of transfers. GPD's: [{len(transfers_from_po)}], RPT's: [{len(transfers_from_rpt)}]")
+
+    for transfer_index in range(len(transfers_from_po)):
+        transfer_from_po = transfers_from_po[transfer_index]
+        transfer_from_rpt = transfers_from_rpt[transfer_index]
+        utils.assert_show_message(transfer_from_po['status'] == "T_UNREPORTED", f"The status of the transfer {transfer_index} must be equals to [T_UNREPORTED]. Current status: [{transfer_from_po['status']}]")
+        utils.assert_show_message(int(transfer_from_po['amount']) == int(transfer_from_rpt['amount'] * 100), f"The amount of the transfer {transfer_index} must be equals to the same defined in the payment position. GPD's: [{int(transfer_from_po['amount'])}], RPT's: [{int(transfer_from_rpt['amount'] * 100)}]")
+        utils.assert_show_message('transferMetadata' in transfer_from_po and len(transfer_from_po['transferMetadata']) > 0, f"There are not transfer metadata in transfer {transfer_index} but at least one is required.")
+        utils.assert_show_message('stamp' in transfer_from_po or 'iban' in transfer_from_po, f"There are either IBAN and stamp definition in transfer {transfer_index} but they cannot be defined together.")
+        if transfer_from_rpt['is_mbd'] == True:
+            utils.assert_show_message('stamp' in transfer_from_po, f"There is not stamp definition in transfer {transfer_index} but RPT transfer define it.")
+            utils.assert_show_message('hashDocument' in transfer_from_po['stamp'], f"There is not a valid hash for stamp in transfer {transfer_index}.")
+            utils.assert_show_message('stampType' in transfer_from_po['stamp'], f"There is not a valid type for stamp in transfer {transfer_index}.")
+            utils.assert_show_message(transfer_from_po['stamp']['hashDocument'] == transfer_from_rpt['stamp_hash'], f"The hash defined for the stamp in payment position in transfer {transfer_index} is not equals to the one defined in RPT. GPD's: [{transfer_from_po['stamp']['hashDocument']}], RPT's: [{transfer_from_rpt['stamp_hash']}]")
+            utils.assert_show_message(transfer_from_po['stamp']['stampType'] == transfer_from_rpt['stamp_type'], f"The type defined for the stamp in payment position in transfer {transfer_index} is not equals to the one defined in RPT. GPD's: [{transfer_from_po['stamp']['stampType']}], RPT's: [{transfer_from_rpt['stamp_type']}]")
+        else:
+            utils.assert_show_message('iban' in transfer_from_po, f"There is not IBAN definition in transfer {transfer_index} but RPT transfer define it.")    
+            utils.assert_show_message(transfer_from_po['iban'] == transfer_from_rpt['creditor_iban'], f"The IBAN defined in transfer {transfer_index} is not equals to the one defined in RPT. GPD's: [{transfer_from_po['iban']}], RPT's: [{transfer_from_rpt['creditor_iban']}]")

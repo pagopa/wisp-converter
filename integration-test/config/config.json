@@ -18,9 +18,8 @@
       "subscription_key": "INTEGRATION_TEST_NODOPERPM_SUBSCRIPTION_KEY"
     },
     "gpd-core": {
-      "url": "https://api.uat.platform.pagopa.it/gpd/debt-positions-service/v1",
-      "subscription_key": "INTEGRATION_TEST_GPD_SUBSCRIPTION_KEY",
-      "healthcheck": "/info"
+      "url": "https://api.uat.platform.pagopa.it/gpd/api/v2",
+      "subscription_key": "INTEGRATION_TEST_GPD_SUBSCRIPTION_KEY"
     },
     "wisp-converter": {
       "url": "https://uat.wisp2.pagopa.it/wisp-converter/redirect/api/v1",
@@ -45,12 +44,14 @@
     "creditor_institution_multibeneficiary": "77777777777",
     "creditor_institution_multibeneficiary_iban": "IT30N0103076271000001823603",
     "creditor_institution_broker": "15376371009",
-    "station": "15376371009_09"
+    "station": "15376371009_09",
+    "station_gpd": "15376371009_48"
   },
   "secrets": {
     "channel_wisp_password": "INTEGRATION_TEST_CHANNEL_WISP_PASSWORD",
     "channel_checkout_password": "INTEGRATION_TEST_CHANNEL_CHECKOUT_PASSWORD",
     "channel_psp_payment_password": "INTEGRATION_TEST_CHANNEL_PAYMENT_PASSWORD",
-    "station_password": "INTEGRATION_TEST_STATION_PASSWORD"
+    "station_password": "INTEGRATION_TEST_STATION_PASSWORD",
+    "station_gpd_password": "INTEGRATION_TEST_STATION_PASSWORD"
   }
 }

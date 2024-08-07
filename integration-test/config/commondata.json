@@ -4,6 +4,8 @@
         "creditor_institution": "<creditor_institution>",
         "station": "<station>",
         "station_password": "<station_password>",
+        "station_gpd": "<station_gpd>",
+        "station_gpd_password": "<station_gpd_password>",
         "psp_wisp": "<psp_wisp>",
         "psp_broker_wisp": "<psp_broker_wisp>",
         "channel_wisp": "<channel_wisp>",

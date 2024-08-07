@@ -119,7 +119,7 @@ def generate_transfers(session_data, payment_index):
 
 # ==============================================
 
-def create_payments(session_data, number_of_payments, number_of_transfers, multibeneficiary=False, number_of_mbd=0):
+def create_payments(session_data, number_of_payments, payment_types, number_of_transfers, multibeneficiary=False, number_of_mbd=0):
 
     session_data['payments'] = []
     for payment_index in range(number_of_payments):
@@ -195,9 +195,9 @@ def create_payments(session_data, number_of_payments, number_of_transfers, multi
             'iuv': iuv,
             'ccp': utils.generate_ccp(),
             'payment_date': utils.get_current_date(),
-            'total_amount': int(sum(transfer["amount"] for transfer in transfers) * 100) / 100,
-            'total_fee': int(sum(transfer["fee"] for transfer in transfers) * 100) / 100,
-            'payment_type': "BBT",
+            'total_amount': round(sum(transfer["amount"] for transfer in transfers), 2),
+            'total_fee': round(sum(transfer["fee"] for transfer in transfers), 2),
+            'payment_type': payment_types[payment_index],
             'transfers': transfers        
         }
         session_data['payments'].append(payment)
@@ -244,9 +244,9 @@ def generate_activatepaymentnotice(test_data, payment_notices, payment):
 def generate_closepayment(test_data, payment_notices, outcome):
 
     transactionId = utils.get_random_alphanumeric_string(32)
-    amount = sum(payment['total_amount'] for payment in test_data['payments'])
-    fees = sum(payment['total_fee'] for payment in test_data['payments'])
-    grand_total = (amount + fees) * 100
+    amount = round(sum(payment['total_amount'] for payment in test_data['payments']), 2)
+    fees = round(sum(payment['total_fee'] for payment in test_data['payments']), 2)
+    grand_total = round((amount + fees) * 100, 2)
     auth_code = utils.get_random_digit_string(6)
     rrn = utils.get_random_digit_string(12)
     now = utils.get_current_datetime() + ".000Z";
@@ -259,7 +259,7 @@ def generate_closepayment(test_data, payment_notices, outcome):
         "idChannel": test_data['channel_payment'],
         "paymentMethod": "CP",
         "transactionId": transactionId,
-        "totalAmount": grand_total / 100,
+        "totalAmount": round(grand_total / 100, 2),
         "fee": fees,
         "timestampOperation": now,
         "transactionDetails": {

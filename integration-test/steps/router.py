@@ -37,8 +37,8 @@ def get_rest_url(context, action):
             service_data = services.get("technical-support")
             url = service_data['url'] + "/organizations/{creditor_institution}/iuv/{iuv}?dateFrom={date_from}&dateTo={date_to}"
             return url, service_data['subscription_key']
-        #case "search_in_re_by_nav":
-        #    service_data = services.get("technical-support")
-        #    url = service_data['url'] + "/organizations/{creditor_institution}/notice-number/{nav}?dateFrom={date_from}&dateTo={date_to}"
-        #    return url, service_data['subscription_key']
+        case "get_paymentposition_by_iuv":
+            service_data = services.get("gpd-core")
+            url = service_data['url'] + "/organizations/{creditor_institution}/paymentoptions/{iuv}/debtposition"
+            return url, service_data['subscription_key']
         
