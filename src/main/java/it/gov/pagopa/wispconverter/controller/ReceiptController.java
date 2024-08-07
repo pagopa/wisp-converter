@@ -59,12 +59,10 @@ public class ReceiptController {
 
     @Operation(summary = "", description = "", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"Receipt"})
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Receipt exists", content = @Content(schema = @Schema()))
+            @ApiResponse(responseCode = "200", description = "Receipt exists")
     })
     @GetMapping(
-            value = "",
-            produces = MediaType.APPLICATION_JSON_VALUE,
-            consumes = MediaType.APPLICATION_JSON_VALUE
+            value = ""
     )
     @Trace(businessProcess = BP_RECEIPT_RETRIEVE, reEnabled = true)
     public ResponseEntity<String> receiptRetrieve(@QueryParam("ci") String ci, @QueryParam("ccp") String ccp, @QueryParam("iuv") String iuv) {
