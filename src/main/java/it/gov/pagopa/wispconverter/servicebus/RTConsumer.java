@@ -11,7 +11,7 @@ import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
 import it.gov.pagopa.wispconverter.repository.model.enumz.ReceiptTypeEnum;
 import it.gov.pagopa.wispconverter.service.IdempotencyService;
 import it.gov.pagopa.wispconverter.service.PaaInviaRTSenderService;
-import it.gov.pagopa.wispconverter.service.RtCosmosService;
+import it.gov.pagopa.wispconverter.service.RtRetryComosService;
 import it.gov.pagopa.wispconverter.service.ServiceBusService;
 import it.gov.pagopa.wispconverter.util.*;
 import jakarta.xml.soap.SOAPMessage;
@@ -47,7 +47,7 @@ public class RTConsumer extends SBConsumer {
     private String queueName;
 
     @Autowired
-    private RtCosmosService rtCosmosService;
+    private RtRetryComosService rtRetryComosService;
 
     @Autowired
     private IdempotencyService idempotencyService;
@@ -94,7 +94,7 @@ public class RTConsumer extends SBConsumer {
 
         // get RT request entity from database
         MDC.put(Constants.MDC_SESSION_ID, receiptId);
-        RTRequestEntity rtRequestEntity = rtCosmosService.getRTRequestEntity(receiptId, rtInsertionDate);
+        RTRequestEntity rtRequestEntity = rtRetryComosService.getRTRequestEntity(receiptId, rtInsertionDate);
         String idempotencyKey = rtRequestEntity.getIdempotencyKey();
         ReceiptTypeEnum receiptType = rtRequestEntity.getReceiptType();
 
@@ -157,7 +157,7 @@ public class RTConsumer extends SBConsumer {
 
             String rawPayload = new String(unzippedPayload);
             paaInviaRTSenderService.sendToCreditorInstitution(receipt.getUrl(), extractHeaders(receipt.getHeaders()), rawPayload);
-            rtCosmosService.deleteRTRequestEntity(receipt);
+            rtRetryComosService.deleteRTRequestEntity(receipt);
             log.info("Sent receipt [{}]", receiptId);
 
             // generate a new event in RE for store the successful re-sending of the receipt
@@ -198,7 +198,7 @@ public class RTConsumer extends SBConsumer {
                 // if required, update the retry count for the retrieved RT
                 log.debug("Increasing retry by one and saving receipt with id: [{}]", receiptId);
                 receipt.setRetry(receipt.getRetry() + 1);
-                rtCosmosService.saveRTRequestEntity(receipt);
+                rtRetryComosService.saveRTRequestEntity(receipt);
 
                 // because of the not sent receipt, it is necessary to schedule a retry of the sending process for this receipt
                 serviceBusService.sendMessage(compositedIdForReceipt, schedulingTimeInMinutes);

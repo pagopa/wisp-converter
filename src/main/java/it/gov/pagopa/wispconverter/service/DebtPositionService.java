@@ -171,7 +171,8 @@ public class DebtPositionService {
         Long amount = (long) (sessionData.getAllRPTs().stream()
                 .map(rptContentDTO -> rptContentDTO.getRpt().getTransferData().getTotalAmount())
                 .reduce(BigDecimal.valueOf(0L), BigDecimal::add)
-                .doubleValue() * 100);
+                .multiply(Constants.AMOUNT_SCALE_INCREMENT)
+                .doubleValue());
         paymentOption.setAmount(amount);
         paymentOption.setTransfer(transfers);
         paymentOption.setDescription(firstRPTContent.getRpt().getTransferData().getTransfer().get(0).getRemittanceInformation());
@@ -220,7 +221,7 @@ public class DebtPositionService {
             }
 
             // generate a single payment option from the single RPT with the data related to the extracted transfers
-            Long amount = (long) (paymentExtractedFromRPT.getTransferData().getTotalAmount().doubleValue() * 100);
+            Long amount = (long) (paymentExtractedFromRPT.getTransferData().getTotalAmount().multiply(Constants.AMOUNT_SCALE_INCREMENT).doubleValue());
             PaymentOptionModelDto paymentOption = mapper.toPaymentOption(rptContent);
             paymentOption.setAmount(amount);
             paymentOption.setTransfer(transfers);
@@ -257,7 +258,7 @@ public class DebtPositionService {
         // populating the transfer with the data extracted from RPT
         TransferModelDto transfer = new TransferModelDto();
         transfer.setIdTransfer(TransferModelDto.IdTransferEnum.fromValue(String.valueOf(transferIdCounter)));
-        transfer.setAmount((long) (transferDTO.getAmount().doubleValue() * 100));
+        transfer.setAmount((long) (transferDTO.getAmount().multiply(Constants.AMOUNT_SCALE_INCREMENT).doubleValue()));
         transfer.setRemittanceInformation(transferDTO.getRemittanceInformation());
         transfer.setCategory(getTaxonomy(transferDTO));
         transfer.setTransferMetadata(List.of(transferMetadata));

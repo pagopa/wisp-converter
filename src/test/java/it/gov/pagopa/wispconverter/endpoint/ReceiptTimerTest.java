@@ -44,7 +44,9 @@ public class ReceiptTimerTest {
     @MockBean
     private RPTRequestRepository rptRequestRepository;
     @MockBean
-    private RTRequestRepository rtRequestRepository;
+    private RTRetryRepository rtRetryRepository;
+    @MockBean
+    private RTRepository rtRepository;
     @MockBean
     private it.gov.pagopa.gen.wispconverter.client.iuvgenerator.invoker.ApiClient iuveneratorClient;
     @MockBean
