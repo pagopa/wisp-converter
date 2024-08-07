@@ -3,10 +3,7 @@ package it.gov.pagopa.wispconverter.repository.model;
 import com.azure.spring.data.cosmos.core.mapping.Container;
 import com.azure.spring.data.cosmos.core.mapping.PartitionKey;
 import it.gov.pagopa.wispconverter.repository.model.enumz.ReceiptTypeEnum;
-import lombok.Builder;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import lombok.*;
 import org.springframework.data.annotation.Id;
 
 @Container(containerName = "receipts-rt")
@@ -14,6 +11,8 @@ import org.springframework.data.annotation.Id;
 @ToString(exclude = "rt")
 @EqualsAndHashCode(exclude = "rt")
 @Builder(toBuilder = true)
+@NoArgsConstructor
+@AllArgsConstructor
 public class RTEntity {
 
     @Id

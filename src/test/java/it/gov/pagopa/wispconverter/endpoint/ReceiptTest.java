@@ -10,6 +10,7 @@ import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.*;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
+import it.gov.pagopa.wispconverter.repository.model.RTEntity;
 import it.gov.pagopa.wispconverter.service.ConfigCacheService;
 import it.gov.pagopa.wispconverter.service.PaaInviaRTSenderService;
 import it.gov.pagopa.wispconverter.service.ReceiptTimerService;
@@ -103,6 +104,30 @@ class ReceiptTest {
         stationCreditorInstitutionDto.setSegregationCode(48L);
         stationCreditorInstitutionDto.setStationCode(STATION_ID);
         ReflectionTestUtils.setField(configCacheService, "configData", TestUtils.configDataCreditorInstitutionStations(stationCreditorInstitutionDto, servicePath, primitiveVersion));
+    }
+
+    @Test
+    @SneakyThrows
+    void retrieveReceipt_200() throws Exception {
+        when(rtRepository.findById(anyString())).thenReturn(Optional.of(new RTEntity()));
+        // executing request
+        mvc.perform(MockMvcRequestBuilders.get("/receipt")
+                            .queryParam("ci", "<ci>")
+                            .queryParam("ccp", "<ccp>")
+                            .queryParam("iuv", "<iuv>"))
+                .andExpect(MockMvcResultMatchers.status().is2xxSuccessful());
+    }
+
+    @Test
+    @SneakyThrows
+    void retrieveReceipt_404() throws Exception {
+        when(rtRepository.findById(anyString())).thenReturn(null);
+        // executing request
+        mvc.perform(MockMvcRequestBuilders.get("/receipt")
+                            .queryParam("ci", "<ci>")
+                            .queryParam("ccp", "<ccp>")
+                            .queryParam("iuv", "<iuv>"))
+                .andExpect(MockMvcResultMatchers.status().isNotFound());
     }
 
     @Test
