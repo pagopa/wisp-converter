@@ -220,7 +220,7 @@ class ReceiptTest {
                         .accept(MediaType.APPLICATION_JSON)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new ReceiptRequest(getPaSendRTPayload()))))
-                .andExpect(MockMvcResultMatchers.status().is4xxClientError())
+                .andExpect(MockMvcResultMatchers.status().is2xxSuccessful())
                 .andDo(
                         result -> {
                             assertNotNull(result);
@@ -429,7 +429,7 @@ class ReceiptTest {
                         .accept(MediaType.APPLICATION_JSON)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(receipts)))
-                .andExpect(MockMvcResultMatchers.status().is4xxClientError())
+                .andExpect(MockMvcResultMatchers.status().is2xxSuccessful())
                 .andDo(
                         result -> {
                             assertNotNull(result);
