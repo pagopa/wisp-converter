@@ -25,10 +25,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.ErrorResponse;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.net.ssl.SSLSession;
 import java.io.IOException;
@@ -64,7 +61,7 @@ public class ReceiptController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Receipt exists", content = @Content(schema = @Schema()))
     })
-    @PostMapping(
+    @GetMapping(
             value = "",
             produces = MediaType.APPLICATION_JSON_VALUE,
             consumes = MediaType.APPLICATION_JSON_VALUE
@@ -76,7 +73,6 @@ public class ReceiptController {
             if(rtReceiptCosmosService.receiptRtExist(ci, ccp, iuv))
                 return ResponseEntity.ok("");
             else return ResponseEntity.notFound().build();
-            log.info("Successful API operation receiptRetrieve");
         } catch (Exception ex) {
             String operationId = MDC.get(Constants.MDC_OPERATION_ID);
             log.error(String.format("GenericException: operation-id=[%s]", operationId != null ? operationId : "n/a"), ex);
@@ -85,6 +81,8 @@ public class ReceiptController {
             ErrorResponse errorResponse = errorUtil.forAppException(appException);
             log.error("Failed API operation receiptRetrieve - error: {}", errorResponse);
             throw ex;
+        } finally {
+            log.info("Successful API operation receiptRetrieve");
         }
     }
 
