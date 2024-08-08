@@ -1,5 +1,6 @@
 package it.gov.pagopa.wispconverter.controller;
 
+import com.azure.core.annotation.QueryParam;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -12,6 +13,7 @@ import it.gov.pagopa.wispconverter.controller.model.ReceiptRequest;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.service.ReceiptService;
+import it.gov.pagopa.wispconverter.service.RtReceiptCosmosService;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
 import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.ErrorUtil;
@@ -20,15 +22,20 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.ErrorResponse;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import javax.net.ssl.SSLSession;
 import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpHeaders;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/receipt")
@@ -40,12 +47,42 @@ public class ReceiptController {
 
     private static final String BP_RECEIPT_OK = "receipt-ok";
     private static final String BP_RECEIPT_KO = "receipt-ko";
+    private static final String BP_RECEIPT_RETRIEVE = "receipt-retrieve";
 
     private final ReceiptService receiptService;
+
+    private final RtReceiptCosmosService rtReceiptCosmosService;
 
     private final ObjectMapper mapper;
 
     private final ErrorUtil errorUtil;
+
+    @Operation(summary = "", description = "", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"Receipt"})
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Receipt exists")
+    })
+    @GetMapping(
+            value = ""
+    )
+    @Trace(businessProcess = BP_RECEIPT_RETRIEVE, reEnabled = true)
+    public ResponseEntity<String> receiptRetrieve(@QueryParam("ci") String ci, @QueryParam("ccp") String ccp, @QueryParam("iuv") String iuv) {
+        try {
+            log.info("Invoking API operation receiptRetrieve - args: {}", ci, ccp, iuv);
+            if(rtReceiptCosmosService.receiptRtExist(ci, ccp, iuv))
+                return ResponseEntity.ok("");
+            else return ResponseEntity.notFound().build();
+        } catch (Exception ex) {
+            String operationId = MDC.get(Constants.MDC_OPERATION_ID);
+            log.error(String.format("GenericException: operation-id=[%s]", operationId != null ? operationId : "n/a"), ex);
+
+            AppException appException = new AppException(ex, AppErrorCodeMessageEnum.ERROR, ex.getMessage());
+            ErrorResponse errorResponse = errorUtil.forAppException(appException);
+            log.error("Failed API operation receiptRetrieve - error: {}", errorResponse);
+            throw ex;
+        } finally {
+            log.info("Successful API operation receiptRetrieve");
+        }
+    }
 
     @Operation(summary = "", description = "", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"Receipt"})
     @ApiResponses(value = {

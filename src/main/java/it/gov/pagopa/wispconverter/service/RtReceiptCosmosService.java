@@ -1,6 +1,7 @@
 package it.gov.pagopa.wispconverter.service;
 
 import com.azure.cosmos.CosmosException;
+import com.azure.cosmos.models.PartitionKey;
 import it.gov.pagopa.wispconverter.repository.RTRepository;
 import it.gov.pagopa.wispconverter.repository.model.RTEntity;
 import it.gov.pagopa.wispconverter.repository.model.enumz.ReceiptTypeEnum;
@@ -45,12 +46,17 @@ public class RtReceiptCosmosService {
         }
     }
 
+    public boolean receiptRtExist(String domainId, String ccp, String iuv) {
+        String id = String.format("%s_%s_%s", domainId, ccp, iuv);
+        return rtRepository.findById(id, new PartitionKey(id)).isPresent();
+    }
+
     private RTEntity getRTEntity(RPTContentDTO rptContentDTO, String rt, ReceiptTypeEnum receiptType, Long rtTimestamp) {
         String IUV = rptContentDTO.getIuv();
         String ccp = rptContentDTO.getCcp();
         String domainId = rptContentDTO.getRpt().getDomain().getDomainId();
 
-        String id = String.format("%s_%s_%s", IUV, ccp, domainId);
+        String id = String.format("%s_%s_%s", domainId, ccp, IUV);
 
         return RTEntity.builder()
                 .id(id)
