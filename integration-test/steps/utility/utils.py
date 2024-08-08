@@ -32,6 +32,9 @@ def execute_request(url, method, headers, payload=None, type=constants.ResponseT
         elif type == constants.ResponseType.JSON:
             object_response = response.json()
             attach(obfuscate_secrets("URL: " + url + "\nResponse:\n" +  json.dumps(object_response, indent=2)), name=f'{url} - Received response',  attachment_type=attachment_type.TEXT)
+        elif type == constants.ResponseType.HTML:
+            object_response = response.text
+            attach(obfuscate_secrets("URL: " + url + "\nResponse:\n" +  object_response), name=f'{url} - Received response',  attachment_type=attachment_type.TEXT)
     
     return response.status_code, object_response, response.headers
 

@@ -167,3 +167,4 @@ OCP_APIM_SUBSCRIPTION_KEY = "Ocp-Apim-Subscription-Key"
 class ResponseType(Enum):
     XML = 1
     JSON = 2
+    HTML=3

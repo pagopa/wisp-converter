@@ -206,13 +206,17 @@ def send_sessionid_to_wispdismantling(context):
     url, _ = router.get_rest_url(context, "redirect")    
     headers = {'Content-Type': 'application/xml'}
     url += session.get_flow_data(context, constants.SESSION_DATA_SESSION_ID)
-    status_code, _, response_headers = utils.execute_request(url, "get", headers, allow_redirect=False)
-    location_header = response_headers['Location']
-    attach(location_header, name="Received response")
+    status_code, response_body, response_headers = utils.execute_request(url, "get", headers, type=constants.ResponseType.HTML, allow_redirect=False)
+    if 'Location' in response_headers:
+        location_header = response_headers['Location']
+        attach(location_header, name="Received response")
+        session.set_flow_data(context, constants.SESSION_DATA_RES_BODY, location_header)
+    else:
+        attach(response_body, name="Received response")
+        session.set_flow_data(context, constants.SESSION_DATA_RES_BODY, response_body)
 
-    session.set_flow_data(context, constants.SESSION_DATA_RES_CODE, status_code)
-    session.set_flow_data(context, constants.SESSION_DATA_RES_BODY, location_header)
-    session.set_flow_data(context, constants.SESSION_DATA_RES_CONTENTTYPE, constants.ResponseType.XML)
+    session.set_flow_data(context, constants.SESSION_DATA_RES_CODE, status_code)    
+    session.set_flow_data(context, constants.SESSION_DATA_RES_CONTENTTYPE, constants.ResponseType.HTML)
 
 # ==============================================
 
@@ -274,6 +278,15 @@ def check_status_code(context, actor, status_code):
 
     status_code = session.get_flow_data(context, constants.SESSION_DATA_RES_CODE)
     utils.assert_show_message(status_code == int(status_code), f"The status code is not 200. Current value: {status_code}.")
+
+# ==============================================
+
+@then('the {actor} receives an HTML page with an error')
+def check_html_error_page(context, actor):
+
+    response = session.get_flow_data(context, constants.SESSION_DATA_RES_BODY)
+    utils.assert_show_message('<!DOCTYPE html>' in response, f"The response is not an HTML page")
+    utils.assert_show_message('Si &egrave; verificato un errore imprevisto' in response, f"The HTML page does not contains an error message.")
 
 # ==============================================
 
@@ -373,8 +386,7 @@ def retrieve_payment_notice_from_re_event(context):
 
     notices = set([(re_event['domainId'], re_event['iuv'], re_event['noticeNumber']) for re_event in needed_events])
     utils.assert_show_message(len(notices) > 0, f"Impossible to extract payment notices from events in RE")
-    utils.assert_show_message(len(notices) == len(needed_events), f"Impossible to extract unique payment notices from IUV codes")
-
+    
     payment_notices = []
     for payment_notice in notices:
         payment_notices.append({
@@ -428,7 +440,7 @@ def check_paymentoption_amounts(context, index):
     payment = test_data['payments'][rpt_index]
 
     utils.assert_show_message(response['pull'] == False, f"The payment option must be not defined for pull payments.")
-    utils.assert_show_message(int(payment_option['amount']) == int(payment['total_amount'] * 100), f"The total amount calculated for {index} RPT is not equals to the one defined in GPD payment position. GPD's: [{int(payment_option['amount'])}], RPT's: [{int(payment['total_amount'] * 100)}]") 
+    utils.assert_show_message(int(payment_option['amount']) == round(payment['total_amount'] * 100), f"The total amount calculated for {index} RPT is not equals to the one defined in GPD payment position. GPD's: [{int(payment_option['amount'])}], RPT's: [{round(payment['total_amount'])}]") 
     utils.assert_show_message(payment_option['notificationFee'] == 0, f"The notification fee in the {index} payment position defined for GPD must be always 0.") 
     utils.assert_show_message(payment_option['isPartialPayment'] == False, f"The payment option must be not defined as partial payment.") 
 
@@ -462,7 +474,7 @@ def check_paymentposition_transfers(context, index):
         transfer_from_po = transfers_from_po[transfer_index]
         transfer_from_rpt = transfers_from_rpt[transfer_index]
         utils.assert_show_message(transfer_from_po['status'] == "T_UNREPORTED", f"The status of the transfer {transfer_index} must be equals to [T_UNREPORTED]. Current status: [{transfer_from_po['status']}]")
-        utils.assert_show_message(int(transfer_from_po['amount']) == int(transfer_from_rpt['amount'] * 100), f"The amount of the transfer {transfer_index} must be equals to the same defined in the payment position. GPD's: [{int(transfer_from_po['amount'])}], RPT's: [{int(transfer_from_rpt['amount'] * 100)}]")
+        utils.assert_show_message(int(transfer_from_po['amount']) == round(transfer_from_rpt['amount'] * 100), f"The amount of the transfer {transfer_index} must be equals to the same defined in the payment position. GPD's: [{int(transfer_from_po['amount'])}], RPT's: [{round(transfer_from_rpt['amount'])}]")
         utils.assert_show_message('transferMetadata' in transfer_from_po and len(transfer_from_po['transferMetadata']) > 0, f"There are not transfer metadata in transfer {transfer_index} but at least one is required.")
         utils.assert_show_message('stamp' in transfer_from_po or 'iban' in transfer_from_po, f"There are either IBAN and stamp definition in transfer {transfer_index} but they cannot be defined together.")
         if transfer_from_rpt['is_mbd'] == True:

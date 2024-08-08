@@ -6,6 +6,12 @@ Feature: Common scenarios for nodoInviaRPT
     Then the user receives the HTTP status code 302 
     And the user can be redirected to Checkout
 
+  Scenario: Fails on execute duplicated NM1-to-NMU conversion in wisp-converter    
+    Given a valid session identifier to be redirected to WISP dismantling
+    When the user continue the session in WISP dismantling
+    Then the user receives the HTTP status code 200 
+    And the user receives an HTML page with an error
+
   Scenario: Retrieve notice number from executed redirect
     Given a waiting time of 2 seconds to wait for Nodo to write RE events
     And the first IUV code of the sent RPTs
