@@ -1,6 +1,7 @@
 package it.gov.pagopa.wispconverter.endpoint;
 
 import com.azure.cosmos.CosmosClientBuilder;
+import com.azure.cosmos.CosmosException;
 import com.azure.messaging.servicebus.ServiceBusSenderClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.gen.wispconverter.client.cache.model.StationCreditorInstitutionDto;
@@ -10,17 +11,14 @@ import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.*;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
-import it.gov.pagopa.wispconverter.repository.model.RTEntity;
-import it.gov.pagopa.wispconverter.service.ConfigCacheService;
-import it.gov.pagopa.wispconverter.service.PaaInviaRTSenderService;
-import it.gov.pagopa.wispconverter.service.ReceiptTimerService;
-import it.gov.pagopa.wispconverter.service.ServiceBusService;
+import it.gov.pagopa.wispconverter.service.*;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
 import it.gov.pagopa.wispconverter.utils.TestUtils;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -40,6 +38,7 @@ import java.util.Optional;
 
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ActiveProfiles(profiles = "test")
@@ -93,6 +92,8 @@ class ReceiptTest {
     private CacheRepository cacheRepository;
     @MockBean
     private ReceiptTimerService receiptTimerService;
+    @MockBean
+    RtReceiptCosmosService rtReceiptCosmosService;
 
     private String getPaSendRTPayload() {
         return TestUtils.loadFileContent("/requests/paSendRTV2.xml");
@@ -109,7 +110,8 @@ class ReceiptTest {
     @Test
     @SneakyThrows
     void retrieveReceipt_200() throws Exception {
-        when(rtRepository.findById(anyString(), any())).thenReturn(Optional.of(new RTEntity()));
+        when(rtReceiptCosmosService.receiptRtExist(anyString(), anyString(), anyString())).thenReturn(true);
+
         // executing request
         mvc.perform(MockMvcRequestBuilders.get("/receipt")
                             .queryParam("ci", "ci1")
@@ -121,13 +123,28 @@ class ReceiptTest {
     @Test
     @SneakyThrows
     void retrieveReceipt_404() throws Exception {
-        when(rtRepository.findById(anyString())).thenReturn(null);
+        when(rtReceiptCosmosService.receiptRtExist(anyString(), anyString(), anyString())).thenReturn(false);
+
         // executing request
         mvc.perform(MockMvcRequestBuilders.get("/receipt")
                             .queryParam("ci", "<ci>")
                             .queryParam("ccp", "<ccp>")
                             .queryParam("iuv", "<iuv>"))
                 .andExpect(MockMvcResultMatchers.status().isNotFound());
+    }
+
+    @Test
+    @SneakyThrows
+    void retrieveReceipt_500() throws Exception {
+        doThrow(new AppException(AppErrorCodeMessageEnum.GENERIC_ERROR, "GENERIC_ERROR", "GENERIC_ERROR", "GENERIC_ERROR"))
+                .when(rtReceiptCosmosService).receiptRtExist(anyString(), anyString(), anyString());
+
+        // executing request
+        mvc.perform(MockMvcRequestBuilders.get("/receipt")
+                            .queryParam("ci", "ci1")
+                            .queryParam("ccp", "ccp1")
+                            .queryParam("iuv", "iuv1"))
+                .andExpect(MockMvcResultMatchers.status().isInternalServerError());
     }
 
     @Test
