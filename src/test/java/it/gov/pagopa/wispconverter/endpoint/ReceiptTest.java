@@ -109,12 +109,12 @@ class ReceiptTest {
     @Test
     @SneakyThrows
     void retrieveReceipt_200() throws Exception {
-        when(rtRepository.findById(anyString())).thenReturn(Optional.of(new RTEntity()));
+        when(rtRepository.findById(anyString(), any())).thenReturn(Optional.of(new RTEntity()));
         // executing request
         mvc.perform(MockMvcRequestBuilders.get("/receipt")
-                            .queryParam("ci", "<ci>")
-                            .queryParam("ccp", "<ccp>")
-                            .queryParam("iuv", "<iuv>"))
+                            .queryParam("ci", "ci1")
+                            .queryParam("ccp", "ccp1")
+                            .queryParam("iuv", "iuv1"))
                 .andExpect(MockMvcResultMatchers.status().is2xxSuccessful());
     }
 
