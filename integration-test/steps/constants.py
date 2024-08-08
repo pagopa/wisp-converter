@@ -153,13 +153,16 @@ SESSION_DATA_REQ_BODY = "flow_data.action.request.body"
 SESSION_DATA_RES_BODY = "flow_data.action.response.body"
 SESSION_DATA_RES_CODE = "flow_data.action.response.status_code"
 SESSION_DATA_RES_CONTENTTYPE = "flow_data.action.response.content_type"
+SESSION_DATA_TRIGGER_PRIMITIVE = "flow_data.action.trigger_primitive.name"
 
 SESSION_DATA_SESSION_ID = "flow_data.common.session_id"
 SESSION_DATA_IUVS = "flow_data.common.iuvs"
 SESSION_DATA_NAVS = "flow_data.common.navs"
 SESSION_DATA_PAYMENT_NOTICES = "flow_data.common.payment_notices"
+SESSION_DATA_DEBT_POSITIONS = "flow_data.common.debt_positions"
 
-NODOINVIARPT = "nodoInviaRPT"
+PRIMITIVE_NODOINVIARPT = "nodoInviaRPT"
+PRIMITIVE_NODOINVIACARRELLORPT = "nodoInviaCarrelloRPT"
 
 OCP_APIM_SUBSCRIPTION_KEY = "Ocp-Apim-Subscription-Key"
 

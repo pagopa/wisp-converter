@@ -41,4 +41,12 @@ def get_rest_url(context, action):
             service_data = services.get("gpd-core")
             url = service_data['url'] + "/organizations/{creditor_institution}/paymentoptions/{iuv}/debtposition"
             return url, service_data['subscription_key']
+        case "create_paymentposition_and_publish":
+            service_data = services.get("gpd-core")
+            url = service_data['url'] + "/organizations/{creditor_institution}/debtpositions?toPublish=true"
+            return url, service_data['subscription_key']
+        case "create_paymentposition":
+            service_data = services.get("gpd-core")
+            url = service_data['url'] + "/organizations/{creditor_institution}/debtpositions?toPublish=true"
+            return url, service_data['subscription_key']
         

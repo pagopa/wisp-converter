@@ -1,3 +1,4 @@
+import base64
 import copy
 import re
 import time
@@ -102,7 +103,39 @@ def generate_single_rpt(context, payment_type, number_of_transfers, number_of_st
     # update context with request and edit session data
     session.set_test_data(context, session_data)
     session.set_flow_data(context, constants.SESSION_DATA_REQ_BODY, request)
+    session.set_flow_data(context, constants.SESSION_DATA_TRIGGER_PRIMITIVE, constants.PRIMITIVE_NODOINVIARPT)
 
+# ==============================================
+
+@given('an existing payment position related to {index} RPT with segregation code equals to {segregation_code} and state equals to {payment_status}')
+def generate_payment_position(context, index, segregation_code, payment_status):
+
+    trigger_request = session.get_flow_data(context, constants.SESSION_DATA_REQ_BODY)
+    test_data = session.get_test_data(context)
+    primitive = session.get_flow_data(context, constants.SESSION_DATA_TRIGGER_PRIMITIVE)
+
+    if primitive == constants.PRIMITIVE_NODOINVIARPT:
+        request = utils.get_xml_as_object(trigger_request)
+        rpt_base64 = request.find(f'.//rpt').text
+        rpt_content = base64.b64decode(rpt_base64.encode('utf-8')).decode('utf-8')
+        rpt = utils.get_xml_as_object(rpt_content)
+
+    elif primitive == constants.PRIMITIVE_NODOINVIACARRELLORPT:
+        return # TODO to update
+
+    payment_positions = requestgen.generate_paymentposition(context, rpt, segregation_code, payment_status)
+
+    if payment_status == "VALID":
+        base_url, subkey = router.get_rest_url(context, "create_paymentposition_and_publish")
+    else:
+        base_url, subkey = router.get_rest_url(context, "create_paymentposition")
+    url = base_url.format(creditor_institution=test_data['creditor_institution'])
+
+    headers = {'Content-Type': 'application/json', constants.OCP_APIM_SUBSCRIPTION_KEY: subkey}
+    status_code, _, _ = utils.execute_request(url, "post", headers, payment_positions, type=constants.ResponseType.JSON)
+
+    utils.assert_show_message(status_code == 201, f"The debt position for RPT with index [{index}] was not created. Expected status code [201], Current status code [{status_code}]")
+    
 # ==============================================
 
 @given('a valid checkPosition request')

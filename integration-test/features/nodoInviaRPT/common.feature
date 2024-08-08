@@ -64,6 +64,16 @@ Feature: Common scenarios for nodoInviaRPT
     And the response contains the status in PO_PAID for the payment option
     And the response contains the transfers correctly generated from first RPT in nodoInviaRPT
 
+  Scenario: Check if existing debt position was used
+    Given a waiting time of 2 seconds to wait for Nodo to write RE events
+    And the first IUV code of the sent RPTs
+    When the user searches for flow steps by IUVs
+    Then the user receives the HTTP status code 200   
+    And there is a redirect event with field status with value UPDATED_EXISTING_PAYMENT_POSITION_IN_GPD
+
+  # ===============================================================================================
+  # ===============================================================================================
+
   Scenario: Execute redirect and complete payment from NodoInviaRPT
     When the execution of "Execute NM1-to-NMU conversion in wisp-converter" was successful
     Then the execution of "Retrieve notice number from executed redirect" was successful

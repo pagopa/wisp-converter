@@ -1,6 +1,7 @@
 from enum import Enum
 import json
 import re
+import time
 import requests
 import logging
 import datetime
@@ -55,6 +56,18 @@ def get_nested_field(object, field_name):
 
 # ==============================================
 
+def get_xml_as_object(content):
+    object_response = None
+    if content is not None:
+        try:
+            object_wo_namespace = remove_namespace(content)
+            object_response = xmlutils.fromstring(object_wo_namespace)
+        except Exception as e:
+            logging.error(e)
+    return object_response
+
+# ==============================================
+
 def obfuscate_secrets(request):
     request_without_secrets = re.sub(r'<password>(.*)<\/password>', "<password>***</password>", request)
     request_without_secrets = re.sub(r'\"password\":\s{0,1}\"(.*)\"', "\"password\": \"***\"", request_without_secrets)
@@ -65,12 +78,18 @@ def obfuscate_secrets(request):
 def remove_namespace(content):
     content_without_ns = re.sub(r'(<\/?)(\w+:)', r'\1', content)
     content_without_ns = re.sub(r'\sxmlns[^"]+"[^"]+"', '', content_without_ns)
+    content_without_ns = re.sub(r'\sxsi[^"]+"[^"]+"', '', content_without_ns)
     return content_without_ns
   
 # ==============================================
   
 def generate_iuv():
     return get_random_digit_string(15)
+
+# ==============================================
+
+def generate_nav(segregation_code):
+    return f'3{segregation_code}{int(time.time() * 100000)}'
 
 # ==============================================
 
@@ -115,6 +134,13 @@ def generate_random_monetary_amount(min, max):
 def get_current_datetime():
     today = datetime.datetime.today().astimezone()
     return today.strftime("%Y-%m-%dT%H:%M:%S")
+
+# ==============================================
+
+def get_tomorrow_datetime():
+    today = datetime.datetime.today().astimezone()
+    tomorrow = today + datetime.timedelta(days=1)
+    return tomorrow.strftime("%Y-%m-%dT%H:%M:%S")
 
 # ==============================================
 
