@@ -7,15 +7,15 @@
     },
     "node-for-psp": {
       "url": "https://api.uat.platform.pagopa.it/nodo/node-for-psp/v1",
-      "subscription_key": "INTEGRATION_TEST_NODEFORPSP_SUBSCRIPTION_KEY"
+      "subscription_key": "INTEGRATION_TEST_NODO_SUBSCRIPTION_KEY"
     },
     "nodo-per-pm-v1": {
       "url": "https://api.uat.platform.pagopa.it/nodo/nodo-per-pm/v1",
-      "subscription_key": "INTEGRATION_TEST_NODOPERPM_SUBSCRIPTION_KEY"
+      "subscription_key": "INTEGRATION_TEST_NODO_SUBSCRIPTION_KEY"
     },
     "nodo-per-pm-v2": {
       "url": "https://api.uat.platform.pagopa.it/nodo/nodo-per-pm/v2",
-      "subscription_key": "INTEGRATION_TEST_NODOPERPM_SUBSCRIPTION_KEY"
+      "subscription_key": "INTEGRATION_TEST_NODO_SUBSCRIPTION_KEY"
     },
     "gpd-core": {
       "url": "https://api.uat.platform.pagopa.it/gpd/api/v2",
