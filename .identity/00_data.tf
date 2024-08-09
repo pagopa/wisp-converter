@@ -51,7 +51,60 @@ data "azurerm_key_vault_secret" "key_vault_integration_test_subkey" {
   key_vault_id = data.azurerm_key_vault.key_vault.id
 }
 
+data "azurerm_key_vault_secret" "integration_test_gpd_subscription_key" {
+  count        = var.env_short == "p" ? 0 : 1
+  name         = "integration-test-gpd-subscription-key"
+  key_vault_id = data.azurerm_key_vault.domain_key_vault.id
+}
+
+data "azurerm_key_vault_secret" "integration_test_nodo_subscription_key" {
+  count        = var.env_short == "p" ? 0 : 1
+  name         = "integration-test-nodo-subscription-key"
+  key_vault_id = data.azurerm_key_vault.domain_key_vault.id
+}
+
+data "azurerm_key_vault_secret" "integration_test_newconnectivity_subscription_key" {
+  count        = var.env_short == "p" ? 0 : 1
+  name         = "node-forwarder-subscription-key-string"
+  key_vault_id = data.azurerm_key_vault.domain_key_vault.id
+}
+
+data "azurerm_key_vault_secret" "integration_test_technicalsupport_subscription_key" {
+  count        = var.env_short == "p" ? 0 : 1
+  name         = "integration-test-technicalsupport-subscription-key"
+  key_vault_id = data.azurerm_key_vault.domain_key_vault.id
+}
+
+data "azurerm_key_vault_secret" "integration_test_channel_wisp_password" {
+  count        = var.env_short == "p" ? 0 : 1
+  name         = "integration-test-channel-wisp-password"
+  key_vault_id = data.azurerm_key_vault.domain_key_vault.id
+}
+
+data "azurerm_key_vault_secret" "integration_test_channel_checkout_password" {
+  count        = var.env_short == "p" ? 0 : 1
+  name         = "integration-test-channel-checkout-password"
+  key_vault_id = data.azurerm_key_vault.domain_key_vault.id
+}
+
+data "azurerm_key_vault_secret" "integration_test_channel_payment_password" {
+  count        = var.env_short == "p" ? 0 : 1
+  name         = "integration-test-channel-payment-password"
+  key_vault_id = data.azurerm_key_vault.domain_key_vault.id
+}
+
+data "azurerm_key_vault_secret" "integration_test_station_wisp_password" {
+  count        = var.env_short == "p" ? 0 : 1
+  name         = "integration-test-station-wisp-password"
+  key_vault_id = data.azurerm_key_vault.domain_key_vault.id
+}
+
 data "azurerm_user_assigned_identity" "identity_cd" {
   name                = "${local.product}-${local.domain}-01-github-cd-identity"
+  resource_group_name = "${local.product}-identity-rg"
+}
+
+data "azurerm_user_assigned_identity" "identity_ci" {
+  name                = "${local.product}-${local.domain}-01-github-ci-identity"
   resource_group_name = "${local.product}-identity-rg"
 }
