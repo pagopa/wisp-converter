@@ -21,12 +21,18 @@ import router as router
 # ==============================================
 
 @given('a new session')
-def clear_session(context):
+def generate_session(context):
   
     logging.debug("=======================================================")
-    logging.debug("[Clear session] Start clearing previous data on session")
+    logging.debug("[Generate session] Start re-generating data on session")
     session.clear_session(context)
-    logging.debug("[Clear session] End clearing previous data on session")
+
+    # update context with request and edit session data
+    session_data = copy.deepcopy(context.config.userdata.get("test_data"))
+    session_data['payments'] = []
+    session.set_test_data(context, session_data)
+
+    logging.debug("[Clear session] End re-generating data on session")
 
 # ==============================================
 
@@ -81,6 +87,7 @@ def step_impl(context, scenario_name):
 @given('a waiting time of {time_in_seconds} second{notes}')
 def wait_for_n_seconds(context, time_in_seconds, notes):
 
+    session.set_skip_tests(context, False)
     logging.info(f"Waiting [{time_in_seconds}] second{notes}")
     time.sleep(int(time_in_seconds))
     logging.info(f"Wait time ended")
@@ -90,25 +97,22 @@ def wait_for_n_seconds(context, time_in_seconds, notes):
 @given('a single RPT of type {payment_type} with {number_of_transfers} transfers of which {number_of_stamps} are stamps')
 def generate_single_rpt(context, payment_type, number_of_transfers, number_of_stamps):
 
+    session.set_skip_tests(context, False)
+
     if number_of_stamps == "none":
         number_of_stamps = "0"
 
-    payment_types = [payment_type]
-    session_data = copy.deepcopy(context.config.userdata.get("test_data"))
-    session_data = requestgen.create_payments(session_data, 1, payment_types, int(number_of_transfers), number_of_mbd=int(number_of_stamps))
+    test_data = session.get_test_data(context)
+    payment = requestgen.create_payment(test_data, payment_type, int(number_of_transfers), int(number_of_stamps))
+    test_data['payments'].append(payment)
 
-    # generate request
-    request = requestgen.generate_nodoinviarpt(session_data)
-    
-    # update context with request and edit session data
-    session.set_test_data(context, session_data)
-    session.set_flow_data(context, constants.SESSION_DATA_REQ_BODY, request)
-    session.set_flow_data(context, constants.SESSION_DATA_TRIGGER_PRIMITIVE, constants.PRIMITIVE_NODOINVIARPT)
 
 # ==============================================
 
 @given('an existing payment position related to {index} RPT with segregation code equals to {segregation_code} and state equals to {payment_status}')
 def generate_payment_position(context, index, segregation_code, payment_status):
+
+    session.set_skip_tests(context, False)
 
     trigger_request = session.get_flow_data(context, constants.SESSION_DATA_REQ_BODY)
     test_data = session.get_test_data(context)
@@ -135,11 +139,43 @@ def generate_payment_position(context, index, segregation_code, payment_status):
     status_code, _, _ = utils.execute_request(url, "post", headers, payment_positions, type=constants.ResponseType.JSON)
 
     utils.assert_show_message(status_code == 201, f"The debt position for RPT with index [{index}] was not created. Expected status code [201], Current status code [{status_code}]")
+
+# ==============================================
+
+@given('a valid nodoInviaRPT request')
+def generate_nodoinviarpt(context):
     
+    session.set_skip_tests(context, False)
+
+    # generate request
+    test_data = session.get_test_data(context)
+    request = requestgen.generate_nodoinviarpt(test_data, test_data['payments'][0])
+    
+    # update context with request and edit session data
+    session.set_flow_data(context, constants.SESSION_DATA_REQ_BODY, request)
+    session.set_flow_data(context, constants.SESSION_DATA_TRIGGER_PRIMITIVE, constants.PRIMITIVE_NODOINVIARPT)
+
+# ==============================================
+
+@given('a valid nodoInviaCarrelloRPT request')
+def generate_nodoinviarpt(context):
+    
+    session.set_skip_tests(context, False)
+
+    # generate request
+    test_data = session.get_test_data(context)
+    request = requestgen.generate_nodoinviacarrellorpt(test_data, test_data['payments'][0])
+    
+    # update context with request and edit session data
+    session.set_flow_data(context, constants.SESSION_DATA_REQ_BODY, request)
+    session.set_flow_data(context, constants.SESSION_DATA_TRIGGER_PRIMITIVE, constants.PRIMITIVE_NODOINVIARPT)
+
 # ==============================================
 
 @given('a valid checkPosition request')
 def generate_checkposition(context):
+
+    session.set_skip_tests(context, False)
 
     # generate request
     payment_notices = session.get_flow_data(context, constants.SESSION_DATA_PAYMENT_NOTICES)
@@ -150,15 +186,27 @@ def generate_checkposition(context):
 
 # ==============================================
 
-@given('a valid activatePaymentNoticeV2 request on {index} RPT')
+@given('a valid activatePaymentNoticeV2 request on {index} payment notice, if exists')
 def generate_activatepaymentnotice(context, index):
 
-    rpt_index = utils.get_index_from_cardinal(index)
+    session.set_skip_tests(context, False)
+
+    payment_notice_index = utils.get_index_from_cardinal(index)
+    payment_notices = session.get_flow_data(context, constants.SESSION_DATA_PAYMENT_NOTICES)
+
+    # check if RPT exists
+    # TODO to change when multibeneficiary will be handled
+    session.set_skip_tests(context, False)
+    if payment_notice_index + 1 > len(payment_notices):
+        session.set_skip_tests(context, True)
+        context.scenario.skip(f"Skipping scenario because the {index} RPT does not exist.")
+        return
 
     # generate request
     test_data = session.get_test_data(context)
-    payment_notices = session.get_flow_data(context, constants.SESSION_DATA_PAYMENT_NOTICES)
-    request = requestgen.generate_activatepaymentnotice(test_data, payment_notices, test_data['payments'][rpt_index])
+    session_id = session.get_flow_data(context, constants.SESSION_DATA_SESSION_ID)
+    # TODO to change when multibeneficiary will be handled
+    request = requestgen.generate_activatepaymentnotice(test_data, payment_notices, test_data['payments'][payment_notice_index], session_id) 
 
     # update context with request and edit session data
     session.set_flow_data(context, constants.SESSION_DATA_REQ_BODY, request)
@@ -168,6 +216,8 @@ def generate_activatepaymentnotice(context, index):
 @given('a valid closePaymentV2 request with outcome {outcome}')
 def generate_activatepaymentnotice(context, outcome):
     
+    session.set_skip_tests(context, False)
+
     # generate request
     test_data = session.get_test_data(context)
     payment_notices = session.get_flow_data(context, constants.SESSION_DATA_PAYMENT_NOTICES)
@@ -181,6 +231,8 @@ def generate_activatepaymentnotice(context, outcome):
 @given('a valid session identifier to be redirected to WISP dismantling')
 def get_valid_sessionid(context):
 
+    session.set_skip_tests(context, False)
+
     session_id = session.get_flow_data(context, constants.SESSION_DATA_SESSION_ID)
     split_session_id = session_id.split("_")
     utils.assert_show_message(len(split_session_id[0]) == 11, f"The session ID must contains the broker code as first part of the session identifier. Session ID: [{session_id}]")
@@ -191,6 +243,8 @@ def get_valid_sessionid(context):
 @given('the {index} IUV code of the sent RPTs')
 def get_iuv_from_session(context, index):
 
+    session.set_skip_tests(context, False)
+    
     rpt_index = utils.get_index_from_cardinal(index)
 
     test_data = session.get_test_data(context)
@@ -216,6 +270,10 @@ def get_iuv_from_session(context, index):
 
 @when('the {actor} sends a {primitive} action')
 def send_primitive(context, actor, primitive):
+
+    if session.skip_tests(context):
+        logging.debug("Skipping send_primitive step")
+        return
 
     request = session.get_flow_data(context, constants.SESSION_DATA_REQ_BODY)
     url, subkey, content_type = router.get_primitive_url(context, primitive)
@@ -309,6 +367,10 @@ def search_paymentposition_by_iuv(context, index):
 @then('the {actor} receives the HTTP status code {status_code}')
 def check_status_code(context, actor, status_code):
 
+    if session.skip_tests(context):
+        logging.debug("Skipping check_status_code step")
+        return
+    
     status_code = session.get_flow_data(context, constants.SESSION_DATA_RES_CODE)
     utils.assert_show_message(status_code == int(status_code), f"The status code is not 200. Current value: {status_code}.")
 
@@ -326,6 +388,10 @@ def check_html_error_page(context, actor):
 @then('the response contains the field {field_name} with value {field_value}')
 def check_field(context, field_name, field_value):
 
+    if session.skip_tests(context):
+        logging.debug("Skipping check_field step")
+        return
+    
     response = session.get_flow_data(context, constants.SESSION_DATA_RES_BODY)
     content_type = session.get_flow_data(context, constants.SESSION_DATA_RES_CONTENTTYPE)
     if content_type == constants.ResponseType.XML:
@@ -358,6 +424,10 @@ def check_field(context, field_name):
 @then('the response contains the field {field_name} with non-null value')
 def check_field(context, field_name):
 
+    if session.skip_tests(context):
+        logging.debug("Skipping check_field step")
+        return
+    
     response = session.get_flow_data(context, constants.SESSION_DATA_RES_BODY)
     content_type = session.get_flow_data(context, constants.SESSION_DATA_RES_CONTENTTYPE)
     if content_type == constants.ResponseType.XML:
@@ -438,6 +508,10 @@ def retrieve_payment_notice_from_re_event(context):
 @then('the payment token can be retrieved and associated to {index} RPT')
 def retrieve_payment_token_from_activatepaymentnotice(context, index):
 
+    if session.skip_tests(context):
+        logging.debug("Skipping retrieve_payment_token_from_activatepaymentnotice step")
+        return
+    
     rpt_index = utils.get_index_from_cardinal(index)
 
     response = session.get_flow_data(context, constants.SESSION_DATA_RES_BODY)

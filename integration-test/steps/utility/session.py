@@ -5,7 +5,18 @@ import constants as constants
 def clear_session(context):
 
     setattr(context, constants.SESSION_DATA, {})
+    setattr(context, constants.SKIP_TESTS, False)
 
+# ==============================================
+
+def skip_tests(context):
+    return getattr(context, constants.SKIP_TESTS)
+
+# ==============================================
+
+def set_skip_tests(context, value):
+    setattr(context, constants.SKIP_TESTS, value)
+    
 # ==============================================
 
 def set_test_data(context, test_data):
