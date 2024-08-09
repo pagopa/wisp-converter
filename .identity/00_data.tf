@@ -63,9 +63,9 @@ data "azurerm_key_vault_secret" "integration_test_nodo_subscription_key" {
   key_vault_id = data.azurerm_key_vault.domain_key_vault.id
 }
 
-data "azurerm_key_vault_secret" "integration_test_newconnectivity_subscription_key" {
+data "azurerm_key_vault_secret" "integration_test_forwarder_subscription_key" {
   count        = var.env_short == "p" ? 0 : 1
-  name         = "node-forwarder-subscription-key-string"
+  name         = "integration-test-forwarder-subscription-key"
   key_vault_id = data.azurerm_key_vault.domain_key_vault.id
 }
 

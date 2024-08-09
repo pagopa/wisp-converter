@@ -27,7 +27,7 @@ locals {
     "SUBSCRIPTION_ID" : data.azurerm_subscription.current.subscription_id
     "INTEGRATION_TEST_GPD_SUBSCRIPTION_KEY" : var.env_short != "p" ? data.azurerm_key_vault_secret.integration_test_gpd_subscription_key[0].value : ""
     "INTEGRATION_TEST_NODO_SUBSCRIPTION_KEY" : var.env_short != "p" ? data.azurerm_key_vault_secret.integration_test_nodo_subscription_key[0].value : ""
-    "INTEGRATION_TEST_FORWARDER_SUBSCRIPTION_KEY" : var.env_short != "p" ? data.azurerm_key_vault_secret.integration_test_newconnectivity_subscription_key[0].value : ""
+    "INTEGRATION_TEST_FORWARDER_SUBSCRIPTION_KEY" : var.env_short != "p" ? data.azurerm_key_vault_secret.integration_test_forwarder_subscription_key[0].value : ""
     "INTEGRATION_TEST_TECHNICALSUPPORT_SUBSCRIPTION_KEY" : var.env_short != "p" ? data.azurerm_key_vault_secret.integration_test_technicalsupport_subscription_key[0].value : ""
     "INTEGRATION_TEST_CHANNEL_WISP_PASSWORD" : var.env_short != "p" ? data.azurerm_key_vault_secret.integration_test_channel_wisp_password[0].value : ""
     "INTEGRATION_TEST_CHANNEL_CHECKOUT_PASSWORD" : var.env_short != "p" ? data.azurerm_key_vault_secret.integration_test_channel_checkout_password[0].value : ""
