@@ -1,22 +1,28 @@
 Feature: Common scenarios for nodoInviaRPT
-  
-  Scenario: Execute NM1-to-NMU conversion in wisp-converter    
+
+  Scenario: Send a nodoInviaRPT request
+    When the user sends a nodoInviaRPT action
+    Then the user receives the HTTP status code 200 
+    And the response contains the field esito with value OK
+    And the response contains the redirect URL
+
+  Scenario: Execute NM1-to-NMU conversion in wisp-converter
     Given a valid session identifier to be redirected to WISP dismantling
     When the user continue the session in WISP dismantling
-    Then the user receives the HTTP status code 302 
+    Then the user receives the HTTP status code 302
     And the user can be redirected to Checkout
 
-  Scenario: Fails on execute duplicated NM1-to-NMU conversion in wisp-converter    
+  Scenario: Fails on execute NM1-to-NMU conversion in wisp-converter  
     Given a valid session identifier to be redirected to WISP dismantling
     When the user continue the session in WISP dismantling
-    Then the user receives the HTTP status code 200 
+    Then the user receives the HTTP status code 200
     And the user receives an HTML page with an error
 
   Scenario: Retrieve notice number from executed redirect
     Given a waiting time of 2 seconds to wait for Nodo to write RE events
     And the first IUV code of the sent RPTs
     When the user searches for flow steps by IUVs
-    Then the user receives the HTTP status code 200 
+    Then the user receives the HTTP status code 200
     And the notice number can be retrieved
 
   Scenario: Send a checkPosition request
@@ -31,7 +37,7 @@ Feature: Common scenarios for nodoInviaRPT
     When the creditor institution sends a activatePaymentNoticeV2 action
     Then the creditor institution receives the HTTP status code 200
     And the response contains the field outcome with value OK
-    And the response contains the field paymentToken with non-null value 
+    And the response contains the field paymentToken with non-null value
     And the payment token can be retrieved and associated to first RPT
 
   Scenario: Send a closePaymentV2 request
@@ -44,16 +50,16 @@ Feature: Common scenarios for nodoInviaRPT
     Given a waiting time of 5 seconds to wait for Nodo to write RE events
     And the first IUV code of the sent RPTs
     When the user searches for flow steps by IUVs
-    Then the user receives the HTTP status code 200 
-    And there is a timer-set event with field operationStatus with value Success 
+    Then the user receives the HTTP status code 200
+    And there is a timer-set event with field operationStatus with value Success
 
   Scenario: Check if WISP session timer was deleted and RT was sent
     Given a waiting time of 5 seconds to wait for Nodo to write RE events
     And the first IUV code of the sent RPTs
     When the user searches for flow steps by IUVs
-    Then the user receives the HTTP status code 200 
-    And there is a timer-delete event with field operationStatus with value Success 
-    And there is a receipt-ok event with field operationStatus with value Success 
+    Then the user receives the HTTP status code 200
+    And there is a timer-delete event with field operationStatus with value Success
+    And there is a receipt-ok event with field operationStatus with value Success
 
   Scenario: Check the paid payment position
     When the user searches for payment position in GPD by first IUV
@@ -68,7 +74,7 @@ Feature: Common scenarios for nodoInviaRPT
     Given a waiting time of 2 seconds to wait for Nodo to write RE events
     And the first IUV code of the sent RPTs
     When the user searches for flow steps by IUVs
-    Then the user receives the HTTP status code 200   
+    Then the user receives the HTTP status code 200
     And there is a redirect event with field status with value UPDATED_EXISTING_PAYMENT_POSITION_IN_GPD
 
   # ===============================================================================================
@@ -84,11 +90,11 @@ Feature: Common scenarios for nodoInviaRPT
     And the execution of "Check if WISP session timer was deleted and RT was sent" was successful
     And the execution of "Check the paid payment position" was successful
 
-    
 
 
 
-    
+
+
 
 
 
