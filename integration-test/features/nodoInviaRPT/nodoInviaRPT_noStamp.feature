@@ -89,7 +89,7 @@ Feature: User pays a single payment without stamps on nodoInviaRPT
     Given a single RPT of type BBT with 1 transfers of which 0 are stamps
     When the execution of "Send a nodoInviaRPT request" was successful
     Then the execution of "Execute redirect and complete payment from NodoInviaRPT" was successful
-    And the execution of "Fails on execute NM1-to-NMU conversion in wisp-converter  " was successful
+    And the execution of "Fails on execute NM1-to-NMU conversion in wisp-converter" was successful
 
   # ===============================================================================================
   # ===============================================================================================
@@ -102,5 +102,5 @@ Feature: User pays a single payment without stamps on nodoInviaRPT
     And the execution of "Retrieve notice number from executed redirect" was successful
     And the execution of "Send a checkPosition request" was successful
     And the execution of "Send an activatePaymentNoticeV2 request" was successful
-    And the execution of "Fails on execute NM1-to-NMU conversion in wisp-converter  " was successful
+    And the execution of "Fails on execute NM1-to-NMU conversion in wisp-converter" was successful
     

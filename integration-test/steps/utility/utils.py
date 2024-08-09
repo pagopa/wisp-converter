@@ -71,6 +71,7 @@ def get_xml_as_object(content):
 def obfuscate_secrets(request):
     request_without_secrets = re.sub(r'<password>(.*)<\/password>', "<password>***</password>", request)
     request_without_secrets = re.sub(r'\"password\":\s{0,1}\"(.*)\"', "\"password\": \"***\"", request_without_secrets)
+    request_without_secrets = re.sub(r'Ocp-Apim-Subscription-Key,(.*)\)', "Ocp-Apim-Subscription-Key,***)", request_without_secrets)
     return request_without_secrets
 
 # ==============================================
