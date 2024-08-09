@@ -160,6 +160,7 @@ SESSION_DATA_IUVS = "flow_data.common.iuvs"
 SESSION_DATA_NAVS = "flow_data.common.navs"
 SESSION_DATA_PAYMENT_NOTICES = "flow_data.common.payment_notices"
 SESSION_DATA_DEBT_POSITIONS = "flow_data.common.debt_positions"
+SESSION_DATA_LAST_ANALYZED_RE_EVENT = "flow_data.common.re.last_analyzed_event"
 
 PRIMITIVE_NODOINVIARPT = "nodoInviaRPT"
 PRIMITIVE_NODOINVIACARRELLORPT = "nodoInviaCarrelloRPT"

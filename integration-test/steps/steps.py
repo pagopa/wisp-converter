@@ -378,6 +378,8 @@ def check_field(context, business_process, field_name, field_value):
     needed_events = [re_event for re_event in needed_process_events if field_name in re_event and re_event[field_name] == field_value]
     utils.assert_show_message(len(needed_events) > 0, f"There are not events with business process {business_process} and field {field_name} with value [{field_value}].")
     
+    session.set_flow_data(context, constants.SESSION_DATA_LAST_ANALYZED_RE_EVENT, needed_events)
+
 # ==============================================
 
 @then('the response contains the {url_type} URL')

@@ -1,4 +1,4 @@
-Feature: User pays a single payment without stamps on nodoInviaRPT
+Feature: User pays a single payment without stamps via nodoInviaRPT
 
   Background:
     Given systems up
