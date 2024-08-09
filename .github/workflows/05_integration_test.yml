@@ -65,20 +65,6 @@ jobs:
           tenant-id: ${{ secrets.TENANT_ID }}
           subscription-id: ${{ secrets.SUBSCRIPTION_ID }}
 
-      - name: Download old reports
-        uses: azure/CLI@v1
-        env:
-          STORAGE_NAME: ${{ vars.INTEGRATION_TEST_STORAGE_ACCOUNT_NAME }}
-          STORAGE_FOLDER: ${{ vars.INTEGRATION_TEST_REPORTS_FOLDER }}
-        with:
-          inlineScript: |
-            az storage blob download-batch \
-            --destination "./integration-test/reports" \
-            --source "${{ env.STORAGE_FOLDER }}" \
-            --account-name "${{ env.STORAGE_NAME }}" \
-            --subscription "${{ secrets.SUBSCRIPTION_ID }}" \
-            --pattern "reports/*" \
-            --auth-mode login
 
       - name: Delete old reports
         uses: azure/CLI@v1
