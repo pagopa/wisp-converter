@@ -80,6 +80,19 @@ jobs:
             --pattern "reports/*" \
             --auth-mode login
 
+      - name: Delete old reports
+        uses: azure/CLI@v1
+        env:
+          STORAGE_NAME: ${{ vars.INTEGRATION_TEST_STORAGE_ACCOUNT_NAME }}
+          STORAGE_FOLDER: ${{ vars.INTEGRATION_TEST_REPORTS_FOLDER }}
+        with:
+          inlineScript: |
+            az storage blob delete-batch \
+            --source "${{ env.STORAGE_FOLDER }}" \
+            --account-name "${{ env.STORAGE_NAME }}" \
+            --subscription "${{ secrets.SUBSCRIPTION_ID }}" \
+            --auth-mode login
+
       - name: Run Integration Tests
         shell: bash
         run: |
