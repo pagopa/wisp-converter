@@ -55,6 +55,7 @@ Feature: User pays a single payment without stamps via nodoInviaRPT
   @runnable @happy_path
   Scenario: User pays a single payment as PO type with one transfer and no stamp on nodoInviaRPT
     Given a single RPT of type PO with 1 transfers of which 0 are stamps
+    And a valid nodoInviaRPT request
     When the user sends a nodoInviaRPT action
     Then the user receives the HTTP status code 200 
     And the response contains the field esito with value OK
@@ -63,9 +64,10 @@ Feature: User pays a single payment without stamps via nodoInviaRPT
   # ===============================================================================================
   # ===============================================================================================
 
-  @runnable @unhappy_path
+  @runnable @unhappy_path @new_scenario
   Scenario: User pays a single payment as PO type with two transfer and no stamp on nodoInviaRPT
     Given a single RPT of type PO with 2 transfers of which 0 are stamps
+    And a valid nodoInviaRPT request
     When the user sends a nodoInviaRPT action
     Then the user receives the HTTP status code 200 
     And the response contains the field esito with value KO

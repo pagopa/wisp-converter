@@ -293,6 +293,7 @@ def send_primitive(context, actor, primitive):
     elif content_type == constants.ResponseType.JSON:
         headers = {'Content-Type': 'application/json', constants.OCP_APIM_SUBSCRIPTION_KEY: subkey}
     
+    logging.debug(request)
     status_code, body_response, _ = utils.execute_request(url, "post", headers, request, content_type)
     session.set_flow_data(context, constants.SESSION_DATA_RES_CODE, status_code)
     session.set_flow_data(context, constants.SESSION_DATA_RES_BODY, body_response)
