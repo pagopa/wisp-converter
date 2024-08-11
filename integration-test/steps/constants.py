@@ -162,6 +162,7 @@ SESSION_DATA_NAVS = "flow_data.common.navs"
 SESSION_DATA_CART = "flow_data.common.cart"
 SESSION_DATA_PAYMENT_NOTICES = "flow_data.common.payment_notices"
 SESSION_DATA_DEBT_POSITIONS = "flow_data.common.debt_positions"
+SESSION_DATA_RAW_RPTS = "flow_data.common.rpts"
 SESSION_DATA_LAST_ANALYZED_RE_EVENT = "flow_data.common.re.last_analyzed_event"
 
 PRIMITIVE_NODOINVIARPT = "nodoInviaRPT"

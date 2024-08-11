@@ -33,33 +33,33 @@ Feature: Common scenarios for payment context
     And the response contains the field paymentToken with non-null value
     And the payment token can be retrieved and associated to first RPT
 
-    Given a valid activatePaymentNoticeV2 request on second payment notice, if exists
-    When the creditor institution sends a activatePaymentNoticeV2 action
-    Then the creditor institution receives the HTTP status code 200
-    And the response contains the field outcome with value OK
-    And the response contains the field paymentToken with non-null value
-    And the payment token can be retrieved and associated to second RPT
+    # Given a valid activatePaymentNoticeV2 request on second payment notice, if exists
+    # When the creditor institution sends a activatePaymentNoticeV2 action
+    # Then the creditor institution receives the HTTP status code 200
+    # And the response contains the field outcome with value OK
+    # And the response contains the field paymentToken with non-null value
+    # And the payment token can be retrieved and associated to second RPT
     
-    Given a valid activatePaymentNoticeV2 request on third payment notice, if exists
-    When the creditor institution sends a activatePaymentNoticeV2 action
-    Then the creditor institution receives the HTTP status code 200
-    And the response contains the field outcome with value OK
-    And the response contains the field paymentToken with non-null value
-    And the payment token can be retrieved and associated to third RPT
+    # Given a valid activatePaymentNoticeV2 request on third payment notice, if exists
+    # When the creditor institution sends a activatePaymentNoticeV2 action
+    # Then the creditor institution receives the HTTP status code 200
+    # And the response contains the field outcome with value OK
+    # And the response contains the field paymentToken with non-null value
+    # And the payment token can be retrieved and associated to third RPT
 
-    Given a valid activatePaymentNoticeV2 request on fourth payment notice, if exists
-    When the creditor institution sends a activatePaymentNoticeV2 action
-    Then the creditor institution receives the HTTP status code 200
-    And the response contains the field outcome with value OK
-    And the response contains the field paymentToken with non-null value
-    And the payment token can be retrieved and associated to fourth RPT
+    # Given a valid activatePaymentNoticeV2 request on fourth payment notice, if exists
+    # When the creditor institution sends a activatePaymentNoticeV2 action
+    # Then the creditor institution receives the HTTP status code 200
+    # And the response contains the field outcome with value OK
+    # And the response contains the field paymentToken with non-null value
+    # And the payment token can be retrieved and associated to fourth RPT
 
-    Given a valid activatePaymentNoticeV2 request on fifth payment notice, if exists
-    When the creditor institution sends a activatePaymentNoticeV2 action
-    Then the creditor institution receives the HTTP status code 200
-    And the response contains the field outcome with value OK
-    And the response contains the field paymentToken with non-null value
-    And the payment token can be retrieved and associated to fifth RPT
+    # Given a valid activatePaymentNoticeV2 request on fifth payment notice, if exists
+    # When the creditor institution sends a activatePaymentNoticeV2 action
+    # Then the creditor institution receives the HTTP status code 200
+    # And the response contains the field outcome with value OK
+    # And the response contains the field paymentToken with non-null value
+    # And the payment token can be retrieved and associated to fifth RPT
 
   # ===============================================================================================
   

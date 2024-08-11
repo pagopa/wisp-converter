@@ -101,6 +101,6 @@ Feature: User pays a single payment without stamps via nodoInviaRPT
     Then the execution of "Execute NM1-to-NMU conversion in wisp-converter" was successful
     And the execution of "Retrieve notice number from executed redirect" was successful
     And the execution of "Send a checkPosition request" was successful
-    And the execution of "Send an activatePaymentNoticeV2 request" was successful
+    And the execution of "Send one or more activatePaymentNoticeV2 request" was successful
     And the execution of "Fails on execute NM1-to-NMU conversion in wisp-converter" was successful
     
