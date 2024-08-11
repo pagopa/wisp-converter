@@ -161,7 +161,6 @@ def generate_nodoinviarpt(context):
     test_data = session.get_test_data(context)
     raw_rpts = session.get_flow_data(context, constants.SESSION_DATA_RAW_RPTS)
     request = requestgen.generate_nodoinviarpt(test_data, raw_rpts[0])
-    logging.debug(request)
     
     # update context with request and edit session data
     session.set_flow_data(context, constants.SESSION_DATA_REQ_BODY, request)
