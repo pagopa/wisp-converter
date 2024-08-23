@@ -68,7 +68,7 @@ public class ReceiptController {
     public ResponseEntity<String> receiptRetrieve(@QueryParam("ci") String ci, @QueryParam("ccp") String ccp, @QueryParam("iuv") String iuv) {
         try {
             log.info("Invoking API operation receiptRetrieve - args: {}", ci, ccp, iuv);
-            if(rtReceiptCosmosService.receiptRtExist(ci, ccp, iuv))
+            if(rtReceiptCosmosService.receiptRtExist(ci, iuv, ccp))
                 return ResponseEntity.ok("");
             else return ResponseEntity.notFound().build();
         } catch (Exception ex) {
