@@ -29,7 +29,7 @@ public class RtReceiptCosmosService {
     public void saveRTEntity(SessionDataDTO sessionData) {
         for(RPTContentDTO rptContentDTO : sessionData.getAllRPTs()) {
             try {
-                rtRepository.save(getRTEntity(rptContentDTO, null, null, null));
+                rtRepository.save(createRTEntity(rptContentDTO, null, null, null));
             } catch (CosmosException e) {
                 log.error("An exception occurred while saveRTEntity: " + e.getMessage());
             }
@@ -40,28 +40,32 @@ public class RtReceiptCosmosService {
     public void saveRTEntity(RPTContentDTO rptContentDTO, String rawRt, ReceiptTypeEnum receiptType) {
         try {
             String encodedRt = AppBase64Util.base64Encode(ZipUtil.zip(rawRt));
-            rtRepository.save(getRTEntity(rptContentDTO, encodedRt, receiptType, ZonedDateTime.now().toInstant().toEpochMilli()));
+            rtRepository.save(createRTEntity(rptContentDTO, encodedRt, receiptType, ZonedDateTime.now().toInstant().toEpochMilli()));
         } catch (IOException | CosmosException e) {
             log.error("An exception occurred while saveRTEntity: " + e.getMessage());
         }
     }
 
-    public boolean receiptRtExist(String domainId, String ccp, String iuv) {
-        String id = String.format("%s_%s_%s", domainId, ccp, iuv);
+    public boolean receiptRtExist(String domainId, String iuv, String ccp) {
+        String id = String.format("%s_%s_%s", domainId, iuv, ccp);
         return rtRepository.findById(id, new PartitionKey(id)).isPresent();
     }
 
-    private RTEntity getRTEntity(RPTContentDTO rptContentDTO, String rt, ReceiptTypeEnum receiptType, Long rtTimestamp) {
-        String IUV = rptContentDTO.getIuv();
-        String ccp = rptContentDTO.getCcp();
+    private RTEntity createRTEntity(RPTContentDTO rptContentDTO, String rt, ReceiptTypeEnum receiptType, Long rtTimestamp) {
         String domainId = rptContentDTO.getRpt().getDomain().getDomainId();
+        String iuv = rptContentDTO.getIuv();
+        String ccp = rptContentDTO.getCcp();
 
-        String id = String.format("%s_%s_%s", domainId, ccp, IUV);
+        String id = String.format("%s_%s_%s", domainId, iuv, ccp);
+
+        // Remove illegal characters ['/', '\', '#'] because cannot be used in Resource ID
+        String regex = "[/\\\\#]";
+        id = id.replaceAll(regex, "");
 
         return RTEntity.builder()
                 .id(id)
                 .partitionKey(id)
-                .iuv(IUV)
+                .iuv(iuv)
                 .ccp(ccp)
                 .idDominio(domainId)
                 .rt(rt)
