@@ -21,9 +21,8 @@ def execute_request(url, method, headers, payload=None, type=constants.ResponseT
         attach(obfuscate_secrets("URL: " + url + "\nRequest:\n" + payload), name=f'{url} - Sent request', attachment_type=attachment_type.TEXT)
         
     response = requests.request(method=method, url=url, headers=headers, data=payload, verify=False, allow_redirects=allow_redirect)
-    response_text = response.text
     object_response = None
-    if response.text is not None and len(response.text) > 0:        
+    if not url.endswith('/info') and response.text is not None and len(response.text) > 0:        
         
         if type == constants.ResponseType.XML:
             formatted_response = remove_namespace(response.text)

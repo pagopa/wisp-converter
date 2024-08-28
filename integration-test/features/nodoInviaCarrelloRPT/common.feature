@@ -4,13 +4,13 @@ Feature: Common scenarios for nodoInviaCarrelloRPT
     Given a valid nodoInviaCarrelloRPT request
     When the user sends a nodoInviaCarrelloRPT action
     Then the user receives the HTTP status code 200 
-    And the response contains the field esito with value OK
+    And the response contains the field esitoComplessivoOperazione with value OK
     And the response contains the redirect URL
 
   # ===============================================================================================
   # ===============================================================================================
 
-  Scenario: Execute redirect and complete payment from nodoInviaCarrelloRPT
+  Scenario: Execute redirect and complete payment from NodoInviaCarrelloRPT
     When the execution of "Execute NM1-to-NMU conversion in wisp-converter" was successful
     Then the execution of "Retrieve notice number from executed redirect" was successful
     And the execution of "Send a checkPosition request" was successful

@@ -24,24 +24,23 @@ NODOINVIARPT_STRUCTURE = """<?xml version="1.0" encoding="UTF-8" standalone="no"
     </soapenv:Body>
 </soapenv:Envelope>""";
 
-
 NODOINVIACARRELLORPT_STRUCTURE = """<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
 <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <soapenv:Header>
     <ns1:intestazioneCarrelloPPT xmlns:ns1="http://ws.pagamenti.telematici.gov/ppthead">
-      <identificativoIntermediarioPA>${creditor_institution_broker}</identificativoIntermediarioPA>
-      <identificativoStazioneIntermediarioPA>${station}</identificativoStazioneIntermediarioPA>
-      <identificativoCarrello>${cart_id}</identificativoCarrello>
+      <identificativoIntermediarioPA>{creditor_institution_broker}</identificativoIntermediarioPA>
+      <identificativoStazioneIntermediarioPA>{station}</identificativoStazioneIntermediarioPA>
+      <identificativoCarrello>{cart_id}</identificativoCarrello>
     </ns1:intestazioneCarrelloPPT>
   </soapenv:Header>
   <soapenv:Body>
     <nodoInviaCarrelloRPT xmlns="http://ws.pagamenti.telematici.gov/">
-      <password xmlns="">${password}</password>
-      <identificativoPSP xmlns="">${psp}</identificativoPSP>
-      <identificativoIntermediarioPSP xmlns="">${psp_broker}</identificativoIntermediarioPSP>
-      <identificativoCanale xmlns="">${channel}</identificativoCanale>
+      <password xmlns="">{password}</password>
+      <identificativoPSP xmlns="">{psp}</identificativoPSP>
+      <identificativoIntermediarioPSP xmlns="">{psp_broker}</identificativoIntermediarioPSP>
+      <identificativoCanale xmlns="">{channel}</identificativoCanale>
       <listaRPT xmlns="">
-        ${rpts}
+        {rpt_list}
       </listaRPT>
       <multiBeneficiario xmlns="">{is_multibeneficiary}</multiBeneficiario>
     </nodoInviaCarrelloRPT>
@@ -62,6 +61,15 @@ RPT_STRUCTURE = """<pay_i:RPT xmlns:pay_i="http://www.digitpa.gov.it/schemas/201
     {payee_institution}
     {payment}
 </pay_i:RPT>""";
+
+SINGLE_RPT_IN_CART = """<elementoListaRPT>
+            <identificativoDominio>{creditor_institution}</identificativoDominio>
+            <identificativoUnivocoVersamento>{iuv}</identificativoUnivocoVersamento>
+            <codiceContestoPagamento>{ccp}</codiceContestoPagamento>
+            <tipoFirma></tipoFirma>
+            <rpt>{rpt}</rpt>
+        </elementoListaRPT>
+"""
 
 # All injected data refers to 'payer' sublevel
 RPT_PAYER_STRUCTURE = """<pay_i:soggettoPagatore>
@@ -183,6 +191,7 @@ SESSION_DATA_TRIGGER_PRIMITIVE = "flow_data.action.trigger_primitive.name"
 SESSION_DATA_SESSION_ID = "flow_data.common.session_id"
 SESSION_DATA_IUVS = "flow_data.common.iuvs"
 SESSION_DATA_NAVS = "flow_data.common.navs"
+SESSION_DATA_CART = "flow_data.common.cart"
 SESSION_DATA_CART_ID = "flow_data.common.cart.id"
 SESSION_DATA_CART_IS_MULTIBENEFICIARY = "flow_data.common.cart.is_multibeneficiary"
 SESSION_DATA_CART_MULTIBENEFICIARY_IUV = "flow_data.common.cart.iuv_for_multibeneficiary"

@@ -95,7 +95,7 @@ def wait_for_n_seconds(context, time_in_seconds, notes):
 
 # ==============================================
 
-@given('a cart of RPT{note}')
+@given('a cart of RPTs {note}')
 def generate_empty_cart(context, note):
 
     test_data = session.get_test_data(context)
@@ -119,12 +119,24 @@ def generate_single_rpt(context, payment_type, number_of_transfers, number_of_st
 
     if number_of_stamps == "none":
         number_of_stamps = "0"
+    
+    # force IUV definition if the RPT is part of multibeneficiary cart
+    iuv = None
+    is_multibeneficiary_cart = session.get_flow_data(context, constants.SESSION_DATA_CART_IS_MULTIBENEFICIARY)
+    if is_multibeneficiary_cart is not None and is_multibeneficiary_cart == True:
+        iuv = session.get_flow_data(context, constants.SESSION_DATA_CART_MULTIBENEFICIARY_IUV)
+
+    
+    # force CCP definition if the RPT is part of multibeneficiary cart
+    ccp = None
+    if is_multibeneficiary_cart:
+        ccp = session.get_flow_data(context, constants.SESSION_DATA_CART_ID)
 
     # generate raw RPT that will be used for construct XML content
     test_data = session.get_test_data(context)
     domain_id = test_data['creditor_institution'] 
     payee_institution = test_data['payee_institutions_1']
-    rpt = requestgen.create_rpt(test_data, domain_id, payee_institution, payment_type, int(number_of_transfers), int(number_of_stamps))
+    rpt = requestgen.create_rpt(test_data, iuv, ccp, domain_id, payee_institution, payment_type, int(number_of_transfers), int(number_of_stamps))
     
     # update list of RPTs
     rpts = session.get_flow_data(context, constants.SESSION_DATA_RAW_RPTS)
@@ -552,6 +564,13 @@ def check_single_paymentoption(context):
     utils.assert_show_message('paymentOption' in response, f"No field 'paymentOption' is defined for the retrieved payment position.") 
     payment_options = utils.get_nested_field(response, "paymentOption")
     utils.assert_show_message(len(payment_options) == 1, f"There is not only one payment option in the payment position. Found number {len(payment_options)}.") 
+
+    # sorting transfer by transfer ID in order to avoid strange comparations
+    transfers = payment_options[0]['transfer']
+    transfers = sorted(transfers, key=lambda transfer: transfer['idTransfer'])
+    payment_options[0]['transfer'] = transfers
+    response['paymentOption'] = payment_options
+    session.set_flow_data(context, constants.SESSION_DATA_RES_BODY, response)
 
 # ==============================================  
 

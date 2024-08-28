@@ -78,7 +78,67 @@ def generate_nodoinviarpt(test_data, rpt):
 
 # ==============================================
 
-def generate_nodoinviacarrellorpt(test_data, cart_id, rpts, is_multibeneficiary: False):
+def generate_nodoinviacarrellorpt(test_data, cart_id, rpts, is_multibeneficiary=False):
+    rpt_list = ""
+    for rpt in rpts:
+
+        payer_from_rpt = rpt['payer']
+        payee_from_rpt = rpt['payee_institution']
+        delegate_from_rpt = rpt['payer_delegate']
+        payment = rpt['payment_data']
+
+        payer = constants.RPT_PAYER_STRUCTURE.format(
+            payer_type=payer_from_rpt['type'],
+            payer_fiscal_code=payer_from_rpt['fiscal_code'],
+            payer_name=payer_from_rpt['name'],
+            payer_address=payer_from_rpt['address'],
+            payer_address_number=payer_from_rpt['address_number'],
+            payer_address_zipcode=payer_from_rpt['address_zipcode'],
+            payer_address_location=payer_from_rpt['address_location'],
+            payer_address_province=payer_from_rpt['address_province'],
+            payer_address_nation=payer_from_rpt['address_nation'],
+            payer_email=payer_from_rpt['email'],
+        )
+        payer_delegate = constants.RPT_PAYERDELEGATE_STRUCTURE.format(
+            payer_delegate_type=delegate_from_rpt['type'],
+            payer_delegate_fiscal_code=delegate_from_rpt['fiscal_code'],
+            payer_delegate_name=delegate_from_rpt['name'],
+            payer_delegate_address=delegate_from_rpt['address'],
+            payer_delegate_address_number=delegate_from_rpt['address_number'],
+            payer_delegate_address_zipcode=delegate_from_rpt['address_zipcode'],
+            payer_delegate_address_location=delegate_from_rpt['address_location'],
+            payer_delegate_address_province=delegate_from_rpt['address_province'],
+            payer_delegate_address_nation=delegate_from_rpt['address_nation'],
+            payer_delegate_email=delegate_from_rpt['email'],
+        )
+        payee_institution = constants.RPT_PAYEEINSTITUTION_STRUCTURE.format(
+            payee_institution_fiscal_code=payee_from_rpt['fiscal_code'],
+            payee_institution_name=payee_from_rpt['name'],
+            payee_institution_operative_code=payee_from_rpt['operative_code'],
+            payee_institution_operative_denomination=payee_from_rpt['operative_denomination'],
+            payee_institution_address=payee_from_rpt['address'],
+            payee_institution_address_number=payee_from_rpt['address_number'],
+            payee_institution_address_zipcode=payee_from_rpt['address_zipcode'],
+            payee_institution_address_location=payee_from_rpt['address_location'],
+            payee_institution_address_province=payee_from_rpt['address_province'],
+            payee_institution_address_nation=payee_from_rpt['address_nation'],
+        )
+        rpt_content = constants.RPT_STRUCTURE.format(
+            creditor_institution=rpt['domain']['id'],
+            station=rpt['domain']['station'],
+            current_date_time=rpt['date_time_request'],
+            payer_delegate=payer_delegate,
+            payer=payer,
+            payee_institution=payee_institution,
+            payment=generate_transfers(test_data, payment)
+        )
+        rpt_list += constants.SINGLE_RPT_IN_CART.format(
+            creditor_institution=rpt['domain']['id'],
+            iuv=rpt['payment_data']['iuv'],
+            ccp=rpt['payment_data']['ccp'],
+            rpt=base64.b64encode(rpt_content.encode('utf-8')).decode('utf-8')
+        )
+        
     request = constants.NODOINVIACARRELLORPT_STRUCTURE.format(
         creditor_institution_broker=test_data['creditor_institution_broker'],
         station=test_data['station'],
@@ -87,8 +147,8 @@ def generate_nodoinviacarrellorpt(test_data, cart_id, rpts, is_multibeneficiary:
         psp=test_data['psp_wisp'],
         channel=test_data['channel_wisp'],
         password=test_data['channel_wisp_password'],
-        is_multibeneficiary=is_multibeneficiary,
-        rpts="rpt_list"
+        is_multibeneficiary='true' if is_multibeneficiary else 'false',
+        rpt_list=rpt_list
     )
     return request
 
@@ -245,7 +305,7 @@ def generate_closepayment(test_data, payment_notices, rpts, outcome):
 
 # ==============================================
 
-def create_rpt(test_data, domain_id, payee_institution, payment_type, number_of_transfers, number_of_mbd=0):
+def create_rpt(test_data, iuv, ccp, domain_id, payee_institution, payment_type, number_of_transfers, number_of_mbd=0):
 
     #other_payee_institution = test_data['payee_institutions_2']
 
@@ -253,7 +313,7 @@ def create_rpt(test_data, domain_id, payee_institution, payment_type, number_of_
     taxonomy_simple_transfer = "9/0301109AP"
     taxonomy_stamp_transfer = "9/0301116TS/9/24B0060000000017"
     payment_description = "/RFB/{iuv}/{amount}/TXT/DEBITORE/{fiscal_code}"
-    iuv = utils.generate_iuv()
+    iuv = utils.generate_iuv() if iuv is None else iuv
     payer_delegate = test_data['payer_delegate']
     transfers = []
 
@@ -316,7 +376,7 @@ def create_rpt(test_data, domain_id, payee_institution, payment_type, number_of_
         "payee_institution": payee_institution,
         "payment_data": {
             'iuv': iuv,
-            'ccp': utils.generate_ccp(),
+            'ccp': utils.generate_ccp() if ccp is None else ccp,
             'payment_date': utils.get_current_date(),
             'total_amount': total_amount,
             'total_fee': round(sum(transfer["fee"] for transfer in transfers), 2),
