@@ -7,7 +7,7 @@ Feature: User pays a payment carts without stamps on nodoInviaCarrelloRPT
   # ===============================================================================================
   # ===============================================================================================
 
-  @runnable @happy_path
+  @runnable @nodo_invia_carrello_rpt @happy_path
   Scenario: User pays a cart with single RPT with one transfer via nodoInviaCarrelloRPT
     Given a cart of RPTs non-multibeneficiary
     And a single RPT of type BBT with 1 transfers of which none are stamps
@@ -17,7 +17,7 @@ Feature: User pays a payment carts without stamps on nodoInviaCarrelloRPT
   # ===============================================================================================
   # ===============================================================================================
 
-  @runnable @happy_path
+  @runnable @nodo_invia_carrello_rpt @happy_path
   Scenario: User pays a cart with single RPT with two transfers via nodoInviaCarrelloRPT
     Given a cart of RPTs non-multibeneficiary
     And a single RPT of type BBT with 2 transfers of which none are stamps
@@ -27,7 +27,7 @@ Feature: User pays a payment carts without stamps on nodoInviaCarrelloRPT
   # ===============================================================================================
   # ===============================================================================================
 
-  @runnable @happy_path
+  @runnable @nodo_invia_carrello_rpt @happy_path
   Scenario: User pays a cart with single RPT with three transfers via nodoInviaCarrelloRPT
     Given a cart of RPTs non-multibeneficiary
     And a single RPT of type BBT with 3 transfers of which none are stamps
@@ -37,7 +37,7 @@ Feature: User pays a payment carts without stamps on nodoInviaCarrelloRPT
   # ===============================================================================================
   # ===============================================================================================
 
-  @runnable @happy_path
+  @runnable @nodo_invia_carrello_rpt @happy_path
   Scenario: User pays a cart with single RPT with four transfers via nodoInviaCarrelloRPT
     Given a cart of RPTs non-multibeneficiary
     And a single RPT of type BBT with 4 transfers of which none are stamps
@@ -47,7 +47,7 @@ Feature: User pays a payment carts without stamps on nodoInviaCarrelloRPT
   # ===============================================================================================
   # ===============================================================================================
 
-  @runnable @happy_path
+  @runnable @nodo_invia_carrello_rpt @happy_path
   Scenario: User pays a cart with single RPT with five transfers via nodoInviaCarrelloRPT
     Given a cart of RPTs non-multibeneficiary
     And a single RPT of type BBT with 5 transfers of which none are stamps
@@ -57,7 +57,7 @@ Feature: User pays a payment carts without stamps on nodoInviaCarrelloRPT
   # ===============================================================================================
   # ===============================================================================================
 
-  @runnable @happy_path
+  @runnable @nodo_invia_carrello_rpt @happy_path
   Scenario: User pays a cart with three RPTs with one transfer each one via nodoInviaCarrelloRPT
     Given a cart of RPTs non-multibeneficiary
     And a single RPT of type BBT with 1 transfers of which none are stamps
@@ -69,7 +69,7 @@ Feature: User pays a payment carts without stamps on nodoInviaCarrelloRPT
   # ===============================================================================================
   # ===============================================================================================
 
-  @runnable @happy_path
+  @runnable @nodo_invia_carrello_rpt @happy_path
   Scenario: User pays a cart with four RPTs with one transfer each one via nodoInviaCarrelloRPT
     Given a cart of RPTs non-multibeneficiary
     And a single RPT of type BBT with 1 transfers of which none are stamps
@@ -82,7 +82,7 @@ Feature: User pays a payment carts without stamps on nodoInviaCarrelloRPT
   # ===============================================================================================
   # ===============================================================================================
 
-  @runnable @happy_path
+  @runnable @nodo_invia_carrello_rpt @happy_path
   Scenario: User pays a cart with five RPTs with one transfer each one via nodoInviaCarrelloRPT
     Given a cart of RPTs non-multibeneficiary
     And a single RPT of type BBT with 1 transfers of which none are stamps
@@ -96,7 +96,7 @@ Feature: User pays a payment carts without stamps on nodoInviaCarrelloRPT
   # ===============================================================================================
   # ===============================================================================================
 
-  @runnable @happy_path
+  @runnable @nodo_invia_carrello_rpt @happy_path
   Scenario: User pays a cart with two RPTs with a total of five transfers via nodoInviaCarrelloRPT
     Given a cart of RPTs non-multibeneficiary
     And a single RPT of type BBT with 2 transfers of which none are stamps
@@ -107,7 +107,7 @@ Feature: User pays a payment carts without stamps on nodoInviaCarrelloRPT
   # ===============================================================================================
   # ===============================================================================================
 
-  @runnable @happy_path
+  @runnable @nodo_invia_carrello_rpt @happy_path
   Scenario: User pays a cart with three RPTs with a total of five transfers via nodoInviaCarrelloRPT
     Given a cart of RPTs non-multibeneficiary
     And a single RPT of type BBT with 1 transfers of which none are stamps
@@ -119,7 +119,7 @@ Feature: User pays a payment carts without stamps on nodoInviaCarrelloRPT
   # ===============================================================================================
   # ===============================================================================================
 
-  @runnable @happy_path
+  @runnable @nodo_invia_carrello_rpt @happy_path
   Scenario: User pays a cart with three RPTs with a total of ten transfers via nodoInviaCarrelloRPT
     Given a cart of RPTs non-multibeneficiary
     And a single RPT of type BBT with 3 transfers of which none are stamps
@@ -131,7 +131,7 @@ Feature: User pays a payment carts without stamps on nodoInviaCarrelloRPT
   # ===============================================================================================
   # ===============================================================================================
 
-  @runnable @unhappy_path
+  @runnable @nodo_invia_carrello_rpt @unhappy_path
   Scenario: User tries to pay, via nodoInviaCarrelloRPT, a cart with one RPT that has a quantity of transfers above the limit
     Given a cart of RPTs non-multibeneficiary
     And a single RPT of type BBT with 6 transfers of which none are stamps
@@ -144,7 +144,7 @@ Feature: User pays a payment carts without stamps on nodoInviaCarrelloRPT
   # ===============================================================================================
   # ===============================================================================================
 
-  @runnable @unhappy_path @new_scenario
+  @runnable @nodo_invia_carrello_rpt @unhappy_path
   Scenario: User tries to pay, via nodoInviaCarrelloRPT, a cart with two RPT that has a quantity of transfers above the limit
     Given a cart of RPTs non-multibeneficiary
     And a single RPT of type BBT with 2 transfers of which none are stamps
