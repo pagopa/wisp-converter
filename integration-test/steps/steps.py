@@ -231,7 +231,7 @@ def generate_activatepaymentnotice(context, index):
     # TODO to change when multibeneficiary will be handled
     if payment_notice_index + 1 > len(payment_notices):
         session.set_skip_tests(context, True)
-        context.scenario.skip(f"Skipping scenario because the {index} RPT does not exist.")
+        #context.scenario.skip(f"Skipping scenario because the {index} RPT does not exist.")
         return
 
     # generate request
@@ -284,7 +284,7 @@ def get_iuv_from_session(context, index):
     # TODO to change when multibeneficiary will be handled
     if rpt_index + 1 > len(raw_rpts):
         session.set_skip_tests(context, True)
-        context.scenario.skip(f"Skipping scenario because the {index} IUV does not exist.")
+        #context.scenario.skip(f"Skipping scenario because the {index} IUV does not exist.")
         return
     
     iuv = raw_rpts[rpt_index]['payment_data']['iuv']
@@ -387,7 +387,7 @@ def search_paymentposition_by_iuv(context, index):
 
     if rpt_index + 1 > len(payment_notices):
         session.set_skip_tests(context, True)
-        context.scenario.skip(f"Skipping scenario because the {index} IUV does not exist.")
+        #context.scenario.skip(f"Skipping scenario because the {index} IUV does not exist.")
         return
   
     payment_notice = payment_notices[rpt_index]
