@@ -64,7 +64,7 @@ Feature: User pays a single payment without stamps via nodoInviaRPT
   # ===============================================================================================
   # ===============================================================================================
 
-  @runnable @unhappy_path @new_scenario
+  @runnable @unhappy_path
   Scenario: User pays a single payment as PO type with two transfer and no stamp on nodoInviaRPT
     Given a single RPT of type PO with 2 transfers of which 0 are stamps
     And a valid nodoInviaRPT request

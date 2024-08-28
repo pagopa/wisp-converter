@@ -1,7 +1,7 @@
 Feature: Common scenarios for nodoInviaCarrelloRPT
 
   Scenario: Send a nodoInviaCarrelloRPT request
-    Given a valid nodoInviaRPT request
+    Given a valid nodoInviaCarrelloRPT request
     When the user sends a nodoInviaCarrelloRPT action
     Then the user receives the HTTP status code 200 
     And the response contains the field esito with value OK

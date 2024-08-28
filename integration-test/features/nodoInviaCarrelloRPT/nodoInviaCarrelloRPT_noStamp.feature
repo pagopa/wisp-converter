@@ -7,7 +7,7 @@
 #   # ===============================================================================================
 #   # ===============================================================================================
 
-#     @runnable @happy_path
+#     @runnable @happy_path @new_scenario
 #     Scenario: User pays a cart with single RPT with nodoInviaCarrelloRPT
 #       Given a cart of RPTs
 #       And a single RPT of type BBT with 1 transfers of which none are stamps

@@ -95,10 +95,20 @@ def wait_for_n_seconds(context, time_in_seconds, notes):
 
 # ==============================================
 
-@given('a cart of RPTs')
-def generate_empty_cart(context):
+@given('a cart of RPT{note}')
+def generate_empty_cart(context, note):
 
+    test_data = session.get_test_data(context)
     session.set_flow_data(context, constants.SESSION_DATA_TRIGGER_PRIMITIVE, constants.PRIMITIVE_NODOINVIACARRELLORPT)
+    
+    if "for multibeneficiary" in note:
+        iuv = utils.generate_iuv()
+        session.set_flow_data(context, constants.SESSION_DATA_CART_ID, utils.generate_cart_id(iuv, test_data['creditor_institution']))
+        session.set_flow_data(context, constants.SESSION_DATA_CART_IS_MULTIBENEFICIARY, True)
+        session.set_flow_data(context, constants.SESSION_DATA_CART_MULTIBENEFICIARY_IUV, iuv)
+    else:
+        session.set_flow_data(context, constants.SESSION_DATA_CART_ID, utils.generate_cart_id(None, test_data['creditor_institution']))
+        session.set_flow_data(context, constants.SESSION_DATA_CART_IS_MULTIBENEFICIARY, False)
 
 # ==============================================
 
@@ -175,7 +185,8 @@ def generate_nodoinviarpt(context):
     # generate request
     test_data = session.get_test_data(context)
     rpts = session.get_flow_data(context, constants.SESSION_DATA_RAW_RPTS)
-    request = requestgen.generate_nodoinviacarrellorpt(test_data, rpts)
+    cart_id = session.get_flow_data(context, constants.SESSION_DATA_CART_ID)
+    request = requestgen.generate_nodoinviacarrellorpt(test_data, cart_id, rpts)
     
     # update context with request and edit session data
     session.set_flow_data(context, constants.SESSION_DATA_REQ_BODY, request)
@@ -246,9 +257,7 @@ def get_valid_sessionid(context):
     #session.set_skip_tests(context, False)
 
     session_id = session.get_flow_data(context, constants.SESSION_DATA_SESSION_ID)
-    split_session_id = session_id.split("_")
-    utils.assert_show_message(len(split_session_id[0]) == 11, f"The session ID must contains the broker code as first part of the session identifier. Session ID: [{session_id}]")
-    utils.assert_show_message(len(split_session_id[1]) == 36, f"The session ID must contains an UUID as second part of the session identifier. Session ID: [{session_id}]")
+    utils.assert_show_message(len(session_id) == 36, f"The session ID must consist of a UUID only. Session ID: [{session_id}]")
 
 # ==============================================
 
@@ -293,7 +302,6 @@ def send_primitive(context, actor, primitive):
     elif content_type == constants.ResponseType.JSON:
         headers = {'Content-Type': 'application/json', constants.OCP_APIM_SUBSCRIPTION_KEY: subkey}
     
-    logging.debug(request)
     status_code, body_response, _ = utils.execute_request(url, "post", headers, request, content_type)
     session.set_flow_data(context, constants.SESSION_DATA_RES_CODE, status_code)
     session.set_flow_data(context, constants.SESSION_DATA_RES_BODY, body_response)

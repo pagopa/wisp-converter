@@ -78,9 +78,19 @@ def generate_nodoinviarpt(test_data, rpt):
 
 # ==============================================
 
-def generate_nodoinviacarrellorpt(test_data, rpts):
-    # TODO 
-    1==1
+def generate_nodoinviacarrellorpt(test_data, cart_id, rpts, is_multibeneficiary: False):
+    request = constants.NODOINVIACARRELLORPT_STRUCTURE.format(
+        creditor_institution_broker=test_data['creditor_institution_broker'],
+        station=test_data['station'],
+        cart_id=cart_id,
+        psp_broker=test_data['psp_broker_wisp'],
+        psp=test_data['psp_wisp'],
+        channel=test_data['channel_wisp'],
+        password=test_data['channel_wisp_password'],
+        is_multibeneficiary=is_multibeneficiary,
+        rpts="rpt_list"
+    )
+    return request
 
 # ==============================================
 

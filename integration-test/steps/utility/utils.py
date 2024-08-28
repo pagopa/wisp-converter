@@ -99,6 +99,16 @@ def generate_ccp():
 
 # ==============================================
 
+def generate_cart_id(iuv, creditor_institution):
+    cart_id = ""
+    if iuv is not None:
+        cart_id = creditor_institution + iuv + get_random_digit_string(5)
+    else:
+        cart_id = get_random_digit_string(32)
+    return cart_id
+
+# ==============================================
+
 def get_random_digit_string(length):
     return ''.join(random.choice(string.digits) for i in range(length))
 
