@@ -88,7 +88,7 @@ def step_impl(context, scenario_name):
 @given('a waiting time of {time_in_seconds} second{notes}')
 def wait_for_n_seconds(context, time_in_seconds, notes):
 
-    #session.set_skip_tests(context, False)
+    session.set_skip_tests(context, False)
     logging.info(f"Waiting [{time_in_seconds}] second{notes}")
     time.sleep(int(time_in_seconds))
     logging.info(f"Wait time ended")
@@ -115,7 +115,7 @@ def generate_empty_cart(context, note):
 @given('a single RPT of type {payment_type} with {number_of_transfers} transfers of which {number_of_stamps} are stamps')
 def generate_single_rpt(context, payment_type, number_of_transfers, number_of_stamps):
 
-    #session.set_skip_tests(context, False)
+    session.set_skip_tests(context, False)
 
     if number_of_stamps == "none":
         number_of_stamps = "0"
@@ -148,7 +148,7 @@ def generate_single_rpt(context, payment_type, number_of_transfers, number_of_st
 @given('an existing payment position related to {index} RPT with segregation code equals to {segregation_code} and state equals to {payment_status}')
 def generate_payment_position(context, index, segregation_code, payment_status):
 
-    #session.set_skip_tests(context, False)
+    session.set_skip_tests(context, False)
 
     payment_notice_index = utils.get_index_from_cardinal(index)
 
@@ -177,7 +177,7 @@ def generate_payment_position(context, index, segregation_code, payment_status):
 @given('a valid nodoInviaRPT request')
 def generate_nodoinviarpt(context):
     
-    #session.set_skip_tests(context, False)
+    session.set_skip_tests(context, False)
 
     # generate request
     test_data = session.get_test_data(context)
@@ -192,7 +192,7 @@ def generate_nodoinviarpt(context):
 @given('a valid nodoInviaCarrelloRPT request')
 def generate_nodoinviarpt(context):
     
-    #session.set_skip_tests(context, False)
+    session.set_skip_tests(context, False)
 
     # generate request
     test_data = session.get_test_data(context)
@@ -208,7 +208,7 @@ def generate_nodoinviarpt(context):
 @given('a valid checkPosition request')
 def generate_checkposition(context):
 
-    #session.set_skip_tests(context, False)
+    session.set_skip_tests(context, False)
 
     # generate request
     payment_notices = session.get_flow_data(context, constants.SESSION_DATA_PAYMENT_NOTICES)
@@ -219,21 +219,20 @@ def generate_checkposition(context):
 
 # ==============================================
 
-@given('a valid activatePaymentNoticeV2 request on {index} payment notice, if exists')
+@given('a valid activatePaymentNoticeV2 request on {index} payment notice')
 def generate_activatepaymentnotice(context, index):
 
-    #session.set_skip_tests(context, False)
+    session.set_skip_tests(context, False)
 
     payment_notice_index = utils.get_index_from_cardinal(index)
     payment_notices = session.get_flow_data(context, constants.SESSION_DATA_PAYMENT_NOTICES)
 
     # check if RPT exists
     # TODO to change when multibeneficiary will be handled
-    #session.set_skip_tests(context, False)
-    #if payment_notice_index + 1 > len(payment_notices):
-    #    session.set_skip_tests(context, True)
-    #    context.scenario.skip(f"Skipping scenario because the {index} RPT does not exist.")
-    #    return
+    if payment_notice_index + 1 > len(payment_notices):
+        session.set_skip_tests(context, True)
+        context.scenario.skip(f"Skipping scenario because the {index} RPT does not exist.")
+        return
 
     # generate request
     test_data = session.get_test_data(context)
@@ -250,7 +249,7 @@ def generate_activatepaymentnotice(context, index):
 @given('a valid closePaymentV2 request with outcome {outcome}')
 def generate_closepayment(context, outcome):
     
-    #session.set_skip_tests(context, False)
+    session.set_skip_tests(context, False)
 
     # generate request
     test_data = session.get_test_data(context)
@@ -266,7 +265,7 @@ def generate_closepayment(context, outcome):
 @given('a valid session identifier to be redirected to WISP dismantling')
 def get_valid_sessionid(context):
 
-    #session.set_skip_tests(context, False)
+    session.set_skip_tests(context, False)
 
     session_id = session.get_flow_data(context, constants.SESSION_DATA_SESSION_ID)
     utils.assert_show_message(len(session_id) == 36, f"The session ID must consist of a UUID only. Session ID: [{session_id}]")
@@ -276,12 +275,18 @@ def get_valid_sessionid(context):
 @given('the {index} IUV code of the sent RPTs')
 def get_iuv_from_session(context, index):
 
-    #session.set_skip_tests(context, False)
+    session.set_skip_tests(context, False)
 
     rpt_index = utils.get_index_from_cardinal(index)
-
     raw_rpts = session.get_flow_data(context, constants.SESSION_DATA_RAW_RPTS)
-    utils.assert_show_message(len(raw_rpts) >= rpt_index + 1, f"No valid RPT is defined in the session data at index {rpt_index}.")
+    
+    # check if IUV exists
+    # TODO to change when multibeneficiary will be handled
+    if rpt_index + 1 > len(raw_rpts):
+        session.set_skip_tests(context, True)
+        context.scenario.skip(f"Skipping scenario because the {index} IUV does not exist.")
+        return
+    
     iuv = raw_rpts[rpt_index]['payment_data']['iuv']
 
     iuvs = session.get_flow_data(context, constants.SESSION_DATA_IUVS)
@@ -344,6 +349,10 @@ def send_sessionid_to_wispdismantling(context):
 @when('the user searches for flow steps by IUVs')
 def search_in_re_by_iuv(context):
 
+    if session.skip_tests(context):
+        logging.debug("Skipping search_in_re_by_iuv step")
+        return
+
     iuvs = session.get_flow_data(context, constants.SESSION_DATA_IUVS)
     creditor_institution = session.get_test_data(context)['creditor_institution']
     today = utils.get_current_date()
@@ -374,9 +383,14 @@ def search_in_re_by_iuv(context):
 def search_paymentposition_by_iuv(context, index):
 
     rpt_index = utils.get_index_from_cardinal(index)
-    payment_notices = session.get_flow_data(context, constants.SESSION_DATA_PAYMENT_NOTICES)    
-    payment_notice = payment_notices[rpt_index]
+    payment_notices = session.get_flow_data(context, constants.SESSION_DATA_PAYMENT_NOTICES)  
 
+    if rpt_index + 1 > len(payment_notices):
+        session.set_skip_tests(context, True)
+        context.scenario.skip(f"Skipping scenario because the {index} IUV does not exist.")
+        return
+  
+    payment_notice = payment_notices[rpt_index]
     base_url, subkey = router.get_rest_url(context, "get_paymentposition_by_iuv")
     url = base_url.format(creditor_institution=payment_notice['domain_id'], iuv=payment_notice['iuv'])
     headers = {'Content-Type': 'application/json', constants.OCP_APIM_SUBSCRIPTION_KEY: subkey}
@@ -469,8 +483,12 @@ def check_field(context, field_name):
 # ==============================================
 
 @then('there is a {business_process} event with field {field_name} with value {field_value}')
-def check_field(context, business_process, field_name, field_value):
+def check_event(context, business_process, field_name, field_value):
 
+    if session.skip_tests(context):
+        logging.debug("Skipping check_event step")
+        return
+    
     re_events = session.get_flow_data(context, constants.SESSION_DATA_RES_BODY)
     needed_process_events = [re_event for re_event in re_events if 'businessProcess' in re_event and re_event['businessProcess'] == business_process]
     utils.assert_show_message(len(needed_process_events) > 0, f"There are not events with business process {business_process}.")
@@ -512,7 +530,7 @@ def check_redirect_url(context):
   
 # ==============================================  
 
-@then('the notice number can be retrieved')
+@then('all the related notice numbers can be retrieved')
 def retrieve_payment_notice_from_re_event(context):
 
     re_events = session.get_flow_data(context, constants.SESSION_DATA_RES_BODY)
@@ -560,6 +578,10 @@ def retrieve_payment_token_from_activatepaymentnotice(context, index):
 @then('the response contains a single payment option')
 def check_single_paymentoption(context):
 
+    if session.skip_tests(context):
+        logging.debug("Skipping check_single_paymentoption step")
+        return
+    
     response = session.get_flow_data(context, constants.SESSION_DATA_RES_BODY)
     utils.assert_show_message('paymentOption' in response, f"No field 'paymentOption' is defined for the retrieved payment position.") 
     payment_options = utils.get_nested_field(response, "paymentOption")
@@ -577,14 +599,22 @@ def check_single_paymentoption(context):
 @then('the response contains the payment option correctly generated from {index} RPT')
 def check_paymentoption_amounts(context, index):
 
+    if session.skip_tests(context):
+        logging.debug("Skipping check_paymentoption_amounts step")
+        return
+    
     rpt_index = utils.get_index_from_cardinal(index)
 
     response = session.get_flow_data(context, constants.SESSION_DATA_RES_BODY)
     payment_options = utils.get_nested_field(response, "paymentOption")
     payment_option = payment_options[0]
 
+    payment_notices = session.get_flow_data(context, constants.SESSION_DATA_PAYMENT_NOTICES)  
+    payment_notice = payment_notices[rpt_index]
+
     rpts = session.get_flow_data(context, constants.SESSION_DATA_RAW_RPTS)
-    payment_data = rpts[rpt_index]['payment_data']
+    rpt = [rpt for rpt in rpts if rpt['payment_data']['iuv'] == payment_notice['iuv']][0]
+    payment_data = rpt['payment_data']
 
     utils.assert_show_message(response['pull'] == False, f"The payment option must be not defined for pull payments.")
     utils.assert_show_message(int(payment_option['amount']) == round(payment_data['total_amount'] * 100), f"The total amount calculated for {index} RPT is not equals to the one defined in GPD payment position. GPD's: [{int(payment_option['amount'])}], RPT's: [{round(payment_data['total_amount'])}]") 
@@ -596,6 +626,10 @@ def check_paymentoption_amounts(context, index):
 @then('the response contains the status in {status} for the payment option')
 def check_paymentposition_status(context, status):
 
+    if session.skip_tests(context):
+        logging.debug("Skipping check_paymentposition_status step")
+        return
+    
     response = session.get_flow_data(context, constants.SESSION_DATA_RES_BODY)
     payment_options = utils.get_nested_field(response, "paymentOption")
     payment_option = payment_options[0]
@@ -606,6 +640,10 @@ def check_paymentposition_status(context, status):
 @then('the response contains the transfers correctly generated from {index} RPT in nodoInviaRPT')
 def check_paymentposition_transfers(context, index):
 
+    if session.skip_tests(context):
+        logging.debug("Skipping check_paymentposition_transfers step")
+        return
+    
     rpt_index = utils.get_index_from_cardinal(index)
     
     response = session.get_flow_data(context, constants.SESSION_DATA_RES_BODY)
@@ -613,7 +651,8 @@ def check_paymentposition_transfers(context, index):
     transfers_from_po = payment_options[0]['transfer']
 
     raw_rpts = session.get_flow_data(context, constants.SESSION_DATA_RAW_RPTS)
-    transfers_from_rpt = raw_rpts[rpt_index]['payment_data']['transfers']
+    rpt = [rpt for rpt in raw_rpts if rpt['payment_data']['iuv'] == payment_options[0]['iuv']][0]
+    transfers_from_rpt = rpt['payment_data']['transfers']
 
     utils.assert_show_message(len(transfers_from_po) == len(transfers_from_rpt), f"There are not the same amount of transfers. GPD's: [{len(transfers_from_po)}], RPT's: [{len(transfers_from_rpt)}]")
 

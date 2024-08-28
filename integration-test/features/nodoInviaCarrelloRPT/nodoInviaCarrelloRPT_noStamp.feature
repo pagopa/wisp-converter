@@ -56,3 +56,102 @@ Feature: User pays a payment carts without stamps on nodoInviaCarrelloRPT
 
   # ===============================================================================================
   # ===============================================================================================
+
+  @runnable @happy_path
+  Scenario: User pays a cart with three RPTs with one transfer each one via nodoInviaCarrelloRPT
+    Given a cart of RPTs non-multibeneficiary
+    And a single RPT of type BBT with 1 transfers of which none are stamps
+    And a single RPT of type BBT with 1 transfers of which none are stamps
+    And a single RPT of type BBT with 1 transfers of which none are stamps
+    When the execution of "Send a nodoInviaCarrelloRPT request" was successful
+    Then the execution of "Execute redirect and complete payment from NodoInviaCarrelloRPT" was successful
+
+  # ===============================================================================================
+  # ===============================================================================================
+
+  @runnable @happy_path
+  Scenario: User pays a cart with four RPTs with one transfer each one via nodoInviaCarrelloRPT
+    Given a cart of RPTs non-multibeneficiary
+    And a single RPT of type BBT with 1 transfers of which none are stamps
+    And a single RPT of type BBT with 1 transfers of which none are stamps
+    And a single RPT of type BBT with 1 transfers of which none are stamps
+    And a single RPT of type BBT with 1 transfers of which none are stamps
+    When the execution of "Send a nodoInviaCarrelloRPT request" was successful
+    Then the execution of "Execute redirect and complete payment from NodoInviaCarrelloRPT" was successful
+    
+  # ===============================================================================================
+  # ===============================================================================================
+
+  @runnable @happy_path
+  Scenario: User pays a cart with five RPTs with one transfer each one via nodoInviaCarrelloRPT
+    Given a cart of RPTs non-multibeneficiary
+    And a single RPT of type BBT with 1 transfers of which none are stamps
+    And a single RPT of type BBT with 1 transfers of which none are stamps
+    And a single RPT of type BBT with 1 transfers of which none are stamps
+    And a single RPT of type BBT with 1 transfers of which none are stamps
+    And a single RPT of type BBT with 1 transfers of which none are stamps
+    When the execution of "Send a nodoInviaCarrelloRPT request" was successful
+    Then the execution of "Execute redirect and complete payment from NodoInviaCarrelloRPT" was successful
+    
+  # ===============================================================================================
+  # ===============================================================================================
+
+  @runnable @happy_path
+  Scenario: User pays a cart with two RPTs with a total of five transfers via nodoInviaCarrelloRPT
+    Given a cart of RPTs non-multibeneficiary
+    And a single RPT of type BBT with 2 transfers of which none are stamps
+    And a single RPT of type BBT with 3 transfers of which none are stamps
+    When the execution of "Send a nodoInviaCarrelloRPT request" was successful
+    Then the execution of "Execute redirect and complete payment from NodoInviaCarrelloRPT" was successful
+    
+  # ===============================================================================================
+  # ===============================================================================================
+
+  @runnable @happy_path
+  Scenario: User pays a cart with three RPTs with a total of five transfers via nodoInviaCarrelloRPT
+    Given a cart of RPTs non-multibeneficiary
+    And a single RPT of type BBT with 1 transfers of which none are stamps
+    And a single RPT of type BBT with 2 transfers of which none are stamps
+    And a single RPT of type BBT with 2 transfers of which none are stamps
+    When the execution of "Send a nodoInviaCarrelloRPT request" was successful
+    Then the execution of "Execute redirect and complete payment from NodoInviaCarrelloRPT" was successful
+
+  # ===============================================================================================
+  # ===============================================================================================
+
+  @runnable @happy_path
+  Scenario: User pays a cart with three RPTs with a total of ten transfers via nodoInviaCarrelloRPT
+    Given a cart of RPTs non-multibeneficiary
+    And a single RPT of type BBT with 3 transfers of which none are stamps
+    And a single RPT of type BBT with 3 transfers of which none are stamps
+    And a single RPT of type BBT with 4 transfers of which none are stamps
+    When the execution of "Send a nodoInviaCarrelloRPT request" was successful
+    Then the execution of "Execute redirect and complete payment from NodoInviaCarrelloRPT" was successful
+    
+  # ===============================================================================================
+  # ===============================================================================================
+
+  @runnable @unhappy_path
+  Scenario: User tries to pay, via nodoInviaCarrelloRPT, a cart with one RPT that has a quantity of transfers above the limit
+    Given a cart of RPTs non-multibeneficiary
+    And a single RPT of type BBT with 6 transfers of which none are stamps
+    Given a valid nodoInviaCarrelloRPT request
+    When the user sends a nodoInviaCarrelloRPT action
+    Then the user receives the HTTP status code 200 
+    And the response contains the field esitoComplessivoOperazione with value KO
+    And the response contains the field faultCode with value PPT_SINTASSI_XSD
+    
+  # ===============================================================================================
+  # ===============================================================================================
+
+  @runnable @unhappy_path @new_scenario
+  Scenario: User tries to pay, via nodoInviaCarrelloRPT, a cart with two RPT that has a quantity of transfers above the limit
+    Given a cart of RPTs non-multibeneficiary
+    And a single RPT of type BBT with 2 transfers of which none are stamps
+    And a single RPT of type BBT with 6 transfers of which none are stamps
+    Given a valid nodoInviaCarrelloRPT request
+    When the user sends a nodoInviaCarrelloRPT action
+    Then the user receives the HTTP status code 200 
+    And the response contains the field esitoComplessivoOperazione with value KO
+    And the response contains the field faultCode with value PPT_SINTASSI_XSD
+    
