@@ -2,7 +2,7 @@ FROM python:3.11 as build
 #-slim as build
 
 ARG SHELL="/bin/sh"
-ARG ALLURE_RELEASE=2.21.0
+ARG ALLURE_RELEASE=2.25.0
 ARG ALLURE_REPO=https://repo.maven.apache.org/maven2/io/qameta/allure/allure-commandline
 ARG UID=1000
 ARG GID=1000
