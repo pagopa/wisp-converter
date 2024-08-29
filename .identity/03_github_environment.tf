@@ -30,6 +30,7 @@ locals {
     "INTEGRATION_TEST_FORWARDER_SUBSCRIPTION_KEY" : var.env_short != "p" ? data.azurerm_key_vault_secret.integration_test_forwarder_subscription_key[0].value : ""
     "INTEGRATION_TEST_TECHNICALSUPPORT_SUBSCRIPTION_KEY" : var.env_short != "p" ? data.azurerm_key_vault_secret.integration_test_technicalsupport_subscription_key[0].value : ""
     "INTEGRATION_TEST_CHANNEL_WISP_PASSWORD" : var.env_short != "p" ? data.azurerm_key_vault_secret.integration_test_channel_wisp_password[0].value : ""
+    "INTEGRATION_TEST_CHANNEL_WFESP_PASSWORD" : var.env_short != "p" ? data.azurerm_key_vault_secret.integration_test_channel_wfesp_password[0].value : ""
     "INTEGRATION_TEST_CHANNEL_CHECKOUT_PASSWORD" : var.env_short != "p" ? data.azurerm_key_vault_secret.integration_test_channel_checkout_password[0].value : ""
     "INTEGRATION_TEST_CHANNEL_PAYMENT_PASSWORD" : var.env_short != "p" ? data.azurerm_key_vault_secret.integration_test_channel_payment_password[0].value : ""
     "INTEGRATION_TEST_STATION_WISP_PASSWORD" : var.env_short != "p" ? data.azurerm_key_vault_secret.integration_test_station_wisp_password[0].value : ""

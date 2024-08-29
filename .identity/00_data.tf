@@ -81,6 +81,12 @@ data "azurerm_key_vault_secret" "integration_test_channel_wisp_password" {
   key_vault_id = data.azurerm_key_vault.domain_key_vault.id
 }
 
+data "azurerm_key_vault_secret" "integration_test_channel_wfesp_password" {
+  count        = var.env_short == "p" ? 0 : 1
+  name         = "integration-test-channel-wfesp-password"
+  key_vault_id = data.azurerm_key_vault.domain_key_vault.id
+}
+
 data "azurerm_key_vault_secret" "integration_test_channel_checkout_password" {
   count        = var.env_short == "p" ? 0 : 1
   name         = "integration-test-channel-checkout-password"
