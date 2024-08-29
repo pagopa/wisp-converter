@@ -8,6 +8,7 @@ Feature: Common scenarios for nodoInviaRPT
     And the response contains the redirect URL
 
   # ===============================================================================================
+  # ===============================================================================================
   
   Scenario: Retrieve all related notice numbers from executed redirect
     Given a waiting time of 2 seconds to wait for Nodo to write RE events
@@ -17,35 +18,6 @@ Feature: Common scenarios for nodoInviaRPT
     And all the related notice numbers can be retrieved
 
   # ===============================================================================================
-  
-  # Scenario: Check if WISP session timers were created [edit]
-  #   Given a waiting time of 5 seconds to wait for Nodo to write RE events
-  #   #
-  #   Given the first IUV code of the sent RPTs
-  #   When the user searches for flow steps by IUVs
-  #   Then the user receives the HTTP status code 200
-  #   And there is a timer-set event with field operationStatus with value Success
-  #   #
-  #   Given the second IUV code of the sent RPTs
-  #   When the user searches for flow steps by IUVs
-  #   Then the user receives the HTTP status code 200
-  #   And there is a timer-set event with field operationStatus with value Success
-  #   #
-  #   Given the third IUV code of the sent RPTs
-  #   When the user searches for flow steps by IUVs
-  #   Then the user receives the HTTP status code 200
-  #   And there is a timer-set event with field operationStatus with value Success
-  #   #
-  #   Given the fourth IUV code of the sent RPTs
-  #   When the user searches for flow steps by IUVs
-  #   Then the user receives the HTTP status code 200
-  #   And there is a timer-set event with field operationStatus with value Success
-  #   #
-  #   Given the fifth IUV code of the sent RPTs
-  #   When the user searches for flow steps by IUVs
-  #   Then the user receives the HTTP status code 200
-  #   And there is a timer-set event with field operationStatus with value Success
-
   # ===============================================================================================
 
     Scenario: Check if WISP session timers were created
@@ -57,9 +29,10 @@ Feature: Common scenarios for nodoInviaRPT
     And these events are related to each payment token
 
   # ===============================================================================================
+  # ===============================================================================================
   
   Scenario: Check the paid payment positions
-    #
+    # executing the check on payment position for first IUV
     When the user searches for payment position in GPD by first IUV
     Then the user receives the HTTP status code 200
     And the response contains the field status with value PAID
@@ -67,7 +40,7 @@ Feature: Common scenarios for nodoInviaRPT
     And the response contains the payment option correctly generated from first RPT
     And the response contains the status in PO_PAID for the payment option
     And the response contains the transfers correctly generated from first RPT in nodoInviaRPT
-    #
+    # executing the check on payment position for second IUV
     When the user searches for payment position in GPD by second IUV
     Then the user receives the HTTP status code 200
     And the response contains the field status with value PAID
@@ -75,7 +48,7 @@ Feature: Common scenarios for nodoInviaRPT
     And the response contains the payment option correctly generated from second RPT
     And the response contains the status in PO_PAID for the payment option
     And the response contains the transfers correctly generated from second RPT in nodoInviaRPT
-    #
+    # executing the check on payment position for third IUV
     When the user searches for payment position in GPD by third IUV
     Then the user receives the HTTP status code 200
     And the response contains the field status with value PAID
@@ -83,7 +56,7 @@ Feature: Common scenarios for nodoInviaRPT
     And the response contains the payment option correctly generated from third RPT
     And the response contains the status in PO_PAID for the payment option
     And the response contains the transfers correctly generated from third RPT in nodoInviaRPT
-    #
+    # executing the check on payment position for fourth IUV
     When the user searches for payment position in GPD by fourth IUV
     Then the user receives the HTTP status code 200
     And the response contains the field status with value PAID
@@ -91,7 +64,7 @@ Feature: Common scenarios for nodoInviaRPT
     And the response contains the payment option correctly generated from fourth RPT
     And the response contains the status in PO_PAID for the payment option
     And the response contains the transfers correctly generated from fourth RPT in nodoInviaRPT
-    #
+    # executing the check on payment position for fifth IUV
     When the user searches for payment position in GPD by fifth IUV
     Then the user receives the HTTP status code 200
     And the response contains the field status with value PAID
@@ -100,6 +73,7 @@ Feature: Common scenarios for nodoInviaRPT
     And the response contains the status in PO_PAID for the payment option
     And the response contains the transfers correctly generated from fifth RPT in nodoInviaRPT
 
+  # ===============================================================================================
   # ===============================================================================================
   
   Scenario: Check if existing debt position was used
@@ -110,6 +84,7 @@ Feature: Common scenarios for nodoInviaRPT
     And there is a redirect event with field status with value UPDATED_EXISTING_PAYMENT_POSITION_IN_GPD
 
   # ===============================================================================================
+  # ===============================================================================================
   
   Scenario: Check if existing debt position was invalid but has sent a KO receipt
     Given a waiting time of 2 seconds to wait for Nodo to write RE events
@@ -119,6 +94,7 @@ Feature: Common scenarios for nodoInviaRPT
     And there is a redirect event with field operationErrorCode with value WIC-1300
     And there is a redirect event with field status with value RT_SEND_SUCCESS
 
+  # ===============================================================================================
   # ===============================================================================================
 
   Scenario: Check if existing debt position was invalid from ACA but has sent a KO receipt

@@ -7,6 +7,7 @@ Feature: Common scenarios for payment context
     And the user can be redirected to Checkout
 
   # ===============================================================================================
+  # ===============================================================================================
   
   Scenario: Fails on execute NM1-to-NMU conversion in wisp-converter  
     Given a valid session identifier to be redirected to WISP dismantling
@@ -14,6 +15,7 @@ Feature: Common scenarios for payment context
     Then the user receives the HTTP status code 200
     And the user receives an HTML page with an error
 
+  # ===============================================================================================
   # ===============================================================================================
   
   Scenario: Send a checkPosition request
@@ -23,6 +25,7 @@ Feature: Common scenarios for payment context
     And the response contains the field outcome with value OK
     And the response contains the field positionslist as not empty list
 
+  # ===============================================================================================
   # ===============================================================================================
 
   Scenario: Send one or more activatePaymentNoticeV2 requests
@@ -62,6 +65,7 @@ Feature: Common scenarios for payment context
     And the response contains the field paymentToken with non-null value
     And the payment token can be retrieved and associated to fifth RPT
 
+  # ===============================================================================================
   # ===============================================================================================
   
   Scenario: Send a closePaymentV2 request

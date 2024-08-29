@@ -547,6 +547,18 @@ def check_event_token_relation(context):
         is_present = any(event['paymentToken'] == payment_token for event in needed_events)
         utils.assert_show_message(is_present, f"The payment token {payment_token} is not correctly handled by the previous event.")
 
+# ==============================================
+
+@then('these events are related to each notice number')
+def check_event_token_relation(context):
+
+    needed_events = session.get_flow_data(context, constants.SESSION_DATA_LAST_ANALYZED_RE_EVENT)
+    payment_notices = session.get_flow_data(context, constants.SESSION_DATA_PAYMENT_NOTICES)
+    notice_numbers = [payment_notice['notice_number'] for payment_notice in payment_notices]
+    
+    for notice_number in notice_numbers:
+        is_present = any(event['noticeNumber'] == notice_number for event in needed_events)
+        utils.assert_show_message(is_present, f"The notice number {notice_number} is not correctly handled by the previous event.")
 
 # ==============================================
 @then('the response contains the {url_type} URL')

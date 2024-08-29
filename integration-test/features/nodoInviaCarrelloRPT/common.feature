@@ -9,38 +9,51 @@ Feature: Common scenarios for nodoInviaCarrelloRPT
 
   # ===============================================================================================
   
+  # Scenario: Check if WISP session timers were deleted and all RTs were sent
+  #   Given a waiting time of 10 seconds to wait for Nodo to write RE events
+  #   #
+  #   Given the first IUV code of the sent RPTs
+  #   When the user searches for flow steps by IUVs
+  #   Then the user receives the HTTP status code 200
+  #   And there is a timer-delete event with field operationStatus with value Success
+  #   And there is a receipt-ok event with field operationStatus with value Success
+  #   #
+  #   Given the second IUV code of the sent RPTs
+  #   When the user searches for flow steps by IUVs
+  #   Then the user receives the HTTP status code 200
+  #   And there is a timer-delete event with field operationStatus with value Success
+  #   And there is a receipt-ok event with field operationStatus with value Success
+  #   #
+  #   Given the third IUV code of the sent RPTs
+  #   When the user searches for flow steps by IUVs
+  #   Then the user receives the HTTP status code 200
+  #   And there is a timer-delete event with field operationStatus with value Success
+  #   And there is a receipt-ok event with field operationStatus with value Success
+  #   #
+  #   Given the fourth IUV code of the sent RPTs
+  #   When the user searches for flow steps by IUVs
+  #   Then the user receives the HTTP status code 200
+  #   And there is a timer-delete event with field operationStatus with value Success
+  #   And there is a receipt-ok event with field operationStatus with value Success
+  #   #
+  #   Given the fifth IUV code of the sent RPTs
+  #   When the user searches for flow steps by IUVs
+  #   Then the user receives the HTTP status code 200
+  #   And there is a timer-delete event with field operationStatus with value Success
+  #   And there is a receipt-ok event with field operationStatus with value Success
+
+  # ===============================================================================================
+  # ===============================================================================================
+
   Scenario: Check if WISP session timers were deleted and all RTs were sent
     Given a waiting time of 10 seconds to wait for Nodo to write RE events
-    #
-    Given the first IUV code of the sent RPTs
+    And all the IUV codes of the sent RPTs
     When the user searches for flow steps by IUVs
     Then the user receives the HTTP status code 200
-    And there is a timer-delete event with field operationStatus with value Success
-    And there is a receipt-ok event with field operationStatus with value Success
-    #
-    Given the second IUV code of the sent RPTs
-    When the user searches for flow steps by IUVs
-    Then the user receives the HTTP status code 200
-    And there is a timer-delete event with field operationStatus with value Success
-    And there is a receipt-ok event with field operationStatus with value Success
-    #
-    Given the third IUV code of the sent RPTs
-    When the user searches for flow steps by IUVs
-    Then the user receives the HTTP status code 200
-    And there is a timer-delete event with field operationStatus with value Success
-    And there is a receipt-ok event with field operationStatus with value Success
-    #
-    Given the fourth IUV code of the sent RPTs
-    When the user searches for flow steps by IUVs
-    Then the user receives the HTTP status code 200
-    And there is a timer-delete event with field operationStatus with value Success
-    And there is a receipt-ok event with field operationStatus with value Success
-    #
-    Given the fifth IUV code of the sent RPTs
-    When the user searches for flow steps by IUVs
-    Then the user receives the HTTP status code 200
-    And there is a timer-delete event with field operationStatus with value Success
-    And there is a receipt-ok event with field operationStatus with value Success
+    Then there is a timer-delete event with field operationStatus with value Success
+    And these events are related to each payment token
+    Then there is a receipt-ok event with field status with value RT_SEND_SUCCESS
+    And these events are related to each notice number
 
   # ===============================================================================================
   # ===============================================================================================
