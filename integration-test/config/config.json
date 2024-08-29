@@ -34,6 +34,7 @@
     "psp_wisp": "AGID_01",
     "psp_broker_wisp": "97735020584",
     "channel_wisp": "97735020584_02",
+    "channel_wfesp": "13212880150_90",
     "channel_checkout": "97735020584_03",
     "psp_payment": "BCITITMM",
     "psp_name": "Intesa Sanpaolo S.p.A",
@@ -49,6 +50,7 @@
   },
   "secrets": {
     "channel_wisp_password": "INTEGRATION_TEST_CHANNEL_WISP_PASSWORD",
+    "channel_wfesp_password": "INTEGRATION_TEST_CHANNEL_WFESP_PASSWORD",
     "channel_checkout_password": "INTEGRATION_TEST_CHANNEL_CHECKOUT_PASSWORD",
     "channel_psp_payment_password": "INTEGRATION_TEST_CHANNEL_PAYMENT_PASSWORD",
     "station_password": "INTEGRATION_TEST_STATION_WISP_PASSWORD"
