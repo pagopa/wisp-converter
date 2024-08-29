@@ -1,0 +1,12 @@
+{
+  "environment": [
+    {
+      "env": "uat",
+      "nodo_pa_host": "https://api.uat.platform.pagopa.it/nodo-auth/nodo-per-pa/v1",
+      "id_broker_pa": "15376371009",
+      "id_station": "15376371009_09",
+      "id_pa": "15376371009",
+      "wisp_url": "https://uat.wisp2.pagopa.it/wisp-converter/redirect/api/v1/payments"
+    }
+  ]
+}
