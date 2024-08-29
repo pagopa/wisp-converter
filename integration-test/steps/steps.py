@@ -408,9 +408,6 @@ def search_in_re_by_iuv(context):
             utils.assert_show_message('data' in body_response, f"The response does not contains data.")
             utils.assert_show_message(len(body_response['data']) > 0, f"There are not event data in the response.")
             re_events.extend(body_response['data'])
-            logging.debug(f"====> sent to iuv {iuv}")
-
-    #logging.debug(f"====> events {re_events}")
 
     session.set_flow_data(context, constants.SESSION_DATA_RES_CODE, status_code)
     session.set_flow_data(context, constants.SESSION_DATA_RES_BODY, re_events)
@@ -543,9 +540,6 @@ def check_event(context, business_process, field_name, field_value):
 def check_event_token_relation(context):
 
     needed_events = session.get_flow_data(context, constants.SESSION_DATA_LAST_ANALYZED_RE_EVENT)
-    logging.debug("=========> check_event_token_relation")
-    logging.debug(needed_events)
-
     payment_notices = session.get_flow_data(context, constants.SESSION_DATA_PAYMENT_NOTICES)
     payment_tokens = [payment_notice['payment_token'] for payment_notice in payment_notices]
     

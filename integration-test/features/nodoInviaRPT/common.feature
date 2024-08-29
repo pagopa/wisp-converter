@@ -49,7 +49,7 @@ Feature: Common scenarios for nodoInviaRPT
   # ===============================================================================================
 
     Scenario: Check if WISP session timers were created
-    Given a waiting time of 15 seconds to wait for Nodo to write RE events
+    Given a waiting time of 5 seconds to wait for Nodo to write RE events
     And all the IUV codes of the sent RPTs
     When the user searches for flow steps by IUVs
     Then the user receives the HTTP status code 200
