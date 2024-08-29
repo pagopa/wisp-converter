@@ -18,33 +18,43 @@ Feature: Common scenarios for nodoInviaRPT
 
   # ===============================================================================================
   
-  Scenario: Check if WISP session timers were created
-    Given a waiting time of 5 seconds to wait for Nodo to write RE events
-    #
-    Given the first IUV code of the sent RPTs
+  # Scenario: Check if WISP session timers were created [edit]
+  #   Given a waiting time of 5 seconds to wait for Nodo to write RE events
+  #   #
+  #   Given the first IUV code of the sent RPTs
+  #   When the user searches for flow steps by IUVs
+  #   Then the user receives the HTTP status code 200
+  #   And there is a timer-set event with field operationStatus with value Success
+  #   #
+  #   Given the second IUV code of the sent RPTs
+  #   When the user searches for flow steps by IUVs
+  #   Then the user receives the HTTP status code 200
+  #   And there is a timer-set event with field operationStatus with value Success
+  #   #
+  #   Given the third IUV code of the sent RPTs
+  #   When the user searches for flow steps by IUVs
+  #   Then the user receives the HTTP status code 200
+  #   And there is a timer-set event with field operationStatus with value Success
+  #   #
+  #   Given the fourth IUV code of the sent RPTs
+  #   When the user searches for flow steps by IUVs
+  #   Then the user receives the HTTP status code 200
+  #   And there is a timer-set event with field operationStatus with value Success
+  #   #
+  #   Given the fifth IUV code of the sent RPTs
+  #   When the user searches for flow steps by IUVs
+  #   Then the user receives the HTTP status code 200
+  #   And there is a timer-set event with field operationStatus with value Success
+
+  # ===============================================================================================
+
+    Scenario: Check if WISP session timers were created
+    Given a waiting time of 15 seconds to wait for Nodo to write RE events
+    And all the IUV codes of the sent RPTs
     When the user searches for flow steps by IUVs
     Then the user receives the HTTP status code 200
     And there is a timer-set event with field operationStatus with value Success
-    #
-    Given the second IUV code of the sent RPTs
-    When the user searches for flow steps by IUVs
-    Then the user receives the HTTP status code 200
-    And there is a timer-set event with field operationStatus with value Success
-    #
-    Given the third IUV code of the sent RPTs
-    When the user searches for flow steps by IUVs
-    Then the user receives the HTTP status code 200
-    And there is a timer-set event with field operationStatus with value Success
-    #
-    Given the fourth IUV code of the sent RPTs
-    When the user searches for flow steps by IUVs
-    Then the user receives the HTTP status code 200
-    And there is a timer-set event with field operationStatus with value Success
-    #
-    Given the fifth IUV code of the sent RPTs
-    When the user searches for flow steps by IUVs
-    Then the user receives the HTTP status code 200
-    And there is a timer-set event with field operationStatus with value Success
+    And these events are related to each payment token
 
   # ===============================================================================================
   

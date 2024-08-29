@@ -304,6 +304,26 @@ def get_iuv_from_session(context, index):
         iuvs = [None, None, None, None, None]
     iuvs[rpt_index] = iuv
     session.set_flow_data(context, constants.SESSION_DATA_IUVS, iuvs)
+# ==============================================
+
+@given('all the IUV codes of the sent RPTs')
+def get_iuvs_from_session(context):
+
+    session.set_skip_tests(context, False)
+
+    raw_rpts = session.get_flow_data(context, constants.SESSION_DATA_RAW_RPTS)
+        
+    iuvs = session.get_flow_data(context, constants.SESSION_DATA_IUVS)
+    if iuvs is None:
+        iuvs = [None, None, None, None, None]
+    
+    rpt_index = 0
+    for raw_rpt in raw_rpts:
+        iuv = raw_rpt['payment_data']['iuv']
+        iuvs[rpt_index] = iuv
+        rpt_index += 1
+    
+    session.set_flow_data(context, constants.SESSION_DATA_IUVS, iuvs)
 
 # ==============================================
 
@@ -388,6 +408,9 @@ def search_in_re_by_iuv(context):
             utils.assert_show_message('data' in body_response, f"The response does not contains data.")
             utils.assert_show_message(len(body_response['data']) > 0, f"There are not event data in the response.")
             re_events.extend(body_response['data'])
+            logging.debug(f"====> sent to iuv {iuv}")
+
+    #logging.debug(f"====> events {re_events}")
 
     session.set_flow_data(context, constants.SESSION_DATA_RES_CODE, status_code)
     session.set_flow_data(context, constants.SESSION_DATA_RES_BODY, re_events)
@@ -516,6 +539,22 @@ def check_event(context, business_process, field_name, field_value):
 
 # ==============================================
 
+@then('these events are related to each payment token')
+def check_event_token_relation(context):
+
+    needed_events = session.get_flow_data(context, constants.SESSION_DATA_LAST_ANALYZED_RE_EVENT)
+    logging.debug("=========> check_event_token_relation")
+    logging.debug(needed_events)
+
+    payment_notices = session.get_flow_data(context, constants.SESSION_DATA_PAYMENT_NOTICES)
+    payment_tokens = [payment_notice['payment_token'] for payment_notice in payment_notices]
+    
+    for payment_token in payment_tokens:
+        is_present = any(event['paymentToken'] == payment_token for event in needed_events)
+        utils.assert_show_message(is_present, f"The payment token {payment_token} is not correctly handled by the previous event.")
+
+
+# ==============================================
 @then('the response contains the {url_type} URL')
 def check_redirect_url(context, url_type):
 
