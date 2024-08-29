@@ -168,7 +168,8 @@ def generate_payment_position(context, index, segregation_code, payment_status):
     url = base_url.format(creditor_institution=rpt['domain']['id'])
 
     headers = {'Content-Type': 'application/json', constants.OCP_APIM_SUBSCRIPTION_KEY: subkey}
-    status_code, _, _ = utils.execute_request(url, "post", headers, payment_positions, type=constants.ResponseType.JSON)
+    req_description = constants.REQ_DESCRIPTION_CREATE_PAYMENT_POSITION.format(segcode=segregation_code, status=payment_status)
+    status_code, _, _ = utils.execute_request(url, "post", headers, payment_positions, type=constants.ResponseType.JSON, description=req_description)
 
     utils.assert_show_message(status_code == 201, f"The debt position for RPT with index [{index}] was not created. Expected status code [201], Current status code [{status_code}]")
 
@@ -328,7 +329,8 @@ def send_primitive(context, actor, primitive):
     elif content_type == constants.ResponseType.JSON:
         headers = {'Content-Type': 'application/json', constants.OCP_APIM_SUBSCRIPTION_KEY: subkey}
     
-    status_code, body_response, _ = utils.execute_request(url, "post", headers, request, content_type)
+    req_description = constants.REQ_DESCRIPTION_EXECUTE_SOAP_CALL.format(action=primitive)
+    status_code, body_response, _ = utils.execute_request(url, "post", headers, request, content_type, description=req_description)
     session.set_flow_data(context, constants.SESSION_DATA_RES_CODE, status_code)
     session.set_flow_data(context, constants.SESSION_DATA_RES_BODY, body_response)
     session.set_flow_data(context, constants.SESSION_DATA_RES_CONTENTTYPE, content_type)
@@ -340,8 +342,11 @@ def send_sessionid_to_wispdismantling(context):
 
     url, _ = router.get_rest_url(context, "redirect")    
     headers = {'Content-Type': 'application/xml'}
-    url += session.get_flow_data(context, constants.SESSION_DATA_SESSION_ID)
-    status_code, response_body, response_headers = utils.execute_request(url, "get", headers, type=constants.ResponseType.HTML, allow_redirect=False)
+    sessionId = session.get_flow_data(context, constants.SESSION_DATA_SESSION_ID)
+    url += sessionId
+
+    req_description = constants.REQ_DESCRIPTION_EXECUTE_CALL_TO_WISPCONV.format(sessionId=sessionId)
+    status_code, response_body, response_headers = utils.execute_request(url, "get", headers, type=constants.ResponseType.HTML, allow_redirect=False, description=req_description)
     if 'Location' in response_headers:
         location_header = response_headers['Location']
         attach(location_header, name="Received response")
@@ -378,7 +383,8 @@ def search_in_re_by_iuv(context):
                 date_from=today,
                 date_to=today
             )
-            status_code, body_response, _ = utils.execute_request(url, "get", headers, type=constants.ResponseType.JSON)
+            req_description = constants.REQ_DESCRIPTION_RETRIEVE_EVENTS_FROM_RE.format(iuv=iuv)
+            status_code, body_response, _ = utils.execute_request(url, "get", headers, type=constants.ResponseType.JSON, description=req_description)
             utils.assert_show_message('data' in body_response, f"The response does not contains data.")
             utils.assert_show_message(len(body_response['data']) > 0, f"There are not event data in the response.")
             re_events.extend(body_response['data'])
@@ -400,9 +406,11 @@ def search_paymentposition_by_iuv(context, index):
   
     payment_notice = payment_notices[rpt_index]
     base_url, subkey = router.get_rest_url(context, "get_paymentposition_by_iuv")
-    url = base_url.format(creditor_institution=payment_notice['domain_id'], iuv=payment_notice['iuv'])
+    iuv = payment_notice['iuv']
+    url = base_url.format(creditor_institution=payment_notice['domain_id'], iuv=iuv)
     headers = {'Content-Type': 'application/json', constants.OCP_APIM_SUBSCRIPTION_KEY: subkey}
-    status_code, body_response, _ = utils.execute_request(url, "get", headers, type=constants.ResponseType.JSON)
+    req_description = constants.REQ_DESCRIPTION_RETRIEVE_PAYMENT_POSITION.format(iuv=iuv)
+    status_code, body_response, _ = utils.execute_request(url, "get", headers, type=constants.ResponseType.JSON, description=req_description)
 
     session.set_flow_data(context, constants.SESSION_DATA_RES_CODE, status_code)
     session.set_flow_data(context, constants.SESSION_DATA_RES_BODY, body_response)

@@ -16,9 +16,12 @@ import constants as constants
 
 # ==============================================
 
-def execute_request(url, method, headers, payload=None, type=constants.ResponseType.XML, allow_redirect=True):
+def execute_request(url, method, headers, payload=None, type=constants.ResponseType.XML, allow_redirect=True, description=None):
+    if description is None:
+        description = url
+
     if payload is not None:
-        attach(obfuscate_secrets("URL: " + url + "\nRequest:\n" + payload), name=f'{url} - Sent request', attachment_type=attachment_type.TEXT)
+        attach(obfuscate_secrets("URL: " + url + "\nRequest:\n" + payload), name=f'{description} - Sent request', attachment_type=attachment_type.TEXT)
         
     response = requests.request(method=method, url=url, headers=headers, data=payload, verify=False, allow_redirects=allow_redirect)
     object_response = None
@@ -26,15 +29,15 @@ def execute_request(url, method, headers, payload=None, type=constants.ResponseT
         
         if type == constants.ResponseType.XML:
             formatted_response = remove_namespace(response.text)
-            attach(obfuscate_secrets("URL: " + url + "\nResponse:\n" + formatted_response), name=f'{url} - Received response', attachment_type=attachment_type.TEXT)
+            attach(obfuscate_secrets("URL: " + url + "\nResponse:\n" + formatted_response), name=f'{description} - Received response', attachment_type=attachment_type.TEXT)
             if formatted_response is not None:
                 object_response = xmlutils.fromstring(formatted_response)
         elif type == constants.ResponseType.JSON:
             object_response = response.json()
-            attach(obfuscate_secrets("URL: " + url + "\nResponse:\n" +  json.dumps(object_response, indent=2)), name=f'{url} - Received response',  attachment_type=attachment_type.TEXT)
+            attach(obfuscate_secrets("URL: " + url + "\nResponse:\n" +  json.dumps(object_response, indent=2)), name=f'{description} - Received response',  attachment_type=attachment_type.TEXT)
         elif type == constants.ResponseType.HTML:
             object_response = response.text
-            attach(obfuscate_secrets("URL: " + url + "\nResponse:\n" +  object_response), name=f'{url} - Received response',  attachment_type=attachment_type.TEXT)
+            attach(obfuscate_secrets("URL: " + url + "\nResponse:\n" +  object_response), name=f'{description} - Received response',  attachment_type=attachment_type.TEXT)
     
     return response.status_code, object_response, response.headers
 
