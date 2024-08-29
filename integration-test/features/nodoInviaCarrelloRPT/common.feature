@@ -1,7 +1,7 @@
 Feature: Common scenarios for nodoInviaCarrelloRPT
 
   Scenario: Send a nodoInviaCarrelloRPT request
-    Given a valid nodoInviaCarrelloRPT request
+    Given a valid nodoInviaCarrelloRPT request for WISP channel
     When the user sends a nodoInviaCarrelloRPT action
     Then the user receives the HTTP status code 200 
     And the response contains the field esitoComplessivoOperazione with value OK

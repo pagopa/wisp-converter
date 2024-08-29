@@ -86,7 +86,7 @@ Feature: User pays a payment carts with stamps on nodoInviaCarrelloRPT
   Scenario: User tries to pay, via nodoInviaCarrelloRPT, a cart with one RPT that has a quantity of transfers and stamps above the limit
     Given a cart of RPTs non-multibeneficiary
     And a single RPT of type BBT with 6 transfers of which 3 are stamps
-    Given a valid nodoInviaCarrelloRPT request
+    Given a valid nodoInviaCarrelloRPT request for WISP channel
     When the user sends a nodoInviaCarrelloRPT action
     Then the user receives the HTTP status code 200 
     And the response contains the field esitoComplessivoOperazione with value KO
@@ -100,7 +100,7 @@ Feature: User pays a payment carts with stamps on nodoInviaCarrelloRPT
     Given a cart of RPTs non-multibeneficiary
     And a single RPT of type BBT with 2 transfers of which 1 are stamps
     And a single RPT of type BBT with 6 transfers of which 2 are stamps
-    Given a valid nodoInviaCarrelloRPT request
+    Given a valid nodoInviaCarrelloRPT request for WISP channel
     When the user sends a nodoInviaCarrelloRPT action
     Then the user receives the HTTP status code 200 
     And the response contains the field esitoComplessivoOperazione with value KO

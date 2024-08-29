@@ -78,7 +78,7 @@ def generate_nodoinviarpt(test_data, rpt):
 
 # ==============================================
 
-def generate_nodoinviacarrellorpt(test_data, cart_id, rpts, is_multibeneficiary=False):
+def generate_nodoinviacarrellorpt(test_data, cart_id, rpts, psp, psp_broker, channel, password, is_multibeneficiary=False):
     rpt_list = ""
     for rpt in rpts:
 
@@ -143,10 +143,10 @@ def generate_nodoinviacarrellorpt(test_data, cart_id, rpts, is_multibeneficiary=
         creditor_institution_broker=test_data['creditor_institution_broker'],
         station=test_data['station'],
         cart_id=cart_id,
-        psp_broker=test_data['psp_broker_wisp'],
-        psp=test_data['psp_wisp'],
-        channel=test_data['channel_wisp'],
-        password=test_data['channel_wisp_password'],
+        psp_broker=psp_broker,
+        psp=psp,
+        channel=channel,
+        password=password,
         is_multibeneficiary='true' if is_multibeneficiary else 'false',
         rpt_list=rpt_list
     )

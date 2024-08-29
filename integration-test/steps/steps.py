@@ -189,8 +189,8 @@ def generate_nodoinviarpt(context):
 
 # ==============================================
 
-@given('a valid nodoInviaCarrelloRPT request')
-def generate_nodoinviarpt(context):
+@given('a valid nodoInviaCarrelloRPT request{options}')
+def generate_nodoinviarpt(context, options):
     
     session.set_skip_tests(context, False)
 
@@ -198,8 +198,19 @@ def generate_nodoinviarpt(context):
     test_data = session.get_test_data(context)
     rpts = session.get_flow_data(context, constants.SESSION_DATA_RAW_RPTS)
     cart_id = session.get_flow_data(context, constants.SESSION_DATA_CART_ID)
-    request = requestgen.generate_nodoinviacarrellorpt(test_data, cart_id, rpts)
-    
+
+    # set channel and password regarding the required options
+    channel = test_data['channel_wisp']
+    password = test_data['channel_wisp_password']
+    psp = test_data['psp_wisp']
+    psp_broker = test_data['psp_broker_wisp']
+    if "WFESP channel" in options:
+        channel = test_data['channel_wfesp']
+        password = test_data['channel_wfesp_password']
+        psp = test_data['psp_wfesp']
+        psp_broker = test_data['psp_broker_wfesp']
+    request = requestgen.generate_nodoinviacarrellorpt(test_data, cart_id, rpts, psp, psp_broker, channel, password)    
+
     # update context with request and edit session data
     session.set_flow_data(context, constants.SESSION_DATA_REQ_BODY, request)
 
@@ -231,7 +242,6 @@ def generate_activatepaymentnotice(context, index):
     # TODO to change when multibeneficiary will be handled
     if payment_notice_index + 1 > len(payment_notices):
         session.set_skip_tests(context, True)
-        #context.scenario.skip(f"Skipping scenario because the {index} RPT does not exist.")
         return
 
     # generate request
@@ -284,7 +294,6 @@ def get_iuv_from_session(context, index):
     # TODO to change when multibeneficiary will be handled
     if rpt_index + 1 > len(raw_rpts):
         session.set_skip_tests(context, True)
-        #context.scenario.skip(f"Skipping scenario because the {index} IUV does not exist.")
         return
     
     iuv = raw_rpts[rpt_index]['payment_data']['iuv']
@@ -387,7 +396,6 @@ def search_paymentposition_by_iuv(context, index):
 
     if rpt_index + 1 > len(payment_notices):
         session.set_skip_tests(context, True)
-        #context.scenario.skip(f"Skipping scenario because the {index} IUV does not exist.")
         return
   
     payment_notice = payment_notices[rpt_index]
@@ -518,6 +526,8 @@ def check_redirect_url(context, url_type):
         utils.assert_show_message("wisp-converter" in extracted_url, f"The URL is not the one defined for WISP dismantling.")
     elif "old WISP" in url_type:
         utils.assert_show_message("wallet" in extracted_url, f"The URL is not the one defined for old WISP.")
+    elif "fake WFESP" in url_type:
+        utils.assert_show_message("wfesp" in extracted_url, f"The URL is not the one defined for WFESP dismantling.")
 
 # ==============================================
 

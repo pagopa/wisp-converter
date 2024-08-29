@@ -32,7 +32,9 @@
   },
   "global_configuration": {
     "psp_wisp": "AGID_01",
+    "psp_wfesp": "CIPBITMM",
     "psp_broker_wisp": "97735020584",
+    "psp_broker_wfesp": "13212880150",
     "channel_wisp": "97735020584_02",
     "channel_wfesp": "13212880150_90",
     "channel_checkout": "97735020584_03",
