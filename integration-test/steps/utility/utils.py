@@ -72,6 +72,7 @@ def get_xml_as_object(content):
 
 def obfuscate_secrets(request):
     request_without_secrets = re.sub(r'<password>(.*)<\/password>', "<password>***</password>", request)
+    request_without_secrets = re.sub(r'<password xmlns="">(.*)<\/password>', "<password xmlns="">***</password>", request)
     request_without_secrets = re.sub(r'\"password\":\s{0,1}\"(.*)\"', "\"password\": \"***\"", request_without_secrets)
     request_without_secrets = re.sub(r'Ocp-Apim-Subscription-Key,(.*)\)', "Ocp-Apim-Subscription-Key,***)", request_without_secrets)
     return request_without_secrets
@@ -86,8 +87,13 @@ def remove_namespace(content):
   
 # ==============================================
   
-def generate_iuv():
-    return get_random_digit_string(15)
+def generate_iuv(in_18digit_format=False):
+    iuv = ""
+    if in_18digit_format:
+        iuv = "348" + get_random_digit_string(15)
+    else:
+        iuv = get_random_digit_string(15)
+    return iuv;
 
 # ==============================================
 
@@ -104,7 +110,7 @@ def generate_ccp():
 def generate_cart_id(iuv, creditor_institution):
     cart_id = ""
     if iuv is not None:
-        cart_id = creditor_institution + iuv + get_random_digit_string(5)
+        cart_id = creditor_institution + iuv + "-" + get_random_digit_string(5)
     else:
         cart_id = get_random_digit_string(32)
     return cart_id
