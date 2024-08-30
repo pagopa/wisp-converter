@@ -7,7 +7,6 @@ import it.gov.pagopa.wispconverter.service.ReService;
 import it.gov.pagopa.wispconverter.service.ReceiptService;
 import it.gov.pagopa.wispconverter.service.model.ECommerceHangTimeoutMessage;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
@@ -39,10 +38,6 @@ class ECommerceHangTimeoutConsumerTest {
     @InjectMocks
     @Spy
     private ECommerceHangTimeoutConsumer eCommerceHangTimeoutConsumer;
-
-    @BeforeEach
-    void setUp() {
-    }
 
     @Captor
     ArgumentCaptor<List<ReceiptDto>> listArgumentCaptor;

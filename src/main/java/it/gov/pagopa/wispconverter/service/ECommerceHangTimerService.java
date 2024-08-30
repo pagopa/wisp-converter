@@ -41,14 +41,18 @@ public class ECommerceHangTimerService {
     @Value("${wisp-converter.ecommerce-hang.timeout.seconds}")
     private Integer expirationTime;
 
-    @Autowired
-    private final ReService reService;
+    private ReService reService;
 
-    @Autowired
     private ServiceBusSenderClient serviceBusSenderClient;
 
-    @Autowired
     private CacheRepository cacheRepository;
+
+    @Autowired
+    public ECommerceHangTimerService(CacheRepository cacheRepository, ServiceBusSenderClient serviceBusSenderClient, ReService reService) {
+        this.cacheRepository = cacheRepository;
+        this.serviceBusSenderClient = serviceBusSenderClient;
+        this.reService = reService;
+    }
 
     @PostConstruct
     public void post() {
@@ -74,7 +78,7 @@ public class ECommerceHangTimerService {
         String key = String.format(ECOMMERCE_TIMER_MESSAGE_KEY_FORMAT, noticeNumber, fiscalCode);
 
         // If the key is already present in the cache, we delete it to avoid duplicated message.
-        if (cacheRepository.hasKey(key)) {
+        if (Boolean.TRUE.equals(cacheRepository.hasKey(key))) {
             cancelScheduledMessage(noticeNumber, fiscalCode);
         }
 

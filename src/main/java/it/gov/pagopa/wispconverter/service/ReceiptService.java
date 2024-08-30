@@ -91,11 +91,12 @@ public class ReceiptService {
 
 
     /**
+     * @deprecated
      * use {@code sendKoPaaInviaRtToCreditorInstitution(List<ReceiptDto> receipts)} method instead
      *
      * @param payload a list of {@link ReceiptDto} elements
      */
-    @Deprecated
+    @Deprecated(forRemoval = false)
     public void sendKoPaaInviaRtToCreditorInstitution(String payload) {
         List<ReceiptDto> receipts;
         try {

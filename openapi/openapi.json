@@ -345,9 +345,11 @@
             "format" : "int64"
           },
           "fiscalCode" : {
+            "pattern" : "\\w*",
             "type" : "string"
           },
           "noticeNumber" : {
+            "pattern" : "\\d*",
             "type" : "string"
           },
           "paymentToken" : {
