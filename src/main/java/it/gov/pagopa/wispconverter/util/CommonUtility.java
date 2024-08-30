@@ -207,4 +207,13 @@ public class CommonUtility {
         }
         return isOk;
     }
+
+    public static String sanitizeInput(String input) {
+        if (input.matches("\\w*")) {
+            return input;
+        }
+        else {
+            return "suspicious input";
+        }
+    }
 }

@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import javax.annotation.PostConstruct;
 import java.time.OffsetDateTime;
 
+import static it.gov.pagopa.wispconverter.util.CommonUtility.sanitizeInput;
 import static it.gov.pagopa.wispconverter.util.MDCUtil.setEcommerceHangTimerInfoInMDC;
 
 @Service
@@ -29,6 +30,7 @@ import static it.gov.pagopa.wispconverter.util.MDCUtil.setEcommerceHangTimerInfo
 @RequiredArgsConstructor
 public class ECommerceHangTimerService {
 
+    public static final String ECOMMERCE_TIMER_MESSAGE_KEY_FORMAT = "wisp_timer_hang_%s_%s";
 
     @Value("${azure.sb.wisp-ecommerce-hang-timeout-queue.connectionString}")
     private String connectionString;
@@ -69,7 +71,7 @@ public class ECommerceHangTimerService {
         String fiscalCode = message.getFiscalCode();
         setEcommerceHangTimerInfoInMDC(fiscalCode, noticeNumber);
 
-        String key = String.format("wisp_timer_hang_%s_%s", noticeNumber, fiscalCode);
+        String key = String.format(ECOMMERCE_TIMER_MESSAGE_KEY_FORMAT, noticeNumber, fiscalCode);
 
         // If the key is already present in the cache, we delete it to avoid duplicated message.
         if (cacheRepository.hasKey(key)) {
@@ -101,8 +103,8 @@ public class ECommerceHangTimerService {
      */
     public void cancelScheduledMessage(String noticeNumber, String fiscalCode) {
 
-        log.debug("Cancel scheduled message for ECommerceHangTimer {} {}", noticeNumber, fiscalCode);
-        String key = String.format("wisp_timer_hang_%s_%s", noticeNumber, fiscalCode);
+        log.debug("Cancel scheduled message for ECommerceHangTimer {} {}", sanitizeInput(noticeNumber), sanitizeInput(fiscalCode));
+        String key = String.format(ECOMMERCE_TIMER_MESSAGE_KEY_FORMAT, noticeNumber, fiscalCode);
 
         // get the sequenceNumber from the Redis cache
         String sequenceNumber = cacheRepository.read(key, String.class);
@@ -111,13 +113,13 @@ public class ECommerceHangTimerService {
 
             // cancel scheduled message in the service bus queue
             callCancelScheduledMessage(sequenceNumber);
-            log.info("Canceled scheduled message for ecommerce_hang_timeout_base64 {} {}", LogUtils.encodeToBase64(noticeNumber), LogUtils.encodeToBase64(fiscalCode));
+            log.info("Canceled scheduled message for ecommerce_hang_timeout_base64 {} {}", LogUtils.encodeToBase64(sanitizeInput(noticeNumber)), LogUtils.encodeToBase64(sanitizeInput(fiscalCode)));
 
             // delete the sequenceNumber from the Redis cache
             cacheRepository.delete(key);
 
             // log event
-            log.debug("Deleted sequence number {} for ecommerce_hang_timeout_base64-token: {} {} from cache", sequenceNumber, noticeNumber, fiscalCode);
+            log.debug("Deleted sequence number {} for ecommerce_hang_timeout_base64-token: {} {} from cache", sequenceNumber, sanitizeInput(noticeNumber), sanitizeInput(fiscalCode));
             generateRE(InternalStepStatus.ECOMMERCE_HANG_TIMER_DELETED, "Deleted sequence number: [" + sequenceNumber + "] for notice: [" + noticeNumber + "] for fiscalCode [" + fiscalCode + "]");
         }
     }

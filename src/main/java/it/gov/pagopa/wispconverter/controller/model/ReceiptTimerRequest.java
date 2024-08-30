@@ -1,11 +1,9 @@
 package it.gov.pagopa.wispconverter.controller.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.PositiveOrZero;
+import lombok.*;
 
 @Data
 @Builder(toBuilder = true)
@@ -16,7 +14,13 @@ import lombok.ToString;
 public class ReceiptTimerRequest {
 
     private String paymentToken;
+
+    @Pattern(regexp="\\w*")
     private String fiscalCode;
+
+    @Pattern(regexp="\\d*")
     private String noticeNumber;
+
+    @PositiveOrZero
     private Long expirationTime; // milliseconds
 }
