@@ -21,7 +21,6 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import java.time.OffsetDateTime;
-import java.time.temporal.ChronoUnit;
 
 import static it.gov.pagopa.wispconverter.util.MDCUtil.setEcommerceHangTimerInfoInMDC;
 
@@ -37,7 +36,7 @@ public class ECommerceHangTimerService {
     @Value("${azure.sb.queue.ecommerce-hang-timeout.name}")
     private String queueName;
 
-    @Value("wisp-converter.ecommerce-hang.timeout.seconds")
+    @Value("${wisp-converter.ecommerce-hang.timeout.seconds}")
     private Integer expirationTime;
 
     @Autowired
@@ -108,8 +107,10 @@ public class ECommerceHangTimerService {
         // get the sequenceNumber from the Redis cache
         String sequenceNumber = cacheRepository.read(key, String.class);
 
-        // cancel scheduled message
-        if (sequenceNumber != null && this.callCancelScheduledMessage(sequenceNumber)) {
+        if (sequenceNumber != null) {
+
+            // cancel scheduled message in the service bus queue
+            callCancelScheduledMessage(sequenceNumber);
             log.info("Canceled scheduled message for ecommerce_hang_timeout_base64 {} {}", LogUtils.encodeToBase64(noticeNumber), LogUtils.encodeToBase64(fiscalCode));
 
             // delete the sequenceNumber from the Redis cache
@@ -121,12 +122,11 @@ public class ECommerceHangTimerService {
         }
     }
 
-    private boolean callCancelScheduledMessage(String sequenceNumberString) {
+    private void callCancelScheduledMessage(String sequenceNumberString) {
         long sequenceNumber = Long.parseLong(sequenceNumberString);
         try {
             // delete the message from the queue
             serviceBusSenderClient.cancelScheduledMessage(sequenceNumber);
-            return true;
         } catch (Exception exception) {
             throw new AppException(AppErrorCodeMessageEnum.PERSISTENCE_SERVICE_BUS_CANCEL_ERROR, exception.getMessage());
         }

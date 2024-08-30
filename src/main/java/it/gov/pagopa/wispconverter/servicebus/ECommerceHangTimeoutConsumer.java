@@ -4,8 +4,9 @@ import com.azure.messaging.servicebus.ServiceBusReceivedMessage;
 import com.azure.messaging.servicebus.ServiceBusReceivedMessageContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
-import it.gov.pagopa.wispconverter.service.PaaInviaRTSenderService;
+import it.gov.pagopa.wispconverter.service.ReceiptService;
 import it.gov.pagopa.wispconverter.service.model.ECommerceHangTimeoutMessage;
+import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
 import it.gov.pagopa.wispconverter.util.CommonUtility;
 import it.gov.pagopa.wispconverter.util.Constants;
 import lombok.extern.slf4j.Slf4j;
@@ -40,7 +41,7 @@ public class ECommerceHangTimeoutConsumer extends SBConsumer {
     private String queueName;
 
     @Autowired
-    private PaaInviaRTSenderService paaInviaRTSenderService;
+    private ReceiptService receiptService;
 
 
     @EventListener(ApplicationReadyEvent.class)
@@ -72,10 +73,13 @@ public class ECommerceHangTimeoutConsumer extends SBConsumer {
             generateRE(InternalStepStatus.ECOMMERCE_HANG_TIMER_TRIGGER, "Expired eCommerce hang timer. A Negative sendRT will be sent: " + timeoutMessage);
 
             // transform to string list
-//            String inputPaaInviaRTKo = List.of(timeoutMessage).toString();
-//            paaInviaRTSenderService.sendToCreditorInstitution(inputPaaInviaRTKo);
+            var inputPaaInviaRTKo = List.of(ReceiptDto.builder()
+                    .fiscalCode(timeoutMessage.getFiscalCode())
+                    .noticeNumber(timeoutMessage.getNoticeNumber())
+                    .build());
+            receiptService.sendKoPaaInviaRtToCreditorInstitution(inputPaaInviaRTKo);
         } catch (IOException e) {
-            // log.error("Error when read ECommerceHangTimeoutDto value from message: '{}'. Body: '{}'", message.getMessageId(), message.getBody());
+            log.error("Error when read ECommerceHangTimeoutDto value from message: '{}'. Body: '{}'", message.getMessageId(), message.getBody());
         }
         MDC.clear();
     }

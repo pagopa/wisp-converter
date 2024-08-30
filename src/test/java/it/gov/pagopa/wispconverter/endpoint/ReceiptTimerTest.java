@@ -7,6 +7,7 @@ import it.gov.pagopa.wispconverter.Application;
 import it.gov.pagopa.wispconverter.controller.model.ReceiptTimerRequest;
 import it.gov.pagopa.wispconverter.repository.*;
 import it.gov.pagopa.wispconverter.service.*;
+import it.gov.pagopa.wispconverter.servicebus.ECommerceHangTimeoutConsumer;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -82,6 +83,11 @@ public class ReceiptTimerTest {
     private ReceiptTimerService receiptTimerService;
     @MockBean
     private ReceiptService receiptService;
+    @MockBean
+    ECommerceHangTimerService eCommerceHangTimerService;
+    @MockBean
+    ECommerceHangTimeoutConsumer eCommerceHangTimeoutConsumer;
+
 
     /*
      * CREATE receipt/timer

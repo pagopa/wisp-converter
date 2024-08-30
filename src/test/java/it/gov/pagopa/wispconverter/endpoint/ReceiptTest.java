@@ -1,7 +1,6 @@
 package it.gov.pagopa.wispconverter.endpoint;
 
 import com.azure.cosmos.CosmosClientBuilder;
-import com.azure.cosmos.CosmosException;
 import com.azure.messaging.servicebus.ServiceBusSenderClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.gen.wispconverter.client.cache.model.StationCreditorInstitutionDto;
@@ -13,12 +12,12 @@ import it.gov.pagopa.wispconverter.repository.*;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
 import it.gov.pagopa.wispconverter.service.*;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
+import it.gov.pagopa.wispconverter.servicebus.ECommerceHangTimeoutConsumer;
 import it.gov.pagopa.wispconverter.utils.TestUtils;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -94,6 +93,10 @@ class ReceiptTest {
     private ReceiptTimerService receiptTimerService;
     @MockBean
     RtReceiptCosmosService rtReceiptCosmosService;
+    @MockBean
+    ECommerceHangTimerService eCommerceHangTimerService;
+    @MockBean
+    ECommerceHangTimeoutConsumer eCommerceHangTimeoutConsumer;
 
     private String getPaSendRTPayload() {
         return TestUtils.loadFileContent("/requests/paSendRTV2.xml");

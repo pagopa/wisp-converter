@@ -10,9 +10,11 @@ import it.gov.pagopa.wispconverter.Application;
 import it.gov.pagopa.wispconverter.repository.*;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
 import it.gov.pagopa.wispconverter.service.ConfigCacheService;
+import it.gov.pagopa.wispconverter.service.ECommerceHangTimerService;
 import it.gov.pagopa.wispconverter.service.ReceiptService;
 import it.gov.pagopa.wispconverter.service.ReceiptTimerService;
 import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
+import it.gov.pagopa.wispconverter.servicebus.ECommerceHangTimeoutConsumer;
 import it.gov.pagopa.wispconverter.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -89,6 +91,11 @@ class RptTest {
     private ReceiptTimerService receiptTimerService;
     @MockBean
     private ReceiptService receiptService;
+    @MockBean
+    ECommerceHangTimerService eCommerceHangTimerService;
+    @MockBean
+    ECommerceHangTimeoutConsumer eCommerceHangTimeoutConsumer;
+
 
     private void setConfigCacheStoredData(String servicePath, int primitiveVersion) {
         StationCreditorInstitutionDto stationCreditorInstitutionDto = new StationCreditorInstitutionDto();
