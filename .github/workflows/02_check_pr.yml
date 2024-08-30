@@ -66,4 +66,4 @@ jobs:
         uses: pagopa/github-actions-template/check-pr-size@main
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          ignored_files: 'openapi.json'
+          ignored_files: 'openapi'
