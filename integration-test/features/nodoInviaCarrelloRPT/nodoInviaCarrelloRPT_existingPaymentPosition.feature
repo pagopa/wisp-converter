@@ -19,7 +19,7 @@ Feature: User pays a payment carts from existing payment position via nodoInviaC
   # ===============================================================================================
   # ===============================================================================================
   
-  @runnable @nodo_invia_carrello_rpt @happy_path @new_scenario
+  @runnable @nodo_invia_carrello_rpt @happy_path
   Scenario: User pays a cart with single RPT with multiple transfers on nodoInviaCarrelloRPT that exists already in GPD
     Given a cart of RPTs non-multibeneficiary
     And a single RPT of type BBT with 3 transfers of which none are stamps

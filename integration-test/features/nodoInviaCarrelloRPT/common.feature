@@ -50,7 +50,7 @@ Feature: Common scenarios for nodoInviaCarrelloRPT
     And all the IUV codes of the sent RPTs
     When the user searches for flow steps by IUVs
     Then the user receives the HTTP status code 200
-    Then there is a timer-delete event with field operationStatus with value Success
+    Then there is a timer-delete event with field status with value RECEIPT_TIMER_GENERATION_DELETED_SCHEDULED_SEND
     And these events are related to each payment token
     Then there is a receipt-ok event with field status with value RT_SEND_SUCCESS
     And these events are related to each notice number
