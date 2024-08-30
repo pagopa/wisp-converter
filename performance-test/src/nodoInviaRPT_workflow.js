@@ -19,6 +19,10 @@ const nodoBasePath = `${vars.nodo_pa_host}`;
 const creditorInstitutionCode = `${vars.id_pa}`;
 const idBrokerPA = `${vars.id_broker_pa}`;
 const idStation = `${vars.id_station}`;
+const idBrokerPsp = `${vars.id_broker_psp}`;
+const idPsp = `${vars.id_psp}`;
+const idChannel = `${vars.id_channel}`;
+const creditorIban = `${vars.iban_pa}`;
 
 const nodoSubscriptionKey = `${__ENV.NODO_SUBSCRIPTION_KEY}`;
 const pwdStation = `${__ENV.STATION_PWD}`;
@@ -47,7 +51,7 @@ export default function () {
     },
   };
 
-  var payload = getNodoInviaRPTReqBody(creditorInstitutionCode, idBrokerPA, idStation, iuv, ccp)
+  var payload = getNodoInviaRPTReqBody(idPsp, idBrokerPsp, idChannel, creditorInstitutionCode, idBrokerPA, idStation, iuv, ccp, pwdStation, creditorIban)
 
       // execute the call and check the response
       var response = http.post(url, payload, soapParams);
@@ -75,6 +79,7 @@ export default function () {
             response.body
         );
       }
+
       check(
         response,
         {

@@ -1,6 +1,6 @@
 import encoding from 'k6/encoding';
 
-export function getNodoInviaRPTReqBody(creditorInstitutionCode, idBrokerPA, idStation, iuv, ccp, password) {
+export function getNodoInviaRPTReqBody(idPsp, idBrokerPsp, idChannel, creditorInstitutionCode, idBrokerPA, idStation, iuv, ccp, password, creditorIban) {
   let payload = `<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ppt="http://ws.pagamenti.telematici.gov/ppthead" xmlns:ws="http://ws.pagamenti.telematici.gov/">
                      <soapenv:Header>
                          <ppt:intestazionePPT>
@@ -14,18 +14,18 @@ export function getNodoInviaRPTReqBody(creditorInstitutionCode, idBrokerPA, idSt
                      <soapenv:Body>
                          <ws:nodoInviaRPT>
                              <password>${password}</password>
-                             <identificativoPSP>AGID_01</identificativoPSP>
-                             <identificativoIntermediarioPSP>97735020584</identificativoIntermediarioPSP>
-                             <identificativoCanale>97735020584_02</identificativoCanale>
+                             <identificativoPSP>${idPsp}</identificativoPSP>
+                             <identificativoIntermediarioPSP>${idBrokerPsp}</identificativoIntermediarioPSP>
+                             <identificativoCanale>${idChannel}</identificativoCanale>
                              <tipoFirma></tipoFirma>
-                             <rpt>${getRPT(creditorInstitutionCode, idStation, iuv, ccp)}</rpt>
+                             <rpt>${getRPT(creditorInstitutionCode, idStation, iuv, ccp, creditorIban)}</rpt>
                          </ws:nodoInviaRPT>
                      </soapenv:Body>
                  </soapenv:Envelope>`;
   return payload;
 }
 
-function getRPT(creditorInstitutionCode, idStation, iuv, ccp) {
+function getRPT(creditorInstitutionCode, idStation, iuv, ccp, creditorIban) {
   let time = new Date().toJSON();
   let dateString = time.substring(0, 10);
   let timeString = time.substring(0, 19);
@@ -95,9 +95,9 @@ function getRPT(creditorInstitutionCode, idStation, iuv, ccp) {
                          <pay_i:datiSingoloVersamento>
                                  <pay_i:importoSingoloVersamento>${amount}</pay_i:importoSingoloVersamento>
                                  <pay_i:commissioneCaricoPA>${fee}</pay_i:commissioneCaricoPA>
-                                 <pay_i:ibanAccredito>IT76P0306909790100000300089</pay_i:ibanAccredito>
+                                 <pay_i:ibanAccredito>${creditorIban}</pay_i:ibanAccredito>
                                  <pay_i:bicAccredito>ARTIITM1050</pay_i:bicAccredito>
-                                 <pay_i:ibanAppoggio>IT76P0306909790100000300089</pay_i:ibanAppoggio>
+                                 <pay_i:ibanAppoggio>${creditorIban}</pay_i:ibanAppoggio>
                                  <pay_i:bicAppoggio>ARTIITM1050</pay_i:bicAppoggio>
                                  <pay_i:credenzialiPagatore>CP1.1</pay_i:credenzialiPagatore>
                                  <pay_i:causaleVersamento>/RFB/${iuv}/${amount}/TXT/DEBITORE/VRDMRN72A12H501Z</pay_i:causaleVersamento>
