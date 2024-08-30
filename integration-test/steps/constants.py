@@ -205,11 +205,11 @@ PRIMITIVE_NODOINVIACARRELLORPT = "nodoInviaCarrelloRPT"
 
 OCP_APIM_SUBSCRIPTION_KEY = "Ocp-Apim-Subscription-Key"
 
-REQ_DESCRIPTION_EXECUTE_SOAP_CALL = "Executing SOAP action [{action}]"
-REQ_DESCRIPTION_EXECUTE_CALL_TO_WISPCONV = "Continuing payment process calling WISP Converter for sessionId [{sessionId}]"
-REQ_DESCRIPTION_RETRIEVE_EVENTS_FROM_RE = "Retrieving events from RE using the IUV [{iuv}] as a search filter"
-REQ_DESCRIPTION_RETRIEVE_PAYMENT_POSITION = "Retrieving payment position by IUV [{iuv}]"
-REQ_DESCRIPTION_CREATE_PAYMENT_POSITION = "Creating payment position with segregation code [{segcode}] and state [{status}]"
+REQ_DESCRIPTION_EXECUTE_SOAP_CALL = "Step: [{step}]"
+REQ_DESCRIPTION_EXECUTE_CALL_TO_WISPCONV = "Step: [{step}]: on sessionId: [{sessionId}]"
+REQ_DESCRIPTION_RETRIEVE_EVENTS_FROM_RE = "Step: [{step}]: on IUV: [{iuv}]"
+REQ_DESCRIPTION_RETRIEVE_PAYMENT_POSITION = "Step: [{step}] on IUV: [{iuv}]"
+REQ_DESCRIPTION_CREATE_PAYMENT_POSITION = "Step: [{step}]"
 
 
 class ResponseType(Enum):

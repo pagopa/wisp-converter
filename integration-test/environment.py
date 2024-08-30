@@ -54,3 +54,7 @@ def before_all(context):
     # update context data
     context.config.update_userdata(other_data)
     context.config.update_userdata(common_data)
+
+
+def before_step(context, step):
+    context.running_step = step.name
