@@ -51,10 +51,20 @@ export default function () {
     },
   };
 
-  var payload = getNodoInviaRPTReqBody(idPsp, idBrokerPsp, idChannel, creditorInstitutionCode, idBrokerPA, idStation, iuv, ccp, pwdStation, creditorIban)
+  var payload = getNodoInviaRPTReqBody(idPsp, idBrokerPsp, idChannel, creditorInstitutionCode, idBrokerPA, idStation, iuv, ccp, pwdStation, creditorIban);
 
       // execute the call and check the response
       var response = http.post(url, payload, soapParams);
+
+      if(response.status === 200 &&
+                  parseHTML(response.body)
+                    .find("esito")
+                    .text() === "OK" &&
+                  parseHTML(response.body)
+                    .find("url")
+                    .text().startsWith(wisp_url)) {
+                    console.log("ERROR BODY: " + response.body)
+                    }
 
       console.log(
         "Send nodoInviaRPT req - creditor_institution_code = " +
