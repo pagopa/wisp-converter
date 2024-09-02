@@ -30,7 +30,7 @@ function getRPT(creditorInstitutionCode, idStation, iuv, ccp, creditorIban) {
   let dateString = time.substring(0, 10);
   let timeString = time.substring(0, 19);
   let amount = getRandomMonetaryAmount(10.0, 599.99);
-  let fee = getRandomMonetaryAmount(0, 1);
+  let fee = getRandomMonetaryAmount(0.01, 1.00);
   let rpt = `<pay_i:RPT xmlns:pay_i="http://www.digitpa.gov.it/schemas/2011/Pagamenti/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.digitpa.gov.it/schemas/2011/Pagamenti/ PagInf_RPT_RT_6_2_0.xsd ">
                      <pay_i:versioneOggetto>6.0</pay_i:versioneOggetto>
                      <pay_i:dominio>
