@@ -70,6 +70,9 @@ For classical integration tests with Cucumber, execute the following commands fr
 1. `yarn install`
 2. `yarn test`
 
+A report with the results will appears
+at [this link](https://pagopauweusharedtstdtsa.blob.core.windows.net/pagopa-wisp-converter/reports/index.html).
+
 #### Performance testing
 
 install [k6](https://k6.io/) and then from `./performance-test/src`
