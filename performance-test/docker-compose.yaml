@@ -9,7 +9,7 @@ services:
       - NODO_PA_SUBSCRIPTION_KEY=${nodo_pa_sub_key}
       - STATION_PWD=${station_pwd}
       - CHANNEL_PWD=${channel_pwd}
-      - VARS=/scripts/${env}.environment.json
+      - VARS=/scripts/environments/${env}.environment.json
       - TEST_TYPE=/scripts/test-types/${type}.json
       - K6_OUT=influxdb=http://nginx:8086/${db_name}
     command: run /scripts/${script}.js
