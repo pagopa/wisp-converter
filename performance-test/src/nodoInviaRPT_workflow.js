@@ -56,14 +56,14 @@ export default function () {
       // execute the call and check the response
       var response = http.post(url, payload, soapParams);
 
-      if(response.status === 200 &&
+      if(!(response.status === 200 &&
                   parseHTML(response.body)
                     .find("esito")
                     .text() === "OK" &&
                   parseHTML(response.body)
                     .find("url")
-                    .text().startsWith(wisp_url)) {
-                    console.log("ERROR BODY: " + response.body)
+                    .text().startsWith(wisp_url))) {
+                    console.log("ERROR BODY: " + response.body);
                     }
 
       console.log(
