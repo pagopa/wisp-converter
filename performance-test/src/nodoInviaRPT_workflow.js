@@ -24,7 +24,7 @@ const idPsp = `${vars.id_psp}`;
 const idChannel = `${vars.id_channel}`;
 const creditorIban = `${vars.iban_pa}`;
 
-const nodoSubscriptionKey = `${__ENV.NODO_SUBSCRIPTION_KEY}`;
+const nodoSubscriptionKey = `${__ENV.NODO_PA_SUBSCRIPTION_KEY}`;
 const pwdStation = `${__ENV.STATION_PWD}`;
 
 export default function () {
