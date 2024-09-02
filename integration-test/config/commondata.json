@@ -73,6 +73,20 @@
                 "address_nation": "IT",
                 "iban": "<creditor_institution_multibeneficiary_iban>",
                 "bic": "ARTIITM1045"
+        },
+        "payee_institutions_3": {
+                "fiscal_code": "<creditor_institution_multibeneficiary_2>",
+                "name": "EC DEMO",
+                "operative_code": "123",
+                "operative_denomination": "XXX",
+                "address": "via Roma",
+                "address_number": "1",
+                "address_zipcode": "00187",
+                "address_location": "Roma",
+                "address_province": "RM",
+                "address_nation": "IT",
+                "iban": "<creditor_institution_multibeneficiary_2_iban>",
+                "bic": "ARTIITM1045"
         }
     }
 }

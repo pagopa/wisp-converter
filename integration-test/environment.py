@@ -50,6 +50,13 @@ def before_all(context):
             if injected_value == None:
                 injected_value = other_data.get("secrets").get(value[1:-1])
             common_data.get("test_data").get("payee_institutions_2")[key] = injected_value
+    
+    for key, value in common_data.get("test_data").get("payee_institutions_3").items():
+        if isinstance(value, str) and value.startswith("<"):
+            injected_value = other_data.get("global_configuration").get(value[1:-1])
+            if injected_value == None:
+                injected_value = other_data.get("secrets").get(value[1:-1])
+            common_data.get("test_data").get("payee_institutions_3")[key] = injected_value
 
     # update context data
     context.config.update_userdata(other_data)

@@ -46,6 +46,8 @@
     "creditor_institution_iban": "IT76P0306909790100000300089",
     "creditor_institution_multibeneficiary": "77777777777",
     "creditor_institution_multibeneficiary_iban": "IT30N0103076271000001823603",
+    "creditor_institution_multibeneficiary_2": "99999000013",
+    "creditor_institution_multibeneficiary_2_iban": "IT60X05428111010000001111111",
     "creditor_institution_broker": "15376371009",
     "station": "15376371009_09",
     "station_gpd": "15376371009_48"

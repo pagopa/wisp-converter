@@ -102,7 +102,7 @@ def generate_empty_cart(context, note):
     session.set_flow_data(context, constants.SESSION_DATA_TRIGGER_PRIMITIVE, constants.PRIMITIVE_NODOINVIACARRELLORPT)
     
     if "for multibeneficiary" in note:
-        iuv = utils.generate_iuv()
+        iuv = utils.generate_iuv(in_18digit_format=True)
         session.set_flow_data(context, constants.SESSION_DATA_CART_ID, utils.generate_cart_id(iuv, test_data['creditor_institution']))
         session.set_flow_data(context, constants.SESSION_DATA_CART_IS_MULTIBENEFICIARY, True)
         session.set_flow_data(context, constants.SESSION_DATA_CART_MULTIBENEFICIARY_IUV, iuv)
@@ -125,21 +125,34 @@ def generate_single_rpt(context, payment_type, number_of_transfers, number_of_st
     is_multibeneficiary_cart = session.get_flow_data(context, constants.SESSION_DATA_CART_IS_MULTIBENEFICIARY)
     if is_multibeneficiary_cart is not None and is_multibeneficiary_cart == True:
         iuv = session.get_flow_data(context, constants.SESSION_DATA_CART_MULTIBENEFICIARY_IUV)
-
     
     # force CCP definition if the RPT is part of multibeneficiary cart
     ccp = None
     if is_multibeneficiary_cart:
         ccp = session.get_flow_data(context, constants.SESSION_DATA_CART_ID)
 
-    # generate raw RPT that will be used for construct XML content
+    # setting main info
     test_data = session.get_test_data(context)
     domain_id = test_data['creditor_institution'] 
     payee_institution = test_data['payee_institutions_1']
+
+    # set second payee institution if non-first RPT of multibeneficiary cart must be created 
+    rpts = session.get_flow_data(context, constants.SESSION_DATA_RAW_RPTS)
+
+    if is_multibeneficiary_cart:
+        if len(rpts) == 1:
+            other_payee_institution = test_data['payee_institutions_2']
+            domain_id = other_payee_institution['fiscal_code']
+            payee_institution = other_payee_institution
+        elif len(rpts) == 2:
+            other_payee_institution = test_data['payee_institutions_3']
+            domain_id = other_payee_institution['fiscal_code']
+            payee_institution = other_payee_institution
+       
+    # generate raw RPT that will be used for construct XML content
     rpt = requestgen.create_rpt(test_data, iuv, ccp, domain_id, payee_institution, payment_type, int(number_of_transfers), int(number_of_stamps))
     
     # update list of RPTs
-    rpts = session.get_flow_data(context, constants.SESSION_DATA_RAW_RPTS)
     rpts.append(rpt)
     session.set_flow_data(context, constants.SESSION_DATA_RAW_RPTS, rpts)
 
@@ -191,7 +204,7 @@ def generate_nodoinviarpt(context):
 # ==============================================
 
 @given('a valid nodoInviaCarrelloRPT request{options}')
-def generate_nodoinviarpt(context, options):
+def generate_nodoinviacarrellorpt(context, options):
     
     session.set_skip_tests(context, False)
 
@@ -199,6 +212,7 @@ def generate_nodoinviarpt(context, options):
     test_data = session.get_test_data(context)
     rpts = session.get_flow_data(context, constants.SESSION_DATA_RAW_RPTS)
     cart_id = session.get_flow_data(context, constants.SESSION_DATA_CART_ID)
+    is_multibeneficiary = session.get_flow_data(context, constants.SESSION_DATA_CART_IS_MULTIBENEFICIARY)
 
     # set channel and password regarding the required options
     channel = test_data['channel_wisp']
@@ -210,7 +224,7 @@ def generate_nodoinviarpt(context, options):
         password = test_data['channel_wfesp_password']
         psp = test_data['psp_wfesp']
         psp_broker = test_data['psp_broker_wfesp']
-    request = requestgen.generate_nodoinviacarrellorpt(test_data, cart_id, rpts, psp, psp_broker, channel, password)    
+    request = requestgen.generate_nodoinviacarrellorpt(test_data, cart_id, rpts, psp, psp_broker, channel, password, is_multibeneficiary)    
 
     # update context with request and edit session data
     session.set_flow_data(context, constants.SESSION_DATA_REQ_BODY, request)
@@ -472,6 +486,8 @@ def check_field(context, field_name, field_value):
         logging.debug("Skipping check_field step")
         return
     
+    field_value = field_value.replace('\'', '')
+    
     response = session.get_flow_data(context, constants.SESSION_DATA_RES_BODY)
     content_type = session.get_flow_data(context, constants.SESSION_DATA_RES_CONTENTTYPE)
     if content_type == constants.ResponseType.XML:
@@ -680,7 +696,7 @@ def check_paymentoption_amounts(context, index):
     payment_data = rpt['payment_data']
 
     utils.assert_show_message(response['pull'] == False, f"The payment option must be not defined for pull payments.")
-    utils.assert_show_message(int(payment_option['amount']) == round(payment_data['total_amount'] * 100), f"The total amount calculated for {index} RPT is not equals to the one defined in GPD payment position. GPD's: [{int(payment_option['amount'])}], RPT's: [{round(payment_data['total_amount'])}]") 
+    utils.assert_show_message(int(payment_option['amount']) == round(payment_data['total_amount'] * 100), f"The total amount calculated for {index} RPT is not equals to the one defined in GPD payment position. GPD's: [{int(payment_option['amount'])}], RPT's: [{round(payment_data['total_amount'] * 100)}]") 
     utils.assert_show_message(payment_option['notificationFee'] == 0, f"The notification fee in the {index} payment position defined for GPD must be always 0.") 
     utils.assert_show_message(payment_option['isPartialPayment'] == False, f"The payment option must be not defined as partial payment.") 
 
@@ -700,15 +716,13 @@ def check_paymentposition_status(context, status):
 
 # ==============================================  
 
-@then('the response contains the transfers correctly generated from {index} RPT in nodoInviaRPT')
+@then('the response contains the transfers correctly generated from RPT')
 def check_paymentposition_transfers(context, index):
 
     if session.skip_tests(context):
         logging.debug("Skipping check_paymentposition_transfers step")
         return
-    
-    rpt_index = utils.get_index_from_cardinal(index)
-    
+        
     response = session.get_flow_data(context, constants.SESSION_DATA_RES_BODY)
     payment_options = utils.get_nested_field(response, "paymentOption")
     transfers_from_po = payment_options[0]['transfer']
@@ -727,11 +741,67 @@ def check_paymentposition_transfers(context, index):
         utils.assert_show_message('transferMetadata' in transfer_from_po and len(transfer_from_po['transferMetadata']) > 0, f"There are not transfer metadata in transfer {transfer_index} but at least one is required.")
         utils.assert_show_message('stamp' in transfer_from_po or 'iban' in transfer_from_po, f"There are either IBAN and stamp definition in transfer {transfer_index} but they cannot be defined together.")
         if transfer_from_rpt['is_mbd'] == True:
-            utils.assert_show_message('stamp' in transfer_from_po, f"There is not stamp definition in transfer {transfer_index} but RPT transfer define it.")
+            utils.assert_show_message('stamp' in transfer_from_po, f"There is not stamp definition in transfer {transfer_index} but RPT transfer require it.")
             utils.assert_show_message('hashDocument' in transfer_from_po['stamp'], f"There is not a valid hash for stamp in transfer {transfer_index}.")
             utils.assert_show_message('stampType' in transfer_from_po['stamp'], f"There is not a valid type for stamp in transfer {transfer_index}.")
             utils.assert_show_message(transfer_from_po['stamp']['hashDocument'] == transfer_from_rpt['stamp_hash'], f"The hash defined for the stamp in payment position in transfer {transfer_index} is not equals to the one defined in RPT. GPD's: [{transfer_from_po['stamp']['hashDocument']}], RPT's: [{transfer_from_rpt['stamp_hash']}]")
             utils.assert_show_message(transfer_from_po['stamp']['stampType'] == transfer_from_rpt['stamp_type'], f"The type defined for the stamp in payment position in transfer {transfer_index} is not equals to the one defined in RPT. GPD's: [{transfer_from_po['stamp']['stampType']}], RPT's: [{transfer_from_rpt['stamp_type']}]")
         else:
-            utils.assert_show_message('iban' in transfer_from_po, f"There is not IBAN definition in transfer {transfer_index} but RPT transfer define it.")    
+            utils.assert_show_message('iban' in transfer_from_po, f"There is not IBAN definition in transfer {transfer_index} but RPT transfer require it.")    
             utils.assert_show_message(transfer_from_po['iban'] == transfer_from_rpt['creditor_iban'], f"The IBAN defined in transfer {transfer_index} is not equals to the one defined in RPT. GPD's: [{transfer_from_po['iban']}], RPT's: [{transfer_from_rpt['creditor_iban']}]")
+
+
+# ==============================================  
+
+@then('the response contains the payment option correctly generated from all RPTs')
+def check_paymentoption_amounts_for_multibeneficiary(context):
+
+    response = session.get_flow_data(context, constants.SESSION_DATA_RES_BODY)
+    payment_options = utils.get_nested_field(response, "paymentOption")
+    payment_option = payment_options[0]
+
+    raw_rpts = session.get_flow_data(context, constants.SESSION_DATA_RAW_RPTS)
+    amount = 0
+    for rpt in raw_rpts:
+        amount += rpt['payment_data']['total_amount']
+    amount = round(amount * 100)
+            
+    utils.assert_show_message(response['pull'] == False, f"The payment option must be not defined for pull payments.")
+    utils.assert_show_message(int(payment_option['amount']) == amount, f"The total amount calculated from all RPTs in multibeneficiary cart is not equals to the one defined in GPD payment position. GPD's: [{int(payment_option['amount'])}], RPT's: [{amount}]") 
+    utils.assert_show_message(payment_option['notificationFee'] == 0, f"The notification fee in the payment position defined for GPD must be always 0.") 
+    utils.assert_show_message(payment_option['isPartialPayment'] == False, f"The payment option must be not defined as partial payment.") 
+
+
+# ==============================================  
+
+@then('the response contains the transfers correctly generated from all RPTs')
+def check_paymentposition_transfers_for_multibeneficiary(context):
+
+    response = session.get_flow_data(context, constants.SESSION_DATA_RES_BODY)
+    payment_options = utils.get_nested_field(response, "paymentOption")
+    transfers_from_po = payment_options[0]['transfer']
+
+    raw_rpts = session.get_flow_data(context, constants.SESSION_DATA_RAW_RPTS)
+    transfers_from_rpt = []
+    for rpt in raw_rpts:
+        for transfer in rpt['payment_data']['transfers']:
+            transfers_from_rpt.append(transfer)
+
+    utils.assert_show_message(len(transfers_from_po) == len(transfers_from_rpt), f"There are not the same amount of transfers. GPD's: [{len(transfers_from_po)}], RPT's: [{len(transfers_from_rpt)}]")
+
+    logging.debug("\n\ntransfer from rpt ===>")
+    logging.debug(transfers_from_rpt)
+    logging.debug("\ntransfer from gpd ===>")
+    logging.debug(transfers_from_po)
+
+    for transfer_index in range(len(transfers_from_po)):
+        transfer_from_po = transfers_from_po[transfer_index]
+        # using this filter because it cannot be used a filter on IUV for multibeneficiary
+        transfer_from_rpt = next((transfer for transfer in transfers_from_rpt if transfer['transfer_note'] == transfer_from_po['remittanceInformation']), None)
+        utils.assert_show_message(transfer_from_rpt is not None, f"It is not possible to find a transfer in RPT cart with transfer note [{transfer_from_po['remittanceInformation']}]")
+        utils.assert_show_message(transfer_from_po['status'] == "T_UNREPORTED", f"The status of the transfer {transfer_index} must be equals to [T_UNREPORTED]. Current status: [{transfer_from_po['status']}]")
+        utils.assert_show_message('transferMetadata' in transfer_from_po and len(transfer_from_po['transferMetadata']) > 0, f"There are not transfer metadata in transfer {transfer_index} but at least one is required.")
+        utils.assert_show_message('iban' in transfer_from_po, f"There is not IBAN definition in transfer {transfer_index} but RPT transfer require it.")    
+        utils.assert_show_message(transfer_from_po['iban'] == transfer_from_rpt['creditor_iban'], f"The IBAN defined in transfer {transfer_index} is not equals to the one defined in RPT. GPD's: [{transfer_from_po['iban']}], RPT's: [{transfer_from_rpt['creditor_iban']}]")
+        utils.assert_show_message(int(transfer_from_po['amount']) == round(transfer_from_rpt['amount'] * 100), f"The amount of the transfer {transfer_index} must be equals to the same defined in the payment position. GPD's: [{int(transfer_from_po['amount'])}], RPT's: [{round(transfer_from_rpt['amount'])}]")
+    

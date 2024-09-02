@@ -39,7 +39,7 @@ Feature: Common scenarios for nodoInviaRPT
     And the response contains a single payment option
     And the response contains the payment option correctly generated from first RPT
     And the response contains the status in PO_PAID for the payment option
-    And the response contains the transfers correctly generated from first RPT in nodoInviaRPT
+    And the response contains the transfers correctly generated from RPT
     # executing the check on payment position for second IUV
     When the user searches for payment position in GPD by second IUV
     Then the user receives the HTTP status code 200
@@ -47,7 +47,7 @@ Feature: Common scenarios for nodoInviaRPT
     And the response contains a single payment option
     And the response contains the payment option correctly generated from second RPT
     And the response contains the status in PO_PAID for the payment option
-    And the response contains the transfers correctly generated from second RPT in nodoInviaRPT
+    And the response contains the transfers correctly generated from RPT
     # executing the check on payment position for third IUV
     When the user searches for payment position in GPD by third IUV
     Then the user receives the HTTP status code 200
@@ -55,7 +55,7 @@ Feature: Common scenarios for nodoInviaRPT
     And the response contains a single payment option
     And the response contains the payment option correctly generated from third RPT
     And the response contains the status in PO_PAID for the payment option
-    And the response contains the transfers correctly generated from third RPT in nodoInviaRPT
+    And the response contains the transfers correctly generated from RPT
     # executing the check on payment position for fourth IUV
     When the user searches for payment position in GPD by fourth IUV
     Then the user receives the HTTP status code 200
@@ -63,7 +63,7 @@ Feature: Common scenarios for nodoInviaRPT
     And the response contains a single payment option
     And the response contains the payment option correctly generated from fourth RPT
     And the response contains the status in PO_PAID for the payment option
-    And the response contains the transfers correctly generated from fourth RPT in nodoInviaRPT
+    And the response contains the transfers correctly generated from RPT
     # executing the check on payment position for fifth IUV
     When the user searches for payment position in GPD by fifth IUV
     Then the user receives the HTTP status code 200
@@ -71,7 +71,7 @@ Feature: Common scenarios for nodoInviaRPT
     And the response contains a single payment option
     And the response contains the payment option correctly generated from fifth RPT
     And the response contains the status in PO_PAID for the payment option
-    And the response contains the transfers correctly generated from fifth RPT in nodoInviaRPT
+    And the response contains the transfers correctly generated from RPT
 
   # ===============================================================================================
   # ===============================================================================================

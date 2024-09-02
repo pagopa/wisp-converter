@@ -307,12 +307,10 @@ def generate_closepayment(test_data, payment_notices, rpts, outcome):
 
 def create_rpt(test_data, iuv, ccp, domain_id, payee_institution, payment_type, number_of_transfers, number_of_mbd=0):
 
-    #other_payee_institution = test_data['payee_institutions_2']
-
     payer_info = "CP1.1"
     taxonomy_simple_transfer = "9/0301109AP"
     taxonomy_stamp_transfer = "9/0301116TS/9/24B0060000000017"
-    payment_description = "/RFB/{iuv}/{amount}/TXT/DEBITORE/{fiscal_code}"
+    payment_description = "/RFB/{iuv}/{amount:.2f}/TXT/DEBITORE/{fiscal_code}"
     iuv = utils.generate_iuv() if iuv is None else iuv
     payer_delegate = test_data['payer_delegate']
     transfers = []
