@@ -97,7 +97,7 @@ Feature: User pays a multibeneficiary payment carts on nodoInviaCarrelloRPT
   # ===============================================================================================
   # ===============================================================================================
 
-  @runnable @nodo_invia_carrello_rpt @unhappy_path @new_scenario
+  @runnable @nodo_invia_carrello_rpt @unhappy_path
   Scenario: User tries to pay a multibeneficiary cart with two RPTs with a stamp via nodoInviaCarrelloRPT
     Given a cart of RPTs for multibeneficiary
     And a single RPT of type BBT with 2 transfers of which 1 are stamps

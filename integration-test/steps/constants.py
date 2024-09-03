@@ -190,8 +190,6 @@ SESSION_DATA_TRIGGER_PRIMITIVE = "flow_data.action.trigger_primitive.name"
 
 SESSION_DATA_SESSION_ID = "flow_data.common.session_id"
 SESSION_DATA_IUVS = "flow_data.common.iuvs"
-SESSION_DATA_NAVS = "flow_data.common.navs"
-SESSION_DATA_CART = "flow_data.common.cart"
 SESSION_DATA_CART_ID = "flow_data.common.cart.id"
 SESSION_DATA_CART_IS_MULTIBENEFICIARY = "flow_data.common.cart.is_multibeneficiary"
 SESSION_DATA_CART_MULTIBENEFICIARY_IUV = "flow_data.common.cart.iuv_for_multibeneficiary"

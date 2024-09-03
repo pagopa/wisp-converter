@@ -399,35 +399,35 @@ def generate_gpd_paymentposition(context, rpt, segregation_code, payment_status)
     payment_data = rpt['payment_data']
     payer = rpt['payer']
 
-    iuv = payment_data['iuv'] #rpt.find(".//identificativoUnivocoVersamento").text
-    total_amount = payment_data['total_amount'] #TODO set decimal amount #rpt.find(".//importoTotaleDaVersare").text
-    domain_id = rpt['domain']['id'] #rpt.find(".//dominio").find(".//identificativoDominio").text
-    fiscal_code = payer['fiscal_code'] #rpt.find(".//identificativoUnivocoPagatore").find(".//codiceIdentificativoUnivoco").text
+    iuv = payment_data['iuv'] 
+    total_amount = payment_data['total_amount'] 
+    domain_id = rpt['domain']['id'] 
+    fiscal_code = payer['fiscal_code'] 
     nav = utils.generate_nav(segregation_code)
-    extracted_transfers = payment_data['transfers'] #list(rpt.findall(".//datiSingoloVersamento"))
+    extracted_transfers = payment_data['transfers'] 
     
     transfers = []
     transfer_index = 1
     for extracted_transfer in extracted_transfers:
         iban = extracted_transfer['creditor_iban'] if 'creditor_iban' in extracted_transfer else None
         stamp = None if extracted_transfer['is_mbd'] == False else {
-            "stampType": extracted_transfer['stamp_type'], #rpt.find(".//tipoBollo").text,
-            "hashDocument": extracted_transfer['stamp_hash'], #rpt.find(".//hashDocumento").text,
-            "provincialResidence": extracted_transfer['stamp_province'] #rpt.find(".//provinciaResidenza").text,
+            "stampType": extracted_transfer['stamp_type'], 
+            "hashDocument": extracted_transfer['stamp_hash'], 
+            "provincialResidence": extracted_transfer['stamp_province'] 
         }
         transfers.append({
             "idTransfer": transfer_index,
-            "amount": round(extracted_transfer['amount'] * 100), #round(Decimal(extracted_transfer.find(".//importoSingoloVersamento").text) * 100),
+            "amount": round(extracted_transfer['amount'] * 100), 
             "organizationFiscalCode": domain_id,
-            "remittanceInformation": extracted_transfer['transfer_note'], #rpt.find(".//causaleVersamento").text,
-            "category": extracted_transfer['taxonomy'], #extracted_transfer.find(".//datiSpecificiRiscossione").text,
+            "remittanceInformation": extracted_transfer['transfer_note'], 
+            "category": extracted_transfer['taxonomy'], 
             "iban": iban,
             "postalIban": iban if iban is not None and iban[5:10] == "07601" else None,
             "stamp": stamp,
             "transferMetadata": [
                 {
                     "key": "DatiSpecificiRiscossione",
-                    "value": extracted_transfer['taxonomy'] #extracted_transfer.find(".//datiSpecificiRiscossione").text
+                    "value": extracted_transfer['taxonomy'] 
                 }
             ]
         })
@@ -438,18 +438,18 @@ def generate_gpd_paymentposition(context, rpt, segregation_code, payment_status)
         "type": "F",
         "payStandIn": False,
         "fiscalCode": fiscal_code,
-        "fullName": payer['name'], #rpt.find(".//anagraficaPagatore").text,
-        "streetName": payer['address'], #rpt.find(".//indirizzoPagatore").text,
-        "civicNumber": payer['address_number'], #rpt.find(".//civicoPagatore").text,
-        "postalCode": payer['address_zipcode'], #rpt.find(".//capPagatore").text,
-        "city": payer['address_location'], #rpt.find(".//localitaPagatore").text,
-        "province": payer['address_province'], #rpt.find(".//provinciaPagatore").text,
+        "fullName": payer['name'], 
+        "streetName": payer['address'], 
+        "civicNumber": payer['address_number'], 
+        "postalCode": payer['address_zipcode'], 
+        "city": payer['address_location'], 
+        "province": payer['address_province'], 
         "region": None,
-        "country": payer['address_nation'], #rpt.find(".//nazionePagatore").text,
-        "email": payer['email'], #rpt.find(".//e-mailPagatore").text,
+        "country": payer['address_nation'], 
+        "email": payer['email'], 
         "phone": None,
         "switchToExpired": False,
-        "companyName": rpt['domain']['name'], #rpt.find(".//denominazioneBeneficiario").text,
+        "companyName": rpt['domain']['name'],
         "officeName": None,
         "validityDate": None,
         "paymentDate": None,

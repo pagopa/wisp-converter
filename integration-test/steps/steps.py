@@ -167,11 +167,6 @@ def generate_payment_position(context, index, segregation_code, payment_status):
 
     raw_rpts = session.get_flow_data(context, constants.SESSION_DATA_RAW_RPTS)
     rpt = raw_rpts[payment_notice_index]
-
-    #primitive = session.get_flow_data(context, constants.SESSION_DATA_TRIGGER_PRIMITIVE)
-    #elif primitive == constants.PRIMITIVE_NODOINVIACARRELLORPT:
-    #    TODO to update
-
     payment_positions = requestgen.generate_gpd_paymentposition(context, rpt, segregation_code, payment_status)
 
     if payment_status == "VALID":
@@ -717,7 +712,7 @@ def check_paymentposition_status(context, status):
 # ==============================================  
 
 @then('the response contains the transfers correctly generated from RPT')
-def check_paymentposition_transfers(context, index):
+def check_paymentposition_transfers(context):
 
     if session.skip_tests(context):
         logging.debug("Skipping check_paymentposition_transfers step")
@@ -788,11 +783,6 @@ def check_paymentposition_transfers_for_multibeneficiary(context):
             transfers_from_rpt.append(transfer)
 
     utils.assert_show_message(len(transfers_from_po) == len(transfers_from_rpt), f"There are not the same amount of transfers. GPD's: [{len(transfers_from_po)}], RPT's: [{len(transfers_from_rpt)}]")
-
-    logging.debug("\n\ntransfer from rpt ===>")
-    logging.debug(transfers_from_rpt)
-    logging.debug("\ntransfer from gpd ===>")
-    logging.debug(transfers_from_po)
 
     for transfer_index in range(len(transfers_from_po)):
         transfer_from_po = transfers_from_po[transfer_index]
