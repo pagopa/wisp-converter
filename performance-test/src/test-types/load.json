@@ -12,7 +12,7 @@
   "stages": [
     {
       "duration": "5m",
-      "target": 50
+      "target": 100
     }
   ],
   "thresholds": {
