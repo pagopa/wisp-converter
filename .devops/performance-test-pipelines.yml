@@ -25,6 +25,8 @@ parameters:
     type: string
     values:
       - nodoInviaRPT_workflow
+      - nodoInviaCarrelloRPT_workflow
+
 variables:
   ${{ if eq(parameters['ENVIRONMENT'], 'dev') }}:
     poolImage: 'pagopa-dev-loadtest-linux'

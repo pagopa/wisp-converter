@@ -1,4 +1,5 @@
 import encoding from 'k6/encoding';
+import { makeNumericalString, getRandomMonetaryAmount } from "./helpers.js";
 
 export function getNodoInviaRPTReqBody(idPsp, idBrokerPsp, idChannel, creditorInstitutionCode, idBrokerPA, idStation, iuv, ccp, password, creditorIban) {
   let payload = `<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ppt="http://ws.pagamenti.telematici.gov/ppthead" xmlns:ws="http://ws.pagamenti.telematici.gov/">
@@ -21,6 +22,43 @@ export function getNodoInviaRPTReqBody(idPsp, idBrokerPsp, idChannel, creditorIn
                              <rpt>${getRPT(creditorInstitutionCode, idStation, iuv, ccp, creditorIban)}</rpt>
                          </ws:nodoInviaRPT>
                      </soapenv:Body>
+                 </soapenv:Envelope>`;
+  return payload;
+}
+
+export function getNodoInviaCarrelloRPTReqBody(idPsp, idBrokerPsp, idChannel, creditorInstitutionCode, idBrokerPA, idStation, iuv_1, iuv_2, password, creditorIban) {
+  let cart_id = creditorInstitutionCode + makeNumericalString(18) + '-' + makeNumericalString(5);
+  let payload = `<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                   <soapenv:Header>
+                     <ns1:intestazioneCarrelloPPT xmlns:ns1="http://ws.pagamenti.telematici.gov/ppthead">
+                       <identificativoIntermediarioPA>${idBrokerPA}</identificativoIntermediarioPA>
+                       <identificativoStazioneIntermediarioPA>${idStation}</identificativoStazioneIntermediarioPA>
+                       <identificativoCarrello>cart_id</identificativoCarrello>
+                     </ns1:intestazioneCarrelloPPT>
+                   </soapenv:Header>
+                   <soapenv:Body>
+                       <nodoInviaCarrelloRPT xmlns="http://ws.pagamenti.telematici.gov/">
+                           <password xmlns="">${password}</password>
+                           <identificativoPSP xmlns="">${idPsp}</identificativoPSP>
+                           <identificativoIntermediarioPSP xmlns="">${idBrokerPsp}</identificativoIntermediarioPSP>
+                           <identificativoCanale xmlns="">${idChannel}</identificativoCanale>
+                           <listaRPT xmlns="">
+                            <elementoListaRPT>
+                                <identificativoDominio>${creditorInstitutionCode}</identificativoDominio>
+                                <identificativoUnivocoVersamento>${iuv_1}</identificativoUnivocoVersamento>
+                                <codiceContestoPagamento>${cart_id}</codiceContestoPagamento>
+                                <tipoFirma></tipoFirma>
+                                <rpt>${getRPT(creditorInstitutionCode, idStation, iuv_1, cart_id, creditorIban)}</rpt>
+                            </elementoListaRPT><elementoListaRPT>
+                                <identificativoDominio>${creditorInstitutionCode}</identificativoDominio>
+                                <identificativoUnivocoVersamento>${iuv_2}</identificativoUnivocoVersamento>
+                                <codiceContestoPagamento>${cart_id}</codiceContestoPagamento>
+                                <tipoFirma></tipoFirma>
+                                <rpt>${getRPT(creditorInstitutionCode, idStation, iuv_2, cart_id, creditorIban)}</rpt>
+                            </elementoListaRPT>
+                          </listaRPT>
+                        </nodoInviaCarrelloRPT>
+                      </soapenv:Body>
                  </soapenv:Envelope>`;
   return payload;
 }
@@ -107,9 +145,4 @@ function getRPT(creditorInstitutionCode, idStation, iuv, ccp, creditorIban) {
                  </pay_i:RPT>`;
 
   return encoding.b64encode(rpt);
-}
-
-function getRandomMonetaryAmount(min, max) {
-    let value = Math.random() * (max - min) + min;
-    return value.toFixed(2);
 }

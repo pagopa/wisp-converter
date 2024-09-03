@@ -42,6 +42,23 @@ export function makeidNumber(length) {
   return result;
 }
 
+export function getRandomMonetaryAmount(min, max) {
+  let value = Math.random() * (max - min) + min;
+  return value.toFixed(2);
+}
+
+export function makeNumericalString(length) {
+  let result = '';
+  const characters = '0123456789';
+  const charactersLength = characters.length;
+  let counter = 0;
+  while (counter < length) {
+    result += characters.charAt(Math.floor(Math.random() * charactersLength));
+    counter += 1;
+  }
+  return result;
+}
+
 Date.prototype.addDays = function (days) {
   var date = new Date(this.valueOf());
   date.setDate(date.getDate() + days);
