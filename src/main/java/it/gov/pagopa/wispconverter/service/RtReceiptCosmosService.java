@@ -24,6 +24,7 @@ import java.time.ZonedDateTime;
 public class RtReceiptCosmosService {
 
     private final RTRepository rtRepository;
+    private static final String ILLEGAL_CHARS_FOR_ID = "[/\\\\#]";
 
     @Transactional
     public void saveRTEntity(SessionDataDTO sessionData) {
@@ -48,6 +49,8 @@ public class RtReceiptCosmosService {
 
     public boolean receiptRtExist(String domainId, String iuv, String ccp) {
         String id = String.format("%s_%s_%s", domainId, iuv, ccp);
+        // Remove illegal characters ['/', '\', '#'] because cannot be used in Resource ID
+        id = id.replaceAll(ILLEGAL_CHARS_FOR_ID, "");
         return rtRepository.findById(id, new PartitionKey(id)).isPresent();
     }
 
@@ -59,8 +62,7 @@ public class RtReceiptCosmosService {
         String id = String.format("%s_%s_%s", domainId, iuv, ccp);
 
         // Remove illegal characters ['/', '\', '#'] because cannot be used in Resource ID
-        String regex = "[/\\\\#]";
-        id = id.replaceAll(regex, "");
+        id = id.replaceAll(ILLEGAL_CHARS_FOR_ID, "");
 
         return RTEntity.builder()
                 .id(id)
