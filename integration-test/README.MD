@@ -45,112 +45,115 @@ The test platform contains some fundamental data structures from which the steps
  - `test_data` contains the definition of static common data set for environment. On this data, some variable values can be injected during suite start. The structure can be found in  `config/commondata.json` file.  
  - `flow_data` contains the data dynamically set and updated, extracted and re-generated from `test_data` in each executed scenario. The structure is defined as follows:  
 
+
 ```json
-"flow_data": {
-  "action": {
-    "request": {
-      "body": "<REQUEST_BODY>"
-    },
-    "response": {
-      "status_code": "200 | 400 | ...",
-      "body": "<RESPONSE_BODY>",
-      "content_type": "XML | JSON"
-    },
-    "trigger_primitive": {
-      "name": "nodoInviaRPT | nodoInviaCarrelloRPT"
-    }
-  },
-  "common": {
-    "session_id": "<SESSION_ID>",
-    "iuvs": ["<IUV1>", "<IUV2>", null, null, null],
-    "payment_notices": [
-      {
-        "domain_id": "<CREDITOR_INSTITUTION_ID>",
-        "iuv": "<IUV_N>",
-        "notice_number": "<NAV_N>",
-        "payment_token": "<PAYMENT_TOKEN_N>"
-      }
-    ],
-    "cart": {
-      "id": "<CART_ID>",
-      "is_multibeneficiary": true,
-      "iuv_for_multibeneficiary": "<SINGLE_IUV_IF_MULTIBENEFICIARY>"
-    },
-    "re": {
-      "last_analyzed_event": "<EVENT_TYPE_FROM_RE>"
-    },
-    "debt_positions": [
-      {
-        "iupd": "<IUPD_FROM_GPD>",
-        "type": "F",
-        "payStandIn": false,
-        "fiscalCode": "<PAYER_FISCAL_CODE>",
-        "fullName": "test_data.payer.name",
-        "streetName": "test_data.payer.address",
-        "civicNumber": "test_data.payer.address_number",
-        "postalCode": "test_data.payer.address_zipcode",
-        "city": "test_data.payer.address_location",
-        "province": "test_data.payer.address_province",
-        "region": null,
-        "country": "test_data.payer.address_nation",
-        "email": "test_data.payer.email",
-        "phone": null,
-        "switchToExpired": false,
-        "companyName": "flow_data.rpt[i].domain.name", 
-        "officeName": null,
-        "validityDate": null,
-        "paymentDate": null,
-        "pull": false,
-        "status": "DRAFT | VALID",
-        "paymentOption": [
-            {
-                "nav": "<NAV_GENERATED_BY_IUVGENERATOR>",
-                "iuv": "<IUV_FROM_RPT>",
-                "amount": 123.45,
-                "description": "/RFB/<IUV>/<TOTAL_AMOUNT>/TXT/DEBITORE/<PAYER_FISCAL_CODE>",
-                "isPartialPayment": false,
-                "dueDate": "2000-01-01T00:00:00.000000000",
-                "retentionDate": null,
-                "fee": 0,
-                "notificationFee": null,
-                "transfer": [
-                  {
-                    "idTransfer": 1,
-                    "amount": 12345,
-                    "organizationFiscalCode": "flow_data.rpt[i].domain.id",
-                    "remittanceInformation": "flow_data.rpt[i].payment_data.transfers[j].transfer_note", 
-                    "category": "flow_data.rpt[i].payment_data.transfers[j].taxonomy", 
-                    "iban": "flow_data.rpt[i].payment_data.transfers[j].creditor_iban",
-                    "postalIban": "<POSTAL_IBAN>",
-                    "stamp": {
-                      "stampType": "flow_data.rpt[i].payment_data.transfers[j].stamp_type", 
-                      "hashDocument": "flow_data.rpt[i].payment_data.transfers[j].stamp_hash", 
-                      "provincialResidence": "flow_data.rpt[i].payment_data.transfers[j].stamp_province"
-                    },
-                    "transferMetadata": [
-                        {
-                            "key": "DatiSpecificiRiscossione",
-                            "value": "flow_data.rpt[i].payment_data.transfers[j].taxonomy" 
-                        }
-                    ]
-                  }
-                ],
-                "paymentOptionMetadata": null
-            }
-        ]
-      }
-    ],
-    "rpts": [
-      "domain": {
-        "id": "test_data.payee_institution_N.fiscal_code",
-        "name":  "test_data.payee_institution_N.name",
-        "station": "test_data.station"
+{
+  "flow_data": {
+    "action": {
+      "request": {
+        "body": "<REQUEST_BODY>"
       },
-        "date_time_request": utils.get_current_datetime(),
-        "payer": "test_data.payer",
-        "payer_delegate": "test_data.payer_delegate",
-        "payee_institution": "test_data.payee_institution_N",
-        "payment_data": {
+      "response": {
+        "status_code": "200 | 400 | ...",
+        "body": "<RESPONSE_BODY>",
+        "content_type": "XML | JSON"
+      },
+      "trigger_primitive": {
+        "name": "nodoInviaRPT | nodoInviaCarrelloRPT"
+      }
+    },
+    "common": {
+      "session_id": "<SESSION_ID>",
+      "iuvs": [ "<IUV1>", "<IUV2>", null, null, null ],
+      "payment_notices": [
+        {
+          "domain_id": "<CREDITOR_INSTITUTION_ID>",
+          "iuv": "<IUV_N>",
+          "notice_number": "<NAV_N>",
+          "payment_token": "<PAYMENT_TOKEN_N>"
+        }
+      ],
+      "cart": {
+        "id": "<CART_ID>",
+        "is_multibeneficiary": true,
+        "iuv_for_multibeneficiary": "<SINGLE_IUV_IF_MULTIBENEFICIARY>"
+      },
+      "re": {
+        "last_analyzed_event": "<EVENT_TYPE_FROM_RE>"
+      },
+      "debt_positions": [
+        {
+          "iupd": "<IUPD_FROM_GPD>",
+          "type": "F",
+          "payStandIn": false,
+          "fiscalCode": "<PAYER_FISCAL_CODE>",
+          "fullName": "test_data.payer.name",
+          "streetName": "test_data.payer.address",
+          "civicNumber": "test_data.payer.address_number",
+          "postalCode": "test_data.payer.address_zipcode",
+          "city": "test_data.payer.address_location",
+          "province": "test_data.payer.address_province",
+          "region": null,
+          "country": "test_data.payer.address_nation",
+          "email": "test_data.payer.email",
+          "phone": null,
+          "switchToExpired": false,
+          "companyName": "flow_data.rpt[i].domain.name",
+          "officeName": null,
+          "validityDate": null,
+          "paymentDate": null,
+          "pull": false,
+          "status": "DRAFT | VALID",
+          "paymentOption": [
+            {
+              "nav": "<NAV_GENERATED_BY_IUVGENERATOR>",
+              "iuv": "<IUV_FROM_RPT>",
+              "amount": 123.45,
+              "description": "/RFB/<IUV>/<TOTAL_AMOUNT>/TXT/DEBITORE/<PAYER_FISCAL_CODE>",
+              "isPartialPayment": false,
+              "dueDate": "2000-01-01T00:00:00.000000000",
+              "retentionDate": null,
+              "fee": 0,
+              "notificationFee": null,
+              "transfer": [
+                {
+                  "idTransfer": 1,
+                  "amount": 12345,
+                  "organizationFiscalCode": "flow_data.rpt[i].domain.id",
+                  "remittanceInformation": "flow_data.rpt[i].payment_data.transfers[j].transfer_note",
+                  "category": "flow_data.rpt[i].payment_data.transfers[j].taxonomy",
+                  "iban": "flow_data.rpt[i].payment_data.transfers[j].creditor_iban",
+                  "postalIban": "<POSTAL_IBAN>",
+                  "stamp": {
+                    "stampType": "flow_data.rpt[i].payment_data.transfers[j].stamp_type",
+                    "hashDocument": "flow_data.rpt[i].payment_data.transfers[j].stamp_hash",
+                    "provincialResidence": "flow_data.rpt[i].payment_data.transfers[j].stamp_province"
+                  },
+                  "transferMetadata": [
+                    {
+                      "key": "DatiSpecificiRiscossione",
+                      "value": "flow_data.rpt[i].payment_data.transfers[j].taxonomy"
+                    }
+                  ]
+                }
+              ],
+              "paymentOptionMetadata": null
+            }
+          ]
+        }
+      ],
+      "rpts": [
+        {
+          "domain": {
+            "id": "test_data.payee_institution_N.fiscal_code",
+            "name": "test_data.payee_institution_N.name",
+            "station": "test_data.station"
+          },
+          "date_time_request": "2000-01-01T00:00:00",
+          "payer": "test_data.payer",
+          "payer_delegate": "test_data.payer_delegate",
+          "payee_institution": "test_data.payee_institution_N",
+          "payment_data": {
             "iuv": "<IUV>",
             "ccp": "<CCP>",
             "payment_date": "2000-01-01",
@@ -163,7 +166,7 @@ The test platform contains some fundamental data structures from which the steps
             "transfers": [
               {
                 "iuv": "<IUV>",
-                "amount": 16.00,
+                "amount": 16,
                 "fee": 0.12,
                 "stamp_hash": "cXVlc3RhIMOoIHVuYSBtYXJjYSBkYSBib2xsbw==",
                 "stamp_type": "01",
@@ -185,10 +188,11 @@ The test platform contains some fundamental data structures from which the steps
                 "is_mbd": false
               }
             ]
+          }
         }
-    ]
+      ]
+    }
   }
 }
-
 ```
 
