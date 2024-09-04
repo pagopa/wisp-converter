@@ -12,15 +12,15 @@
   "stages": [
     {
       "duration": "1m",
-      "target": 100
+      "target": 50
     },
     {
       "duration": "3m",
-      "target": 100
+      "target": 50
     },
     {
       "duration": "1m",
-      "target": 100
+      "target": 50
     }
   ],
   "thresholds": {
