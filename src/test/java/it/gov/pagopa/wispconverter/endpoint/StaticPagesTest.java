@@ -77,10 +77,10 @@ public class StaticPagesTest {
     private ReceiptService receiptService;
 
     /*
-     * CREATE receipt/timer
+     * GET static/error
      * */
     @Test
-    public void testCreateTimer() throws Exception {
+    public void testErrorStaticPage() throws Exception {
 
         mockMvc.perform(get("/static/error"))
                 .andExpect(status().isOk())
