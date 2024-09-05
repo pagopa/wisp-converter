@@ -117,15 +117,3 @@ Feature: Common scenarios for nodoInviaRPT
     And the execution of "Send a closePaymentV2 request" was successful
     And the execution of "Check if WISP session timers were deleted and all RTs were sent" was successful
     And the execution of "Check the paid payment positions" was successful
-
-
-
-
-
-
-
-
-
-
-
-

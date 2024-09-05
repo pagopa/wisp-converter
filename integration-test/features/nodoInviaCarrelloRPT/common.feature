@@ -35,6 +35,19 @@ Feature: Common scenarios for nodoInviaCarrelloRPT
   # ===============================================================================================
   # ===============================================================================================
 
+  Scenario: Check if WISP session timers were deleted and all RTs were sent in KO
+    Given a waiting time of 10 seconds to wait for Nodo to write RE events
+    And all the IUV codes of the sent RPTs
+    When the user searches for flow steps by IUVs
+    Then the user receives the HTTP status code 200
+    Then there is a timer-delete event with field status with value RECEIPT_TIMER_GENERATION_DELETED_SCHEDULED_SEND
+    And these events are related to each payment token
+    Then there is a receipt-ko event with field status with value RT_SEND_SUCCESS
+    And these events are related to each notice number
+
+  # ===============================================================================================
+  # ===============================================================================================
+
   Scenario: Execute redirect and complete payment from NodoInviaCarrelloRPT
     When the execution of "Execute NM1-to-NMU conversion in wisp-converter" was successful
     Then the execution of "Retrieve all related notice numbers from executed redirect" was successful
@@ -57,3 +70,17 @@ Feature: Common scenarios for nodoInviaCarrelloRPT
     And the execution of "Send a closePaymentV2 request" was successful
     And the execution of "Check if WISP session timers were deleted and all RTs were sent" was successful
     And the execution of "Check the paid payment position, generated from multibeneficiary cart" was successful
+
+  # ===============================================================================================
+  # ===============================================================================================
+
+  Scenario: Execute redirect but not closing payment from multibeneficiary NodoInviaCarrelloRPT
+    When the execution of "Execute NM1-to-NMU conversion in wisp-converter" was successful
+    Then the execution of "Retrieve all related notice numbers from executed redirect" was successful
+    And the execution of "Send a checkPosition request" was successful
+    And the execution of "Send one or more activatePaymentNoticeV2 requests" was successful
+    And the execution of "Check if WISP session timers were created" was successful
+    And the execution of "Send a KO closePaymentV2 request" was successful
+    And the execution of "Check if WISP session timers were deleted and all RTs were sent in KO" was successful
+
+

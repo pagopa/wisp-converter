@@ -141,6 +141,20 @@ Feature: User pays a payment carts without stamps on nodoInviaCarrelloRPT
     Then the user receives the HTTP status code 200 
     And the response contains the field esitoComplessivoOperazione with value OK
     And the response contains the fake WFESP URL
+    
+  # ===============================================================================================
+  # ===============================================================================================
+
+  @runnable @nodo_invia_carrello_rpt @happy_path
+  Scenario: User tries to pay, via nodoInviaCarrelloRPT, a cart with two RPTs but the payment closure fails, then 
+    Given a cart of RPTs non-multibeneficiary
+    And a single RPT of type BBT with 1 transfers of which none are stamps
+    And a single RPT of type BBT with 1 transfers of which none are stamps
+    When the execution of "Send a nodoInviaCarrelloRPT request" was successful
+    When the execution of "Execute redirect but not closing payment from multibeneficiary NodoInviaCarrelloRPT" was successful
+    Given the same nodoInviaCarrelloRPT for another try 
+    When the execution of "Send a nodoInviaCarrelloRPT request" was successful
+    Then the execution of "Execute redirect and complete payment from NodoInviaCarrelloRPT" was successful
 
   # ===============================================================================================
   # ===============================================================================================
@@ -169,3 +183,13 @@ Feature: User pays a payment carts without stamps on nodoInviaCarrelloRPT
     And the response contains the field esitoComplessivoOperazione with value KO
     And the response contains the field faultCode with value PPT_SINTASSI_XSD
     
+  # ===============================================================================================
+  # ===============================================================================================
+
+  @runnable @nodo_invia_carrello_rpt @unhappy_path
+  Scenario: User tries to pay, via nodoInviaCarrelloRPT, a cart with two RPTs but the payment closure fails
+    Given a cart of RPTs non-multibeneficiary
+    And a single RPT of type BBT with 1 transfers of which none are stamps
+    And a single RPT of type BBT with 1 transfers of which none are stamps
+    When the execution of "Send a nodoInviaCarrelloRPT request" was successful
+    When the execution of "Execute redirect but not closing payment from multibeneficiary NodoInviaCarrelloRPT" was successful

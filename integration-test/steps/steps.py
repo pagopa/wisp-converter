@@ -116,6 +116,7 @@ def generate_empty_cart(context, note):
         session.set_flow_data(context, constants.SESSION_DATA_CART_ID, utils.generate_cart_id(None, test_data['creditor_institution']))
         session.set_flow_data(context, constants.SESSION_DATA_CART_IS_MULTIBENEFICIARY, False)
 
+
 # ==============================================
 
 @given('a single RPT of type {payment_type} with {number_of_transfers} transfers of which {number_of_stamps} are stamps')
@@ -237,6 +238,9 @@ def generate_nodoinviacarrellorpt(context, options):
 
     # generate nodoInviaCarrelloRPT request from raw RPTs and info about multibeneficiary status
     request = requestgen.generate_nodoinviacarrellorpt(test_data, cart_id, rpts, psp, psp_broker, channel, password, is_multibeneficiary)    
+    
+    logging.debug("\n\n==request==")
+    logging.debug(request)
 
     # update context with request to be sent
     session.set_flow_data(context, constants.SESSION_DATA_REQ_BODY, request)
@@ -365,6 +369,24 @@ def get_iuvs_from_session(context):
 
     # update context with IUVs to be sent    
     session.set_flow_data(context, constants.SESSION_DATA_IUVS, iuvs)
+
+# ==============================================
+
+@given('the same nodoInviaCarrelloRPT for another try')
+def update_old_nodoInviaCarrelloRPT_request(context):
+    
+    # change cart identifier editing last char value
+    cart_id = session.get_flow_data(context, constants.SESSION_DATA_CART_ID)
+    session.set_flow_data(context, constants.SESSION_DATA_CART_ID, utils.change_last_numeric_char(cart_id))
+
+    # change all CCPs content editing last char value
+    rpts = session.get_flow_data(context, constants.SESSION_DATA_RAW_RPTS)
+    for rpt in rpts:
+        ccp = rpt['payment_data']['ccp']
+        rpt['payment_data']['ccp'] = utils.change_last_numeric_char(ccp)
+    
+    # update context with request and edit flow_data
+    session.set_flow_data(context, constants.SESSION_DATA_RAW_RPTS, rpts)
 
 # ==============================================
 

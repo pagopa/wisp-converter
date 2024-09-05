@@ -73,3 +73,12 @@ Feature: Common scenarios for payment context
     When the creditor institution sends a closePaymentV2 action
     Then the creditor institution receives the HTTP status code 200
     And the response contains the field outcome with value OK
+  
+  # ===============================================================================================
+  # ===============================================================================================
+  
+  Scenario: Send a KO closePaymentV2 request
+    Given a valid closePaymentV2 request with outcome KO
+    When the creditor institution sends a closePaymentV2 action
+    Then the creditor institution receives the HTTP status code 200
+    And the response contains the field outcome with value OK

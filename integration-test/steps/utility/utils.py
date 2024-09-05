@@ -117,6 +117,14 @@ def generate_cart_id(iuv, creditor_institution):
 
 # ==============================================
 
+def change_last_numeric_char(value):
+    last_char = value[-1]
+    other_char = value[:-1]
+    new_last_char = str((int(last_char) + 1) % 10)
+    return other_char + new_last_char
+
+# ==============================================
+
 def get_random_digit_string(length):
     return ''.join(random.choice(string.digits) for i in range(length))
 
