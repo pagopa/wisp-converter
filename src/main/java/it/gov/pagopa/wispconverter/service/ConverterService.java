@@ -1,10 +1,17 @@
 package it.gov.pagopa.wispconverter.service;
 
+import it.gov.pagopa.gen.wispconverter.client.checkout.model.CartRequestDto;
+import it.gov.pagopa.wispconverter.repository.CacheRepository;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
+import it.gov.pagopa.wispconverter.service.model.ECommerceHangTimeoutMessage;
 import it.gov.pagopa.wispconverter.service.model.session.SessionDataDTO;
+import it.gov.pagopa.wispconverter.servicebus.ECommerceHangTimeoutConsumer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+
+import java.net.URISyntaxException;
+
 
 @Service
 @Slf4j
@@ -23,7 +30,11 @@ public class ConverterService {
 
     private final RtReceiptCosmosService rtReceiptCosmosService;
 
-    public String convert(String sessionId) {
+    private final CacheRepository cacheRepository;
+
+    private final ECommerceHangTimerService eCommerceHangTimerService;
+
+    public String convert(String sessionId) throws URISyntaxException {
         // get RPT request entity from database
         RPTRequestEntity rptRequestEntity = rptCosmosService.getRPTRequestEntity(sessionId);
 
@@ -40,6 +51,31 @@ public class ConverterService {
         this.decouplerService.storeRequestMappingInCache(sessionData, sessionId);
 
         // execute communication with Checkout service and set the redirection URI as response
-        return this.checkoutService.executeCall(sessionData);
+        String checkoutResponse = this.checkoutService.executeCall(sessionData);
+
+        // call APIM policy for save key for cart session handling
+        this.decouplerService.storeRequestCartMappingInCache(sessionData, sessionId);
+
+        // set eCommerce timer foreach notices in the cart
+        setECommerceHangTimer(sessionData);
+
+        return checkoutResponse;
+    }
+
+    /**
+     * This method inserts a scheduled message in the queue of the service bus.
+     * When the message is trigger a sendRT-Negative is sent to the Creditor Institution
+     * (see {@link ECommerceHangTimeoutConsumer} class for more details).
+     *
+     * @param sessionData Data of the cart with the paymentOptions
+     * @throws URISyntaxException
+     */
+    private void setECommerceHangTimer(SessionDataDTO sessionData) throws URISyntaxException {
+        CartRequestDto cart = checkoutService.extractCart(sessionData);
+        cart.getPaymentNotices().forEach(elem ->
+                eCommerceHangTimerService.sendMessage(ECommerceHangTimeoutMessage.builder()
+                        .fiscalCode(elem.getFiscalCode())
+                        .noticeNumber(elem.getNoticeNumber())
+                        .build()));
     }
 }

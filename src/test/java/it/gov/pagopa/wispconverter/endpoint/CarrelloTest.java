@@ -8,8 +8,10 @@ import it.gov.pagopa.wispconverter.Application;
 import it.gov.pagopa.wispconverter.repository.*;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
 import it.gov.pagopa.wispconverter.service.ConfigCacheService;
+import it.gov.pagopa.wispconverter.service.ECommerceHangTimerService;
 import it.gov.pagopa.wispconverter.service.ReceiptService;
 import it.gov.pagopa.wispconverter.service.ReceiptTimerService;
+import it.gov.pagopa.wispconverter.servicebus.ECommerceHangTimeoutConsumer;
 import it.gov.pagopa.wispconverter.utils.TestUtils;
 import org.junit.Assert;
 import org.junit.jupiter.api.Test;
@@ -80,6 +82,11 @@ class CarrelloTest {
     private ReceiptTimerService receiptTimerService;
     @MockBean
     private ReceiptService receiptService;
+    @MockBean
+    ECommerceHangTimerService eCommerceHangTimerService;
+    @MockBean
+    ECommerceHangTimeoutConsumer eCommerceHangTimeoutConsumer;
+
 
     @Test
     void success() throws Exception {

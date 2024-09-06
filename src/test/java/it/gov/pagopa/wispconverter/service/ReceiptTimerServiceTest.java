@@ -33,6 +33,9 @@ public class ReceiptTimerServiceTest {
     @Mock
     private ReService reService;
 
+    @Mock
+    private ECommerceHangTimerService eCommerceHangTimerService;
+
     @InjectMocks
     private ReceiptTimerService receiptTimerService;
 
@@ -42,6 +45,7 @@ public class ReceiptTimerServiceTest {
         ReflectionTestUtils.setField(receiptTimerService, "queueName", "your-queue-name");
         ReflectionTestUtils.setField(receiptTimerService, "serviceBusSenderClient", serviceBusSenderClient);
         ReflectionTestUtils.setField(receiptTimerService, "reService", reService);
+        ReflectionTestUtils.setField(receiptTimerService, "eCommerceHangTimerService", eCommerceHangTimerService);
     }
 
     @Test
@@ -70,9 +74,11 @@ public class ReceiptTimerServiceTest {
         when(cacheRepository.read(any(String.class), eq(String.class))).thenReturn(null);
         when(serviceBusSenderClient.scheduleMessage(any(ServiceBusMessage.class), any(OffsetDateTime.class))).thenReturn(123L);
 
+
         receiptTimerService.sendMessage(request);
 
         verify(cacheRepository, times(1)).insert(any(String.class), eq("123"), eq(1000L), eq(ChronoUnit.MILLIS));
+        verify(eCommerceHangTimerService, times(1)).cancelScheduledMessage(eq("noticeNumber"), eq("fiscalCode"));
     }
 
     @Test
