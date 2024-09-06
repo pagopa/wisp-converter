@@ -6,8 +6,8 @@ then
 else
   echo "Setting $ENV environment..."
     cp config/config.json config/config.json.orig
-    dest="api.${ENV}."
-    sed "s/api.dev./$dest/g" config/config.json > config/config.json.bkp
+    dest="${ENV}."
+    sed "s/ENV./$dest/g" config/config.json > config/config.json.bkp
     sleep 1
     mv config/config.json.bkp config/config.json
     sleep 1
