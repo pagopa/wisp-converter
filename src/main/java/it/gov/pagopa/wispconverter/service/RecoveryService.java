@@ -126,27 +126,27 @@ public class RecoveryService {
                         String sessionId = event.getSessionId();
 
                         // search by sessionId, then filter by status=RT_SEND_SUCCESS and businessProcess=receipt-ko|ok. If there is zero, then proceed
-                        List<ReEventEntity> reEventsRT = reEventRepository.findBySessionIdAndStatusAndBusinessProcess(
-                                dateFrom, dateTo, sessionId, STATUS_RT_SEND_SUCCESS, BUSINESS_RECEIPT_OK, BUSINESS_RECEIPT_KO
-                        );
+//                        List<ReEventEntity> reEventsRT = reEventRepository.findBySessionIdAndStatusAndBusinessProcess(
+//                                dateFrom, dateTo, sessionId, STATUS_RT_SEND_SUCCESS, BUSINESS_RECEIPT_OK, BUSINESS_RECEIPT_KO
+//                        );
 
-                        if(reEventsRT.isEmpty()) {
-                            String navToIuvMapping = String.format(DecouplerService.MAP_CACHING_KEY_TEMPLATE, creditorInstitution, noticeNumber);
-                            String iuvToSessionIdMapping = String.format(DecouplerService.CACHING_KEY_TEMPLATE, creditorInstitution, iuv);
-                            this.cacheRepository.insert(navToIuvMapping, iuvToSessionIdMapping, this.requestIDMappingTTL);
-                            this.cacheRepository.insert(iuvToSessionIdMapping, sessionId, this.requestIDMappingTTL);
+//                        if(reEventsRT.isEmpty()) {
+                        String navToIuvMapping = String.format(DecouplerService.MAP_CACHING_KEY_TEMPLATE, creditorInstitution, noticeNumber);
+                        String iuvToSessionIdMapping = String.format(DecouplerService.CACHING_KEY_TEMPLATE, creditorInstitution, iuv);
+                        this.cacheRepository.insert(navToIuvMapping, iuvToSessionIdMapping, this.requestIDMappingTTL);
+                        this.cacheRepository.insert(iuvToSessionIdMapping, sessionId, this.requestIDMappingTTL);
 
-                            MDC.put(Constants.MDC_BUSINESS_PROCESS, "receipt-ko");
-                            generateRE(Constants.PAA_INVIA_RT, null, InternalStepStatus.RT_START_RECONCILIATION_PROCESS, creditorInstitution, iuv, noticeNumber, ccp, sessionId);
-                            String receiptKoRequest = ReceiptDto.builder()
-                                                              .fiscalCode(creditorInstitution)
-                                                              .noticeNumber(noticeNumber)
-                                                              .build()
-                                                              .toString();
-                            this.receiptController.receiptKo(receiptKoRequest);
-                            generateRE(Constants.PAA_INVIA_RT, "Success", InternalStepStatus.RT_END_RECONCILIATION_PROCESS, creditorInstitution, iuv, noticeNumber, ccp, sessionId);
-                            MDC.remove(Constants.MDC_BUSINESS_PROCESS);
-                        }
+                        MDC.put(Constants.MDC_BUSINESS_PROCESS, "receipt-ko");
+                        generateRE(Constants.PAA_INVIA_RT, null, InternalStepStatus.RT_START_RECONCILIATION_PROCESS, creditorInstitution, iuv, noticeNumber, ccp, sessionId);
+                        String receiptKoRequest = ReceiptDto.builder()
+                                                          .fiscalCode(creditorInstitution)
+                                                          .noticeNumber(noticeNumber)
+                                                          .build()
+                                                          .toString();
+                        this.receiptController.receiptKo(receiptKoRequest);
+                        generateRE(Constants.PAA_INVIA_RT, "Success", InternalStepStatus.RT_END_RECONCILIATION_PROCESS, creditorInstitution, iuv, noticeNumber, ccp, sessionId);
+                        MDC.remove(Constants.MDC_BUSINESS_PROCESS);
+//                        }
                     }
 
                 } catch (Exception e) {
