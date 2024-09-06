@@ -25,10 +25,10 @@ import java.util.List;
 @RequiredArgsConstructor
 public class DecouplerService {
 
-    private static final String CACHING_KEY_TEMPLATE = "wisp_%s_%s";
+    public static final String CACHING_KEY_TEMPLATE = "wisp_%s_%s";
     private static final String CARTSESSION_CACHING_KEY_TEMPLATE = "%s_%s_%s";
 
-    private static final String MAP_CACHING_KEY_TEMPLATE = "wisp_nav2iuv_%s_%s";
+    public static final String MAP_CACHING_KEY_TEMPLATE = "wisp_nav2iuv_%s_%s";
 
     private final ReService reService;
 
