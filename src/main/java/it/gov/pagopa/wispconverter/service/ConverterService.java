@@ -53,6 +53,9 @@ public class ConverterService {
         // execute communication with Checkout service and set the redirection URI as response
         String checkoutResponse = this.checkoutService.executeCall(sessionData);
 
+        // call APIM policy for save key for cart session handling
+        this.decouplerService.storeRequestCartMappingInCache(sessionData, sessionId);
+
         // set eCommerce timer foreach notices in the cart
         setECommerceHangTimer(sessionData);
 
@@ -63,7 +66,6 @@ public class ConverterService {
      * This method inserts a scheduled message in the queue of the service bus.
      * When the message is trigger a sendRT-Negative is sent to the Creditor Institution
      * (see {@link ECommerceHangTimeoutConsumer} class for more details).
-     *
      *
      * @param sessionData Data of the cart with the paymentOptions
      * @throws URISyntaxException

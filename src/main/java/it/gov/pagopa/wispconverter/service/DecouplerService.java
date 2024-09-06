@@ -26,6 +26,7 @@ import java.util.List;
 public class DecouplerService {
 
     private static final String CACHING_KEY_TEMPLATE = "wisp_%s_%s";
+    private static final String CARTSESSION_CACHING_KEY_TEMPLATE = "%s_%s_%s";
 
     private static final String MAP_CACHING_KEY_TEMPLATE = "wisp_nav2iuv_%s_%s";
 
@@ -53,6 +54,33 @@ public class DecouplerService {
 
         } catch (RestClientException e) {
             throw new AppException(AppErrorCodeMessageEnum.CLIENT_DECOUPLER_CACHING, String.format("RestClientException ERROR [%s] - %s", e.getCause().getClass().getCanonicalName(), e.getMessage()));
+        }
+    }
+
+    public void storeRequestCartMappingInCache(SessionDataDTO sessionData, String sessionId) {
+
+        try {
+
+            // generate client instance for APIM endpoint
+            it.gov.pagopa.gen.wispconverter.client.decouplercaching.api.DefaultApi apiInstance = new it.gov.pagopa.gen.wispconverter.client.decouplercaching.api.DefaultApi(decouplerCachingClient);
+
+            /*
+              Communicating with APIM policy for caching data for cart session.
+              The stored data are internal to APIM and cannot be retrieved from this app.
+             */
+            DecouplerCachingKeysDto cartSessionCachingKeys = new DecouplerCachingKeysDto();
+            List<String> noticeNumbers = sessionData.getNAVs();
+            for (String noticeNumber : noticeNumbers) {
+                PaymentNoticeContentDTO paymentNotice = sessionData.getPaymentNoticeByNoticeNumber(noticeNumber);
+                cartSessionCachingKeys.addKeysItem(String.format(CARTSESSION_CACHING_KEY_TEMPLATE, sessionId, paymentNotice.getFiscalCode(), noticeNumber));
+            }
+            apiInstance.saveCartMapping(cartSessionCachingKeys, MDC.get(Constants.MDC_REQUEST_ID));
+
+            // generate and save re events internal for change status
+            generateREForSavedMappingForCartSessionMapping(sessionData, cartSessionCachingKeys);
+
+        } catch (RestClientException e) {
+            throw new AppException(AppErrorCodeMessageEnum.CLIENT_CARTSESSION_CACHING, String.format("RestClientException ERROR [%s] - %s", e.getCause().getClass().getCanonicalName(), e.getMessage()));
         }
     }
 
@@ -139,6 +167,21 @@ public class DecouplerService {
                     PaymentNoticeContentDTO paymentNotice = sessionData.getPaymentNoticeByNoticeNumber(splitKey[2]);
                     String infoAboutCachedKey = "Decoupler key = [(key:" + key + "; value:<baseNodeId>)]";
                     generateRE(InternalStepStatus.GENERATED_CACHE_ABOUT_RPT_FOR_DECOUPLER, paymentNotice.getFiscalCode(), paymentNotice.getIuv(), paymentNotice.getNoticeNumber(), paymentNotice.getCcp(), infoAboutCachedKey);
+                }
+            }
+        }
+    }
+
+    private void generateREForSavedMappingForCartSessionMapping(SessionDataDTO sessionData, DecouplerCachingKeysDto cartCachingKeys) {
+
+        // creating event to be persisted for RE
+        if (Boolean.TRUE.equals(isTracingOnREEnabled)) {
+            for (String key : cartCachingKeys.getKeys()) {
+                String[] splitKey = key.split("_");
+                if (splitKey.length == 3) {
+                    PaymentNoticeContentDTO paymentNotice = sessionData.getPaymentNoticeByNoticeNumber(splitKey[2]);
+                    String infoAboutCachedKey = "Cart mapping key = [(key:" + key + "; value:<baseNodeId>)]";
+                    generateRE(InternalStepStatus.GENERATED_CACHE_ABOUT_RPT_FOR_CARTSESSION_CACHING, paymentNotice.getFiscalCode(), paymentNotice.getIuv(), paymentNotice.getNoticeNumber(), paymentNotice.getCcp(), infoAboutCachedKey);
                 }
             }
         }
