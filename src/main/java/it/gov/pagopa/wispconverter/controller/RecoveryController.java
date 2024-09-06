@@ -39,7 +39,7 @@ public class RecoveryController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Started reconciling IUVs with explicit RT send")
     })
-    @PostMapping(value = "")
+    @PostMapping(value = "/{creditor_institution}/receipt-ko")
     public ResponseEntity<RecoveryReceiptResponse> recoverReceiptKOForCreditorInstitution(@PathVariable("creditor_institution") String ci, @QueryParam("date_from") String dateFrom, @QueryParam("date_to") String dateTo) {
         try {
             log.info("Invoking API operation recoverReceiptKOForCreditorInstitution - args: {} {} {}", ci, dateFrom, dateTo);
