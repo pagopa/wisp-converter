@@ -36,6 +36,12 @@ public class RecoveryService {
 
     private static final String EVENT_TYPE_FOR_RECEIPTKO_SEARCH = "GENERATED_CACHE_ABOUT_RPT_FOR_RT_GENERATION";
 
+    private static final String STATUS_RT_SEND_SUCCESS = "RT_SEND_SUCCESS";
+
+    private static final String BUSINESS_RECEIPT_OK = "receipt-ok";
+
+    private static final String BUSINESS_RECEIPT_KO = "receipt-ko";
+
     private final ReceiptController receiptController;
 
     private final RTRepository rtRepository;
@@ -119,23 +125,28 @@ public class RecoveryService {
                         String noticeNumber = event.getNoticeNumber();
                         String sessionId = event.getSessionId();
 
-                        // todo search by sessionId, then filter by status=RT_SEND_SUCCESS and businessProcess=receipt-ko|ok. If there is zero, then proceed
+                        // search by sessionId, then filter by status=RT_SEND_SUCCESS and businessProcess=receipt-ko|ok. If there is zero, then proceed
+                        List<ReEventEntity> reEventsRT = reEventRepository.findBySessionIdAndStatusAndBusinessProcess(
+                                dateFrom, dateTo, sessionId, STATUS_RT_SEND_SUCCESS, BUSINESS_RECEIPT_OK, BUSINESS_RECEIPT_KO
+                        );
 
-                        String navToIuvMapping = String.format(DecouplerService.MAP_CACHING_KEY_TEMPLATE, creditorInstitution, noticeNumber);
-                        String iuvToSessionIdMapping = String.format(DecouplerService.CACHING_KEY_TEMPLATE, creditorInstitution, iuv);
-                        this.cacheRepository.insert(navToIuvMapping, iuvToSessionIdMapping, this.requestIDMappingTTL);
-                        this.cacheRepository.insert(iuvToSessionIdMapping, sessionId, this.requestIDMappingTTL);
+                        if(reEventsRT.isEmpty()) {
+                            String navToIuvMapping = String.format(DecouplerService.MAP_CACHING_KEY_TEMPLATE, creditorInstitution, noticeNumber);
+                            String iuvToSessionIdMapping = String.format(DecouplerService.CACHING_KEY_TEMPLATE, creditorInstitution, iuv);
+                            this.cacheRepository.insert(navToIuvMapping, iuvToSessionIdMapping, this.requestIDMappingTTL);
+                            this.cacheRepository.insert(iuvToSessionIdMapping, sessionId, this.requestIDMappingTTL);
 
-                        MDC.put(Constants.MDC_BUSINESS_PROCESS, "receipt-ko");
-                        generateRE(Constants.PAA_INVIA_RT, null, InternalStepStatus.RT_START_RECONCILIATION_PROCESS, creditorInstitution, iuv, noticeNumber, ccp, sessionId);
-                        String receiptKoRequest = ReceiptDto.builder()
-                                .fiscalCode(creditorInstitution)
-                                .noticeNumber(noticeNumber)
-                                .build()
-                                .toString();
-                        this.receiptController.receiptKo(receiptKoRequest);
-                        generateRE(Constants.PAA_INVIA_RT, "Success", InternalStepStatus.RT_END_RECONCILIATION_PROCESS, creditorInstitution, iuv, noticeNumber, ccp, sessionId);
-                        MDC.remove(Constants.MDC_BUSINESS_PROCESS);
+                            MDC.put(Constants.MDC_BUSINESS_PROCESS, "receipt-ko");
+                            generateRE(Constants.PAA_INVIA_RT, null, InternalStepStatus.RT_START_RECONCILIATION_PROCESS, creditorInstitution, iuv, noticeNumber, ccp, sessionId);
+                            String receiptKoRequest = ReceiptDto.builder()
+                                                              .fiscalCode(creditorInstitution)
+                                                              .noticeNumber(noticeNumber)
+                                                              .build()
+                                                              .toString();
+                            this.receiptController.receiptKo(receiptKoRequest);
+                            generateRE(Constants.PAA_INVIA_RT, "Success", InternalStepStatus.RT_END_RECONCILIATION_PROCESS, creditorInstitution, iuv, noticeNumber, ccp, sessionId);
+                            MDC.remove(Constants.MDC_BUSINESS_PROCESS);
+                        }
                     }
 
                 } catch (Exception e) {
