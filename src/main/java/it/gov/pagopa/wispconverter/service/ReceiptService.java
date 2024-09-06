@@ -305,8 +305,7 @@ public class ReceiptService {
 
                 // generate a new event in RE for store the successful sending of the receipt
                 generateREForSentRT(sessionData, iuv, noticeNumber);
-                --
-                        idempotencyStatus = IdempotencyStatusEnum.SUCCESS;
+                idempotencyStatus = IdempotencyStatusEnum.SUCCESS;
                 isSuccessful = true;
 
             } catch (Exception e) {
