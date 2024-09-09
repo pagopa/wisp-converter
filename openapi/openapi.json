@@ -371,7 +371,8 @@
         "security" : [ {
           "ApiKey" : [ ]
         } ],
-        "tags" : [ "Receipt", "Recovery" ]
+        "summary" : "Execute reconciliation of all IUVs for certain creditor institution, sending RT for close payment.",
+        "tags" : [ "Recovery" ]
       }
     }
   },
