@@ -56,7 +56,7 @@ public class RecoveryService {
     private Long requestIDMappingTTL;
 
     @Value("${wisp-converter.recovery.receipt-generation.wait-time.minutes:60}")
-    private Long receiptGenerationWaitTime;
+    Long receiptGenerationWaitTime;
 
     public RecoveryReceiptResponse recoverReceiptKOForCreditorInstitution(String creditorInstitution, String dateFrom, String dateTo) {
 
