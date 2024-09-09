@@ -22,13 +22,11 @@ public interface ReEventRepository extends CosmosRepository<ReEventEntity, Strin
 
 
     @Query("SELECT * FROM c " +
-                   "WHERE (c.partitionKey >= @dateFrom AND c.partitionKey <= @dateTo) " +
-                   "AND c.sessionId = @sessionId " +
-                   "AND c.status = @status " +
-                   "AND ARRAY_CONTAINS(@businessProcesses, c.businessProcess)")
-    List<ReEventEntity> findBySessionIdAndStatusAndBusinessProcess(@Param("dateFrom") String dateFrom,
-                                                   @Param("dateTo") String dateTo,
-                                                   @Param("sessionId") String sessionId,
-                                                   @Param("status") String status,
-                                                   @Param("businessProcesses") List<String> businessProcesses);
+            "WHERE (c.partitionKey >= @dateFrom AND c.partitionKey <= @dateTo) " +
+            "AND c.sessionId = @sessionId " +
+            "AND c.status = @status")
+    List<ReEventEntity> findBySessionIdAndStatus(@Param("dateFrom") String dateFrom,
+                                                 @Param("dateTo") String dateTo,
+                                                 @Param("sessionId") String sessionId,
+                                                 @Param("status") String status);
 }

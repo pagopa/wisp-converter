@@ -40,7 +40,7 @@ public class RecoveryService {
 
     private static final String RECOVERY_VALID_START_DATE = "2024-09-03";
 
-    private static final List<String> BUSINESS_PROCESSES = List.of("receipt-ok", "receipt-ko");
+    private static final List<String> BUSINESS_PROCESSES = List.of("receipt-ok", "receipt-ko", "ecommerce-hang-timeout-trigger");
 
     private final ReceiptController receiptController;
 
@@ -126,10 +126,8 @@ public class RecoveryService {
                         String noticeNumber = event.getNoticeNumber();
                         String sessionId = event.getSessionId();
 
-                        // search by sessionId, then filter by status=RT_SEND_SUCCESS and businessProcess=receipt-ko|ok. If there is zero, then proceed
-                        List<ReEventEntity> reEventsRT = reEventRepository.findBySessionIdAndStatusAndBusinessProcess(
-                                dateFrom, dateTo, sessionId, STATUS_RT_SEND_SUCCESS, BUSINESS_PROCESSES
-                        );
+                        // search by sessionId, then filter by status=RT_SEND_SUCCESS. If there is zero, then proceed
+                        List<ReEventEntity> reEventsRT = reEventRepository.findBySessionIdAndStatus(dateFrom, dateTo, sessionId, STATUS_RT_SEND_SUCCESS);
 
                         if (reEventsRT.isEmpty()) {
                             String navToIuvMapping = String.format(DecouplerService.MAP_CACHING_KEY_TEMPLATE, creditorInstitution, noticeNumber);
