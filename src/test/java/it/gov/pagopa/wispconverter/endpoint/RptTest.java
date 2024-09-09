@@ -145,7 +145,7 @@ class RptTest {
 
         verify(checkoutClient, times(1)).invokeAPI(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
         verify(gpdClient, times(2)).invokeAPI(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
-        verify(decouplerCachingClient, times(1)).invokeAPI(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
+        verify(decouplerCachingClient, times(2)).invokeAPI(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
 
         ArgumentCaptor<Object> argument = ArgumentCaptor.forClass(Object.class);
         verify(gpdClient, times(2)).invokeAPI(any(), any(), any(), any(), argument.capture(), any(), any(), any(), any(), any(), any(), any());
@@ -242,7 +242,7 @@ class RptTest {
         verify(checkoutClient, times(1)).invokeAPI(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
         verify(iuvGeneratorClient, times(1)).invokeAPI(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
         verify(gpdClient, times(2)).invokeAPI(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
-        verify(decouplerCachingClient, times(1)).invokeAPI(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
+        verify(decouplerCachingClient, times(2)).invokeAPI(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -286,7 +286,7 @@ class RptTest {
         verify(checkoutClient, times(1)).invokeAPI(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
         verify(iuvGeneratorClient, times(1)).invokeAPI(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
         verify(gpdClient, times(2)).invokeAPI(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
-        verify(decouplerCachingClient, times(1)).invokeAPI(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
+        verify(decouplerCachingClient, times(2)).invokeAPI(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
     }
 
     @Test

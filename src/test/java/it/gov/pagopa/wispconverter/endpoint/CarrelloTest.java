@@ -132,7 +132,7 @@ class CarrelloTest {
         verify(checkoutClient, times(1)).invokeAPI(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
         verify(iuveneratorClient, times(1)).invokeAPI(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
         verify(gpdClient, times(2)).invokeAPI(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
-        verify(decouplerCachingClient, times(1)).invokeAPI(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
+        verify(decouplerCachingClient, times(2)).invokeAPI(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
     }
 
     @Test

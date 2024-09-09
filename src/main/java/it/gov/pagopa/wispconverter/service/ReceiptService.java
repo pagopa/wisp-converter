@@ -128,6 +128,8 @@ public class ReceiptService {
             // generate and send a KO RT for each receipt received in the payload
             for (ReceiptDto receipt : receipts) {
 
+                MDCUtil.setReceiptTimerInfoInMDC(receipt.getFiscalCode(), receipt.getNoticeNumber(), null);
+
                 // retrieve the NAV-to-IUV mapping key from Redis, then use the result for retrieve the session data
                 String noticeNumber = receipt.getNoticeNumber();
                 CachedKeysMapping cachedMapping = decouplerService.getCachedMappingFromNavToIuv(receipt.getFiscalCode(), noticeNumber);
