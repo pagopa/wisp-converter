@@ -325,6 +325,7 @@
         }
       } ],
       "post" : {
+        "description" : "Execute reconciliation of all IUVs for certain creditor institution, sending RT for close payment.",
         "operationId" : "recoverReceiptKOForCreditorInstitution",
         "parameters" : [ {
           "in" : "path",
@@ -371,7 +372,7 @@
         "security" : [ {
           "ApiKey" : [ ]
         } ],
-        "summary" : "Execute reconciliation of all IUVs for certain creditor institution, sending RT for close payment.",
+        "summary" : "Execute IUV reconciliation for certain creditor institution.",
         "tags" : [ "Recovery" ]
       }
     }

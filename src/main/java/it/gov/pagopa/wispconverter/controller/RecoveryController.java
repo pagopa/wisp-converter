@@ -35,7 +35,7 @@ public class RecoveryController {
 
     private final ErrorUtil errorUtil;
 
-    @Operation(summary = "Execute reconciliation of all IUVs for certain creditor institution, sending RT for close payment.", description = "", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"Recovery"})
+    @Operation(summary = "Execute IUV reconciliation for certain creditor institution.", description = "Execute reconciliation of all IUVs for certain creditor institution, sending RT for close payment.", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"Recovery"})
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Started reconciling IUVs with explicit RT send")
     })
