@@ -38,6 +38,8 @@ public class RecoveryService {
 
     private static final String STATUS_RT_SEND_SUCCESS = "RT_SEND_SUCCESS";
 
+    private static final String RECOVERY_VALID_START_DATE = "2024-09-03";
+
     private static final List<String> BUSINESS_PROCESSES = List.of("receipt-ok", "receipt-ko");
 
     private final ReceiptController receiptController;
@@ -58,10 +60,9 @@ public class RecoveryService {
 
     public RecoveryReceiptResponse recoverReceiptKOForCreditorInstitution(String creditorInstitution, String dateFrom, String dateTo) {
 
-        String startDate = "2024-09-03";
-        LocalDate lowerLimit = LocalDate.parse(startDate, DateTimeFormatter.ISO_LOCAL_DATE);
+        LocalDate lowerLimit = LocalDate.parse(RECOVERY_VALID_START_DATE, DateTimeFormatter.ISO_LOCAL_DATE);
         if (LocalDate.parse(dateFrom, DateTimeFormatter.ISO_LOCAL_DATE).isBefore(lowerLimit)) {
-            throw new AppException(AppErrorCodeMessageEnum.ERROR, String.format("The lower bound cannot be lower than [%s]", startDate));
+            throw new AppException(AppErrorCodeMessageEnum.ERROR, String.format("The lower bound cannot be lower than [%s]", RECOVERY_VALID_START_DATE));
         }
 
         LocalDate now = LocalDate.now();
@@ -70,13 +71,15 @@ public class RecoveryService {
             throw new AppException(AppErrorCodeMessageEnum.ERROR, String.format("The upper bound cannot be higher than [%s]", now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))));
         }
 
-        String dateToRefactored = dateTo;
+        String dateToRefactored;
         if (now.isEqual(parse)) {
-            ZonedDateTime nowMinus1h = ZonedDateTime.now(ZoneOffset.UTC).minusMinutes(receiptGenerationWaitTime);
-            dateToRefactored = nowMinus1h.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            ZonedDateTime nowMinusMinutes = ZonedDateTime.now(ZoneOffset.UTC).minusMinutes(receiptGenerationWaitTime);
+            dateToRefactored = nowMinusMinutes.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
             log.info("Upper bound forced to {}", dateToRefactored);
+        } else {
+            dateToRefactored = dateTo + " 23:59:59";
+            log.info("Upper bound set to {}", dateToRefactored);
         }
-
 
         List<RTEntity> receiptRTs = rtRepository.findByOrganizationId(creditorInstitution, dateFrom, dateToRefactored);
         List<RecoveryReceiptPaymentResponse> paymentsToReconcile = receiptRTs.stream().map(entity -> RecoveryReceiptPaymentResponse.builder()
@@ -128,7 +131,7 @@ public class RecoveryService {
                                 dateFrom, dateTo, sessionId, STATUS_RT_SEND_SUCCESS, BUSINESS_PROCESSES
                         );
 
-                        if(reEventsRT.isEmpty()) {
+                        if (reEventsRT.isEmpty()) {
                             String navToIuvMapping = String.format(DecouplerService.MAP_CACHING_KEY_TEMPLATE, creditorInstitution, noticeNumber);
                             String iuvToSessionIdMapping = String.format(DecouplerService.CACHING_KEY_TEMPLATE, creditorInstitution, iuv);
                             this.cacheRepository.insert(navToIuvMapping, iuvToSessionIdMapping, this.requestIDMappingTTL);
@@ -137,10 +140,10 @@ public class RecoveryService {
                             MDC.put(Constants.MDC_BUSINESS_PROCESS, "receipt-ko");
                             generateRE(Constants.PAA_INVIA_RT, null, InternalStepStatus.RT_START_RECONCILIATION_PROCESS, creditorInstitution, iuv, noticeNumber, ccp, sessionId);
                             String receiptKoRequest = ReceiptDto.builder()
-                                                              .fiscalCode(creditorInstitution)
-                                                              .noticeNumber(noticeNumber)
-                                                              .build()
-                                                              .toString();
+                                    .fiscalCode(creditorInstitution)
+                                    .noticeNumber(noticeNumber)
+                                    .build()
+                                    .toString();
                             this.receiptController.receiptKo(receiptKoRequest);
                             generateRE(Constants.PAA_INVIA_RT, "Success", InternalStepStatus.RT_END_RECONCILIATION_PROCESS, creditorInstitution, iuv, noticeNumber, ccp, sessionId);
                             MDC.remove(Constants.MDC_BUSINESS_PROCESS);
