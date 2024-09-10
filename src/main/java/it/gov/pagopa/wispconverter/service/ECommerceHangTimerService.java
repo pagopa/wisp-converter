@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 
 import static it.gov.pagopa.wispconverter.util.CommonUtility.sanitizeInput;
 import static it.gov.pagopa.wispconverter.util.MDCUtil.setEcommerceHangTimerInfoInMDC;
@@ -95,7 +96,7 @@ public class ECommerceHangTimerService {
         generateRE(InternalStepStatus.ECOMMERCE_HANG_TIMER_CREATED, "Scheduled ECommerceHangTimerService: [" + message + "]");
 
         // insert in Redis cache sequenceNumber of the message
-        cacheRepository.insert(key, sequenceNumber.toString(), expirationTime);
+        cacheRepository.insert(key, sequenceNumber.toString(), expirationTime, ChronoUnit.SECONDS);
     }
 
 
