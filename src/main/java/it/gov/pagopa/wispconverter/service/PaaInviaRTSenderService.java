@@ -6,6 +6,7 @@ import gov.telematici.pagamenti.ws.papernodo.PaaInviaRTRisposta;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.model.enumz.ClientEnum;
+import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
 import it.gov.pagopa.wispconverter.repository.model.enumz.OutcomeEnum;
 import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import it.gov.pagopa.wispconverter.util.Constants;
@@ -67,9 +68,12 @@ public class PaaInviaRTSenderService {
 
             // check the response and if the outcome is KO, throw an exception
             EsitoPaaInviaRT esitoPaaInviaRT = body.getPaaInviaRTRisposta();
-            if (Constants.KO.equals(esitoPaaInviaRT.getEsito())
-                    || (esitoPaaInviaRT.getFault() != null && !avoidSchedulingOnStates.contains(esitoPaaInviaRT.getFault().getFaultCode()))
-                    || !Constants.OK.equals(esitoPaaInviaRT.getEsito())) {
+            boolean avoidReScheduling = esitoPaaInviaRT.getFault() != null && avoidSchedulingOnStates.contains(esitoPaaInviaRT.getFault().getFaultCode());
+
+            // set the correct response regarding the creditor institution response
+            if (avoidReScheduling) {
+                generateREForAlreadySentRtToCreditorInstitution();
+            } else if (Constants.KO.equals(esitoPaaInviaRT.getEsito()) || !Constants.OK.equals(esitoPaaInviaRT.getEsito())) {
                 FaultBean fault = esitoPaaInviaRT.getFault();
                 String faultCode = "ND";
                 String faultString = "ND";
@@ -138,6 +142,15 @@ public class PaaInviaRTSenderService {
         // setting data in MDC for next use
         ReEventDto reEvent = ReUtil.createREForClientInterfaceInResponseEvent("POST", uri, headers, httpStatus, body, ClientEnum.CREDITOR_INSTITUTION_ENDPOINT, outcome);
         reEvent.setInfo(otherInfo);
+        reService.addRe(reEvent);
+    }
+
+    private void generateREForAlreadySentRtToCreditorInstitution() {
+
+        // setting data in MDC for next use
+        ReEventDto reEvent = ReUtil.getREBuilder()
+                .status(InternalStepStatus.RT_ALREADY_SENT)
+                .build();
         reService.addRe(reEvent);
     }
 
