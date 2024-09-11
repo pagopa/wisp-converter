@@ -1,0 +1,15 @@
+package it.gov.pagopa.wispconverter.controller.model;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import lombok.*;
+
+@Data
+@Builder(toBuilder = true)
+@NoArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@ToString
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class ConfigurationResponse {
+
+    private String key;
+}
