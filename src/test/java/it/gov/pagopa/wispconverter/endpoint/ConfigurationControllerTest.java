@@ -15,6 +15,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
+import static org.springframework.http.MediaType.APPLICATION_JSON;
+
 @ActiveProfiles(profiles = "test")
 @SpringBootTest(classes = Application.class)
 @AutoConfigureMockMvc
@@ -29,16 +31,25 @@ class ConfigurationControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Test
+    void getCreditorInstitutionsConfiguration() throws Exception {
+        mvc.perform(MockMvcRequestBuilders.get("/whitelist/cis"))
+                .andExpect(MockMvcResultMatchers.status().is2xxSuccessful())
+                .andExpect(MockMvcResultMatchers.content().contentType(APPLICATION_JSON));
+    }
 
-
-
-
+    @Test
+    void geteStationsConfiguration() throws Exception {
+        mvc.perform(MockMvcRequestBuilders.get("/whitelist/stations"))
+                .andExpect(MockMvcResultMatchers.status().is2xxSuccessful())
+                .andExpect(MockMvcResultMatchers.content().contentType(APPLICATION_JSON));
+    }
 
     @Test
     void createCreditorInstitutionsConfiguration() throws Exception {
         mvc.perform(MockMvcRequestBuilders.post("/whitelist/cis")
-                        .accept(MediaType.APPLICATION_JSON)
-                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(APPLICATION_JSON)
+                        .contentType(APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new ConfigurationModel())))
                 .andExpect(MockMvcResultMatchers.status().is2xxSuccessful());
     }
@@ -46,8 +57,8 @@ class ConfigurationControllerTest {
     @Test
     void createStationsConfiguration() throws Exception {
         mvc.perform(MockMvcRequestBuilders.post("/whitelist/stations")
-                        .accept(MediaType.APPLICATION_JSON)
-                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(APPLICATION_JSON)
+                        .contentType(APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new ConfigurationModel())))
                 .andExpect(MockMvcResultMatchers.status().is2xxSuccessful());
     }
