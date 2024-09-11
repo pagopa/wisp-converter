@@ -1,6 +1,6 @@
 package it.gov.pagopa.wispconverter.utils;
 
-import it.gov.pagopa.wispconverter.repository.ConfigurationRepository;
+import it.gov.pagopa.wispconverter.repository.*;
 import org.mockito.Mockito;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

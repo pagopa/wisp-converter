@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import it.gov.pagopa.wispconverter.controller.model.ConfigurationModel;
 import it.gov.pagopa.wispconverter.service.ConfigurationService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -20,8 +21,12 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "Configuration", description = "ECs and Stations configuration")
 public class ConfigurationController {
 
+    private final ConfigurationService configurationService;
+
     @Autowired
-    ConfigurationService configurationService;
+    public ConfigurationController(ConfigurationService configurationService) {
+        this.configurationService = configurationService;
+    }
 
 
     /**
@@ -64,6 +69,7 @@ public class ConfigurationController {
             @ApiResponse(responseCode = "200", description = "OK."),
     })
     @PostMapping(value = "/cis")
+    @ResponseStatus(HttpStatus.CREATED)
     public void createCreditorInstitutionsConfiguration(@RequestBody ConfigurationModel body) {
         configurationService.createCreditorInstitutionsConfiguration(body);
     }
@@ -73,6 +79,7 @@ public class ConfigurationController {
             @ApiResponse(responseCode = "200", description = "OK."),
     })
     @PostMapping(value = "/stations")
+    @ResponseStatus(HttpStatus.CREATED)
     public void createStationsConfiguration(@RequestBody ConfigurationModel body) {
         configurationService.createStationsConfiguration(body);
     }
