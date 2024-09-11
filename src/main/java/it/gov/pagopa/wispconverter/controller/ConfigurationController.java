@@ -8,6 +8,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import it.gov.pagopa.wispconverter.controller.model.ConfigurationResponse;
+import it.gov.pagopa.wispconverter.service.ConfigurationService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,6 +22,9 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Configuration", description = "ECs and Stations configuration")
 public class ConfigurationController {
 
+    @Autowired
+    ConfigurationService configurationService;
+
 
     /**
      * Configuration for creditor institutions
@@ -31,8 +36,10 @@ public class ConfigurationController {
             @ApiResponse(responseCode = "200", description = "OK.", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ConfigurationResponse.class))),
     })
     @GetMapping("/cis")
-    public ConfigurationResponse healthCheck() {
-        return ConfigurationResponse.builder().build();
+    public ConfigurationResponse getCreditorInstitutions() {
+        return ConfigurationResponse.builder()
+                .key(configurationService.getCreditorInstitutionConfiguration())
+                .build();
     }
 
 }
