@@ -31,7 +31,7 @@ public class ConfigurationController {
      */
     @Operation(summary = "Return the string containing all creditor institutions for the wisp converter logic", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"Configuration"})
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Configuration for EC retrieved.", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ConfigurationResponse.class))),
+            @ApiResponse(responseCode = "200", description = "Configuration for EC retrieved.", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ConfigurationModel.class))),
             @ApiResponse(responseCode = "404", description = "Configuration for EC not found."),
     })
     @GetMapping("/cis")
@@ -48,12 +48,12 @@ public class ConfigurationController {
      */
     @Operation(summary = "Return the string containing all stations for the wisp converter logic", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"Configuration"})
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Configuration for Stations retrieved.", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ConfigurationResponse.class))),
+            @ApiResponse(responseCode = "200", description = "Configuration for Stations retrieved.", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ConfigurationModel.class))),
             @ApiResponse(responseCode = "404", description = "Configuration for Stations not found."),
     })
     @GetMapping("/stations")
-    public ConfigurationResponse getStations() {
-        return ConfigurationResponse.builder()
+    public ConfigurationModel getStations() {
+        return ConfigurationModel.builder()
                 .key(configurationService.getStationConfiguration())
                 .build();
     }
