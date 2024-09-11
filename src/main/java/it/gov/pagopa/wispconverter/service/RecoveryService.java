@@ -85,10 +85,11 @@ public class RecoveryService {
         List<RecoveryReceiptPaymentResponse> paymentsToReconcile = receiptRTs.stream().map(entity -> RecoveryReceiptPaymentResponse.builder()
                         .iuv(entity.getIuv())
                         .ccp(entity.getCcp())
+                        .ci(entity.getIdDominio())
                         .build())
                 .toList();
 
-        CompletableFuture<Boolean> executeRecovery = recoverReceiptKOAsync(dateFrom, dateTo, creditorInstitution, paymentsToReconcile);
+        CompletableFuture<Boolean> executeRecovery = recoverReceiptKOAsync(dateFrom, dateTo, paymentsToReconcile);
         executeRecovery
                 .thenAccept(value -> log.info("Reconciliation for creditor institution [{}] in date range [{}-{}] completed!", creditorInstitution, dateFrom, dateTo))
                 .exceptionally(e -> {
@@ -101,61 +102,84 @@ public class RecoveryService {
                 .build();
     }
 
-    private CompletableFuture<Boolean> recoverReceiptKOAsync(String dateFrom, String dateTo, String creditorInstitution, List<RecoveryReceiptPaymentResponse> paymentsToReconcile) {
+    private CompletableFuture<Boolean> recoverReceiptKOAsync(String dateFrom, String dateTo, List<RecoveryReceiptPaymentResponse> paymentsToReconcile) {
+        return CompletableFuture.supplyAsync(() -> recoverReceiptKO(dateFrom, dateTo, paymentsToReconcile));
+    }
 
-        return CompletableFuture.supplyAsync(() -> {
+    public int recoverReceiptKOAll(ZonedDateTime dateFrom, ZonedDateTime dateTo) {
+        String dateFromString = dateFrom.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        String dateToString = dateFrom.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 
-            for (RecoveryReceiptPaymentResponse payment : paymentsToReconcile) {
+        List<RTEntity> receiptRTs = rtRepository.findPendingRT(dateFromString, dateToString);
+        List<RecoveryReceiptPaymentResponse> paymentsToReconcile = receiptRTs.stream().map(entity -> RecoveryReceiptPaymentResponse.builder()
+                                                                        .iuv(entity.getIuv())
+                                                                        .ccp(entity.getCcp())
+                                                                        .ci(entity.getIdDominio())
+                                                                        .build())
+                                                                            .toList();
 
-                String iuv = payment.getIuv();
-                String ccp = payment.getCcp();
+        recoverReceiptKO(dateFromString, dateToString, paymentsToReconcile);
 
-                try {
-                    List<ReEventEntity> reEvents = reEventRepository.findByIuvAndOrganizationId(dateFrom, dateTo, iuv, creditorInstitution);
+        return RecoveryReceiptResponse.builder()
+            .payments(paymentsToReconcile)
+            .build()
+            .getPayments()
+            .size();
+    }
 
-                    List<ReEventEntity> filteredEvents = reEvents.stream()
+    private boolean recoverReceiptKO(String dateFrom, String dateTo, List<RecoveryReceiptPaymentResponse> paymentsToReconcile) {
+
+        for (RecoveryReceiptPaymentResponse payment : paymentsToReconcile) {
+            String iuv = payment.getIuv();
+            String ccp = payment.getCcp();
+            String ci = payment.getCi();
+
+            try {
+                List<ReEventEntity> reEvents = reEventRepository.findByIuvAndOrganizationId(dateFrom, dateTo, iuv, ci);
+
+                List<ReEventEntity> filteredEvents = reEvents.stream()
                             .filter(event -> EVENT_TYPE_FOR_RECEIPTKO_SEARCH.equals(event.getStatus()))
                             .filter(event -> ccp.equals(event.getCcp()))
-                            .sorted(Comparator.comparing(ReEventEntity::getInsertedTimestamp))
-                            .toList();
+                           .sorted(Comparator.comparing(ReEventEntity::getInsertedTimestamp))
+                           .toList();
 
-                    int numberOfEvents = filteredEvents.size();
-                    if (numberOfEvents > 0) {
+                int numberOfEvents = filteredEvents.size();
+                if (numberOfEvents > 0) {
 
-                        ReEventEntity event = filteredEvents.get(numberOfEvents - 1);
-                        String noticeNumber = event.getNoticeNumber();
-                        String sessionId = event.getSessionId();
+                    ReEventEntity event = filteredEvents.get(numberOfEvents - 1);
+                    String noticeNumber = event.getNoticeNumber();
+                    String sessionId = event.getSessionId();
 
-                        // search by sessionId, then filter by status=RT_SEND_SUCCESS. If there is zero, then proceed
-                        List<ReEventEntity> reEventsRT = reEventRepository.findBySessionIdAndStatus(dateFrom, dateTo, sessionId, STATUS_RT_SEND_SUCCESS);
+                    // search by sessionId, then filter by status=RT_SEND_SUCCESS. If there is zero, then proceed
+                    List<ReEventEntity> reEventsRT = reEventRepository.findBySessionIdAndStatus(dateFrom, dateTo, sessionId, STATUS_RT_SEND_SUCCESS);
 
-                        if (reEventsRT.isEmpty()) {
-                            String navToIuvMapping = String.format(DecouplerService.MAP_CACHING_KEY_TEMPLATE, creditorInstitution, noticeNumber);
-                            String iuvToSessionIdMapping = String.format(DecouplerService.CACHING_KEY_TEMPLATE, creditorInstitution, iuv);
-                            this.cacheRepository.insert(navToIuvMapping, iuvToSessionIdMapping, this.requestIDMappingTTL);
-                            this.cacheRepository.insert(iuvToSessionIdMapping, sessionId, this.requestIDMappingTTL);
+                    if (reEventsRT.isEmpty()) {
+                        String navToIuvMapping = String.format(DecouplerService.MAP_CACHING_KEY_TEMPLATE, ci, noticeNumber);
+                        String iuvToSessionIdMapping = String.format(DecouplerService.CACHING_KEY_TEMPLATE, ci, iuv);
+                        this.cacheRepository.insert(navToIuvMapping, iuvToSessionIdMapping, this.requestIDMappingTTL);
+                        this.cacheRepository.insert(iuvToSessionIdMapping, sessionId, this.requestIDMappingTTL);
 
-                            MDC.put(Constants.MDC_BUSINESS_PROCESS, "receipt-ko");
-                            generateRE(Constants.PAA_INVIA_RT, null, InternalStepStatus.RT_START_RECONCILIATION_PROCESS, creditorInstitution, iuv, noticeNumber, ccp, sessionId);
-                            String receiptKoRequest = ReceiptDto.builder()
-                                    .fiscalCode(creditorInstitution)
+                        MDC.put(Constants.MDC_BUSINESS_PROCESS, "receipt-ko");
+                        generateRE(Constants.PAA_INVIA_RT, null, InternalStepStatus.RT_START_RECONCILIATION_PROCESS, ci, iuv, noticeNumber, ccp, sessionId);
+                        String receiptKoRequest = ReceiptDto.builder()
+                                  .fiscalCode(ci)
                                     .noticeNumber(noticeNumber)
                                     .build()
                                     .toString();
-                            this.receiptController.receiptKo(receiptKoRequest);
-                            generateRE(Constants.PAA_INVIA_RT, "Success", InternalStepStatus.RT_END_RECONCILIATION_PROCESS, creditorInstitution, iuv, noticeNumber, ccp, sessionId);
-                            MDC.remove(Constants.MDC_BUSINESS_PROCESS);
-                        }
+                        this.receiptController.receiptKo(receiptKoRequest);
+                        generateRE(Constants.PAA_INVIA_RT, "Success", InternalStepStatus.RT_END_RECONCILIATION_PROCESS, ci, iuv, noticeNumber, ccp, sessionId);
+                        MDC.remove(Constants.MDC_BUSINESS_PROCESS);
                     }
-
-                } catch (Exception e) {
-                    generateRE(Constants.PAA_INVIA_RT, "Failure", InternalStepStatus.RT_END_RECONCILIATION_PROCESS, creditorInstitution, iuv, null, ccp, null);
-                    throw new AppException(e, AppErrorCodeMessageEnum.ERROR, e.getMessage());
                 }
-            }
 
-            return true;
-        });
+            } catch (Exception e) {
+                generateRE(Constants.PAA_INVIA_RT, "Failure", InternalStepStatus.RT_END_RECONCILIATION_PROCESS, ci, iuv, null, ccp, null);
+                throw new AppException(e, AppErrorCodeMessageEnum.ERROR, e.getMessage());
+            }
+        }
+
+        return true;
+
     }
 
     private void generateRE(String primitive, String operationStatus, InternalStepStatus status, String domainId, String iuv, String noticeNumber, String ccp, String sessionId) {

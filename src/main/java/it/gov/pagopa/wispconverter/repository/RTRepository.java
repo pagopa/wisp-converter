@@ -16,4 +16,7 @@ public interface RTRepository extends CosmosRepository<RTEntity, String> {
     List<RTEntity> findByOrganizationId(@Param("organizationId") String organizationId,
                                         @Param("dateFrom") String dateFrom,
                                         @Param("dateTo") String dateTo);
+
+    @Query("SELECT * FROM c WHERE IS_NULL(c.rt) AND c._ts >= DateTimeToTimestamp(@dateFrom) / 1000 and c._ts <= DateTimeToTimestamp(@dateTo) / 1000")
+    List<RTEntity> findPendingRT(@Param("dateFrom") String dateFrom, @Param("dateTo") String dateTo);
 }
