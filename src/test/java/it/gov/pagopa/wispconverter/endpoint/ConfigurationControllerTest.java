@@ -33,13 +33,6 @@ class ConfigurationControllerTest {
 
 
 
-//    @Test
-//    void getCreditorInstitutions() {
-//    }
-//
-//    @Test
-//    void getStations() {
-//    }
 
     @Test
     void createCreditorInstitutionsConfiguration() throws Exception {
