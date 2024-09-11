@@ -38,26 +38,16 @@ class HomeTest {
     @Autowired
     private MockMvc mvc;
 
-    @MockBean
-    private RPTRequestRepository rptRequestRepository;
-    @MockBean
-    private RTRetryRepository rtRetryRepository;
-    @MockBean
-    private RTRepository rtRepository;
-    @MockBean
-    private CacheRepository cacheRepository;
-    @MockBean
-    private ReEventRepository reEventRepository;
-    @MockBean
-    private IdempotencyKeyRepository idempotencyKeyRepository;
-    @MockBean
-    private ServiceBusSenderClient serviceBusSenderClient;
-    @MockBean
-    private ReceiptTimerService receiptTimerService;
-    @MockBean
-    ECommerceHangTimerService eCommerceHangTimerService;
-    @MockBean
-    ECommerceHangTimeoutConsumer eCommerceHangTimeoutConsumer;
+
+
+
+
+
+
+
+
+
+
 
     @MockBean
     private ReceiptService receiptService;

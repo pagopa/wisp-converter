@@ -1,20 +1,17 @@
 package it.gov.pagopa.wispconverter.endpoint;
 
-import com.azure.messaging.servicebus.ServiceBusSenderClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.gen.wispconverter.client.cache.model.StationCreditorInstitutionDto;
 import it.gov.pagopa.gen.wispconverter.client.gpd.model.MultiplePaymentPositionModelDto;
 import it.gov.pagopa.gen.wispconverter.client.gpd.model.PaymentPositionModelDto;
 import it.gov.pagopa.gen.wispconverter.client.iuvgenerator.model.IUVGenerationResponseDto;
 import it.gov.pagopa.wispconverter.Application;
-import it.gov.pagopa.wispconverter.repository.*;
+import it.gov.pagopa.wispconverter.repository.CacheRepository;
+import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
 import it.gov.pagopa.wispconverter.service.ConfigCacheService;
-import it.gov.pagopa.wispconverter.service.ECommerceHangTimerService;
 import it.gov.pagopa.wispconverter.service.ReceiptService;
-import it.gov.pagopa.wispconverter.service.ReceiptTimerService;
 import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
-import it.gov.pagopa.wispconverter.servicebus.ECommerceHangTimeoutConsumer;
 import it.gov.pagopa.wispconverter.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -61,13 +58,7 @@ class RptTest {
     private ConfigCacheService configCacheService;
     @MockBean
     private RPTRequestRepository rptRequestRepository;
-    @MockBean
-    private IdempotencyKeyRepository idempotencyKeyRepository;
 
-    @MockBean
-    private RTRetryRepository rtRetryRepository;
-    @MockBean
-    private RTRepository rtRepository;
     @MockBean
     private it.gov.pagopa.gen.wispconverter.client.iuvgenerator.invoker.ApiClient iuvGeneratorClient;
     @MockBean
@@ -82,19 +73,11 @@ class RptTest {
     @MockBean
     private RedisTemplate<String, Object> redisSimpleTemplate;
     @MockBean
-    private ReEventRepository reEventRepository;
-    @MockBean
-    private ServiceBusSenderClient serviceBusSenderClient;
-    @MockBean
     private CacheRepository cacheRepository;
     @MockBean
-    private ReceiptTimerService receiptTimerService;
-    @MockBean
     private ReceiptService receiptService;
-    @MockBean
-    ECommerceHangTimerService eCommerceHangTimerService;
-    @MockBean
-    ECommerceHangTimeoutConsumer eCommerceHangTimeoutConsumer;
+
+
 
 
     private void setConfigCacheStoredData(String servicePath, int primitiveVersion) {

@@ -34,8 +34,7 @@ public class PaymentTimeoutConsumerTest {
     @Mock
     private ReService reService;
 
-    @MockBean
-    private ReceiptTimerService receiptTimerService;
+
 
     @InjectMocks
     private PaymentTimeoutConsumer paymentTimeoutConsumer;

@@ -41,37 +41,28 @@ class OpenApiGenerationTest {
     @MockBean
     private RedirectController redirectController;
 
-    @MockBean
-    private RPTRequestRepository rptRequestRepository;
 
-    @MockBean
-    private RTRetryRepository rtRetryRepository;
 
-    @MockBean
-    private RTRepository rtRepository;
 
-    @MockBean
-    private IdempotencyKeyRepository idempotencyKeyRepository;
+
+
+
+
 
     @MockBean
     private CosmosAsyncClient cosmosAsyncClient;
 
-    @MockBean
-    private ReEventRepository reEventRepository;
 
-    @MockBean
-    private ServiceBusSenderClient serviceBusSenderClient;
 
-    @MockBean
-    private ReceiptTimerService receiptTimerService;
+
+
+
 
     @MockBean
     private ReceiptService receiptService;
 
-    @MockBean
-    ECommerceHangTimerService eCommerceHangTimerService;
-    @MockBean
-    ECommerceHangTimeoutConsumer eCommerceHangTimeoutConsumer;
+
+
 
 
     @Test

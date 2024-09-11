@@ -457,6 +457,17 @@
                 }
               }
             }
+          },
+          "201" : {
+            "description" : "Created",
+            "headers" : {
+              "X-Request-Id" : {
+                "description" : "This header identifies the call",
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            }
           }
         },
         "security" : [ {
@@ -536,6 +547,17 @@
         "responses" : {
           "200" : {
             "description" : "OK.",
+            "headers" : {
+              "X-Request-Id" : {
+                "description" : "This header identifies the call",
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            }
+          },
+          "201" : {
+            "description" : "Created",
             "headers" : {
               "X-Request-Id" : {
                 "description" : "This header identifies the call",
