@@ -7,7 +7,7 @@ Feature: User pays a payment carts from existing payment position via nodoInviaC
   # ===============================================================================================
   # ===============================================================================================
 
-  @runnable @nodo_invia_carrello_rpt @happy_path
+  @runnable @nodo_invia_carrello_rpt @happy_path @new_scenario
   Scenario: User pays a cart with single RPT without stamp on nodoInviaCarrelloRPT that exists already in GPD
     Given a cart of RPTs non-multibeneficiary
     And a single RPT of type BBT with 1 transfers of which none are stamps
@@ -18,7 +18,7 @@ Feature: User pays a payment carts from existing payment position via nodoInviaC
 
   # ===============================================================================================
   # ===============================================================================================
-  
+
   @runnable @nodo_invia_carrello_rpt @happy_path
   Scenario: User pays a cart with single RPT with multiple transfers on nodoInviaCarrelloRPT that exists already in GPD
     Given a cart of RPTs non-multibeneficiary
@@ -30,7 +30,7 @@ Feature: User pays a payment carts from existing payment position via nodoInviaC
 
   # ===============================================================================================
   # ===============================================================================================
-  
+
   @runnable @nodo_invia_carrello_rpt @happy_path
   Scenario: Scenario: User pays a cart with single RPT with one stamp on nodoInviaCarrelloRPT that exists already in GPD
     Given a cart of RPTs non-multibeneficiary
@@ -42,7 +42,7 @@ Feature: User pays a payment carts from existing payment position via nodoInviaC
   
   # ===============================================================================================
   # ===============================================================================================
-  
+
   @runnable @nodo_invia_carrello_rpt @happy_path
   Scenario: User pays a cart with two RPTs without stamp on nodoInviaCarrelloRPT of which one already exists in GPD
     Given a cart of RPTs non-multibeneficiary
@@ -55,7 +55,7 @@ Feature: User pays a payment carts from existing payment position via nodoInviaC
 
   # ===============================================================================================
   # ===============================================================================================
-  
+
   @runnable @nodo_invia_carrello_rpt @happy_path
   Scenario: User pays a cart with two RPTs with multiple transfers on nodoInviaCarrelloRPT that exists already in GPD
     Given a cart of RPTs non-multibeneficiary
@@ -68,7 +68,7 @@ Feature: User pays a payment carts from existing payment position via nodoInviaC
 
   # ===============================================================================================
   # ===============================================================================================
-  
+
   @runnable @nodo_invia_carrello_rpt @happy_path
   Scenario: Scenario: User pays a cart with two RPTs with at least on stamp on nodoInviaCarrelloRPT that exists already in GPD
     Given a cart of RPTs non-multibeneficiary
@@ -112,7 +112,7 @@ Feature: User pays a payment carts from existing payment position via nodoInviaC
 
   # ===============================================================================================
   # ===============================================================================================
- 
+
   @runnable @nodo_invia_carrello_rpt @unhappy_path
   Scenario: User tries to pay a cart with single RPT on nodoInviaCarrelloRPT that was inserted from ACA and is in invalid state
     Given a cart of RPTs non-multibeneficiary
@@ -150,7 +150,7 @@ Feature: User pays a payment carts from existing payment position via nodoInviaC
 
   # ===============================================================================================
   # ===============================================================================================
- 
+
   @runnable @nodo_invia_carrello_rpt @unhappy_path
   Scenario: User tries to pay a cart with two RPTs on nodoInviaCarrelloRPT that was inserted from ACA and is in invalid state
     Given a cart of RPTs non-multibeneficiary
