@@ -28,7 +28,6 @@ public class ConfigurationController {
         this.configurationService = configurationService;
     }
 
-
     /**
      * Configuration for creditor institutions
      *

@@ -387,7 +387,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/ConfigurationModel"
+                  "$ref" : "#/components/schemas/ConfigurationResponse"
                 }
               }
             },
@@ -405,7 +405,7 @@
             "content" : {
               "*/*" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/ConfigurationModel"
+                  "$ref" : "#/components/schemas/ConfigurationResponse"
                 }
               }
             },
@@ -433,49 +433,7 @@
         "schema" : {
           "type" : "string"
         }
-      } ],
-      "post" : {
-        "operationId" : "createCreditorInstitutionsConfiguration",
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/ConfigurationModel"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "OK.",
-            "headers" : {
-              "X-Request-Id" : {
-                "description" : "This header identifies the call",
-                "schema" : {
-                  "type" : "string"
-                }
-              }
-            }
-          },
-          "201" : {
-            "description" : "Created",
-            "headers" : {
-              "X-Request-Id" : {
-                "description" : "This header identifies the call",
-                "schema" : {
-                  "type" : "string"
-                }
-              }
-            }
-          }
-        },
-        "security" : [ {
-          "ApiKey" : [ ]
-        } ],
-        "summary" : "Create the string containing all creditor institutions for the wisp converter logic",
-        "tags" : [ "Configuration" ]
-      }
+      } ]
     },
     "/whitelist/stations" : {
       "get" : {
@@ -485,7 +443,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/ConfigurationModel"
+                  "$ref" : "#/components/schemas/ConfigurationResponse"
                 }
               }
             },
@@ -503,7 +461,7 @@
             "content" : {
               "*/*" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/ConfigurationModel"
+                  "$ref" : "#/components/schemas/ConfigurationResponse"
                 }
               }
             },
@@ -531,49 +489,7 @@
         "schema" : {
           "type" : "string"
         }
-      } ],
-      "post" : {
-        "operationId" : "createStationsConfiguration",
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/ConfigurationModel"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "OK.",
-            "headers" : {
-              "X-Request-Id" : {
-                "description" : "This header identifies the call",
-                "schema" : {
-                  "type" : "string"
-                }
-              }
-            }
-          },
-          "201" : {
-            "description" : "Created",
-            "headers" : {
-              "X-Request-Id" : {
-                "description" : "This header identifies the call",
-                "schema" : {
-                  "type" : "string"
-                }
-              }
-            }
-          }
-        },
-        "security" : [ {
-          "ApiKey" : [ ]
-        } ],
-        "summary" : "Create the string containing all stations for the wisp converter logic",
-        "tags" : [ "Configuration" ]
-      }
+      } ]
     }
   },
   "components" : {
@@ -592,7 +508,7 @@
           }
         }
       },
-      "ConfigurationModel" : {
+      "ConfigurationResponse" : {
         "type" : "object",
         "properties" : {
           "key" : {
