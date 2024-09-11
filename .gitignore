@@ -39,4 +39,8 @@ hs_err_pid*
 /helm/charts/*
 **/.terraform/
 
+integration-test/reports/*
+integration-test/results/*
+**/__pycache__/*
+
 .DS_Store
