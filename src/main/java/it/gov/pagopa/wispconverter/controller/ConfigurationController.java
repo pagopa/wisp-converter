@@ -7,14 +7,12 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import it.gov.pagopa.wispconverter.controller.model.ConfigurationResponse;
+import it.gov.pagopa.wispconverter.controller.model.ConfigurationModel;
 import it.gov.pagopa.wispconverter.service.ConfigurationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/whitelist")
@@ -33,13 +31,32 @@ public class ConfigurationController {
      */
     @Operation(summary = "Return the string containing all creditor institutions for the wisp converter logic", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"Configuration"})
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "OK.", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ConfigurationResponse.class))),
+            @ApiResponse(responseCode = "200", description = "OK.", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ConfigurationModel.class))),
     })
     @GetMapping("/cis")
-    public ConfigurationResponse getCreditorInstitutions() {
-        return ConfigurationResponse.builder()
+    public ConfigurationModel getCreditorInstitutions() {
+        return ConfigurationModel.builder()
                 .key(configurationService.getCreditorInstitutionConfiguration())
                 .build();
+    }
+
+
+    @Operation(summary = "Create the string containing all creditor institutions for the wisp converter logic", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"Configuration"})
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "OK."),
+    })
+    @PostMapping(value = "/cis")
+    public void createCreditorInstitutionsConfiguration(@RequestBody ConfigurationModel body) {
+        configurationService.createCreditorInstitutionsConfiguration(body);
+    }
+
+    @Operation(summary = "Create the string containing all stations for the wisp converter logic", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"Configuration"})
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "OK."),
+    })
+    @PostMapping(value = "/stations")
+    public void createStationsConfiguration(@RequestBody ConfigurationModel body) {
+        configurationService.createStationsConfiguration(body);
     }
 
 }
