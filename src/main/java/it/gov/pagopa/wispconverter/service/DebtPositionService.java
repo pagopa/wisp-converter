@@ -26,6 +26,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.util.Pair;
+import org.springframework.retry.annotation.Retryable;
+import org.springframework.retry.support.RetrySynchronizationManager;
+import org.springframework.retry.annotation.Backoff;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClientException;
@@ -81,7 +84,14 @@ public class DebtPositionService {
     private Boolean isTracingOnREEnabled;
 
 
+    // TODO: in quali casi fare il retry?
+    @Retryable(
+            maxAttemptsExpression = "${gpd.retry.maxAttempts}",
+            backoff = @Backoff(delayExpression = "${gpd.retry.maxDelay}"))
     public void createDebtPositions(SessionDataDTO sessionData) {
+    	
+    	// TODO remove this debug log
+    	log.info("******* Retry Number: "+ RetrySynchronizationManager.getContext().getRetryCount());
 
         // initialize standard data
         List<String> iuvToSaveInBulkOperation = new LinkedList<>();
@@ -386,7 +396,7 @@ public class DebtPositionService {
     }
 
     private void handleValidPaymentPosition(DebtPositionsApiApi gpdClientInstance, SessionDataDTO sessionData, PaymentPositionModelDto extractedPaymentPosition, PaymentPositionModelBaseResponseDto paymentPositionFromGPD, String iuv, String creditorInstitutionId, List<PaymentPositionModelDto> extractedPaymentPositions) {
-
+    	
         try {
             // validate the station, checking if exists one with the required segregation code and, if is onboarded on GPD, has the correct primitive version
             CommonUtility.checkStationValidity(configCacheService, sessionData, creditorInstitutionId, CommonUtility.getSinglePaymentOption(paymentPositionFromGPD).getNav(), stationInGpdPartialPath);

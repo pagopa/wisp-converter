@@ -21,6 +21,7 @@ import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.retry.annotation.EnableRetry;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.DefaultUriBuilderFactory;
 
@@ -34,6 +35,7 @@ import java.util.List;
 @Configuration
 @Slf4j
 @RequiredArgsConstructor
+@EnableRetry
 public class GpdClientConfig {
 
     private final ReService reService;
