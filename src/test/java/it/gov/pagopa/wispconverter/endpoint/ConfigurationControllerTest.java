@@ -45,7 +45,7 @@ class ConfigurationControllerTest {
 
     @Test
     void createStationsConfiguration() throws Exception {
-        mvc.perform(MockMvcRequestBuilders.post("/whitelist/cis")
+        mvc.perform(MockMvcRequestBuilders.post("/whitelist/stations")
                         .accept(MediaType.APPLICATION_JSON)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new ConfigurationModel())))
