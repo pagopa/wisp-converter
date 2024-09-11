@@ -3,6 +3,7 @@ package it.gov.pagopa.wispconverter;
 import com.azure.cosmos.CosmosAsyncClient;
 import com.azure.messaging.servicebus.ServiceBusSenderClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import it.gov.pagopa.wispconverter.controller.ConfigurationController;
 import it.gov.pagopa.wispconverter.controller.RedirectController;
 import it.gov.pagopa.wispconverter.repository.*;
 import it.gov.pagopa.wispconverter.service.ECommerceHangTimerService;
@@ -52,6 +53,9 @@ class OpenApiGenerationTest {
 
     @MockBean
     private IdempotencyKeyRepository idempotencyKeyRepository;
+
+    @MockBean
+    private ConfigurationRepository configurationRepository;
 
     @MockBean
     private CosmosAsyncClient cosmosAsyncClient;
