@@ -25,7 +25,6 @@ public class ConfigurationController {
     @Autowired
     ConfigurationService configurationService;
 
-
     /**
      * Configuration for creditor institutions
      *
