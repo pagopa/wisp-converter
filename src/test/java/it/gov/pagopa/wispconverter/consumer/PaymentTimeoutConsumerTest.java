@@ -5,7 +5,6 @@ import com.azure.messaging.servicebus.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.wispconverter.service.ReService;
 import it.gov.pagopa.wispconverter.service.ReceiptService;
-import it.gov.pagopa.wispconverter.service.ReceiptTimerService;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
 import it.gov.pagopa.wispconverter.servicebus.PaymentTimeoutConsumer;
 import org.junit.jupiter.api.BeforeEach;
@@ -14,7 +13,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -33,8 +31,6 @@ public class PaymentTimeoutConsumerTest {
 
     @Mock
     private ReService reService;
-
-
 
     @InjectMocks
     private PaymentTimeoutConsumer paymentTimeoutConsumer;

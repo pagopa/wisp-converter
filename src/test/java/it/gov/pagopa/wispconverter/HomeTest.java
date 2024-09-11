@@ -1,13 +1,8 @@
 package it.gov.pagopa.wispconverter;
 
-import com.azure.messaging.servicebus.ServiceBusSenderClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.wispconverter.controller.model.AppInfoResponse;
-import it.gov.pagopa.wispconverter.repository.*;
-import it.gov.pagopa.wispconverter.service.ECommerceHangTimerService;
 import it.gov.pagopa.wispconverter.service.ReceiptService;
-import it.gov.pagopa.wispconverter.service.ReceiptTimerService;
-import it.gov.pagopa.wispconverter.servicebus.ECommerceHangTimeoutConsumer;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
