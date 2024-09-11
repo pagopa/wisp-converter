@@ -1,8 +1,8 @@
 {
-  "openapi" : "3.0.1",
-  "info" : {
-    "title" : "WISP-Converter-redirect",
-    "version" : "0.1.17-1-PAGOPA-2105"
+  "openapi": "3.0.1",
+  "info": {
+    "title": "WISP-Converter-redirect",
+    "version": "0.1.18"
   },
   "servers" : [ {
     "url" : "http://localhost",

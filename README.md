@@ -1,7 +1,7 @@
 # pagoPA WISP Converter
 
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=pagopa_pagopa-wisp-converter&metric=alert_status)](https://sonarcloud.io/dashboard?id=pagopa_pagopa-wisp-converter)
-[![Integration Tests](https://github.com/pagopa/pagopa-wisp-converter/actions/workflows/integration_test.yml/badge.svg?branch=main)](https://github.com/pagopa/pagopa-wisp-converter/actions/workflows/integration_test.yml)
+[![Integration Tests](https://github.com/pagopa/pagopa-wisp-converter/actions/workflows/05_integration_test.yml/badge.svg?branch=main)](https://github.com/pagopa/pagopa-wisp-converter/actions/workflows/05_integration_test.yml)
 
 A service that permits to handle nodoInviaRPT and nodoInviaCarrelloRPT request from WISP, interfacing
 them with GPD system
@@ -69,6 +69,9 @@ For classical integration tests with Cucumber, execute the following commands fr
 
 1. `yarn install`
 2. `yarn test`
+
+A report with the results will appears
+at [this link](https://pagopauweusharedtstdtsa.blob.core.windows.net/pagopa-wisp-converter/reports/index.html).
 
 #### Performance testing
 
