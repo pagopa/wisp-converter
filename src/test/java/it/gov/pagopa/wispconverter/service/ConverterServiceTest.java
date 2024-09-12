@@ -85,7 +85,7 @@ class ConverterServiceTest {
 	private final SessionDataDTO sessionDataDTO = ConverterServiceTest.getMockSessionDataDTO();
 
 	@BeforeEach
-	void setUp() throws URISyntaxException {
+	void setUp() {
 		when(rptCosmosService.getRPTRequestEntity(anyString())).thenReturn(RPTRequestEntity.builder()
 				.id("mock-id")
 				.primitive("nodoInviaRPT")

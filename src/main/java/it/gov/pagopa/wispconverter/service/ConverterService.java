@@ -68,35 +68,16 @@ public class ConverterService {
     		
     	} catch (AppException appException) {
     		log.error("An error occurred during covert operations: " + appException.getMessage());
-    		// TODO decide what to do if it is not possible to recover the sessionData obj or if the information necessary to valorise the sendKoPaaInviaRtToCreditorInstitution is not present.
-    		if (sessionData != null && sessionData.getCommonFields() != null && !CollectionUtils.isEmpty(sessionData.getNAVs())) {
-    			List<String> navList = sessionData.getNAVs();
-    			for (String noticeNumber: navList) {
-    				var inputPaaInviaRTKo = List.of(ReceiptDto.builder()
-    	                    .fiscalCode(sessionData.getCommonFields().getCreditorInstitutionId())
-    	                    .noticeNumber(noticeNumber)
-    	                    .build());
-    	            receiptService.sendKoPaaInviaRtToCreditorInstitution(inputPaaInviaRTKo);
-    			}
-    		}
+    		this.sendKoPaaInviaRtToCreditorInstitution(sessionData);
     		throw appException;   		
     	} catch (Exception ex) {
     		log.error("An error occurred during covert operations: " + ex.getMessage());
-    		// TODO decide what to do if it is not possible to recover the sessionData obj or if the information necessary to valorise the sendKoPaaInviaRtToCreditorInstitution is not present.
-    		if (sessionData != null && sessionData.getCommonFields() != null && !CollectionUtils.isEmpty(sessionData.getNAVs())) {
-    			List<String> navList = sessionData.getNAVs();
-    			for (String noticeNumber: navList) {
-    				var inputPaaInviaRTKo = List.of(ReceiptDto.builder()
-    	                    .fiscalCode(sessionData.getCommonFields().getCreditorInstitutionId())
-    	                    .noticeNumber(noticeNumber)
-    	                    .build());
-    	            receiptService.sendKoPaaInviaRtToCreditorInstitution(inputPaaInviaRTKo);
-    			}
-    		}
+    		this.sendKoPaaInviaRtToCreditorInstitution(sessionData);
     		throw ex;
     	}
     	return checkoutResponse;
     }
+
 
     /**
      * This method inserts a scheduled message in the queue of the service bus.
@@ -114,4 +95,18 @@ public class ConverterService {
                         .noticeNumber(elem.getNoticeNumber())
                         .build()));
     }
+    
+    // TODO decide what to do if it is not possible to recover the sessionData obj or if the information necessary to valorise the sendKoPaaInviaRtToCreditorInstitution is not present.
+    private void sendKoPaaInviaRtToCreditorInstitution(SessionDataDTO sessionData) {
+		if (sessionData != null && sessionData.getCommonFields() != null && !CollectionUtils.isEmpty(sessionData.getNAVs())) {
+			List<String> navList = sessionData.getNAVs();
+			for (String noticeNumber: navList) {
+				var inputPaaInviaRTKo = List.of(ReceiptDto.builder()
+		                .fiscalCode(sessionData.getCommonFields().getCreditorInstitutionId())
+		                .noticeNumber(noticeNumber)
+		                .build());
+		        receiptService.sendKoPaaInviaRtToCreditorInstitution(inputPaaInviaRTKo);
+			}
+		}
+	}
 }
