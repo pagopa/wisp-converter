@@ -1,5 +1,6 @@
 package it.gov.pagopa.wispconverter.config.client;
 
+import it.gov.pagopa.wispconverter.config.client.custom.ApiConfigCacheApiClient;
 import it.gov.pagopa.wispconverter.service.ReService;
 import it.gov.pagopa.wispconverter.util.client.RequestResponseLoggingProperties;
 import it.gov.pagopa.wispconverter.util.client.apiconfigcache.ApiConfigCacheClientLoggingInterceptor;
@@ -61,7 +62,7 @@ public class APIConfigCacheClientConfig {
 
         restTemplate.setErrorHandler(new ApiConfigCacheClientResponseErrorHandler());
 
-        it.gov.pagopa.gen.wispconverter.client.cache.invoker.ApiClient client = new it.gov.pagopa.gen.wispconverter.client.cache.invoker.ApiClient(restTemplate);
+        ApiConfigCacheApiClient client = new ApiConfigCacheApiClient(restTemplate);
         client.setBasePath(basePath);
         client.setApiKey(apiKey);
         client.setMaxAttemptsForRetry(maxRetry);

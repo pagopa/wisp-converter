@@ -76,7 +76,7 @@ public class GpdClientConfig {
 
         restTemplate.setErrorHandler(new GpdClientResponseErrorHandler());
 
-        GdpApiClient client = new GdpApiClient(restTemplate);
+        CustomApiClient client = new CustomApiClient(restTemplate);
 
         client.setBasePath(basePath);
         client.setApiKey(apiKey);

@@ -1,4 +1,4 @@
-package it.gov.pagopa.wispconverter.config.client;
+package it.gov.pagopa.wispconverter.config.client.custom;
 
 import it.gov.pagopa.wispconverter.exception.AppException;
 import org.springframework.core.ParameterizedTypeReference;
@@ -12,9 +12,9 @@ import org.springframework.web.client.RestTemplate;
 import java.util.List;
 import java.util.Map;
 
-public class GdpApiClient extends it.gov.pagopa.gen.wispconverter.client.gpd.invoker.ApiClient {
+public class ApiConfigCacheApiClient extends it.gov.pagopa.gen.wispconverter.client.cache.invoker.ApiClient {
 
-    public GdpApiClient(RestTemplate restTemplate) {
+    public ApiConfigCacheApiClient(RestTemplate restTemplate) {
         super(restTemplate);
     }
 
@@ -40,26 +40,31 @@ public class GdpApiClient extends it.gov.pagopa.gen.wispconverter.client.gpd.inv
                 response = super.invokeAPI(path, method, pathParams, queryParams, body, headerParams, cookieParams, formParams, accept, contentType, authNames, returnType);
             } catch (AppException ex) {
                 Throwable cause = ex.getCause();
-                if (cause instanceof HttpServerErrorException
-                        || ((HttpClientErrorException) cause)
-                        .getStatusCode()
-                        .equals(HttpStatus.TOO_MANY_REQUESTS)) {
-                    attempts++;
-                    if (attempts < super.getMaxAttemptsForRetry()) {
-                        try {
-                            Thread.sleep(super.getWaitTimeMillis());
-                        } catch (InterruptedException e) {
-                            Thread.currentThread().interrupt();
-                        }
-                    } else {
-                        throw ex;
-                    }
-                } else {
-                    throw ex;
-                }
+                attempts = handleRetry(ex, cause, attempts);
             }
         }
         return response;
+    }
+
+    private int handleRetry(AppException ex, Throwable cause, int attempts) {
+        if (cause instanceof HttpServerErrorException
+                || ((HttpClientErrorException) cause)
+                .getStatusCode()
+                .equals(HttpStatus.TOO_MANY_REQUESTS)) {
+            attempts++;
+            if (attempts < super.getMaxAttemptsForRetry()) {
+                try {
+                    Thread.sleep(super.getWaitTimeMillis());
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            } else {
+                throw ex;
+            }
+        } else {
+            throw ex;
+        }
+        return attempts;
     }
 
 
