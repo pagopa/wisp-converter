@@ -1,5 +1,6 @@
 package it.gov.pagopa.wispconverter.service;
 
+import it.gov.pagopa.wispconverter.controller.model.ConfigurationModel;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.ConfigurationRepository;
@@ -29,5 +30,21 @@ public class ConfigurationService {
         ConfigurationEntity configurationEntity = configurationRepositoryRepository.findById(STATION_ID)
                 .orElseThrow(() -> new AppException(AppErrorCodeMessageEnum.CONFIGURATION_NOT_FOUND));
         return configurationEntity.getContent();
+    }
+
+    public void createCreditorInstitutionsConfiguration(ConfigurationModel body) {
+        ConfigurationEntity entity = ConfigurationEntity.builder()
+                .id(CREDITOR_INSTITUTION_ID)
+                .content(body.getKey())
+                .build();
+        configurationRepositoryRepository.save(entity);
+    }
+
+    public void createStationsConfiguration(ConfigurationModel body) {
+        ConfigurationEntity entity = ConfigurationEntity.builder()
+                .id(STATION_ID)
+                .content(body.getKey())
+                .build();
+        configurationRepositoryRepository.save(entity);
     }
 }
