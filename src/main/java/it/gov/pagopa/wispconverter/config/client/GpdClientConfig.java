@@ -10,7 +10,6 @@ import it.gov.pagopa.wispconverter.util.client.RequestResponseLoggingProperties;
 import it.gov.pagopa.wispconverter.util.client.gpd.GpdClientLoggingInterceptor;
 import it.gov.pagopa.wispconverter.util.client.gpd.GpdClientResponseErrorHandler;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.web.client.RestTemplateBuilder;
@@ -21,7 +20,6 @@ import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
-import org.springframework.retry.annotation.EnableRetry;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.DefaultUriBuilderFactory;
 
@@ -33,9 +31,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Configuration
-@Slf4j
 @RequiredArgsConstructor
-@EnableRetry
 public class GpdClientConfig {
 
     private final ReService reService;
