@@ -43,7 +43,7 @@ public class GdpApiClient extends it.gov.pagopa.gen.wispconverter.client.gpd.inv
                 if (cause instanceof HttpServerErrorException
                         || ((HttpClientErrorException) cause)
                         .getStatusCode()
-                        .equals(HttpStatus.UNAUTHORIZED)) {
+                        .equals(HttpStatus.TOO_MANY_REQUESTS)) {
                     attempts++;
                     if (attempts < super.getMaxAttemptsForRetry()) {
                         try {
