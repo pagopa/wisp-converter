@@ -41,6 +41,9 @@ public class IuvGeneratorClientConfig {
     @Value("${wisp-converter.re-tracing.interface.iuv-generator.enabled}")
     private Boolean isTracingOfClientOnREEnabled;
 
+    @Value("${client.iuvgenerator.max-retry}")
+    private Integer maxRetry;
+
     @Bean
     @ConfigurationProperties(prefix = "log.client.iuvgenerator")
     public RequestResponseLoggingProperties iuvGeneratorClientLoggingProperties() {
@@ -65,6 +68,7 @@ public class IuvGeneratorClientConfig {
         it.gov.pagopa.gen.wispconverter.client.iuvgenerator.invoker.ApiClient client = new it.gov.pagopa.gen.wispconverter.client.iuvgenerator.invoker.ApiClient(restTemplate);
         client.setBasePath(basePath);
         client.setApiKey(apiKey);
+        client.setMaxAttemptsForRetry(maxRetry);
 
         return client;
     }

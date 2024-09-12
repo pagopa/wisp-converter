@@ -37,6 +37,9 @@ public class APIConfigCacheClientConfig {
     @Value("${client.cache.api-key}")
     private String apiKey;
 
+    @Value("${client.cache.max-retry}")
+    private Integer maxRetry;
+
     @Bean
     @ConfigurationProperties(prefix = "log.client.cache")
     public RequestResponseLoggingProperties cacheClientLoggingProperties() {
@@ -61,6 +64,7 @@ public class APIConfigCacheClientConfig {
         it.gov.pagopa.gen.wispconverter.client.cache.invoker.ApiClient client = new it.gov.pagopa.gen.wispconverter.client.cache.invoker.ApiClient(restTemplate);
         client.setBasePath(basePath);
         client.setApiKey(apiKey);
+        client.setMaxAttemptsForRetry(maxRetry);
 
         return client;
     }

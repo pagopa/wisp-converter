@@ -41,6 +41,8 @@ public class DecouplerCachingClientConfig {
     @Value("${wisp-converter.re-tracing.interface.decoupler-caching.enabled}")
     private Boolean isTracingOfClientOnREEnabled;
 
+    @Value("${client.decoupler.max-retry}")
+    private Integer maxRetry;
 
     @Bean
     @ConfigurationProperties(prefix = "log.client.decoupler-caching")
@@ -66,6 +68,7 @@ public class DecouplerCachingClientConfig {
 
         client.setBasePath(basePath);
         client.setApiKey(apiKey);
+        client.setMaxAttemptsForRetry(maxRetry);
 
         return client;
     }

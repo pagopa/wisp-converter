@@ -53,6 +53,9 @@ public class GpdClientConfig {
     @Value("${wisp-converter.re-tracing.interface.payment-position-analysis.enabled}")
     private Boolean isTracingOfClientOnREEnabled;
 
+    @Value("${client.gpd.max-retry}")
+    private Integer maxRetry;
+
     @Bean
     @ConfigurationProperties(prefix = "log.client.gpd")
     public RequestResponseLoggingProperties gpdClientLoggingProperties() {
@@ -73,10 +76,11 @@ public class GpdClientConfig {
 
         restTemplate.setErrorHandler(new GpdClientResponseErrorHandler());
 
-        it.gov.pagopa.gen.wispconverter.client.gpd.invoker.ApiClient client = new it.gov.pagopa.gen.wispconverter.client.gpd.invoker.ApiClient(restTemplate);
+        GdpApiClient client = new GdpApiClient(restTemplate);
 
         client.setBasePath(basePath);
         client.setApiKey(apiKey);
+        client.setMaxAttemptsForRetry(maxRetry);
 
         return client;
     }
