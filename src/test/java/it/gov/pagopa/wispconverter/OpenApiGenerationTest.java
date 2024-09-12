@@ -1,15 +1,10 @@
 package it.gov.pagopa.wispconverter;
 
 import com.azure.cosmos.CosmosAsyncClient;
-import com.azure.messaging.servicebus.ServiceBusSenderClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import it.gov.pagopa.wispconverter.controller.ConfigurationController;
 import it.gov.pagopa.wispconverter.controller.RedirectController;
 import it.gov.pagopa.wispconverter.repository.*;
-import it.gov.pagopa.wispconverter.service.ECommerceHangTimerService;
 import it.gov.pagopa.wispconverter.service.ReceiptService;
-import it.gov.pagopa.wispconverter.service.ReceiptTimerService;
-import it.gov.pagopa.wispconverter.servicebus.ECommerceHangTimeoutConsumer;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -43,40 +38,13 @@ class OpenApiGenerationTest {
     private RedirectController redirectController;
 
     @MockBean
-    private RPTRequestRepository rptRequestRepository;
-
-    @MockBean
-    private RTRetryRepository rtRetryRepository;
-
-    @MockBean
-    private RTRepository rtRepository;
-
-    @MockBean
-    private IdempotencyKeyRepository idempotencyKeyRepository;
-
-    @MockBean
     private ConfigurationRepository configurationRepository;
 
     @MockBean
     private CosmosAsyncClient cosmosAsyncClient;
 
     @MockBean
-    private ReEventRepository reEventRepository;
-
-    @MockBean
-    private ServiceBusSenderClient serviceBusSenderClient;
-
-    @MockBean
-    private ReceiptTimerService receiptTimerService;
-
-    @MockBean
     private ReceiptService receiptService;
-
-    @MockBean
-    ECommerceHangTimerService eCommerceHangTimerService;
-    @MockBean
-    ECommerceHangTimeoutConsumer eCommerceHangTimeoutConsumer;
-
 
     @Test
     void swaggerSpringPlugin() throws Exception {

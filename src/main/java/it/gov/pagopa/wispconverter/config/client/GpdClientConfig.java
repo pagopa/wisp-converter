@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import it.gov.pagopa.wispconverter.config.client.custom.GpdApiClient;
 import it.gov.pagopa.wispconverter.service.ReService;
 import it.gov.pagopa.wispconverter.util.client.RequestResponseLoggingProperties;
 import it.gov.pagopa.wispconverter.util.client.gpd.GpdClientLoggingInterceptor;
@@ -76,7 +77,7 @@ public class GpdClientConfig {
 
         restTemplate.setErrorHandler(new GpdClientResponseErrorHandler());
 
-        CustomApiClient client = new CustomApiClient(restTemplate);
+        GpdApiClient client = new GpdApiClient(restTemplate);
 
         client.setBasePath(basePath);
         client.setApiKey(apiKey);

@@ -9,7 +9,7 @@ import lombok.*;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @ToString
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class ConfigurationResponse {
+public class ConfigurationModel {
 
     private String key;
 }
