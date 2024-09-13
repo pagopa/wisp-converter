@@ -77,7 +77,7 @@ public class MDCUtil {
         MDC.put(Constants.MDC_NOTICE_NUMBER, noticeNumber);
     }
 
-    public static void setWispRPTTimerInfoInMDC(String domainId, String noticeNumber) {
+    public static void setRPTTimerInfoInMDC(String domainId, String noticeNumber) {
         MDC.put(Constants.MDC_DOMAIN_ID, domainId);
         MDC.put(Constants.MDC_NOTICE_NUMBER, noticeNumber);
     }

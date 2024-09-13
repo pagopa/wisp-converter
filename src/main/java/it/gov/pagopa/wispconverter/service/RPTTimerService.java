@@ -7,7 +7,7 @@ import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.CacheRepository;
 import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
-import it.gov.pagopa.wispconverter.service.model.WispRPTTimeoutMessage;
+import it.gov.pagopa.wispconverter.service.model.RPTTimeoutMessage;
 import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.LogUtils;
@@ -24,14 +24,14 @@ import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 
 import static it.gov.pagopa.wispconverter.util.CommonUtility.sanitizeInput;
-import static it.gov.pagopa.wispconverter.util.MDCUtil.setWispRPTTimerInfoInMDC;
+import static it.gov.pagopa.wispconverter.util.MDCUtil.setRPTTimerInfoInMDC;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class WispRPTTimerService {
+public class RPTTimerService {
 
-    public static final String WISP_RPT_TIMER_MESSAGE_KEY_FORMAT = "wisp_timer_no_redirect_%s_%s";
+    public static final String RPT_TIMER_MESSAGE_KEY_FORMAT = "wisp_timer_rpt_%s_%s";
 
     @Value("${azure.sb.wisp-rpt-timeout-queue.connectionString}")
     private String connectionString;
@@ -49,7 +49,7 @@ public class WispRPTTimerService {
     private CacheRepository cacheRepository;
 
     @Autowired
-    public WispRPTTimerService(CacheRepository cacheRepository, ServiceBusSenderClient serviceBusSenderClient, ReService reService) {
+    public RPTTimerService(CacheRepository cacheRepository, ServiceBusSenderClient serviceBusSenderClient, ReService reService) {
         this.cacheRepository = cacheRepository;
         this.serviceBusSenderClient = serviceBusSenderClient;
         this.reService = reService;
@@ -70,13 +70,13 @@ public class WispRPTTimerService {
      *
      * @param message the message to send on the queue of the service bus.
      */
-    public void sendMessage(WispRPTTimeoutMessage message) {
+    public void sendMessage(RPTTimeoutMessage message) {
 
         String noticeNumber = message.getNoticeNumber();
         String fiscalCode = message.getFiscalCode();
-        setWispRPTTimerInfoInMDC(fiscalCode, noticeNumber);
+        setRPTTimerInfoInMDC(fiscalCode, noticeNumber);
 
-        String key = String.format(WISP_RPT_TIMER_MESSAGE_KEY_FORMAT, noticeNumber, fiscalCode);
+        String key = String.format(RPT_TIMER_MESSAGE_KEY_FORMAT, noticeNumber, fiscalCode);
 
         // If the key is already present in the cache, we delete it to avoid duplicated message.
         if (Boolean.TRUE.equals(cacheRepository.hasKey(key))) {
@@ -93,7 +93,7 @@ public class WispRPTTimerService {
 
         // log event
         log.info("Sent scheduled message_base64 {} to the queue: {}", LogUtils.encodeToBase64(message.toString()), queueName);
-        generateRE(InternalStepStatus.WISP_RPT_TIMER_CREATED, "Scheduled WispRPTTimerService: [" + message + "]");
+        generateRE(InternalStepStatus.RPT_TIMER_CREATED, "Scheduled RPTTimerService: [" + message + "]");
 
         // insert in Redis cache sequenceNumber of the message
         cacheRepository.insert(key, sequenceNumber.toString(), expirationTime, ChronoUnit.SECONDS);
@@ -108,8 +108,8 @@ public class WispRPTTimerService {
      */
     public void cancelScheduledMessage(String noticeNumber, String fiscalCode) {
 
-        log.debug("Cancel scheduled message for ECommerceHangTimer {} {}", sanitizeInput(noticeNumber), sanitizeInput(fiscalCode));
-        String key = String.format(WISP_RPT_TIMER_MESSAGE_KEY_FORMAT, noticeNumber, fiscalCode);
+        log.debug("Cancel scheduled message for RPTTimer {} {}", sanitizeInput(noticeNumber), sanitizeInput(fiscalCode));
+        String key = String.format(RPT_TIMER_MESSAGE_KEY_FORMAT, noticeNumber, fiscalCode);
 
         // get the sequenceNumber from the Redis cache
         String sequenceNumber = cacheRepository.read(key, String.class);
@@ -118,14 +118,14 @@ public class WispRPTTimerService {
 
             // cancel scheduled message in the service bus queue
             callCancelScheduledMessage(sequenceNumber);
-            log.info("Canceled scheduled message for wisp_rpt_base64 {} {}", LogUtils.encodeToBase64(sanitizeInput(noticeNumber)), LogUtils.encodeToBase64(sanitizeInput(fiscalCode)));
+            log.info("Canceled scheduled message for rpt_timer_base64 {} {}", LogUtils.encodeToBase64(sanitizeInput(noticeNumber)), LogUtils.encodeToBase64(sanitizeInput(fiscalCode)));
 
             // delete the sequenceNumber from the Redis cache
             cacheRepository.delete(key);
 
             // log event
-            log.debug("Deleted sequence number {} for wisp_rpt_base64-token: {} {} from cache", sequenceNumber, sanitizeInput(noticeNumber), sanitizeInput(fiscalCode));
-            generateRE(InternalStepStatus.WISP_RPT_TIMER_DELETED, "Deleted sequence number: [" + sequenceNumber + "] for notice: [" + noticeNumber + "] for fiscalCode [" + fiscalCode + "]");
+            log.debug("Deleted sequence number {} for rpt_timer_base64-token: {} {} from cache", sequenceNumber, sanitizeInput(noticeNumber), sanitizeInput(fiscalCode));
+            generateRE(InternalStepStatus.RPT_TIMER_DELETED, "Deleted sequence number: [" + sequenceNumber + "] for notice: [" + noticeNumber + "] for fiscalCode [" + fiscalCode + "]");
         }
     }
 

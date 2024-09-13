@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class WispRPTTimeoutMessage {
+public class RPTTimeoutMessage {
 
     private String fiscalCode;
     private String noticeNumber;

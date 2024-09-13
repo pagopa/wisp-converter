@@ -5,7 +5,7 @@ import com.azure.messaging.servicebus.ServiceBusReceivedMessageContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
 import it.gov.pagopa.wispconverter.service.ReceiptService;
-import it.gov.pagopa.wispconverter.service.model.WispRPTTimeoutMessage;
+import it.gov.pagopa.wispconverter.service.model.RPTTimeoutMessage;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
 import it.gov.pagopa.wispconverter.util.CommonUtility;
 import it.gov.pagopa.wispconverter.util.Constants;
@@ -30,7 +30,7 @@ import java.util.List;
  */
 @Slf4j
 @Component
-public class WispRPTTimeoutConsumer extends SBConsumer {
+public class RPTTimeoutConsumer extends SBConsumer {
 
     private final ObjectMapper mapper = new ObjectMapper();
 
@@ -55,7 +55,7 @@ public class WispRPTTimeoutConsumer extends SBConsumer {
     @EventListener(ApplicationReadyEvent.class)
     public void initializeClient() {
         if (receiverClient != null) {
-            log.info("[Scheduled] Starting WispRPTTimeoutConsumer {}", ZonedDateTime.now());
+            log.info("[Scheduled] Starting RPTTimeoutConsumer {}", ZonedDateTime.now());
             receiverClient.start();
         }
     }
@@ -66,12 +66,12 @@ public class WispRPTTimeoutConsumer extends SBConsumer {
         log.info("Processing message. Session: {}, Sequence #: {}. Contents: {}", message.getMessageId(), message.getSequenceNumber(), message.getBody());
         try {
             // read the message
-            WispRPTTimeoutMessage timeoutMessage = mapper.readValue(message.getBody().toStream(), WispRPTTimeoutMessage.class);
+            RPTTimeoutMessage timeoutMessage = mapper.readValue(message.getBody().toStream(), RPTTimeoutMessage.class);
 
             // log event
             MDC.put(Constants.MDC_DOMAIN_ID, timeoutMessage.getFiscalCode());
             MDC.put(Constants.MDC_NOTICE_NUMBER, timeoutMessage.getNoticeNumber());
-            generateRE(InternalStepStatus.WISP_RPT_TIMER_TRIGGER, "Expired no redirect timer. A Negative sendRT will be sent: " + timeoutMessage);
+            generateRE(InternalStepStatus.RPT_TIMER_TRIGGER, "Expired no redirect timer. A Negative sendRT will be sent: " + timeoutMessage);
 
             // transform to string list
             var inputPaaInviaRTKo = List.of(ReceiptDto.builder()
