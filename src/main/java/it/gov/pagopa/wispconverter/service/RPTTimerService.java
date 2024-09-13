@@ -84,14 +84,14 @@ public class RPTTimerService {
 
         // build the service bus message
         ServiceBusMessage serviceBusMessage = new ServiceBusMessage(message.toString());
-        log.debug("Sending scheduled message {} to the queue: {}", message, queueName);
+        log.debug("Sending scheduled message {} to the queue: {}", sanitizeInput(message.toString()), queueName);
 
         // compute time and schedule message for consumer trigger
         OffsetDateTime scheduledExpirationTime = OffsetDateTime.now().plusSeconds(expirationTime);
         Long sequenceNumber = serviceBusSenderClient.scheduleMessage(serviceBusMessage, scheduledExpirationTime);
 
         // log event
-        log.info("Sent scheduled message_base64 {} to the queue: {}", LogUtils.encodeToBase64(message.toString()), queueName);
+        log.info("Sent scheduled message_base64 {} to the queue: {}", LogUtils.encodeToBase64(sanitizeInput(message.toString())), queueName);
         generateRE(InternalStepStatus.RPT_TIMER_CREATED, "Scheduled RPTTimerService: [" + message + "]");
 
         // insert in Redis cache sequenceNumber of the message
