@@ -2,7 +2,7 @@
   "openapi": "3.0.1",
   "info": {
     "title": "WISP-Converter-redirect",
-    "version": "0.1.21-1-PAGOPA-2117-not-valid-import-xsd"
+    "version": "0.1.22"
   },
   "servers": [
     {
