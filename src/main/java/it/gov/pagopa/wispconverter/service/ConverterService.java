@@ -4,7 +4,6 @@ import it.gov.pagopa.gen.wispconverter.client.checkout.model.CartRequestDto;
 import it.gov.pagopa.wispconverter.repository.CacheRepository;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
 import it.gov.pagopa.wispconverter.service.model.ECommerceHangTimeoutMessage;
-import it.gov.pagopa.wispconverter.service.model.RPTTimeoutMessage;
 import it.gov.pagopa.wispconverter.service.model.session.SessionDataDTO;
 import it.gov.pagopa.wispconverter.servicebus.ECommerceHangTimeoutConsumer;
 import it.gov.pagopa.wispconverter.servicebus.RPTTimeoutConsumer;
@@ -36,9 +35,12 @@ public class ConverterService {
 
     private final ECommerceHangTimerService eCommerceHangTimerService;
 
-    private final RPTTimerService RPTTimerService;
+    private final RPTTimerService rptTimerService;
 
     public String convert(String sessionId) throws URISyntaxException {
+        // put cancel timer here
+        removeRPTTimer(sessionId);
+
         // get RPT request entity from database
         RPTRequestEntity rptRequestEntity = rptCosmosService.getRPTRequestEntity(sessionId);
 
@@ -88,15 +90,10 @@ public class ConverterService {
      * When the message is trigger a sendRT-Negative is sent to the Creditor Institution
      * (see {@link RPTTimeoutConsumer} class for more details).
      *
-     * @param sessionData Data of the cart with the paymentOptions
+     * @param sessionId Data of the cart with the paymentOptions
      * @throws URISyntaxException
      */
-    private void setNoRedirectTimer(SessionDataDTO sessionData) throws URISyntaxException {
-        CartRequestDto cart = checkoutService.extractCart(sessionData);
-        cart.getPaymentNotices().forEach(elem ->
-                RPTTimerService.sendMessage(RPTTimeoutMessage.builder()
-                        .fiscalCode(elem.getFiscalCode())
-                        .noticeNumber(elem.getNoticeNumber())
-                        .build()));
+    private void removeRPTTimer(String sessionId) throws URISyntaxException {
+        rptTimerService.cancelScheduledMessage(sessionId);
     }
 }

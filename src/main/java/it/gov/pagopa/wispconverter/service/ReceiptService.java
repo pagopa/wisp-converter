@@ -170,11 +170,11 @@ public class ReceiptService {
                         String rawGeneratedReceipt = jaxbElementUtil.objectToString(generatedReceipt);
                         String paaInviaRtPayload = generatePayloadAsRawString(header, null, rawGeneratedReceipt, objectFactory);
 
-                        // retrieve station from common station identifier
-                        StationDto station = stations.get(commonFields.getStationId());
-
                         // save receipt-rt
                         rtReceiptCosmosService.saveRTEntity(rpt, rawGeneratedReceipt, ReceiptTypeEnum.KO);
+
+                        // retrieve station from common station identifier
+                        StationDto station = stations.get(commonFields.getStationId());
 
                         // send receipt to the creditor institution and, if not correctly sent, add to queue for retry
                         sendReceiptToCreditorInstitution(sessionData, paaInviaRtPayload, receipt, rpt.getIuv(), noticeNumber, station, true);
@@ -268,16 +268,46 @@ public class ReceiptService {
         }
     }
 
+    public String generateKoRtFromSessionData (String creditorInstitutionId, String iuv, RPTContentDTO rpt,
+                                               CommonFieldsDTO commonFields, gov.telematici.pagamenti.ws.papernodo.ObjectFactory objectFactory,
+                                                Map<String, ConfigurationKeyDto> configurations) {
+        // generate the header for the paaInviaRT SOAP request. This object is common for each generated request
+        IntestazionePPT header = generateHeader(
+                creditorInstitutionId,
+                iuv,
+                rpt.getCcp(),
+                commonFields.getCreditorInstitutionBrokerId(),
+                commonFields.getStationId());
+
+        // Generating the paaInviaRT payload from the RPT
+        String paymentOutcome = "Annullato da WISP"; // TODO change this with one of the following -> https://pagopa.atlassian.net/wiki/spaces/PN5/pages/913244345/WISP-Converter?focusedCommentId=1002078407
+        // TODO rivedere dopo per bug multibeneficiario
+        JAXBElement<CtRicevutaTelematica> generatedReceipt = new ObjectFactory()
+                .createRT(generateRTContentForKoReceipt(rpt, configurations, Instant.now(), paymentOutcome));
+        String rawGeneratedReceipt = jaxbElementUtil.objectToString(generatedReceipt);
+        String paaInviaRtPayload = generatePayloadAsRawString(header, null, rawGeneratedReceipt, objectFactory);
+
+        // save receipt-rt
+        rtReceiptCosmosService.saveRTEntity(rpt, rawGeneratedReceipt, ReceiptTypeEnum.KO);
+
+        return paaInviaRtPayload;
+    }
+
+    public SessionDataDTO getSessionDataFromSessionId(String sessionId) {
+        // try to retrieve the RPT previously persisted in storage from the sessionId
+        RPTRequestEntity rptRequestEntity = rptCosmosService.getRPTRequestEntity(sessionId);
+
+        // use the retrieved RPT for generate session data information on which the next execution will operate
+        return this.rptExtractorService.extractSessionData(rptRequestEntity.getPrimitive(), rptRequestEntity.getPayload());
+    }
+
     private SessionDataDTO getSessionDataFromCachedKeys(CachedKeysMapping cachedMapping) {
 
         // retrieve cached session identifier form
         String cachedSessionId = decouplerService.getCachedSessionId(cachedMapping.getFiscalCode(), cachedMapping.getIuv());
 
-        // after the retrieve of the session identifier from cache, try to retrieve the RPT previously persisted in storage
-        RPTRequestEntity rptRequestEntity = rptCosmosService.getRPTRequestEntity(cachedSessionId);
-
         // use the retrieved RPT for generate session data information on which the next execution will operate
-        return this.rptExtractorService.extractSessionData(rptRequestEntity.getPrimitive(), rptRequestEntity.getPayload());
+        return getSessionDataFromSessionId(cachedSessionId);
     }
 
     private boolean sendReceiptToCreditorInstitution(SessionDataDTO sessionData, String rawPayload, Object receipt,
@@ -489,7 +519,7 @@ public class ReceiptService {
     }
 
 
-    private void scheduleRTSend(SessionDataDTO sessionData, String url, List<Pair<String, String>> headers, String payload, StationDto station,
+    public void scheduleRTSend(SessionDataDTO sessionData, String url, List<Pair<String, String>> headers, String payload, StationDto station,
                                 String iuv, String noticeNumber, String idempotencyKey, ReceiptTypeEnum receiptType) {
 
         try {
@@ -526,7 +556,6 @@ public class ReceiptService {
         }
     }
 
-
     private void generateREForNotGenerableRT(SessionDataDTO sessionData, String iuv, String noticeNumber) {
 
         // extract psp on which the payment will be sent
@@ -540,7 +569,7 @@ public class ReceiptService {
         }
     }
 
-    private void generateREForSentRT(SessionDataDTO sessionData, String iuv, String noticeNumber) {
+    public void generateREForSentRT(SessionDataDTO sessionData, String iuv, String noticeNumber) {
 
         // extract psp on which the payment will be sent
         List<RPTContentDTO> rpts = sessionData.getRPTByIUV(iuv);
@@ -553,7 +582,7 @@ public class ReceiptService {
         }
     }
 
-    private void generateREForNotSentRT(SessionDataDTO sessionData, String iuv, String noticeNumber, String otherInfo) {
+    public void generateREForNotSentRT(SessionDataDTO sessionData, String iuv, String noticeNumber, String otherInfo) {
 
         // extract psp on which the payment will be sent
         List<RPTContentDTO> rpts = sessionData.getRPTByIUV(iuv);

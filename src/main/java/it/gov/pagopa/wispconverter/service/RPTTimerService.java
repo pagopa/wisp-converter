@@ -3,6 +3,7 @@ package it.gov.pagopa.wispconverter.service;
 import com.azure.messaging.servicebus.ServiceBusClientBuilder;
 import com.azure.messaging.servicebus.ServiceBusMessage;
 import com.azure.messaging.servicebus.ServiceBusSenderClient;
+import it.gov.pagopa.wispconverter.controller.model.RPTTimerRequest;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.CacheRepository;
@@ -31,7 +32,7 @@ import static it.gov.pagopa.wispconverter.util.MDCUtil.setRPTTimerInfoInMDC;
 @RequiredArgsConstructor
 public class RPTTimerService {
 
-    public static final String RPT_TIMER_MESSAGE_KEY_FORMAT = "wisp_timer_rpt_%s_%s";
+    public static final String RPT_TIMER_MESSAGE_KEY_FORMAT = "wisp_timer_rpt_%s";
 
     @Value("${azure.sb.wisp-rpt-timeout-queue.connectionString}")
     private String connectionString;
@@ -70,17 +71,16 @@ public class RPTTimerService {
      *
      * @param message the message to send on the queue of the service bus.
      */
-    public void sendMessage(RPTTimeoutMessage message) {
+    public void sendMessage(RPTTimerRequest message) {
 
-        String noticeNumber = message.getNoticeNumber();
-        String fiscalCode = message.getFiscalCode();
-        setRPTTimerInfoInMDC(fiscalCode, noticeNumber);
+        String sessionId = message.getSessionId();
+        setRPTTimerInfoInMDC(sessionId);
 
-        String key = String.format(RPT_TIMER_MESSAGE_KEY_FORMAT, noticeNumber, fiscalCode);
+        String key = String.format(RPT_TIMER_MESSAGE_KEY_FORMAT, sessionId);
 
         // If the key is already present in the cache, we delete it to avoid duplicated message.
         if (Boolean.TRUE.equals(cacheRepository.hasKey(key))) {
-            cancelScheduledMessage(noticeNumber, fiscalCode);
+            cancelScheduledMessage(sessionId);
         }
 
         // build the service bus message
@@ -103,13 +103,12 @@ public class RPTTimerService {
     /**
      * This method deletes a scheduled message from the queue
      *
-     * @param noticeNumber use to find the message
-     * @param fiscalCode   use to find the message
+     * @param sessionId use to find the message
      */
-    public void cancelScheduledMessage(String noticeNumber, String fiscalCode) {
+    public void cancelScheduledMessage(String sessionId) {
 
-        log.debug("Cancel scheduled message for RPTTimer {} {}", sanitizeInput(noticeNumber), sanitizeInput(fiscalCode));
-        String key = String.format(RPT_TIMER_MESSAGE_KEY_FORMAT, noticeNumber, fiscalCode);
+        log.debug("Cancel scheduled message for RPTTimer {}", sanitizeInput(sessionId));
+        String key = String.format(RPT_TIMER_MESSAGE_KEY_FORMAT, sessionId);
 
         // get the sequenceNumber from the Redis cache
         String sequenceNumber = cacheRepository.read(key, String.class);
@@ -118,14 +117,14 @@ public class RPTTimerService {
 
             // cancel scheduled message in the service bus queue
             callCancelScheduledMessage(sequenceNumber);
-            log.info("Canceled scheduled message for rpt_timer_base64 {} {}", LogUtils.encodeToBase64(sanitizeInput(noticeNumber)), LogUtils.encodeToBase64(sanitizeInput(fiscalCode)));
+            log.info("Canceled scheduled message for rpt_timer_base64 {}", LogUtils.encodeToBase64(sanitizeInput(sessionId)));
 
             // delete the sequenceNumber from the Redis cache
             cacheRepository.delete(key);
 
             // log event
-            log.debug("Deleted sequence number {} for rpt_timer_base64-token: {} {} from cache", sequenceNumber, sanitizeInput(noticeNumber), sanitizeInput(fiscalCode));
-            generateRE(InternalStepStatus.RPT_TIMER_DELETED, "Deleted sequence number: [" + sequenceNumber + "] for notice: [" + noticeNumber + "] for fiscalCode [" + fiscalCode + "]");
+            log.debug("Deleted sequence number {} for rpt_timer_base64-token: {} from cache", sequenceNumber, sanitizeInput(sessionId));
+            generateRE(InternalStepStatus.RPT_TIMER_DELETED, "Deleted sequence number: [" + sequenceNumber + "] for sessionId: [" + sessionId + "]");
         }
     }
 
