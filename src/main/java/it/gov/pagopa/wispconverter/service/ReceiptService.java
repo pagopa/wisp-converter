@@ -248,9 +248,6 @@ public class ReceiptService {
                             commonFields.getStationId()
                     );
 
-                    // actualize content for correctly handle multibeneficiary carts
-                    PaSendRTV2Request deepCopySendRTV2 = extractDataFromPaSendRT(payload, rpt);
-
                     // Generating the paaInviaRT payload from the RPT
                     JAXBElement<CtRicevutaTelematica> generatedReceipt = new it.gov.digitpa.schemas._2011.pagamenti.ObjectFactory()
                             .createRT(generateRTContentForOkReceipt(rpt, deepCopySendRTV2));
