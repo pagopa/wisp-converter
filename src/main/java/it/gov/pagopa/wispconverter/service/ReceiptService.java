@@ -158,7 +158,7 @@ public class ReceiptService {
 
                         // generate the header for the paaInviaRT SOAP request. This object is common for each generated request
                         IntestazionePPT header = generateHeader(
-                                cachedMapping.getFiscalCode(),
+                                rpt.getRpt().getDomain().getDomainId(),
                                 cachedMapping.getIuv(),
                                 rpt.getCcp(),
                                 commonFields.getCreditorInstitutionBrokerId(),
@@ -236,17 +236,17 @@ public class ReceiptService {
                 List<RPTContentDTO> rpts = extractRequiredRPTs(sessionData, receipt.getCreditorReferenceId(), receipt.getFiscalCode());
                 for (RPTContentDTO rpt : rpts) {
 
+                    // actualize content for correctly handle multibeneficiary carts
+                    PaSendRTV2Request deepCopySendRTV2 = extractDataFromPaSendRT(payload, rpt);
+
                     // generate the header for the paaInviaRT SOAP request. This object is different for each generated request
                     IntestazionePPT intestazionePPT = generateHeader(
-                            receipt.getFiscalCode(),
-                            receipt.getCreditorReferenceId(),
+                            deepCopySendRTV2.getIdPA(),
+                            deepCopySendRTV2.getReceipt().getCreditorReferenceId(),
                             rpt.getRpt().getTransferData().getCcp(),
                             commonFields.getCreditorInstitutionBrokerId(),
                             commonFields.getStationId()
                     );
-
-                    // actualize content for correctly handle multibeneficiary carts
-                    PaSendRTV2Request deepCopySendRTV2 = extractDataFromPaSendRT(payload, rpt);
 
                     // Generating the paaInviaRT payload from the RPT
                     JAXBElement<CtRicevutaTelematica> generatedReceipt = new it.gov.digitpa.schemas._2011.pagamenti.ObjectFactory()
@@ -286,6 +286,7 @@ public class ReceiptService {
                 .reduce(BigDecimal::add)
                 .orElse(deepCopySendRTV2.getReceipt().getPaymentAmount());
         deepCopySendRTV2.getReceipt().setPaymentAmount(amount);
+        deepCopySendRTV2.setIdPA(rpt.getRpt().getDomain().getDomainId());
 
         CtTransferListPAReceiptV2 transferList = new CtTransferListPAReceiptV2();
         transferList.getTransfer().addAll(transfers);
