@@ -41,6 +41,9 @@ public class APIConfigCacheClientConfig {
     @Value("${client.cache.max-retry}")
     private Integer maxRetry;
 
+    @Value("${client.cache.delay-retry-millis}")
+    private Integer delayRetry;
+
     @Bean
     @ConfigurationProperties(prefix = "log.client.cache")
     public RequestResponseLoggingProperties cacheClientLoggingProperties() {
@@ -66,6 +69,7 @@ public class APIConfigCacheClientConfig {
         client.setBasePath(basePath);
         client.setApiKey(apiKey);
         client.setMaxAttemptsForRetry(maxRetry);
+        client.setWaitTimeMillis(delayRetry);
 
         return client;
     }

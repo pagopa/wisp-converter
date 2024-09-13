@@ -4,10 +4,7 @@ import it.gov.pagopa.wispconverter.exception.AppException;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.HttpServerErrorException;
-import org.springframework.web.client.RestClientException;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.*;
 
 import java.util.List;
 import java.util.Map;
@@ -38,28 +35,21 @@ public class GpdApiClient extends it.gov.pagopa.gen.wispconverter.client.gpd.inv
         while (attempts < super.getMaxAttemptsForRetry()) {
             try {
                 response = super.invokeAPI(path, method, pathParams, queryParams, body, headerParams, cookieParams, formParams, accept, contentType, authNames, returnType);
+                break;
             } catch (AppException ex) {
-                Throwable cause = ex.getCause();
-                attempts = handleRetry(ex, cause, attempts);
+                attempts = handleAppException(ex, attempts);
+            } catch (ResourceAccessException ex) {
+                attempts = handleRetry(ex, attempts);
             }
         }
         return response;
     }
 
-    private int handleRetry(AppException ex, Throwable cause, int attempts) {
-        if (cause instanceof HttpServerErrorException
-                || ((HttpClientErrorException) cause)
-                .getStatusCode()
-                .equals(HttpStatus.TOO_MANY_REQUESTS)) {
-            attempts++;
-            if (attempts < super.getMaxAttemptsForRetry()) {
-                try {
-                    Thread.sleep(super.getWaitTimeMillis());
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-            } else {
-                throw ex;
+    private int handleAppException(AppException ex, int attempts) {
+        Throwable cause = ex.getCause();
+        if (cause instanceof RuntimeException runtimeException) {
+            if (cause instanceof HttpServerErrorException || ((HttpClientErrorException) cause).getStatusCode().equals(HttpStatus.TOO_MANY_REQUESTS)) {
+                attempts = handleRetry(runtimeException, attempts);
             }
         } else {
             throw ex;
@@ -67,5 +57,19 @@ public class GpdApiClient extends it.gov.pagopa.gen.wispconverter.client.gpd.inv
         return attempts;
     }
 
+
+    private int handleRetry(RuntimeException ex, int attempts) {
+        attempts++;
+        if (attempts < super.getMaxAttemptsForRetry()) {
+            try {
+                Thread.sleep(super.getWaitTimeMillis());
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        } else {
+            throw ex;
+        }
+        return attempts;
+    }
 
 }

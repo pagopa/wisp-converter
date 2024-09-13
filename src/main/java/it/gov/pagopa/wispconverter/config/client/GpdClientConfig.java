@@ -57,6 +57,9 @@ public class GpdClientConfig {
     @Value("${client.gpd.max-retry}")
     private Integer maxRetry;
 
+    @Value("${client.gpd.delay-retry-millis}")
+    private Integer delayRetry;
+
     @Bean
     @ConfigurationProperties(prefix = "log.client.gpd")
     public RequestResponseLoggingProperties gpdClientLoggingProperties() {
@@ -82,6 +85,7 @@ public class GpdClientConfig {
         client.setBasePath(basePath);
         client.setApiKey(apiKey);
         client.setMaxAttemptsForRetry(maxRetry);
+        client.setWaitTimeMillis(delayRetry);
 
         return client;
     }

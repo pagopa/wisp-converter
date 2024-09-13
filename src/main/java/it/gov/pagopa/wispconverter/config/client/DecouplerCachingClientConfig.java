@@ -45,6 +45,9 @@ public class DecouplerCachingClientConfig {
     @Value("${client.decoupler.max-retry}")
     private Integer maxRetry;
 
+    @Value("${client.decoupler.delay-retry-millis}")
+    private Integer delayRetry;
+
     @Bean
     @ConfigurationProperties(prefix = "log.client.decoupler-caching")
     public RequestResponseLoggingProperties decouplerCachingClientLoggingProperties() {
@@ -70,6 +73,7 @@ public class DecouplerCachingClientConfig {
         client.setBasePath(basePath);
         client.setApiKey(apiKey);
         client.setMaxAttemptsForRetry(maxRetry);
+        client.setWaitTimeMillis(delayRetry);
 
         return client;
     }

@@ -45,6 +45,9 @@ public class IuvGeneratorClientConfig {
     @Value("${client.iuvgenerator.max-retry}")
     private Integer maxRetry;
 
+    @Value("${client.iuvgenerator.delay-retry-millis}")
+    private Integer delayRetry;
+
     @Bean
     @ConfigurationProperties(prefix = "log.client.iuvgenerator")
     public RequestResponseLoggingProperties iuvGeneratorClientLoggingProperties() {
@@ -70,6 +73,7 @@ public class IuvGeneratorClientConfig {
         client.setBasePath(basePath);
         client.setApiKey(apiKey);
         client.setMaxAttemptsForRetry(maxRetry);
+        client.setWaitTimeMillis(delayRetry);
 
         return client;
     }

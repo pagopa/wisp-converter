@@ -36,6 +36,8 @@ public class CheckoutClientConfig {
     private String basePath;
     @Value("${client.checkout.max-retry}")
     private Integer maxRetry;
+    @Value("${client.checkout.delay-retry-millis}")
+    private Integer delayRetry;
 
     @Value("${wisp-converter.re-tracing.interface.checkout-interaction.enabled}")
     private Boolean isTracingOfClientOnREEnabled;
@@ -64,6 +66,7 @@ public class CheckoutClientConfig {
         client.setBasePath(basePath);
         client.setApiKey(apiKey);
         client.setMaxAttemptsForRetry(maxRetry);
+        client.setWaitTimeMillis(delayRetry);
 
         return client;
     }
