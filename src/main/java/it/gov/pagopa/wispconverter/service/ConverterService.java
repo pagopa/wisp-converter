@@ -4,8 +4,10 @@ import it.gov.pagopa.gen.wispconverter.client.checkout.model.CartRequestDto;
 import it.gov.pagopa.wispconverter.repository.CacheRepository;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
 import it.gov.pagopa.wispconverter.service.model.ECommerceHangTimeoutMessage;
+import it.gov.pagopa.wispconverter.service.model.WispRPTTimeoutMessage;
 import it.gov.pagopa.wispconverter.service.model.session.SessionDataDTO;
 import it.gov.pagopa.wispconverter.servicebus.ECommerceHangTimeoutConsumer;
+import it.gov.pagopa.wispconverter.servicebus.WispRPTTimeoutConsumer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -33,6 +35,8 @@ public class ConverterService {
     private final CacheRepository cacheRepository;
 
     private final ECommerceHangTimerService eCommerceHangTimerService;
+
+    private final WispRPTTimerService wispRPTTimerService;
 
     public String convert(String sessionId) throws URISyntaxException {
         // get RPT request entity from database
@@ -74,6 +78,23 @@ public class ConverterService {
         CartRequestDto cart = checkoutService.extractCart(sessionData);
         cart.getPaymentNotices().forEach(elem ->
                 eCommerceHangTimerService.sendMessage(ECommerceHangTimeoutMessage.builder()
+                        .fiscalCode(elem.getFiscalCode())
+                        .noticeNumber(elem.getNoticeNumber())
+                        .build()));
+    }
+
+    /**
+     * This method inserts a scheduled message in the queue of the service bus.
+     * When the message is trigger a sendRT-Negative is sent to the Creditor Institution
+     * (see {@link WispRPTTimeoutConsumer} class for more details).
+     *
+     * @param sessionData Data of the cart with the paymentOptions
+     * @throws URISyntaxException
+     */
+    private void setNoRedirectTimer(SessionDataDTO sessionData) throws URISyntaxException {
+        CartRequestDto cart = checkoutService.extractCart(sessionData);
+        cart.getPaymentNotices().forEach(elem ->
+                wispRPTTimerService.sendMessage(WispRPTTimeoutMessage.builder()
                         .fiscalCode(elem.getFiscalCode())
                         .noticeNumber(elem.getNoticeNumber())
                         .build()));
