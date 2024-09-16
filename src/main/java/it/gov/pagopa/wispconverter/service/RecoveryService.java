@@ -43,7 +43,7 @@ public class RecoveryService {
 
     private static final String STATUS_RT_SEND_SUCCESS = "RT_SEND_SUCCESS";
 
-    private static final String MOCK_NAV = "348000000000000000";
+    private static final String MOCK_NOTICE_NUMBER = "348000000000000000";
 
     private static final String RECOVERY_VALID_START_DATE = "2024-09-03";
 
@@ -68,7 +68,7 @@ public class RecoveryService {
     public void recoverReceiptKO(String creditorInstitution, String iuv, String dateFrom, String dateTo) {
         List<ReEventEntity> reEvents = reEventRepository.findByIuvAndOrganizationId(dateFrom, dateTo, iuv, creditorInstitution);
 
-        List<ReEventEntity> acceptedEvents = reEvents.stream()
+        List<ReEventEntity> rptEvents = reEvents.stream()
                 .filter(event -> RPT_ACCETTATA_NODO.equals(event.getStatus()))
                                                    .sorted(Comparator.comparing(ReEventEntity::getInsertedTimestamp))
                                                    .toList();
@@ -83,7 +83,7 @@ public class RecoveryService {
                                                   .sorted(Comparator.comparing(ReEventEntity::getInsertedTimestamp))
                                                   .toList();
         // date validation
-        if(acceptedEvents.size() > rtSendEvents.size()) {
+        if(rptEvents.size() > rtSendEvents.size()) {
             String noticeNumber, sessionId;
             Long ttlInSeconds = this.requestIDMappingTTL;
             // it is required to send a receipt-ko
@@ -92,16 +92,17 @@ public class RecoveryService {
                 noticeNumber = event.getNoticeNumber();
                 sessionId = event.getSessionId();
             } else {
-                ReEventEntity event = acceptedEvents.get(acceptedEvents.size() - 1);
+                ReEventEntity event = rptEvents.get(rptEvents.size() - 1);
                 sessionId = event.getSessionId();
-                noticeNumber = MOCK_NAV;
+                noticeNumber = MOCK_NOTICE_NUMBER;
                 ttlInSeconds = 10L;
             }
 
             String navToIuvMapping = String.format(DecouplerService.MAP_CACHING_KEY_TEMPLATE, creditorInstitution, noticeNumber);
             String iuvToSessionIdMapping = String.format(DecouplerService.CACHING_KEY_TEMPLATE, creditorInstitution, iuv);
-            this.cacheRepository.insert(navToIuvMapping, iuvToSessionIdMapping, ttlInSeconds, ChronoUnit.SECONDS);
-            this.cacheRepository.insert(iuvToSessionIdMapping, sessionId, ttlInSeconds, ChronoUnit.SECONDS);
+
+            this.cacheRepository.insert(navToIuvMapping, iuvToSessionIdMapping, ttlInSeconds, ChronoUnit.SECONDS, true);
+            this.cacheRepository.insert(iuvToSessionIdMapping, sessionId, ttlInSeconds, ChronoUnit.SECONDS, true);
 
             try {
                 MDC.put(Constants.MDC_BUSINESS_PROCESS, "receipt-ko");
@@ -115,9 +116,6 @@ public class RecoveryService {
                 this.receiptController.receiptKo(receiptKoRequest);
                 generateRE(Constants.PAA_INVIA_RT, "Success", InternalStepStatus.RT_END_RECONCILIATION_PROCESS, creditorInstitution, iuv, noticeNumber, "NA", sessionId);
                 MDC.remove(Constants.MDC_BUSINESS_PROCESS);
-
-                this.cacheRepository.delete(navToIuvMapping);
-                this.cacheRepository.delete(iuvToSessionIdMapping);
             } catch (Exception e) {
                 generateRE(Constants.PAA_INVIA_RT, "Failure", InternalStepStatus.RT_END_RECONCILIATION_PROCESS, creditorInstitution, iuv, noticeNumber, "NA", sessionId);
                 throw new AppException(e, AppErrorCodeMessageEnum.ERROR, e.getMessage());
