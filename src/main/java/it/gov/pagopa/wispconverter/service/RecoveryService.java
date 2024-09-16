@@ -40,6 +40,8 @@ public class RecoveryService {
 
     private static final String RECOVERY_VALID_START_DATE = "2024-09-03";
 
+    private static final String MOCK_NOTICE_NUMBER = "348000000000000000";
+
     private static final List<String> BUSINESS_PROCESSES = List.of("receipt-ok", "receipt-ko", "ecommerce-hang-timeout-trigger");
 
     private final ReceiptController receiptController;
@@ -102,32 +104,52 @@ public class RecoveryService {
                 .build();
     }
 
-    private CompletableFuture<Boolean> recoverReceiptKOAsync(String dateFrom, String dateTo, List<RecoveryReceiptPaymentResponse> paymentsToReconcile) {
-        return CompletableFuture.supplyAsync(() -> recoverReceiptKO(dateFrom, dateTo, paymentsToReconcile));
-    }
-
     public int recoverReceiptKOAll(ZonedDateTime dateFrom, ZonedDateTime dateTo) {
         String dateFromString = dateFrom.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-        String dateToString = dateFrom.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        String dateToString = dateTo.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 
         List<RTEntity> receiptRTs = rtRepository.findPendingRT(dateFromString, dateToString);
         List<RecoveryReceiptPaymentResponse> paymentsToReconcile = receiptRTs.stream().map(entity -> RecoveryReceiptPaymentResponse.builder()
-                                                                        .iuv(entity.getIuv())
-                                                                        .ccp(entity.getCcp())
-                                                                        .ci(entity.getIdDominio())
-                                                                        .build())
-                                                                            .toList();
+                                                                                                             .iuv(entity.getIuv())
+                                                                                                             .ccp(entity.getCcp())
+                                                                                                             .ci(entity.getIdDominio())
+                                                                                                             .build())
+                                                                           .toList();
 
-        recoverReceiptKO(dateFromString, dateToString, paymentsToReconcile);
+        recoverReceiptKOByRecoveryPayment(dateFromString, dateToString, paymentsToReconcile);
 
         return RecoveryReceiptResponse.builder()
-            .payments(paymentsToReconcile)
-            .build()
-            .getPayments()
-            .size();
+                       .payments(paymentsToReconcile)
+                       .build()
+                       .getPayments()
+                       .size();
     }
 
-    private boolean recoverReceiptKO(String dateFrom, String dateTo, List<RecoveryReceiptPaymentResponse> paymentsToReconcile) {
+    public int recoverMissingRedirect(ZonedDateTime dateFrom, ZonedDateTime dateTo) {
+        String dateFromString = dateFrom.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        String dateToString = dateTo.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+
+        List<String> sessionsWithoutRedirect = reEventRepository.findSessionWithoutRedirect(dateFromString, dateToString);
+        for(String sessionId : sessionsWithoutRedirect) {
+            ReEventEntity reEvent = reEventRepository.findBySessionIdAndStatus(dateFromString, dateToString, sessionId, "RPT_ACCETTATA_NODO")
+                                            .get(0);
+            String iuv = reEvent.getIuv();
+            String ccp = reEvent.getCcp();
+            // String noticeNumber = reEvent.getNoticeNumber(); always null in RPT_ACCETTATA_NODO, the NAV is created after /redirect call!
+            String ci = reEvent.getDomainId();
+
+            log.info("[RECOVER-MISSING-REDIRECT] Recovery with receipt-ko for ci = {}, iuv = {}, ccp = {}, sessionId = {}", ci, iuv, ccp, sessionId);
+            this.recoverReceiptKO(ci, MOCK_NOTICE_NUMBER, iuv, sessionId, ccp, dateFromString, dateToString, this.requestIDMappingTTL);
+        }
+
+        return sessionsWithoutRedirect.size();
+    }
+
+    private CompletableFuture<Boolean> recoverReceiptKOAsync(String dateFrom, String dateTo, List<RecoveryReceiptPaymentResponse> paymentsToReconcile) {
+        return CompletableFuture.supplyAsync(() -> recoverReceiptKOByRecoveryPayment(dateFrom, dateTo, paymentsToReconcile));
+    }
+
+    private boolean recoverReceiptKOByRecoveryPayment(String dateFrom, String dateTo, List<RecoveryReceiptPaymentResponse> paymentsToReconcile) {
 
         for (RecoveryReceiptPaymentResponse payment : paymentsToReconcile) {
             String iuv = payment.getIuv();
@@ -145,33 +167,12 @@ public class RecoveryService {
 
                 int numberOfEvents = filteredEvents.size();
                 if (numberOfEvents > 0) {
-
                     ReEventEntity event = filteredEvents.get(numberOfEvents - 1);
                     String noticeNumber = event.getNoticeNumber();
                     String sessionId = event.getSessionId();
 
-                    // search by sessionId, then filter by status=RT_SEND_SUCCESS. If there is zero, then proceed
-                    List<ReEventEntity> reEventsRT = reEventRepository.findBySessionIdAndStatus(dateFrom, dateTo, sessionId, STATUS_RT_SEND_SUCCESS);
-
-                    if (reEventsRT.isEmpty()) {
-                        String navToIuvMapping = String.format(DecouplerService.MAP_CACHING_KEY_TEMPLATE, ci, noticeNumber);
-                        String iuvToSessionIdMapping = String.format(DecouplerService.CACHING_KEY_TEMPLATE, ci, iuv);
-                        this.cacheRepository.insert(navToIuvMapping, iuvToSessionIdMapping, this.requestIDMappingTTL);
-                        this.cacheRepository.insert(iuvToSessionIdMapping, sessionId, this.requestIDMappingTTL);
-
-                        MDC.put(Constants.MDC_BUSINESS_PROCESS, "receipt-ko");
-                        generateRE(Constants.PAA_INVIA_RT, null, InternalStepStatus.RT_START_RECONCILIATION_PROCESS, ci, iuv, noticeNumber, ccp, sessionId);
-                        String receiptKoRequest = ReceiptDto.builder()
-                                  .fiscalCode(ci)
-                                    .noticeNumber(noticeNumber)
-                                    .build()
-                                    .toString();
-                        this.receiptController.receiptKo(receiptKoRequest);
-                        generateRE(Constants.PAA_INVIA_RT, "Success", InternalStepStatus.RT_END_RECONCILIATION_PROCESS, ci, iuv, noticeNumber, ccp, sessionId);
-                        MDC.remove(Constants.MDC_BUSINESS_PROCESS);
-                    }
+                    this.recoverReceiptKO(ci, noticeNumber, iuv, sessionId, ccp, dateFrom, dateTo, 1L);
                 }
-
             } catch (Exception e) {
                 generateRE(Constants.PAA_INVIA_RT, "Failure", InternalStepStatus.RT_END_RECONCILIATION_PROCESS, ci, iuv, null, ccp, null);
                 throw new AppException(e, AppErrorCodeMessageEnum.ERROR, e.getMessage());
@@ -179,7 +180,35 @@ public class RecoveryService {
         }
 
         return true;
+    }
 
+    // check if there is a successful RT submission, if there isn't prepare cached data and send receipt-ko
+    private void recoverReceiptKO(String ci, String noticeNumber, String iuv, String sessionId, String ccp, String dateFrom, String dateTo, Long cacheMinutesTTL) {
+        // search by sessionId, then filter by status=RT_SEND_SUCCESS. If there is zero, then proceed
+        List<ReEventEntity> reEventsRT = reEventRepository.findBySessionIdAndStatus(dateFrom, dateTo, sessionId, STATUS_RT_SEND_SUCCESS);
+
+        if (reEventsRT.isEmpty()) {
+            String navToIuvMapping = String.format(DecouplerService.MAP_CACHING_KEY_TEMPLATE, ci, noticeNumber);
+            String iuvToSessionIdMapping = String.format(DecouplerService.CACHING_KEY_TEMPLATE, ci, iuv);
+            this.cacheRepository.insert(navToIuvMapping, iuvToSessionIdMapping, cacheMinutesTTL);
+            this.cacheRepository.insert(iuvToSessionIdMapping, sessionId, cacheMinutesTTL);
+
+            MDC.put(Constants.MDC_BUSINESS_PROCESS, "receipt-ko");
+            generateRE(Constants.PAA_INVIA_RT, null, InternalStepStatus.RT_START_RECONCILIATION_PROCESS, ci, iuv, noticeNumber, ccp, sessionId);
+            String receiptKoRequest = ReceiptDto.builder()
+                                              .fiscalCode(ci)
+                                              .noticeNumber(noticeNumber)
+                                              .build()
+                                              .toString();
+            try {
+                this.receiptController.receiptKo(receiptKoRequest);
+            } catch (Exception e) {
+                generateRE(Constants.PAA_INVIA_RT, "Failure", InternalStepStatus.RT_END_RECONCILIATION_PROCESS, ci, iuv, noticeNumber, ccp, sessionId);
+                throw new AppException(e, AppErrorCodeMessageEnum.ERROR, e.getMessage());
+            }
+            generateRE(Constants.PAA_INVIA_RT, "Success", InternalStepStatus.RT_END_RECONCILIATION_PROCESS, ci, iuv, noticeNumber, ccp, sessionId);
+            MDC.remove(Constants.MDC_BUSINESS_PROCESS);
+        }
     }
 
     private void generateRE(String primitive, String operationStatus, InternalStepStatus status, String domainId, String iuv, String noticeNumber, String ccp, String sessionId) {

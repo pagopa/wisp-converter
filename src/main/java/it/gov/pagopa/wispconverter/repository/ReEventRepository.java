@@ -29,4 +29,23 @@ public interface ReEventRepository extends CosmosRepository<ReEventEntity, Strin
                                                  @Param("dateTo") String dateTo,
                                                  @Param("sessionId") String sessionId,
                                                  @Param("status") String status);
+
+
+    @Query(
+          "SELECT wispSession.sessionId " +
+                  "FROM ( " +
+                  "SELECT c.sessionId, COUNT(1) AS occurrences " +
+                  "FROM c " +
+                  "WHERE c._ts * 1000 >= DateTimeToTimestamp(@dateFrom) " +
+                  "AND c._ts * 1000 < DateTimeToTimestamp(@dateTo) " +
+                  "AND ( " +
+                  "(c.component = 'WISP_SOAP_CONVERTER' AND c.eventCategory = 'INTERFACE' AND c.eventSubcategory = 'RESP' AND c.primitive != 'nodoChiediCopiaRT') " +
+                  "OR " +
+                  "(c.component = 'WISP_CONVERTER' AND c.businessProcess = 'redirect' AND c.status = 'FOUND_RPT_IN_STORAGE')" +
+                  " ) " +
+                  "GROUP BY c.sessionId " +
+                  ") AS wispSession " +
+                  "WHERE wispSession.occurrences = 1"
+    )
+    List<String> findSessionWithoutRedirect(@Param("dateFrom") String dateFrom, @Param("dateTo") String dateTo);
 }

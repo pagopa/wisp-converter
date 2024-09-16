@@ -35,8 +35,9 @@ public class RecoveryScheduler {
         ZonedDateTime dateFrom = ZonedDateTime.now(ZoneOffset.UTC).minusHours(FROM_N_HOURS_AGO);
         ZonedDateTime dateTo = ZonedDateTime.now(ZoneOffset.UTC).minusHours(UNTIL_N_HOURS_AGO);
         int receiptSize = recoveryService.recoverReceiptKOAll(dateFrom, dateTo);
+        int missingRedirectRecovery = recoveryService.recoverMissingRedirect(dateFrom, dateTo);
 
-        log.info("Reconciliation CRON JOB: recoverReceiptKOCronJob {} receipt-ko sent", receiptSize);
+        log.info("Reconciliation CRON JOB: recoverReceiptKOCronJob {} receipt-ko sent", receiptSize + missingRedirectRecovery);
         this.threadOfExecution = Thread.currentThread();
     }
 }
