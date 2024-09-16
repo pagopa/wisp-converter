@@ -44,3 +44,4 @@ integration-test/results/*
 **/__pycache__/*
 
 .DS_Store
+/integration-test/env.local

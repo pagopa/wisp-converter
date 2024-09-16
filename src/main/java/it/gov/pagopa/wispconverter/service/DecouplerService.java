@@ -117,6 +117,8 @@ public class DecouplerService {
                 .build();
     }
 
+
+    //TODO duplicate method but pass only sessionId recovered from service bus
     private void saveMappedKeyForDecoupler(SessionDataDTO sessionData) {
 
         // generate client instance for APIM endpoint
