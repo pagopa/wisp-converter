@@ -50,7 +50,7 @@ public abstract class RTMapper {
     }
 
     @Mapping(target = "identificativoUnivocoAttestante.tipoIdentificativoUnivoco", expression = "java(it.gov.digitpa.schemas._2011.pagamenti.StTipoIdentificativoUnivoco.G)")
-    @Mapping(source = "receipt.fiscalCode", target = "identificativoUnivocoAttestante.codiceIdentificativoUnivoco")
+    @Mapping(source = "receipt.idPSP", target = "identificativoUnivocoAttestante.codiceIdentificativoUnivoco")
     @Mapping(source = "receipt.PSPCompanyName", target = "denominazioneAttestante")
     public abstract void toCtIstitutoAttestante(@MappingTarget CtIstitutoAttestante ctIstitutoAttestante, PaSendRTV2Request paSendRTV2Request);
 

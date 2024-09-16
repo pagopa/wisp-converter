@@ -6,6 +6,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.telematici.pagamenti.ws.nodoperpa.ppthead.IntestazionePPT;
 import gov.telematici.pagamenti.ws.pafornode.CtReceiptV2;
+import gov.telematici.pagamenti.ws.pafornode.CtTransferListPAReceiptV2;
+import gov.telematici.pagamenti.ws.pafornode.CtTransferPAReceiptV2;
 import gov.telematici.pagamenti.ws.pafornode.PaSendRTV2Request;
 import gov.telematici.pagamenti.ws.papernodo.PaaInviaRT;
 import it.gov.digitpa.schemas._2011.pagamenti.*;
@@ -41,6 +43,7 @@ import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -99,10 +102,8 @@ public class ReceiptService {
 
 
     /**
-     * @deprecated
-     * use {@code sendKoPaaInviaRtToCreditorInstitution(List<ReceiptDto> receipts)} method instead
-     *
      * @param payload a list of {@link ReceiptDto} elements
+     * @deprecated use {@code sendKoPaaInviaRtToCreditorInstitution(List<ReceiptDto> receipts)} method instead
      */
     @Deprecated(forRemoval = false)
     public void sendKoPaaInviaRtToCreditorInstitution(String payload) {
@@ -165,14 +166,14 @@ public class ReceiptService {
 
                         // generate the header for the paaInviaRT SOAP request. This object is common for each generated request
                         IntestazionePPT header = generateHeader(
-                                cachedMapping.getFiscalCode(),
+                                rpt.getRpt().getDomain().getDomainId(),
                                 cachedMapping.getIuv(),
                                 rpt.getCcp(),
                                 commonFields.getCreditorInstitutionBrokerId(),
                                 commonFields.getStationId());
 
                         // Generating the paaInviaRT payload from the RPT
-                        String paymentOutcome = "Annullato da WISP"; // TODO change this with one of the following -> https://pagopa.atlassian.net/wiki/spaces/PN5/pages/913244345/WISP-Converter?focusedCommentId=1002078407
+                        String paymentOutcome = "Annullato da WISP";
                         JAXBElement<CtRicevutaTelematica> generatedReceipt = new ObjectFactory()
                                 .createRT(generateRTContentForKoReceipt(rpt, configurations, Instant.now(), paymentOutcome));
                         String rawGeneratedReceipt = jaxbElementUtil.objectToString(generatedReceipt);
@@ -243,10 +244,13 @@ public class ReceiptService {
                 List<RPTContentDTO> rpts = extractRequiredRPTs(sessionData, receipt.getCreditorReferenceId(), receipt.getFiscalCode());
                 for (RPTContentDTO rpt : rpts) {
 
+                    // actualize content for correctly handle multibeneficiary carts
+                    PaSendRTV2Request deepCopySendRTV2 = extractDataFromPaSendRT(payload, rpt);
+
                     // generate the header for the paaInviaRT SOAP request. This object is different for each generated request
                     IntestazionePPT intestazionePPT = generateHeader(
-                            receipt.getFiscalCode(),
-                            receipt.getCreditorReferenceId(),
+                            deepCopySendRTV2.getIdPA(),
+                            deepCopySendRTV2.getReceipt().getCreditorReferenceId(),
                             rpt.getRpt().getTransferData().getCcp(),
                             commonFields.getCreditorInstitutionBrokerId(),
                             commonFields.getStationId()
@@ -254,7 +258,7 @@ public class ReceiptService {
 
                     // Generating the paaInviaRT payload from the RPT
                     JAXBElement<CtRicevutaTelematica> generatedReceipt = new it.gov.digitpa.schemas._2011.pagamenti.ObjectFactory()
-                            .createRT(generateRTContentForOkReceipt(rpt, paSendRTV2Request));
+                            .createRT(generateRTContentForOkReceipt(rpt, deepCopySendRTV2));
                     String rawGeneratedReceipt = jaxbElementUtil.objectToString(generatedReceipt);
                     String paaInviaRtPayload = generatePayloadAsRawString(intestazionePPT, commonFields.getSignatureType(), rawGeneratedReceipt, objectFactory);
 
@@ -276,6 +280,28 @@ public class ReceiptService {
         }
     }
 
+    private PaSendRTV2Request extractDataFromPaSendRT(String payload, RPTContentDTO rpt) {
+        SOAPMessage deepCopyMessage = jaxbElementUtil.getMessage(payload);
+        PaSendRTV2Request deepCopySendRTV2 = jaxbElementUtil.getBody(deepCopyMessage, PaSendRTV2Request.class);
+
+        List<CtTransferPAReceiptV2> transfers = deepCopySendRTV2.getReceipt().getTransferList().getTransfer();
+        transfers = transfers.stream()
+                .filter(transfer -> transfer.getFiscalCodePA().equals(rpt.getRpt().getDomain().getDomainId()))
+                .toList();
+
+        BigDecimal amount = transfers.stream()
+                .map(CtTransferPAReceiptV2::getTransferAmount)
+                .reduce(BigDecimal::add)
+                .orElse(deepCopySendRTV2.getReceipt().getPaymentAmount());
+        deepCopySendRTV2.getReceipt().setPaymentAmount(amount);
+        deepCopySendRTV2.setIdPA(rpt.getRpt().getDomain().getDomainId());
+
+        CtTransferListPAReceiptV2 transferList = new CtTransferListPAReceiptV2();
+        transferList.getTransfer().addAll(transfers);
+        deepCopySendRTV2.getReceipt().setTransferList(transferList);
+        return deepCopySendRTV2;
+    }
+
     public String generateKoRtFromSessionData (String creditorInstitutionId, String iuv, RPTContentDTO rpt,
                                                CommonFieldsDTO commonFields, gov.telematici.pagamenti.ws.papernodo.ObjectFactory objectFactory,
                                                 Map<String, ConfigurationKeyDto> configurations) {
@@ -288,7 +314,7 @@ public class ReceiptService {
                 commonFields.getStationId());
 
         // Generating the paaInviaRT payload from the RPT
-        String paymentOutcome = "Annullato da WISP"; // TODO change this with one of the following -> https://pagopa.atlassian.net/wiki/spaces/PN5/pages/913244345/WISP-Converter?focusedCommentId=1002078407
+        String paymentOutcome = "Annullato da WISP";
         JAXBElement<CtRicevutaTelematica> generatedReceipt = new ObjectFactory()
                 .createRT(generateRTContentForKoReceipt(rpt, configurations, Instant.now(), paymentOutcome));
         String rawGeneratedReceipt = jaxbElementUtil.objectToString(generatedReceipt);
@@ -390,9 +416,15 @@ public class ReceiptService {
     }
 
     private List<RPTContentDTO> extractRequiredRPTs(SessionDataDTO sessionData, String iuv, String creditorInstiutionId) {
-        return sessionData.getAllRPTs().stream()
-                .filter(rpt -> rpt.getIuv().equals(iuv) && rpt.getRpt().getDomain().getDomainId().equals(creditorInstiutionId))
-                .toList();
+        List<RPTContentDTO> rpts;
+        if (Boolean.TRUE.equals(sessionData.getCommonFields().getIsMultibeneficiary())) {
+            rpts = sessionData.getAllRPTs().stream().toList();
+        } else {
+            rpts = sessionData.getAllRPTs().stream()
+                    .filter(rpt -> rpt.getIuv().equals(iuv) && rpt.getRpt().getDomain().getDomainId().equals(creditorInstiutionId))
+                    .toList();
+        }
+        return rpts;
     }
 
     private CtRicevutaTelematica generateRTContentForKoReceipt(RPTContentDTO rpt, Map<String, ConfigurationKeyDto> configurations, Instant now, String paymentOutcome) {
