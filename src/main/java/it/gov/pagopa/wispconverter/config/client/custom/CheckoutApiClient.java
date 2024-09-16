@@ -1,6 +1,7 @@
 package it.gov.pagopa.wispconverter.config.client.custom;
 
 import it.gov.pagopa.wispconverter.exception.AppException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.util.MultiValueMap;
@@ -9,6 +10,7 @@ import org.springframework.web.client.*;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 public class CheckoutApiClient extends it.gov.pagopa.gen.wispconverter.client.checkout.invoker.ApiClient {
 
     public CheckoutApiClient(RestTemplate restTemplate) {
@@ -38,8 +40,10 @@ public class CheckoutApiClient extends it.gov.pagopa.gen.wispconverter.client.ch
                 break;
             } catch (AppException ex) {
                 attempts = handleAppException(ex, attempts);
+                log.debug(String.format("[WISP-CLIENT-DASH][eCommerce][AppEx-1] Retry attempt: %s - Reason: %s", attempts - 1, ex.getMessage()));
             } catch (ResourceAccessException ex) {
                 attempts = handleRetry(ex, attempts);
+                log.debug(String.format("[WISP-CLIENT-DASH][eCommerce][ResourceAccessEx] Retry attempt: %s - Reason: %s", attempts - 1, ex.getMessage()));
             }
         }
         return response;
@@ -50,6 +54,7 @@ public class CheckoutApiClient extends it.gov.pagopa.gen.wispconverter.client.ch
         if (cause instanceof RuntimeException runtimeException) {
             if (cause instanceof HttpServerErrorException || ((HttpClientErrorException) cause).getStatusCode().equals(HttpStatus.TOO_MANY_REQUESTS)) {
                 attempts = handleRetry(runtimeException, attempts);
+                log.debug(String.format("[WISP-CLIENT-DASH][eCommerce][AppEx-2] Retry attempt: %s - StatusCode: %s - Reason: %s", attempts - 1, ((HttpStatusCodeException) cause).getStatusCode(), cause.getMessage()));
             }
         } else {
             throw ex;
