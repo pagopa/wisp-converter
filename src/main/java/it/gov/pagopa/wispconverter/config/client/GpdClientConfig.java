@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import it.gov.pagopa.wispconverter.config.client.custom.GpdApiClient;
 import it.gov.pagopa.wispconverter.service.ReService;
 import it.gov.pagopa.wispconverter.util.client.RequestResponseLoggingProperties;
 import it.gov.pagopa.wispconverter.util.client.gpd.GpdClientLoggingInterceptor;
@@ -53,6 +54,12 @@ public class GpdClientConfig {
     @Value("${wisp-converter.re-tracing.interface.payment-position-analysis.enabled}")
     private Boolean isTracingOfClientOnREEnabled;
 
+    @Value("${client.gpd.max-retry}")
+    private Integer maxRetry;
+
+    @Value("${client.gpd.delay-retry-millis}")
+    private Integer delayRetry;
+
     @Bean
     @ConfigurationProperties(prefix = "log.client.gpd")
     public RequestResponseLoggingProperties gpdClientLoggingProperties() {
@@ -73,10 +80,12 @@ public class GpdClientConfig {
 
         restTemplate.setErrorHandler(new GpdClientResponseErrorHandler());
 
-        it.gov.pagopa.gen.wispconverter.client.gpd.invoker.ApiClient client = new it.gov.pagopa.gen.wispconverter.client.gpd.invoker.ApiClient(restTemplate);
+        GpdApiClient client = new GpdApiClient(restTemplate);
 
         client.setBasePath(basePath);
         client.setApiKey(apiKey);
+        client.setMaxAttemptsForRetry(maxRetry);
+        client.setWaitTimeMillis(delayRetry);
 
         return client;
     }
