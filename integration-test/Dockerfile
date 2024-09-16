@@ -1,0 +1,45 @@
+FROM python:3.11@sha256:3cd9b520be95c671135ea1318f32be6912876024ee16d0f472669d3878801651 as build
+#-slim as build
+
+ARG SHELL="/bin/sh"
+ARG ALLURE_RELEASE=2.25.0
+ARG ALLURE_REPO=https://repo.maven.apache.org/maven2/io/qameta/allure/allure-commandline
+ARG UID=1000
+ARG GID=1000
+
+ENV ROOT=/app
+
+COPY ./ $ROOT
+
+WORKDIR $ROOT
+
+RUN apt-get update \
+    && apt-get -y install libpq-dev gcc default-jdk\
+    && pip install -r requirements.txt
+
+RUN curl ${ALLURE_REPO}/${ALLURE_RELEASE}/allure-commandline-${ALLURE_RELEASE}.zip -L -o /tmp/allure-commandline.zip && \
+            unzip -q /tmp/allure-commandline.zip -d /
+
+RUN groupadd --gid ${GID} allure \
+    && useradd --uid ${UID} --gid allure --shell /bin/bash --create-home allure
+
+ENV ALLURE_HOME=/allure-$ALLURE_RELEASE
+ENV ALLURE_HOME_SL=/allure
+ENV PATH=$PATH:$ALLURE_HOME/bin
+ENV ALLURE_RESOURCES=$ROOT/resources
+
+FROM build as execution
+
+ENV INTEGRATION_TEST_GPD_SUBSCRIPTION_KEY "AT_RUNTIME"
+ENV INTEGRATION_TEST_NODO_SUBSCRIPTION_KEY "AT_RUNTIME"
+ENV INTEGRATION_TEST_FORWARDER_SUBSCRIPTION_KEY "AT_RUNTIME"
+ENV INTEGRATION_TEST_TECHNICALSUPPORT_SUBSCRIPTION_KEY "AT_RUNTIME"
+ENV INTEGRATION_TEST_CHANNEL_WISP_PASSWORD "AT_RUNTIME"
+ENV INTEGRATION_TEST_CHANNEL_WFESP_PASSWORD "AT_RUNTIME"
+ENV INTEGRATION_TEST_CHANNEL_CHECKOUT_PASSWORD "AT_RUNTIME"
+ENV INTEGRATION_TEST_CHANNEL_PAYMENT_PASSWORD "AT_RUNTIME"
+ENV INTEGRATION_TEST_STATION_WISP_PASSWORD "AT_RUNTIME"
+ENV TAGS "AT_RUNTIME"
+ENV ENV "AT_RUNTIME"
+
+CMD ["sh", "run_test.sh"]

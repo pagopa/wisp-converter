@@ -90,12 +90,33 @@ public class ReceiptService {
     private Integer schedulingTimeInMinutes;
 
 
+    /**
+     * @deprecated
+     * use {@code sendKoPaaInviaRtToCreditorInstitution(List<ReceiptDto> receipts)} method instead
+     *
+     * @param payload a list of {@link ReceiptDto} elements
+     */
+    @Deprecated(forRemoval = false)
     public void sendKoPaaInviaRtToCreditorInstitution(String payload) {
+        List<ReceiptDto> receipts;
+        try {
+            receipts = List.of(mapper.readValue(payload, ReceiptDto[].class));
+        } catch (JsonProcessingException e) {
+            throw new AppException(AppErrorCodeMessageEnum.PARSING_INVALID_BODY, e.getMessage());
+        }
+        sendKoPaaInviaRtToCreditorInstitution(receipts);
+    }
 
+
+    /**
+     * send a paaInviaRT with a KO. The body is generated from the list of receipts.
+     *
+     * @param receipts a list of receipts
+     */
+    public void sendKoPaaInviaRtToCreditorInstitution(List<ReceiptDto> receipts) {
         try {
 
             // map the received payload as a list of receipts that will be lately evaluated
-            List<ReceiptDto> receipts = List.of(mapper.readValue(payload, ReceiptDto[].class));
             gov.telematici.pagamenti.ws.papernodo.ObjectFactory objectFactory = new gov.telematici.pagamenti.ws.papernodo.ObjectFactory();
 
             // retrieve configuration data from cache
@@ -106,6 +127,8 @@ public class ReceiptService {
 
             // generate and send a KO RT for each receipt received in the payload
             for (ReceiptDto receipt : receipts) {
+
+                MDCUtil.setReceiptTimerInfoInMDC(receipt.getFiscalCode(), receipt.getNoticeNumber(), null);
 
                 // retrieve the NAV-to-IUV mapping key from Redis, then use the result for retrieve the session data
                 String noticeNumber = receipt.getNoticeNumber();
@@ -158,10 +181,6 @@ public class ReceiptService {
                     }
                 }
             }
-
-        } catch (JsonProcessingException e) {
-
-            throw new AppException(AppErrorCodeMessageEnum.PARSING_INVALID_BODY, e.getMessage());
 
         } catch (AppException e) {
 

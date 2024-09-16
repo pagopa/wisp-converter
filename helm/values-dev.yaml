@@ -4,7 +4,7 @@ microservice-chart:
   fullnameOverride: ""
   image:
     repository: ghcr.io/pagopa/pagopa-wisp-converter
-    tag: "0.1.11"
+    tag: "0.1.22"
     pullPolicy: Always
   livenessProbe:
     httpGet:
@@ -78,6 +78,8 @@ microservice-chart:
     COSMOS_URI: "https://pagopa-d-weu-nodo-wispconv-cosmos-account.documents.azure.com:443/"
     PAAINVIART_SERVICE_BUS_NAME: "nodo_wisp_paainviart_queue"
     RECEIPT_TIMER_QUEUE_NAME: "nodo_wisp_payment_timeout_queue"
+    ECOMMERCE_HANG_TIMER_QUEUE_NAME: "nodo_wisp_ecommerce_hang_timeout_queue"
+    ECOMMERCE_HANG_TIMEOUT: '1800'
     CACHED_REQUESTID_MAPPING_TTL_MINUTES: "1440"
     CACHE_REFRESH_CRON: "0 */60 * * * *"
     CLIENT_GPD_READ_TIMEOUT: '5000'
@@ -112,6 +114,7 @@ microservice-chart:
       APPLICATIONINSIGHTS_CONNECTION_STRING: 'azure-insight-connection-string'
       SERVICE_BUS_PAYMENT_TIMEOUT_QUEUE_CONNECTION_STRING: 'wisp-payment-timeout-queue-connection-string'
       SERVICE_BUS_PAAINVIART_QUEUE_CONNECTION_STRING: 'wisp-paainviart-queue-connection-string'
+      ECOMMERCE_HANG_TIMER_QUEUE_CONNECTION_STRING: 'ecommerce-hang-timer-queue-connection-string'
       OTEL_EXPORTER_OTLP_HEADERS: elastic-apm-secret-token
       REDIS_PASSWORD: 'redis-primary-key'
       REDIS_HOST: 'redis-hostname'

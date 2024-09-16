@@ -22,8 +22,18 @@ resource "github_repository_environment" "github_repository_environment" {
 locals {
   env_secrets = {
     "CD_CLIENT_ID" : data.azurerm_user_assigned_identity.identity_cd.client_id,
+    "CI_CLIENT_ID" : data.azurerm_user_assigned_identity.identity_ci.client_id,
     "TENANT_ID" : data.azurerm_client_config.current.tenant_id,
     "SUBSCRIPTION_ID" : data.azurerm_subscription.current.subscription_id
+    "INTEGRATION_TEST_GPD_SUBSCRIPTION_KEY" : var.env_short != "p" ? data.azurerm_key_vault_secret.integration_test_gpd_subscription_key[0].value : ""
+    "INTEGRATION_TEST_NODO_SUBSCRIPTION_KEY" : var.env_short != "p" ? data.azurerm_key_vault_secret.integration_test_nodo_subscription_key[0].value : ""
+    "INTEGRATION_TEST_FORWARDER_SUBSCRIPTION_KEY" : var.env_short != "p" ? data.azurerm_key_vault_secret.integration_test_forwarder_subscription_key[0].value : ""
+    "INTEGRATION_TEST_TECHNICALSUPPORT_SUBSCRIPTION_KEY" : var.env_short != "p" ? data.azurerm_key_vault_secret.integration_test_technicalsupport_subscription_key[0].value : ""
+    "INTEGRATION_TEST_CHANNEL_WISP_PASSWORD" : var.env_short != "p" ? data.azurerm_key_vault_secret.integration_test_channel_wisp_password[0].value : ""
+    "INTEGRATION_TEST_CHANNEL_WFESP_PASSWORD" : var.env_short != "p" ? data.azurerm_key_vault_secret.integration_test_channel_wfesp_password[0].value : ""
+    "INTEGRATION_TEST_CHANNEL_CHECKOUT_PASSWORD" : var.env_short != "p" ? data.azurerm_key_vault_secret.integration_test_channel_checkout_password[0].value : ""
+    "INTEGRATION_TEST_CHANNEL_PAYMENT_PASSWORD" : var.env_short != "p" ? data.azurerm_key_vault_secret.integration_test_channel_payment_password[0].value : ""
+    "INTEGRATION_TEST_STATION_WISP_PASSWORD" : var.env_short != "p" ? data.azurerm_key_vault_secret.integration_test_station_wisp_password[0].value : ""
   }
   env_variables = {
     "CONTAINER_APP_ENVIRONMENT_NAME" : local.container_app_environment.name,
@@ -32,6 +42,8 @@ locals {
     "CLUSTER_RESOURCE_GROUP" : local.aks_cluster.resource_group_name,
     "DOMAIN" : local.domain,
     "NAMESPACE" : local.domain,
+    "INTEGRATION_TEST_STORAGE_ACCOUNT_NAME" : local.integration_test.storage_account_name
+    "INTEGRATION_TEST_REPORTS_FOLDER" : local.integration_test.reports_folder
   }
   repo_secrets = {
     "SONAR_TOKEN" : data.azurerm_key_vault_secret.key_vault_sonar.value,
@@ -40,6 +52,7 @@ locals {
     "SUBKEY" : data.azurerm_key_vault_secret.key_vault_integration_test_subkey.value,
   }
 }
+
 
 ###############
 # ENV Secrets #

@@ -17,6 +17,7 @@ import it.gov.pagopa.wispconverter.util.ReUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -39,6 +40,9 @@ public class ReceiptTimerService {
     @Value("${azure.sb.queue.receiptTimer.name}")
     private String queueName;
     private ServiceBusSenderClient serviceBusSenderClient;
+
+    @Autowired
+    private ECommerceHangTimerService eCommerceHangTimerService;
 
     @PostConstruct
     public void post() {
@@ -80,6 +84,9 @@ public class ReceiptTimerService {
         cacheRepository.insert(sequenceNumberKey, String.valueOf(sequenceNumber), message.getExpirationTime(), ChronoUnit.MILLIS);
         log.debug("Cache sequence number {} for payment-token: {}", sequenceNumber, sequenceNumberKey);
         generateRE(InternalStepStatus.RECEIPT_TIMER_GENERATION_CACHED_SEQUENCE_NUMBER, "Cached sequence number: [" + sequenceNumber + "] for payment token: [" + sequenceNumberKey + "]");
+
+        // delete ecommerce hang timer: we delete the scheduled message from the queue
+        eCommerceHangTimerService.cancelScheduledMessage(noticeNumber, fiscalCode);
     }
 
     public void cancelScheduledMessage(List<String> paymentTokens) {

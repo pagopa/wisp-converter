@@ -72,6 +72,11 @@ public class MDCUtil {
 
     }
 
+    public static void setEcommerceHangTimerInfoInMDC(String domainId, String noticeNumber) {
+        MDC.put(Constants.MDC_DOMAIN_ID, domainId);
+        MDC.put(Constants.MDC_NOTICE_NUMBER, noticeNumber);
+    }
+
     public static void setMDCCloseSuccessOperation(int statusCode) {
         setMDCCloseOperation(SUCCESS, statusCode);
     }

@@ -39,4 +39,8 @@ public class CacheRepository {
     public void delete(String key) {
         this.redisSimpleTemplate.delete(key);
     }
+
+    public Boolean hasKey(String key) {
+        return this.redisSimpleTemplate.hasKey(key);
+    }
 }

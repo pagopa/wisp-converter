@@ -1,11 +1,8 @@
 package it.gov.pagopa.wispconverter;
 
-import com.azure.messaging.servicebus.ServiceBusSenderClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.wispconverter.controller.model.AppInfoResponse;
-import it.gov.pagopa.wispconverter.repository.*;
 import it.gov.pagopa.wispconverter.service.ReceiptService;
-import it.gov.pagopa.wispconverter.service.ReceiptTimerService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -36,22 +33,17 @@ class HomeTest {
     @Autowired
     private MockMvc mvc;
 
-    @MockBean
-    private RPTRequestRepository rptRequestRepository;
-    @MockBean
-    private RTRetryRepository rtRetryRepository;
-    @MockBean
-    private RTRepository rtRepository;
-    @MockBean
-    private CacheRepository cacheRepository;
-    @MockBean
-    private ReEventRepository reEventRepository;
-    @MockBean
-    private IdempotencyKeyRepository idempotencyKeyRepository;
-    @MockBean
-    private ServiceBusSenderClient serviceBusSenderClient;
-    @MockBean
-    private ReceiptTimerService receiptTimerService;
+
+
+
+
+
+
+
+
+
+
+
     @MockBean
     private ReceiptService receiptService;
 

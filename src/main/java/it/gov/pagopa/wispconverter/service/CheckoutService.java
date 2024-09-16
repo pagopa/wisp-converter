@@ -65,7 +65,7 @@ public class CheckoutService {
         return location;
     }
 
-    private CartRequestDto extractCart(SessionDataDTO sessionData) throws URISyntaxException {
+    public CartRequestDto extractCart(SessionDataDTO sessionData) throws URISyntaxException {
 
         // execute main mapping for the cart to be sent to Checkout
         CartRequestDto cart = mapper.toCart(sessionData);
