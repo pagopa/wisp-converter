@@ -10,6 +10,7 @@ import it.gov.pagopa.wispconverter.repository.RTRepository;
 import it.gov.pagopa.wispconverter.repository.ReEventRepository;
 import it.gov.pagopa.wispconverter.repository.model.RTEntity;
 import it.gov.pagopa.wispconverter.repository.model.ReEventEntity;
+import it.gov.pagopa.wispconverter.repository.model.SessionIdEntity;
 import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
 import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
@@ -129,8 +130,10 @@ public class RecoveryService {
         String dateFromString = dateFrom.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         String dateToString = dateTo.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 
-        List<String> sessionsWithoutRedirect = reEventRepository.findSessionWithoutRedirect(dateFromString, dateToString);
-        for(String sessionId : sessionsWithoutRedirect) {
+        List<SessionIdEntity> sessionsWithoutRedirect = reEventRepository.findSessionWithoutRedirect(dateFromString, dateToString);
+
+        for(SessionIdEntity sessionIdEntity : sessionsWithoutRedirect) {
+            String sessionId = sessionIdEntity.getSessionId();
             ReEventEntity reEvent = reEventRepository.findBySessionIdAndStatus(dateFromString, dateToString, sessionId, "RPT_ACCETTATA_NODO")
                                             .get(0);
             String iuv = reEvent.getIuv();

@@ -30,14 +30,15 @@ public class RecoveryScheduler {
     @Scheduled(cron = "${cron.job.schedule.recovery.receipt-ko.trigger}")
     @Async
     public void recoverReceiptKOCronJob() {
-        log.info("Reconciliation CRON JOB: recoverReceiptKOCronJob running at {}", DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(LocalDateTime.now()));
-
         ZonedDateTime dateFrom = ZonedDateTime.now(ZoneOffset.UTC).minusHours(FROM_N_HOURS_AGO);
         ZonedDateTime dateTo = ZonedDateTime.now(ZoneOffset.UTC).minusHours(UNTIL_N_HOURS_AGO);
+        log.info("[Scheduled] Reconciliation Cron: recoverReceiptKOCronJob running at {}, for recover stale RPT from {} to {}",
+                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(LocalDateTime.now()), dateFrom, dateTo);
+
         int receiptSize = recoveryService.recoverReceiptKOAll(dateFrom, dateTo);
         int missingRedirectRecovery = recoveryService.recoverMissingRedirect(dateFrom, dateTo);
 
-        log.info("Reconciliation CRON JOB: recoverReceiptKOCronJob {} receipt-ko sent", receiptSize + missingRedirectRecovery);
+        log.info("[Scheduled] Reconciliation Cron: recoverReceiptKOCronJob {} receipt-ko sent", receiptSize + missingRedirectRecovery);
         this.threadOfExecution = Thread.currentThread();
     }
 }

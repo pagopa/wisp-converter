@@ -3,6 +3,7 @@ package it.gov.pagopa.wispconverter.repository;
 import com.azure.spring.data.cosmos.repository.CosmosRepository;
 import com.azure.spring.data.cosmos.repository.Query;
 import it.gov.pagopa.wispconverter.repository.model.ReEventEntity;
+import it.gov.pagopa.wispconverter.repository.model.SessionIdEntity;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
@@ -47,5 +48,5 @@ public interface ReEventRepository extends CosmosRepository<ReEventEntity, Strin
                   ") AS wispSession " +
                   "WHERE wispSession.occurrences = 1"
     )
-    List<String> findSessionWithoutRedirect(@Param("dateFrom") String dateFrom, @Param("dateTo") String dateTo);
+    List<SessionIdEntity> findSessionWithoutRedirect(@Param("dateFrom") String dateFrom, @Param("dateTo") String dateTo);
 }
