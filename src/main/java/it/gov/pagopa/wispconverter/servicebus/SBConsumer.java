@@ -4,14 +4,11 @@ import com.azure.messaging.servicebus.*;
 import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
 import it.gov.pagopa.wispconverter.service.ReService;
 import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
-import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.ReUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.annotation.PreDestroy;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 // Service Bus Consumer
@@ -59,14 +56,6 @@ public abstract class SBConsumer {
             log.error("Error source {}, reason {}, message: {}", context.getErrorSource(),
                     reason, context.getException());
         }
-    }
-
-    protected void setSessionDataInfoInMDC(String businessProcess) {
-        String operationId = UUID.randomUUID().toString();
-        MDC.put(Constants.MDC_START_TIME, String.valueOf(System.currentTimeMillis()));
-        MDC.put(Constants.MDC_OPERATION_ID, operationId);
-        MDC.put(Constants.MDC_REQUEST_ID, operationId);
-        MDC.put(Constants.MDC_BUSINESS_PROCESS, businessProcess);
     }
 
     protected void generateRE(InternalStepStatus status, String otherInfo) {

@@ -64,7 +64,7 @@ public class RPTExtractorService {
         }
 
         // generate and save RE event internal for change status
-        MDCUtil.setSessionDataInfoInMDC(sessionData, primitive);
+        MDCUtil.setSessionDataInfo(sessionData, primitive);
         generateRE(sessionData);
 
         return sessionData;

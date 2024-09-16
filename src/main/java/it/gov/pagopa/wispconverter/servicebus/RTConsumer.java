@@ -82,7 +82,7 @@ public class RTConsumer extends SBConsumer {
     public void processMessage(ServiceBusReceivedMessageContext context) {
 
         // retrieving content from context of arrived message
-        setSessionDataInfoInMDC("resend-rt");
+        MDCUtil.setSessionDataInfo("resend-rt");
         ServiceBusReceivedMessage message = context.getMessage();
         log.debug("Processing " + message.getMessageId());
 
@@ -153,7 +153,7 @@ public class RTConsumer extends SBConsumer {
 
             // set MDC session data for RE
             String[] idempotencyKeySections = idempotencyKey.split("_");
-            MDCUtil.setSessionDataInfoInMDC(header, idempotencyKeySections[2]);
+            MDCUtil.setSessionDataInfo(header, idempotencyKeySections[2]);
 
             String rawPayload = new String(unzippedPayload);
             paaInviaRTSenderService.sendToCreditorInstitution(receipt.getUrl(), extractHeaders(receipt.getHeaders()), rawPayload);

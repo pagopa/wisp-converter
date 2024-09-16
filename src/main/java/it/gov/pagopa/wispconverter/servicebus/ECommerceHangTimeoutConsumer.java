@@ -9,6 +9,7 @@ import it.gov.pagopa.wispconverter.service.model.ECommerceHangTimeoutMessage;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
 import it.gov.pagopa.wispconverter.util.CommonUtility;
 import it.gov.pagopa.wispconverter.util.Constants;
+import it.gov.pagopa.wispconverter.util.MDCUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.MDC;
@@ -61,7 +62,7 @@ public class ECommerceHangTimeoutConsumer extends SBConsumer {
     }
 
     public void processMessage(ServiceBusReceivedMessageContext context) {
-        setSessionDataInfoInMDC("ecommerce-hang-timeout-trigger");
+        MDCUtil.setSessionDataInfo("ecommerce-hang-timeout-trigger");
         ServiceBusReceivedMessage message = context.getMessage();
         log.debug("Processing message. Session: {}, Sequence #: {}. Contents: {}", message.getMessageId(), message.getSequenceNumber(), message.getBody());
         try {
