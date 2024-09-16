@@ -4,7 +4,7 @@ microservice-chart:
   fullnameOverride: ""
   image:
     repository: ghcr.io/pagopa/pagopa-wisp-converter
-    tag: "0.1.22-4-release-v0.2"
+    tag: "0.1.22-5-release-v0.2"
     pullPolicy: Always
   livenessProbe:
     httpGet:
@@ -119,7 +119,6 @@ microservice-chart:
     CLIENT_DECOUPLERCACHING_DELAY_RETRY_MILL: '10'
     CLIENT_CACHE_MAX_RETRY: '3'
     CLIENT_CACHE_DELAY_RETRY_MILL: '10'
-
   secretProvider:
     create: true
     envSecrets:
