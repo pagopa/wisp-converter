@@ -84,7 +84,7 @@ public class RTConsumer extends SBConsumer {
         // retrieving content from context of arrived message
         setSessionDataInfoInMDC("resend-rt");
         ServiceBusReceivedMessage message = context.getMessage();
-        log.info("Processing " + message.getMessageId());
+        log.debug("Processing " + message.getMessageId());
 
         // extracting the values needed for the search of the receipt persisted in storage
         String compositedIdForReceipt = new String(message.getBody().toBytes());
@@ -144,7 +144,7 @@ public class RTConsumer extends SBConsumer {
 
         try {
 
-            log.info("Sending receipt [{}]", receiptId);
+            log.debug("Sending receipt [{}]", receiptId);
 
             // unzip retrieved zipped payload from GZip format
             byte[] unzippedPayload = ZipUtil.unzip(AppBase64Util.base64Decode(receipt.getPayload()));
@@ -158,7 +158,7 @@ public class RTConsumer extends SBConsumer {
             String rawPayload = new String(unzippedPayload);
             paaInviaRTSenderService.sendToCreditorInstitution(receipt.getUrl(), extractHeaders(receipt.getHeaders()), rawPayload);
             rtRetryComosService.deleteRTRequestEntity(receipt);
-            log.info("Sent receipt [{}]", receiptId);
+            log.debug("Sent receipt [{}]", receiptId);
 
             // generate a new event in RE for store the successful re-sending of the receipt
             generateREForSentRT();

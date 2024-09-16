@@ -63,7 +63,7 @@ public class ECommerceHangTimeoutConsumer extends SBConsumer {
     public void processMessage(ServiceBusReceivedMessageContext context) {
         setSessionDataInfoInMDC("ecommerce-hang-timeout-trigger");
         ServiceBusReceivedMessage message = context.getMessage();
-        log.info("Processing message. Session: {}, Sequence #: {}. Contents: {}", message.getMessageId(), message.getSequenceNumber(), message.getBody());
+        log.debug("Processing message. Session: {}, Sequence #: {}. Contents: {}", message.getMessageId(), message.getSequenceNumber(), message.getBody());
         try {
             // read the message
             ECommerceHangTimeoutMessage timeoutMessage = mapper.readValue(message.getBody().toStream(), ECommerceHangTimeoutMessage.class);

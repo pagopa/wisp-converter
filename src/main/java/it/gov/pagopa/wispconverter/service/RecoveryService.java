@@ -90,7 +90,7 @@ public class RecoveryService {
 
         CompletableFuture<Boolean> executeRecovery = recoverReceiptKOAsync(dateFrom, dateTo, creditorInstitution, paymentsToReconcile);
         executeRecovery
-                .thenAccept(value -> log.info("Reconciliation for creditor institution [{}] in date range [{}-{}] completed!", creditorInstitution, dateFrom, dateTo))
+                .thenAccept(value -> log.debug("Reconciliation for creditor institution [{}] in date range [{}-{}] completed!", creditorInstitution, dateFrom, dateTo))
                 .exceptionally(e -> {
                     log.error("Reconciliation for creditor institution [{}] in date range [{}-{}] ended unsuccessfully!", creditorInstitution, dateFrom, dateTo, e);
                     throw new AppException(e, AppErrorCodeMessageEnum.ERROR, e.getMessage());

@@ -77,7 +77,7 @@ public class ReceiptTimerService {
         // compute time and schedule message for consumer trigger
         OffsetDateTime scheduledExpirationTime = OffsetDateTime.now().plus(message.getExpirationTime(), ChronoUnit.MILLIS);
         Long sequenceNumber = serviceBusSenderClient.scheduleMessage(serviceBusMessage, scheduledExpirationTime);
-        log.info("Sent scheduled message_base64 {} to the queue: {}", LogUtils.encodeToBase64(message.toString()), queueName);
+        log.debug("Sent scheduled message_base64 {} to the queue: {}", LogUtils.encodeToBase64(message.toString()), queueName);
         generateRE(InternalStepStatus.RECEIPT_TIMER_GENERATION_CREATED_SCHEDULED_SEND, "Scheduled receipt: [" + message + "]");
 
         // insert {wisp_timer_<paymentToken>, sequenceNumber} for Duplicate Prevention Logic and for call cancelScheduledMessage(sequenceNumber)
@@ -108,7 +108,7 @@ public class ReceiptTimerService {
         // cancel scheduled message
         if (this.callCancelScheduledMessage(sequenceNumberString)) {
 
-            log.info("Canceled scheduled message for payment-token_base64 {}", LogUtils.encodeToBase64(paymentToken));
+            log.debug("Canceled scheduled message for payment-token_base64 {}", LogUtils.encodeToBase64(paymentToken));
             cacheRepository.delete(sequenceNumberKey);
             log.debug("Deleted sequence number {} for payment-token: {} from cache", sequenceNumberString, sequenceNumberKey);
             generateRE(InternalStepStatus.RECEIPT_TIMER_GENERATION_DELETED_SCHEDULED_SEND, "Deleted sequence number: [" + sequenceNumberString + "] for payment token: [" + sequenceNumberKey + "]");

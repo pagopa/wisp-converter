@@ -52,7 +52,7 @@ public class PaymentTimeoutConsumer extends SBConsumer {
     public void processMessage(ServiceBusReceivedMessageContext context) {
         setSessionDataInfoInMDC("payment-token-timeout-trigger");
         ServiceBusReceivedMessage message = context.getMessage();
-        log.info("Processing message. Session: {}, Sequence #: {}. Contents: {}", message.getMessageId(),
+        log.debug("Processing message. Session: {}, Sequence #: {}. Contents: {}", message.getMessageId(),
                 message.getSequenceNumber(), message.getBody());
         try {
             ReceiptDto receiptDto = mapper.readValue(message.getBody().toStream(), ReceiptDto.class);
