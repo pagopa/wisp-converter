@@ -1,5 +1,7 @@
 package it.gov.pagopa.wispconverter.service;
 
+import com.azure.messaging.servicebus.ServiceBusReceivedMessage;
+import com.azure.messaging.servicebus.ServiceBusReceivedMessageContext;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.telematici.pagamenti.ws.nodoperpa.ppthead.IntestazionePPT;
@@ -11,6 +13,7 @@ import it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigDataV1Dto;
 import it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigurationKeyDto;
 import it.gov.pagopa.gen.wispconverter.client.cache.model.ConnectionDto;
 import it.gov.pagopa.gen.wispconverter.client.cache.model.StationDto;
+import it.gov.pagopa.wispconverter.controller.model.RPTTimerRequest;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
@@ -31,10 +34,13 @@ import jakarta.xml.soap.SOAPException;
 import jakarta.xml.soap.SOAPMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -74,6 +80,8 @@ public class ReceiptService {
     private final PaaInviaRTSenderService paaInviaRTSenderService;
 
     private final ServiceBusService serviceBusService;
+
+    private it.gov.pagopa.gen.wispconverter.client.decouplercaching.invoker.ApiClient decouplerCachingClient;
 
     private final ObjectMapper mapper;
 
@@ -665,4 +673,84 @@ public class ReceiptService {
         reService.addRe(reEvent);
     }
 
+    public void sendRTKoFromSessionId(String sessionId, InternalStepStatus internalStepStatus) {
+        log.info("Processing session id: {}", sessionId);
+        // deactivate the sessionId inside the cache
+        it.gov.pagopa.gen.wispconverter.client.decouplercaching.api.DefaultApi apiInstance = new it.gov.pagopa.gen.wispconverter.client.decouplercaching.api.DefaultApi(decouplerCachingClient);
+        it.gov.pagopa.gen.wispconverter.client.decouplercaching.model.SessionIdDto sessionIdDto = new it.gov.pagopa.gen.wispconverter.client.decouplercaching.model.SessionIdDto();
+        sessionIdDto.setSessionId(sessionId);
+        // necessary only if rptTimer is triggered, otherwise it has already been removed
+        apiInstance.deleteSessionId(sessionIdDto, MDC.get(Constants.MDC_REQUEST_ID));
+
+        // log event
+        MDC.put(Constants.MDC_SESSION_ID, sessionId);
+        generateRE(internalStepStatus, null, null, null, null, "A Negative sendRT will be sent: " + sessionId);
+
+        SessionDataDTO sessionDataDTO = getSessionDataFromSessionId(sessionId);
+
+        gov.telematici.pagamenti.ws.papernodo.ObjectFactory objectFactory = new gov.telematici.pagamenti.ws.papernodo.ObjectFactory();
+
+        // retrieve configuration data from cache
+        it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigDataV1Dto configData = configCacheService.getConfigData();
+        Map<String, it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigurationKeyDto> configurations = configData.getConfigurations();
+        Map<String, StationDto> stations = configData.getStations();
+
+        for(RPTContentDTO rpt: sessionDataDTO.getRpts().values()) {
+            // idempotency key creation to check if the rt has already been sent
+            String idempotencyKey = sessionDataDTO.getCommonFields().getSessionId() + "_" + null;
+            String rtRawPayload = generateKoRtFromSessionData(
+                    sessionDataDTO.getCommonFields().getCreditorInstitutionId(),
+                    rpt.getIuv(),
+                    rpt,
+                    sessionDataDTO.getCommonFields(),
+                    objectFactory,
+                    configurations);
+            boolean isSuccessful = false;
+            StationDto station = stations.get(sessionDataDTO.getCommonFields().getStationId());
+            ConnectionDto stationConnection = station.getConnection();
+            String url = CommonUtility.constructUrl(
+                    stationConnection.getProtocol().getValue(),
+                    stationConnection.getIp(),
+                    stationConnection.getPort().intValue(),
+                    station.getService() != null ? station.getService().getPath() : "",
+                    null,
+                    null
+            );
+            List<Pair<String, String>> headers = CommonUtility.constructHeadersForPaaInviaRT(url, station, stationInForwarderPartialPath, forwarderSubscriptionKey);
+            IdempotencyStatusEnum idempotencyStatus;
+            try {
+
+                // send the receipt to the creditor institution via the URL set in the station configuration
+                paaInviaRTSenderService.sendToCreditorInstitution(url, headers, rtRawPayload);
+
+                // generate a new event in RE for store the successful sending of the receipt
+                generateREForSentRT(sessionDataDTO, rpt.getIuv(), null);
+                idempotencyStatus = IdempotencyStatusEnum.SUCCESS;
+                isSuccessful = true;
+
+            } catch (Exception e) {
+
+                // generate a new event in RE for store the unsuccessful sending of the receipt
+                String messageException = e.getMessage();
+                if (e instanceof AppException appException) {
+                    messageException = appException.getError().getDetail();
+                }
+
+                log.error("Exception: " + AppErrorCodeMessageEnum.RECEIPT_KO_NOT_GENERATED_BUT_MAYBE_RESCHEDULED.getDetail());
+                generateREForNotSentRT(sessionDataDTO, rpt.getIuv(), null, messageException);
+
+                // because of the not sent receipt, it is necessary to schedule a retry of the sending process for this receipt
+                scheduleRTSend(sessionDataDTO, url, headers, rtRawPayload, station, rpt.getIuv(), null, idempotencyKey, ReceiptTypeEnum.KO);
+                idempotencyStatus = IdempotencyStatusEnum.FAILED;
+            }
+
+            try {
+                // Unlock idempotency key after a successful operation
+                idempotencyService.unlockIdempotencyKey(idempotencyKey, ReceiptTypeEnum.KO, idempotencyStatus);
+            } catch (AppException e) {
+                log.error("AppException: ", e);
+            }
+        }
+        MDC.clear();
+    }
 }

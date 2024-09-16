@@ -1,5 +1,6 @@
 package it.gov.pagopa.wispconverter.config.client;
 
+import it.gov.pagopa.wispconverter.config.client.custom.CheckoutApiClient;
 import it.gov.pagopa.wispconverter.service.ReService;
 import it.gov.pagopa.wispconverter.util.client.RequestResponseLoggingProperties;
 import it.gov.pagopa.wispconverter.util.client.checkout.CheckoutClientLoggingInterceptor;
@@ -33,6 +34,10 @@ public class CheckoutClientConfig {
     private Integer connectTimeout;
     @Value("${client.checkout.base-path}")
     private String basePath;
+    @Value("${client.checkout.max-retry}")
+    private Integer maxRetry;
+    @Value("${client.checkout.delay-retry-millis}")
+    private Integer delayRetry;
 
     @Value("${wisp-converter.re-tracing.interface.checkout-interaction.enabled}")
     private Boolean isTracingOfClientOnREEnabled;
@@ -57,9 +62,11 @@ public class CheckoutClientConfig {
 
         restTemplate.setErrorHandler(new CheckoutClientResponseErrorHandler());
 
-        it.gov.pagopa.gen.wispconverter.client.checkout.invoker.ApiClient client = new it.gov.pagopa.gen.wispconverter.client.checkout.invoker.ApiClient(restTemplate);
+        CheckoutApiClient client = new CheckoutApiClient(restTemplate);
         client.setBasePath(basePath);
         client.setApiKey(apiKey);
+        client.setMaxAttemptsForRetry(maxRetry);
+        client.setWaitTimeMillis(delayRetry);
 
         return client;
     }

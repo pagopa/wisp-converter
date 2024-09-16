@@ -1,7 +1,12 @@
 package it.gov.pagopa.wispconverter.service;
 
+import java.net.URISyntaxException;
+
+import it.gov.pagopa.wispconverter.exception.AppException;
+import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
+import org.springframework.stereotype.Service;
+
 import it.gov.pagopa.gen.wispconverter.client.checkout.model.CartRequestDto;
-import it.gov.pagopa.wispconverter.repository.CacheRepository;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
 import it.gov.pagopa.wispconverter.service.model.ECommerceHangTimeoutMessage;
 import it.gov.pagopa.wispconverter.service.model.session.SessionDataDTO;
@@ -9,9 +14,6 @@ import it.gov.pagopa.wispconverter.servicebus.ECommerceHangTimeoutConsumer;
 import it.gov.pagopa.wispconverter.servicebus.RPTTimeoutConsumer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
-import java.net.URISyntaxException;
 
 
 @Service
@@ -31,11 +33,11 @@ public class ConverterService {
 
     private final RtReceiptCosmosService rtReceiptCosmosService;
 
-    private final CacheRepository cacheRepository;
-
     private final ECommerceHangTimerService eCommerceHangTimerService;
 
     private final RPTTimerService rptTimerService;
+
+    private final ReceiptService receiptService;
 
     public String convert(String sessionId) throws URISyntaxException {
         // put cancel timer here
@@ -43,29 +45,39 @@ public class ConverterService {
 
         // get RPT request entity from database
         RPTRequestEntity rptRequestEntity = rptCosmosService.getRPTRequestEntity(sessionId);
+    	String checkoutResponse;
+    	try {
+			// unmarshalling and mapping RPT content from request entity, generating session data
+			SessionDataDTO sessionData = this.rptExtractorService.extractSessionData(rptRequestEntity.getPrimitive(), rptRequestEntity.getPayload());
 
-        // unmarshalling and mapping RPT content from request entity, generating session data
-        SessionDataDTO sessionData = this.rptExtractorService.extractSessionData(rptRequestEntity.getPrimitive(), rptRequestEntity.getPayload());
+    		// prepare receipt-rt saving (nodoChiediCopiaRT)
+    		rtReceiptCosmosService.saveRTEntity(sessionData);
 
-        // prepare receipt-rt saving (nodoChiediCopiaRT)
-        rtReceiptCosmosService.saveRTEntity(sessionData);
+    		// calling GPD creation API in order to generate the debt position associated to RPTs
+    		this.debtPositionService.createDebtPositions(sessionData);
 
-        // calling GPD creation API in order to generate the debt position associated to RPTs
-        this.debtPositionService.createDebtPositions(sessionData);
+    		// call APIM policy for save key for decoupler and save in Redis cache the mapping of the request identifier needed for RT generation in next steps
+    		this.decouplerService.storeRequestMappingInCache(sessionData, sessionId);
 
-        // call APIM policy for save key for decoupler and save in Redis cache the mapping of the request identifier needed for RT generation in next steps
-        this.decouplerService.storeRequestMappingInCache(sessionData, sessionId);
+    		// execute communication with Checkout service and set the redirection URI as response
+    		checkoutResponse = this.checkoutService.executeCall(sessionData);
 
-        // execute communication with Checkout service and set the redirection URI as response
-        String checkoutResponse = this.checkoutService.executeCall(sessionData);
+    		// call APIM policy for save key for cart session handling
+    		this.decouplerService.storeRequestCartMappingInCache(sessionData, sessionId);
 
-        // call APIM policy for save key for cart session handling
-        this.decouplerService.storeRequestCartMappingInCache(sessionData, sessionId);
+    		// set eCommerce timer foreach notices in the cart
+    		setECommerceHangTimer(sessionData);
 
-        // set eCommerce timer foreach notices in the cart
-        setECommerceHangTimer(sessionData);
-
-        return checkoutResponse;
+    	} catch (AppException ex) {
+			log.error("An appException error occurred during convert operations: " + ex.getMessage());
+			receiptService.sendRTKoFromSessionId(sessionId, InternalStepStatus.GENERATING_RT_FOR_REDIRECT_ERROR);
+			throw ex;
+		} catch (Exception ex) {
+    		log.error("A generic error occurred during convert operations: " + ex.getMessage());
+			receiptService.sendRTKoFromSessionId(sessionId, InternalStepStatus.GENERATING_RT_FOR_REDIRECT_ERROR);
+    		throw ex;
+    	}
+    	return checkoutResponse;
     }
 
     /**
@@ -96,4 +108,5 @@ public class ConverterService {
     private void removeRPTTimer(String sessionId) throws URISyntaxException {
         rptTimerService.cancelScheduledMessage(sessionId);
     }
+
 }
