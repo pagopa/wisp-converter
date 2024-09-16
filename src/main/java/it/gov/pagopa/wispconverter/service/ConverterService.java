@@ -1,18 +1,17 @@
 package it.gov.pagopa.wispconverter.service;
 
 import java.net.URISyntaxException;
-import java.util.List;
 
+import it.gov.pagopa.wispconverter.exception.AppException;
+import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
 
 import it.gov.pagopa.gen.wispconverter.client.checkout.model.CartRequestDto;
-import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
 import it.gov.pagopa.wispconverter.service.model.ECommerceHangTimeoutMessage;
-import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
 import it.gov.pagopa.wispconverter.service.model.session.SessionDataDTO;
 import it.gov.pagopa.wispconverter.servicebus.ECommerceHangTimeoutConsumer;
+import it.gov.pagopa.wispconverter.servicebus.RPTTimeoutConsumer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -36,17 +35,20 @@ public class ConverterService {
 
     private final ECommerceHangTimerService eCommerceHangTimerService;
 
+    private final RPTTimerService rptTimerService;
+
     private final ReceiptService receiptService;
 
     public String convert(String sessionId) throws URISyntaxException {
-    	String checkoutResponse;
-    	SessionDataDTO sessionData = null;
-    	try {
-    		// get RPT request entity from database
-    		RPTRequestEntity rptRequestEntity = rptCosmosService.getRPTRequestEntity(sessionId);
+        // put cancel timer here
+        removeRPTTimer(sessionId);
 
-    		// unmarshalling and mapping RPT content from request entity, generating session data
-    		sessionData = this.rptExtractorService.extractSessionData(rptRequestEntity.getPrimitive(), rptRequestEntity.getPayload());
+        // get RPT request entity from database
+        RPTRequestEntity rptRequestEntity = rptCosmosService.getRPTRequestEntity(sessionId);
+    	String checkoutResponse;
+    	try {
+			// unmarshalling and mapping RPT content from request entity, generating session data
+			SessionDataDTO sessionData = this.rptExtractorService.extractSessionData(rptRequestEntity.getPrimitive(), rptRequestEntity.getPayload());
 
     		// prepare receipt-rt saving (nodoChiediCopiaRT)
     		rtReceiptCosmosService.saveRTEntity(sessionData);
@@ -65,19 +67,18 @@ public class ConverterService {
 
     		// set eCommerce timer foreach notices in the cart
     		setECommerceHangTimer(sessionData);
-    		
-    	} catch (AppException appException) {
-    		log.error("An error occurred during covert operations: " + appException.getMessage());
-    		this.sendKoPaaInviaRtToCreditorInstitution(sessionData);
-    		throw appException;   		
-    	} catch (Exception ex) {
-    		log.error("An error occurred during covert operations: " + ex.getMessage());
-    		this.sendKoPaaInviaRtToCreditorInstitution(sessionData);
+
+    	} catch (AppException ex) {
+			log.error("An appException error occurred during convert operations: " + ex.getMessage());
+			receiptService.sendRTKoFromSessionId(sessionId, InternalStepStatus.GENERATING_RT_FOR_REDIRECT_ERROR);
+			throw ex;
+		} catch (Exception ex) {
+    		log.error("A generic error occurred during convert operations: " + ex.getMessage());
+			receiptService.sendRTKoFromSessionId(sessionId, InternalStepStatus.GENERATING_RT_FOR_REDIRECT_ERROR);
     		throw ex;
     	}
     	return checkoutResponse;
     }
-
 
     /**
      * This method inserts a scheduled message in the queue of the service bus.
@@ -95,18 +96,17 @@ public class ConverterService {
                         .noticeNumber(elem.getNoticeNumber())
                         .build()));
     }
-    
-    // TODO decide what to do if it is not possible to recover the sessionData obj or if the information necessary to valorise the sendKoPaaInviaRtToCreditorInstitution is not present.
-    private void sendKoPaaInviaRtToCreditorInstitution(SessionDataDTO sessionData) {
-		if (sessionData != null && sessionData.getCommonFields() != null && !CollectionUtils.isEmpty(sessionData.getNAVs())) {
-			List<String> navList = sessionData.getNAVs();
-			for (String noticeNumber: navList) {
-				var inputPaaInviaRTKo = List.of(ReceiptDto.builder()
-		                .fiscalCode(sessionData.getCommonFields().getCreditorInstitutionId())
-		                .noticeNumber(noticeNumber)
-		                .build());
-		        receiptService.sendKoPaaInviaRtToCreditorInstitution(inputPaaInviaRTKo);
-			}
-		}
-	}
+
+    /**
+     * This method inserts a scheduled message in the queue of the service bus.
+     * When the message is trigger a sendRT-Negative is sent to the Creditor Institution
+     * (see {@link RPTTimeoutConsumer} class for more details).
+     *
+     * @param sessionId Data of the cart with the paymentOptions
+     * @throws URISyntaxException
+     */
+    private void removeRPTTimer(String sessionId) throws URISyntaxException {
+        rptTimerService.cancelScheduledMessage(sessionId);
+    }
+
 }
