@@ -4,7 +4,7 @@ microservice-chart:
   fullnameOverride: ""
   image:
     repository: ghcr.io/pagopa/pagopa-wisp-converter
-    tag: "0.1.21-1-PAGOPA-2093-GPD-error-500"
+    tag: "0.1.22-2-release-v0.2"
     pullPolicy: Always
   livenessProbe:
     httpGet:

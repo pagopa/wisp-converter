@@ -1,5 +1,6 @@
 package it.gov.pagopa.wispconverter.config.client;
 
+import it.gov.pagopa.wispconverter.config.client.custom.IuvGeneratorApiClient;
 import it.gov.pagopa.wispconverter.service.ReService;
 import it.gov.pagopa.wispconverter.util.client.RequestResponseLoggingProperties;
 import it.gov.pagopa.wispconverter.util.client.iuvgenerator.IuvGeneratorClientLoggingInterceptor;
@@ -41,6 +42,12 @@ public class IuvGeneratorClientConfig {
     @Value("${wisp-converter.re-tracing.interface.iuv-generator.enabled}")
     private Boolean isTracingOfClientOnREEnabled;
 
+    @Value("${client.iuvgenerator.max-retry}")
+    private Integer maxRetry;
+
+    @Value("${client.iuvgenerator.delay-retry-millis}")
+    private Integer delayRetry;
+
     @Bean
     @ConfigurationProperties(prefix = "log.client.iuvgenerator")
     public RequestResponseLoggingProperties iuvGeneratorClientLoggingProperties() {
@@ -62,9 +69,11 @@ public class IuvGeneratorClientConfig {
 
         restTemplate.setErrorHandler(new IuvGeneratorClientResponseErrorHandler());
 
-        it.gov.pagopa.gen.wispconverter.client.iuvgenerator.invoker.ApiClient client = new it.gov.pagopa.gen.wispconverter.client.iuvgenerator.invoker.ApiClient(restTemplate);
+        IuvGeneratorApiClient client = new IuvGeneratorApiClient(restTemplate);
         client.setBasePath(basePath);
         client.setApiKey(apiKey);
+        client.setMaxAttemptsForRetry(maxRetry);
+        client.setWaitTimeMillis(delayRetry);
 
         return client;
     }
