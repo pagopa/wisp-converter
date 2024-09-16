@@ -541,7 +541,6 @@ public class ReceiptService {
     }
 
     private void generateREForSentRT(SessionDataDTO sessionData, String iuv, String noticeNumber) {
-
         // extract psp on which the payment will be sent
         List<RPTContentDTO> rpts = sessionData.getRPTByIUV(iuv);
         for (RPTContentDTO rptContent : rpts) {

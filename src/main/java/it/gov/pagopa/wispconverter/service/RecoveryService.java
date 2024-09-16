@@ -25,6 +25,7 @@ import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -36,7 +37,13 @@ public class RecoveryService {
 
     private static final String EVENT_TYPE_FOR_RECEIPTKO_SEARCH = "GENERATED_CACHE_ABOUT_RPT_FOR_RT_GENERATION";
 
+    private static final String RPT_ACCETTATA_NODO = "RPT_ACCETTATA_NODO";
+
+    private static final String RT_SEND_SUCCESS = "RT_SEND_SUCCESS";
+
     private static final String STATUS_RT_SEND_SUCCESS = "RT_SEND_SUCCESS";
+
+    private static final String MOCK_NAV = "348000000000000000";
 
     private static final String RECOVERY_VALID_START_DATE = "2024-09-03";
 
@@ -57,6 +64,67 @@ public class RecoveryService {
 
     @Value("${wisp-converter.recovery.receipt-generation.wait-time.minutes:60}")
     private Long receiptGenerationWaitTime;
+
+    public void recoverReceiptKO(String creditorInstitution, String iuv, String dateFrom, String dateTo) {
+        List<ReEventEntity> reEvents = reEventRepository.findByIuvAndOrganizationId(dateFrom, dateTo, iuv, creditorInstitution);
+
+        List<ReEventEntity> acceptedEvents = reEvents.stream()
+                .filter(event -> RPT_ACCETTATA_NODO.equals(event.getStatus()))
+                                                   .sorted(Comparator.comparing(ReEventEntity::getInsertedTimestamp))
+                                                   .toList();
+
+        List<ReEventEntity> rtSendEvents = reEvents.stream()
+                .filter(event -> RT_SEND_SUCCESS.equals(event.getStatus()))
+                                                   .sorted(Comparator.comparing(ReEventEntity::getInsertedTimestamp))
+                                                   .toList();
+
+        List<ReEventEntity> cacheEvents = reEvents.stream()
+                .filter(event -> EVENT_TYPE_FOR_RECEIPTKO_SEARCH.equals(event.getStatus()))
+                                                  .sorted(Comparator.comparing(ReEventEntity::getInsertedTimestamp))
+                                                  .toList();
+        // date validation
+        if(acceptedEvents.size() > rtSendEvents.size()) {
+            String noticeNumber, sessionId;
+            Long ttlInSeconds = this.requestIDMappingTTL;
+            // it is required to send a receipt-ko
+            if(!cacheEvents.isEmpty()) {
+                ReEventEntity event = cacheEvents.get(cacheEvents.size() - 1);
+                noticeNumber = event.getNoticeNumber();
+                sessionId = event.getSessionId();
+            } else {
+                ReEventEntity event = acceptedEvents.get(acceptedEvents.size() - 1);
+                sessionId = event.getSessionId();
+                noticeNumber = MOCK_NAV;
+                ttlInSeconds = 10L;
+            }
+
+            String navToIuvMapping = String.format(DecouplerService.MAP_CACHING_KEY_TEMPLATE, creditorInstitution, noticeNumber);
+            String iuvToSessionIdMapping = String.format(DecouplerService.CACHING_KEY_TEMPLATE, creditorInstitution, iuv);
+            this.cacheRepository.insert(navToIuvMapping, iuvToSessionIdMapping, ttlInSeconds, ChronoUnit.SECONDS);
+            this.cacheRepository.insert(iuvToSessionIdMapping, sessionId, ttlInSeconds, ChronoUnit.SECONDS);
+
+            try {
+                MDC.put(Constants.MDC_BUSINESS_PROCESS, "receipt-ko");
+                generateRE(Constants.PAA_INVIA_RT, null, InternalStepStatus.RT_START_RECONCILIATION_PROCESS, creditorInstitution, iuv, noticeNumber, "NA", sessionId);
+                String receiptKoRequest = ReceiptDto.builder()
+                                                  .fiscalCode(creditorInstitution)
+                                                  .noticeNumber(noticeNumber)
+                                                  .build()
+                                                  .toString();
+
+                this.receiptController.receiptKo(receiptKoRequest);
+                generateRE(Constants.PAA_INVIA_RT, "Success", InternalStepStatus.RT_END_RECONCILIATION_PROCESS, creditorInstitution, iuv, noticeNumber, "NA", sessionId);
+                MDC.remove(Constants.MDC_BUSINESS_PROCESS);
+
+                this.cacheRepository.delete(navToIuvMapping);
+                this.cacheRepository.delete(iuvToSessionIdMapping);
+            } catch (Exception e) {
+                generateRE(Constants.PAA_INVIA_RT, "Failure", InternalStepStatus.RT_END_RECONCILIATION_PROCESS, creditorInstitution, iuv, noticeNumber, "NA", sessionId);
+                throw new AppException(e, AppErrorCodeMessageEnum.ERROR, e.getMessage());
+            }
+        }
+
+    }
 
     public RecoveryReceiptResponse recoverReceiptKOForCreditorInstitution(String creditorInstitution, String dateFrom, String dateTo) {
 
