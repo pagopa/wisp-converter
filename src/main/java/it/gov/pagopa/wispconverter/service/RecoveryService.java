@@ -26,6 +26,7 @@ import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -134,15 +135,18 @@ public class RecoveryService {
 
         for(SessionIdEntity sessionIdEntity : sessionsWithoutRedirect) {
             String sessionId = sessionIdEntity.getSessionId();
-            ReEventEntity reEvent = reEventRepository.findBySessionIdAndStatus(dateFromString, dateToString, sessionId, "RPT_ACCETTATA_NODO")
-                                            .get(0);
-            String iuv = reEvent.getIuv();
-            String ccp = reEvent.getCcp();
-            // String noticeNumber = reEvent.getNoticeNumber(); always null in RPT_ACCETTATA_NODO, the NAV is created after /redirect call!
-            String ci = reEvent.getDomainId();
+            List<ReEventEntity> reEventList = reEventRepository.findBySessionIdAndStatus(dateFromString, dateToString, sessionId, "RPT_ACCETTATA_NODO");
 
-            log.info("[RECOVER-MISSING-REDIRECT] Recovery with receipt-ko for ci = {}, iuv = {}, ccp = {}, sessionId = {}", ci, iuv, ccp, sessionId);
-            this.recoverReceiptKO(ci, MOCK_NOTICE_NUMBER, iuv, sessionId, ccp, dateFromString, dateToString, this.requestIDMappingTTL);
+            if(!reEventList.isEmpty()) {
+                ReEventEntity reEvent = reEventList.get(0);
+                String iuv = reEvent.getIuv();
+                String ccp = reEvent.getCcp();
+                // String noticeNumber = reEvent.getNoticeNumber(); always null in RPT_ACCETTATA_NODO, the NAV is created after /redirect call!
+                String ci = reEvent.getDomainId();
+
+                log.info("[RECOVER-MISSING-REDIRECT] Recovery with receipt-ko for ci = {}, iuv = {}, ccp = {}, sessionId = {}", ci, iuv, ccp, sessionId);
+                this.recoverReceiptKO(ci, MOCK_NOTICE_NUMBER, iuv, sessionId, ccp, dateFromString, dateToString);
+            }
         }
 
         return sessionsWithoutRedirect.size();
@@ -174,7 +178,8 @@ public class RecoveryService {
                     String noticeNumber = event.getNoticeNumber();
                     String sessionId = event.getSessionId();
 
-                    this.recoverReceiptKO(ci, noticeNumber, iuv, sessionId, ccp, dateFrom, dateTo, 1L);
+                    log.info("[RECOVERY-MISSING-RT] Recovery with receipt-ko for ci = {}, iuv = {}, ccp = {}, sessionId = {}", ci, iuv, ccp, sessionId);
+                    this.recoverReceiptKO(ci, noticeNumber, iuv, sessionId, ccp, dateFrom, dateTo);
                 }
             } catch (Exception e) {
                 generateRE(Constants.PAA_INVIA_RT, "Failure", InternalStepStatus.RT_END_RECONCILIATION_PROCESS, ci, iuv, null, ccp, null);
@@ -186,15 +191,15 @@ public class RecoveryService {
     }
 
     // check if there is a successful RT submission, if there isn't prepare cached data and send receipt-ko
-    private void recoverReceiptKO(String ci, String noticeNumber, String iuv, String sessionId, String ccp, String dateFrom, String dateTo, Long cacheMinutesTTL) {
+    private void recoverReceiptKO(String ci, String noticeNumber, String iuv, String sessionId, String ccp, String dateFrom, String dateTo) {
         // search by sessionId, then filter by status=RT_SEND_SUCCESS. If there is zero, then proceed
         List<ReEventEntity> reEventsRT = reEventRepository.findBySessionIdAndStatus(dateFrom, dateTo, sessionId, STATUS_RT_SEND_SUCCESS);
 
         if (reEventsRT.isEmpty()) {
             String navToIuvMapping = String.format(DecouplerService.MAP_CACHING_KEY_TEMPLATE, ci, noticeNumber);
             String iuvToSessionIdMapping = String.format(DecouplerService.CACHING_KEY_TEMPLATE, ci, iuv);
-            this.cacheRepository.insert(navToIuvMapping, iuvToSessionIdMapping, cacheMinutesTTL);
-            this.cacheRepository.insert(iuvToSessionIdMapping, sessionId, cacheMinutesTTL);
+            this.cacheRepository.insert(navToIuvMapping, iuvToSessionIdMapping, this.requestIDMappingTTL, ChronoUnit.MINUTES,true);
+            this.cacheRepository.insert(iuvToSessionIdMapping, sessionId, this.requestIDMappingTTL, ChronoUnit.MINUTES,true);
 
             MDC.put(Constants.MDC_BUSINESS_PROCESS, "receipt-ko");
             generateRE(Constants.PAA_INVIA_RT, null, InternalStepStatus.RT_START_RECONCILIATION_PROCESS, ci, iuv, noticeNumber, ccp, sessionId);

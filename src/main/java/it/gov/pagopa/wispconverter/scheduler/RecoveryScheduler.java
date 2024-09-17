@@ -4,6 +4,7 @@ import it.gov.pagopa.wispconverter.service.RecoveryService;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -18,8 +19,10 @@ import java.time.format.DateTimeFormatter;
 @Slf4j
 @ConditionalOnProperty(name = "cron.job.schedule.recovery.enabled", matchIfMissing = true)
 public class RecoveryScheduler {
-    private static final int UNTIL_N_HOURS_AGO = 2;
-    private static final int FROM_N_HOURS_AGO = 4;
+    // UNTIL_N_HOURS_AGO: upperbound for a payment session (?)
+    private static final int UNTIL_N_HOURS_AGO = 3;
+    @Value("${cron.job.schedule.recovery.hours.ago.from}")
+    private int FROM_N_HOURS_AGO;
 
     @Autowired
     RecoveryService recoveryService;
