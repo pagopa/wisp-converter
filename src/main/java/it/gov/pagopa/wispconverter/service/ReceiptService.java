@@ -84,7 +84,7 @@ public class ReceiptService {
 
     private final ServiceBusService serviceBusService;
 
-    private it.gov.pagopa.gen.wispconverter.client.decouplercaching.invoker.ApiClient decouplerCachingClient;
+    private final it.gov.pagopa.gen.wispconverter.client.decouplercaching.invoker.ApiClient decouplerCachingClient;
 
     private final ObjectMapper mapper;
 

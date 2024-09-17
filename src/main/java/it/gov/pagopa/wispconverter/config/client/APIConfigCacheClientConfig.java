@@ -1,6 +1,5 @@
 package it.gov.pagopa.wispconverter.config.client;
 
-import it.gov.pagopa.wispconverter.config.client.custom.ApiConfigCacheApiClient;
 import it.gov.pagopa.wispconverter.service.ReService;
 import it.gov.pagopa.wispconverter.util.client.RequestResponseLoggingProperties;
 import it.gov.pagopa.wispconverter.util.client.apiconfigcache.ApiConfigCacheClientLoggingInterceptor;
@@ -38,12 +37,6 @@ public class APIConfigCacheClientConfig {
     @Value("${client.cache.api-key}")
     private String apiKey;
 
-    @Value("${client.cache.max-retry}")
-    private Integer maxRetry;
-
-    @Value("${client.cache.delay-retry-millis}")
-    private Integer delayRetry;
-
     @Bean
     @ConfigurationProperties(prefix = "log.client.cache")
     public RequestResponseLoggingProperties cacheClientLoggingProperties() {
@@ -65,11 +58,9 @@ public class APIConfigCacheClientConfig {
 
         restTemplate.setErrorHandler(new ApiConfigCacheClientResponseErrorHandler());
 
-        ApiConfigCacheApiClient client = new ApiConfigCacheApiClient(restTemplate);
+        it.gov.pagopa.gen.wispconverter.client.cache.invoker.ApiClient client = new it.gov.pagopa.gen.wispconverter.client.cache.invoker.ApiClient(restTemplate);
         client.setBasePath(basePath);
         client.setApiKey(apiKey);
-        client.setMaxAttemptsForRetry(maxRetry);
-        client.setWaitTimeMillis(delayRetry);
 
         return client;
     }

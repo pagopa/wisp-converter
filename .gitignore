@@ -45,3 +45,4 @@ integration-test/results/*
 
 .DS_Store
 /integration-test/env.local
+/.run/
