@@ -4,7 +4,9 @@ ENVIRONMENT=$1
 TYPE=$2
 SCRIPT=$3
 DB_NAME=$4
-API_SUBSCRIPTION_KEY=$5
+NODO_PA_SUBSCRIPTION_KEY=$5
+STATION_PWD=$6
+CHANNEL_PWD=$7
 
 if [ -z "$ENVIRONMENT" ]
 then
@@ -33,7 +35,9 @@ export env=${ENVIRONMENT}
 export type=${TYPE}
 export script=${SCRIPT}
 export db_name=${DB_NAME}
-export sub_key=${API_SUBSCRIPTION_KEY}
+export nodo_pa_sub_key=${NODO_PA_SUBSCRIPTION_KEY}
+export station_pwd=${STATION_PWD}
+export channel_pwd=${CHANNEL_PWD}
 
 docker rm nginx
 docker rm k6

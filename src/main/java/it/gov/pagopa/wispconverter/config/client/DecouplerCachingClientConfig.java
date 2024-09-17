@@ -1,5 +1,6 @@
 package it.gov.pagopa.wispconverter.config.client;
 
+import it.gov.pagopa.wispconverter.config.client.custom.DecouplerApiClient;
 import it.gov.pagopa.wispconverter.service.ReService;
 import it.gov.pagopa.wispconverter.util.client.RequestResponseLoggingProperties;
 import it.gov.pagopa.wispconverter.util.client.decouplercaching.DecouplerCachingClientLoggingInterceptor;
@@ -41,6 +42,11 @@ public class DecouplerCachingClientConfig {
     @Value("${wisp-converter.re-tracing.interface.decoupler-caching.enabled}")
     private Boolean isTracingOfClientOnREEnabled;
 
+    @Value("${client.decoupler.max-retry}")
+    private Integer maxRetry;
+
+    @Value("${client.decoupler.delay-retry-millis}")
+    private Integer delayRetry;
 
     @Bean
     @ConfigurationProperties(prefix = "log.client.decoupler-caching")
@@ -62,10 +68,12 @@ public class DecouplerCachingClientConfig {
 
         restTemplate.setErrorHandler(new DecouplerCachingClientResponseErrorHandler());
 
-        it.gov.pagopa.gen.wispconverter.client.decouplercaching.invoker.ApiClient client = new it.gov.pagopa.gen.wispconverter.client.decouplercaching.invoker.ApiClient(restTemplate);
+        DecouplerApiClient client = new DecouplerApiClient(restTemplate);
 
         client.setBasePath(basePath);
         client.setApiKey(apiKey);
+        client.setMaxAttemptsForRetry(maxRetry);
+        client.setWaitTimeMillis(delayRetry);
 
         return client;
     }
