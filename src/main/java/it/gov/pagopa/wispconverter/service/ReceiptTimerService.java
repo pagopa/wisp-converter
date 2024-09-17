@@ -111,7 +111,7 @@ public class ReceiptTimerService {
             log.debug("Deleted sequence number {} for payment-token: {} from cache", sequenceNumberString, sequenceNumberKey);
             generateRE(InternalStepStatus.RECEIPT_TIMER_GENERATION_DELETED_SCHEDULED_SEND, "Deleted sequence number: [" + sequenceNumberString + "] for payment token: [" + sequenceNumberKey + "]");
         } else {
-            generateRE(InternalStepStatus.RECEIPT_TIMER_GENERATION_SKIP_DELETE_SCHEDULED_SEND, "No element found in queue for sequence number: [" + sequenceNumberString + "]. Skipped already executed delete for payment token: [" + sequenceNumberKey + "]");
+            generateRE(InternalStepStatus.RECEIPT_TIMER_GENERATION_SKIP_DELETE_SCHEDULED_SEND, "No element found in queue for sequence number: [" + sequenceNumberString + "]. Skipping delete for payment token [" + sequenceNumberKey + "]");
         }
     }
 
