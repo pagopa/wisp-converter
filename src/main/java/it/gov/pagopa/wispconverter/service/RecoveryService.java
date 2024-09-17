@@ -58,8 +58,8 @@ public class RecoveryService {
 
     private static final String DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
 
-    @Value("${wisp-converter.cached-requestid-mapping.ttl.minutes}")
-    private Long requestIDMappingTTL;
+    @Value("${wisp-converter.cached-requestid-mapping.ttl.minutes:1440}")
+    public Long requestIDMappingTTL;
 
     @Value("${wisp-converter.recovery.receipt-generation.wait-time.minutes:60}")
     public Long receiptGenerationWaitTime;
@@ -194,7 +194,7 @@ public class RecoveryService {
     }
 
     // check if there is a successful RT submission, if there isn't prepare cached data and send receipt-ko
-    private void recoverReceiptKO(String ci, String noticeNumber, String iuv, String sessionId, String ccp, String dateFrom, String dateTo) {
+    public void recoverReceiptKO(String ci, String noticeNumber, String iuv, String sessionId, String ccp, String dateFrom, String dateTo) {
         // search by sessionId, then filter by status=RT_SEND_SUCCESS. If there is zero, then proceed
         List<ReEventEntity> reEventsRT = reEventRepository.findBySessionIdAndStatus(dateFrom, dateTo, sessionId, STATUS_RT_SEND_SUCCESS);
 

@@ -1,12 +1,15 @@
 package it.gov.pagopa.wispconverter.service;
 
+import it.gov.pagopa.wispconverter.controller.ReceiptController;
 import it.gov.pagopa.wispconverter.controller.model.RecoveryReceiptResponse;
 import it.gov.pagopa.wispconverter.exception.AppException;
+import it.gov.pagopa.wispconverter.repository.CacheRepository;
 import it.gov.pagopa.wispconverter.repository.RTRepository;
 import it.gov.pagopa.wispconverter.repository.ReEventRepository;
 import it.gov.pagopa.wispconverter.repository.model.RTEntity;
 import it.gov.pagopa.wispconverter.repository.model.ReEventEntity;
 import it.gov.pagopa.wispconverter.repository.model.SessionIdEntity;
+import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.*;
@@ -15,6 +18,7 @@ import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -28,6 +32,15 @@ public class RecoveryServiceTest {
     @Mock
     private ReEventRepository reRepository;
 
+    @Mock
+    private CacheRepository cacheRepository;
+
+    @Mock
+    private ReceiptController receiptController;
+
+    @Mock
+    private ReService reService;
+
     @InjectMocks
     private RecoveryService recoveryService;
 
@@ -35,7 +48,35 @@ public class RecoveryServiceTest {
     public void setup() {
         MockitoAnnotations.openMocks(this);
         recoveryService.receiptGenerationWaitTime = 60L;
+        recoveryService.requestIDMappingTTL = 1440L;
     }
+
+    @Test
+    public void testRecoverReceiptKO() throws Exception {
+        // Arrange
+        String dateFrom = "2024-09-05";
+        String dateTo = "2024-09-09";
+        String ci = "ci";
+        String nav = "nav";
+        String iuv = "iuv";
+        String ccp = "cpp";
+        String session = "sessionId";
+        List<ReEventEntity> rtSuccessReEventEntity = List.of();
+
+        when(reRepository.findBySessionIdAndStatus(anyString(), anyString(), anyString(), anyString())).thenReturn(rtSuccessReEventEntity);
+        doNothing().when(cacheRepository)
+                .insert(anyString(), anyString(), anyLong(), any(ChronoUnit.class), anyBoolean());
+        doNothing().when(receiptController)
+                           .receiptKo(anyString());
+        doNothing().when(reService).addRe(any(ReEventDto.class));
+
+        // Act
+        recoveryService.recoverReceiptKO(ci, nav, iuv, session, ccp, dateFrom, dateTo);
+
+        // Assert
+        verify(cacheRepository, times(2)).insert(anyString(), anyString(), anyLong(), any(ChronoUnit.class), anyBoolean());
+    }
+
 
     @Test
     public void testRecoverReceiptKOAll() {
