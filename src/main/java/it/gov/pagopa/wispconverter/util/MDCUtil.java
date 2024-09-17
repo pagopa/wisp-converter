@@ -8,13 +8,14 @@ import org.slf4j.MDC;
 import org.springframework.http.ProblemDetail;
 
 import java.util.Map;
+import java.util.UUID;
 
 public class MDCUtil {
 
     private static final String FAILED = "Failed";
     private static final String SUCCESS = "Success";
 
-    public static void setSessionDataInfoInMDC(SessionDataDTO sessionData, String primitive) {
+    public static void setSessionDataInfo(SessionDataDTO sessionData, String primitive) {
 
         String controlFlag = MDC.get(Constants.MDC_CONTROL_FLAG);
         if (!"TRUE".equals(controlFlag)) {
@@ -43,7 +44,7 @@ public class MDCUtil {
         }
     }
 
-    public static void setSessionDataInfoInMDC(IntestazionePPT header, String noticeNumber) {
+    public static void setSessionDataInfo(IntestazionePPT header, String noticeNumber) {
 
         MDC.put(Constants.MDC_PRIMITIVE, Constants.PAA_INVIA_RT);
         MDC.put(Constants.MDC_DOMAIN_ID, header.getIdentificativoDominio());
@@ -62,6 +63,14 @@ public class MDCUtil {
             String errorCode = (String) properties.get(ErrorUtil.EXTRA_FIELD_ERROR_CODE);
             MDC.put(Constants.MDC_ERROR_CODE, errorCode);
         }
+    }
+
+    public static void setSessionDataInfo(String businessProcess) {
+        String operationId = UUID.randomUUID().toString();
+        MDC.put(Constants.MDC_START_TIME, String.valueOf(System.currentTimeMillis()));
+        MDC.put(Constants.MDC_OPERATION_ID, operationId);
+        MDC.put(Constants.MDC_REQUEST_ID, operationId);
+        MDC.put(Constants.MDC_BUSINESS_PROCESS, businessProcess);
     }
 
     public static void setReceiptTimerInfoInMDC(String domainId, String noticeNumber, String paymentToken) {

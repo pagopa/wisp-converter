@@ -92,8 +92,8 @@ public class ECommerceHangTimerService {
         Long sequenceNumber = serviceBusSenderClient.scheduleMessage(serviceBusMessage, scheduledExpirationTime);
 
         // log event
-        log.info("Sent scheduled message_base64 {} to the queue: {}", LogUtils.encodeToBase64(message.toString()), queueName);
-        generateRE(InternalStepStatus.ECOMMERCE_HANG_TIMER_CREATED, "Scheduled ECommerceHangTimerService: [" + message + "]");
+        log.debug("Sent scheduled message_base64 {} to the queue: {}", LogUtils.encodeToBase64(message.toString()), queueName);
+        generateRE(InternalStepStatus.ECOMMERCE_HANG_TIMER_CREATED, "Scheduled eCommerce hang release: [" + message + "]");
 
         // insert in Redis cache sequenceNumber of the message
         cacheRepository.insert(key, sequenceNumber.toString(), expirationTime, ChronoUnit.SECONDS);
@@ -108,7 +108,7 @@ public class ECommerceHangTimerService {
      */
     public void cancelScheduledMessage(String noticeNumber, String fiscalCode) {
 
-        log.debug("Cancel scheduled message for ECommerceHangTimer {} {}", sanitizeInput(noticeNumber), sanitizeInput(fiscalCode));
+        log.debug("Cancel scheduled message for eCommerce hang release {} {}", sanitizeInput(noticeNumber), sanitizeInput(fiscalCode));
         String key = String.format(ECOMMERCE_TIMER_MESSAGE_KEY_FORMAT, noticeNumber, fiscalCode);
 
         // get the sequenceNumber from the Redis cache
@@ -118,7 +118,7 @@ public class ECommerceHangTimerService {
 
             // cancel scheduled message in the service bus queue
             callCancelScheduledMessage(sequenceNumber);
-            log.info("Canceled scheduled message for ecommerce_hang_timeout_base64 {} {}", LogUtils.encodeToBase64(sanitizeInput(noticeNumber)), LogUtils.encodeToBase64(sanitizeInput(fiscalCode)));
+            log.debug("Canceled scheduled message for ecommerce_hang_timeout_base64 {} {}", LogUtils.encodeToBase64(sanitizeInput(noticeNumber)), LogUtils.encodeToBase64(sanitizeInput(fiscalCode)));
 
             // delete the sequenceNumber from the Redis cache
             cacheRepository.delete(key);

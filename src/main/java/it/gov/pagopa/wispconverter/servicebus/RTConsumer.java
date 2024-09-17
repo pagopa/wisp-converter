@@ -82,9 +82,9 @@ public class RTConsumer extends SBConsumer {
     public void processMessage(ServiceBusReceivedMessageContext context) {
 
         // retrieving content from context of arrived message
-        setSessionDataInfoInMDC("resend-rt");
+        MDCUtil.setSessionDataInfo("resend-rt");
         ServiceBusReceivedMessage message = context.getMessage();
-        log.info("Processing " + message.getMessageId());
+        log.debug("Processing " + message.getMessageId());
 
         // extracting the values needed for the search of the receipt persisted in storage
         String compositedIdForReceipt = new String(message.getBody().toBytes());
@@ -144,7 +144,7 @@ public class RTConsumer extends SBConsumer {
 
         try {
 
-            log.info("Sending receipt [{}]", receiptId);
+            log.debug("Sending receipt [{}]", receiptId);
 
             // unzip retrieved zipped payload from GZip format
             byte[] unzippedPayload = ZipUtil.unzip(AppBase64Util.base64Decode(receipt.getPayload()));
@@ -153,12 +153,12 @@ public class RTConsumer extends SBConsumer {
 
             // set MDC session data for RE
             String[] idempotencyKeySections = idempotencyKey.split("_");
-            MDCUtil.setSessionDataInfoInMDC(header, idempotencyKeySections[2]);
+            MDCUtil.setSessionDataInfo(header, idempotencyKeySections[2]);
 
             String rawPayload = new String(unzippedPayload);
             paaInviaRTSenderService.sendToCreditorInstitution(receipt.getUrl(), extractHeaders(receipt.getHeaders()), rawPayload);
             rtRetryComosService.deleteRTRequestEntity(receipt);
-            log.info("Sent receipt [{}]", receiptId);
+            log.debug("Sent receipt [{}]", receiptId);
 
             // generate a new event in RE for store the successful re-sending of the receipt
             generateREForSentRT();
