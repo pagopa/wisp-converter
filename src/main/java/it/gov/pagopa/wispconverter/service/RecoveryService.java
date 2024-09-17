@@ -56,6 +56,8 @@ public class RecoveryService {
 
     private final ReService reService;
 
+    private static final String DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
+
     @Value("${wisp-converter.cached-requestid-mapping.ttl.minutes}")
     private Long requestIDMappingTTL;
 
@@ -78,7 +80,7 @@ public class RecoveryService {
         String dateToRefactored;
         if (now.isEqual(parse)) {
             ZonedDateTime nowMinusMinutes = ZonedDateTime.now(ZoneOffset.UTC).minusMinutes(receiptGenerationWaitTime);
-            dateToRefactored = nowMinusMinutes.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            dateToRefactored = nowMinusMinutes.format(DateTimeFormatter.ofPattern(DATE_FORMAT));
             log.info("Upper bound forced to {}", dateToRefactored);
         } else {
             dateToRefactored = dateTo + " 23:59:59";
@@ -106,9 +108,10 @@ public class RecoveryService {
                 .build();
     }
 
+    // Recover all CI for which there is a stale/pending RPT (i.e. receipts-rt = null)
     public int recoverReceiptKOAll(ZonedDateTime dateFrom, ZonedDateTime dateTo) {
-        String dateFromString = dateFrom.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-        String dateToString = dateTo.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        String dateFromString = dateFrom.format(DateTimeFormatter.ofPattern(DATE_FORMAT));
+        String dateToString = dateTo.format(DateTimeFormatter.ofPattern(DATE_FORMAT));
 
         List<RTEntity> receiptRTs = rtRepository.findPendingRT(dateFromString, dateToString);
         List<RecoveryReceiptPaymentResponse> paymentsToReconcile = receiptRTs.stream().map(entity -> RecoveryReceiptPaymentResponse.builder()
@@ -128,8 +131,8 @@ public class RecoveryService {
     }
 
     public int recoverMissingRedirect(ZonedDateTime dateFrom, ZonedDateTime dateTo) {
-        String dateFromString = dateFrom.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-        String dateToString = dateTo.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        String dateFromString = dateFrom.format(DateTimeFormatter.ofPattern(DATE_FORMAT));
+        String dateToString = dateTo.format(DateTimeFormatter.ofPattern(DATE_FORMAT));
 
         List<SessionIdEntity> sessionsWithoutRedirect = reEventRepository.findSessionWithoutRedirect(dateFromString, dateToString);
 

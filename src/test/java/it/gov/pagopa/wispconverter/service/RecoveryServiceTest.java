@@ -3,12 +3,17 @@ package it.gov.pagopa.wispconverter.service;
 import it.gov.pagopa.wispconverter.controller.model.RecoveryReceiptResponse;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.RTRepository;
+import it.gov.pagopa.wispconverter.repository.ReEventRepository;
 import it.gov.pagopa.wispconverter.repository.model.RTEntity;
+import it.gov.pagopa.wispconverter.repository.model.ReEventEntity;
+import it.gov.pagopa.wispconverter.repository.model.SessionIdEntity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.*;
 
 import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
@@ -20,6 +25,9 @@ public class RecoveryServiceTest {
     @Mock
     private RTRepository rtRepository;
 
+    @Mock
+    private ReEventRepository reRepository;
+
     @InjectMocks
     private RecoveryService recoveryService;
 
@@ -27,6 +35,58 @@ public class RecoveryServiceTest {
     public void setup() {
         MockitoAnnotations.openMocks(this);
         recoveryService.receiptGenerationWaitTime = 60L;
+    }
+
+    @Test
+    public void testRecoverReceiptKOAll() {
+        // Arrange
+        ZonedDateTime dateFrom = ZonedDateTime.now(ZoneOffset.UTC).minusHours(5);
+        ZonedDateTime dateTo = ZonedDateTime.now(ZoneOffset.UTC).minusHours(4);
+        List<RTEntity> mockRTEntities = List.of();
+
+        when(rtRepository.findPendingRT(anyString(), anyString())).thenReturn(mockRTEntities);
+
+        // Act
+        int recoveredReceipt = recoveryService.recoverReceiptKOAll(dateFrom, dateTo);
+
+        // Assert
+        assertEquals(0, recoveredReceipt);
+    }
+
+    @Test
+    public void testRecoverMissingRedirect() {
+        // Arrange
+        ZonedDateTime dateFrom = ZonedDateTime.now(ZoneOffset.UTC).minusHours(5);
+        ZonedDateTime dateTo = ZonedDateTime.now(ZoneOffset.UTC).minusHours(4);
+        List<SessionIdEntity> mockSessionEntities = List.of();
+        List<ReEventEntity> mockReEventEntities = List.of();
+
+        when(reRepository.findSessionWithoutRedirect(anyString(), anyString())).thenReturn(mockSessionEntities);
+        when(reRepository.findBySessionIdAndStatus(anyString(), anyString(), anyString(), anyString())).thenReturn(mockReEventEntities);
+
+        // Act
+        int recoveredReceipt = recoveryService.recoverMissingRedirect(dateFrom, dateTo);
+
+        // Assert
+        assertEquals(0, recoveredReceipt);
+    }
+
+    @Test
+    public void testRecoverMissingRedirect_notEmpty() {
+        // Arrange
+        ZonedDateTime dateFrom = ZonedDateTime.now(ZoneOffset.UTC).minusHours(5);
+        ZonedDateTime dateTo = ZonedDateTime.now(ZoneOffset.UTC).minusHours(4);
+        List<SessionIdEntity> mockSessionEntities = List.of(SessionIdEntity.builder().sessionId("mockSessionId").build());
+        List<ReEventEntity> mockReEventEntities = List.of();
+
+        when(reRepository.findSessionWithoutRedirect(anyString(), anyString())).thenReturn(mockSessionEntities);
+        when(reRepository.findBySessionIdAndStatus(anyString(), anyString(), anyString(), anyString())).thenReturn(mockReEventEntities);
+
+        // Act
+        int recoveredReceipt = recoveryService.recoverMissingRedirect(dateFrom, dateTo);
+
+        // Assert
+        assertEquals(1, recoveredReceipt);
     }
 
     @Test

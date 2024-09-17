@@ -24,8 +24,12 @@ public class RecoveryScheduler {
     @Value("${cron.job.schedule.recovery.hours.ago.from}")
     private int FROM_N_HOURS_AGO;
 
+    private final RecoveryService recoveryService;
+
     @Autowired
-    RecoveryService recoveryService;
+    public RecoveryScheduler(RecoveryService recoveryService) {
+        this.recoveryService = recoveryService;
+    }
 
     @Getter
     private Thread threadOfExecution;
