@@ -28,23 +28,27 @@ sh run_test.sh
 ```
 
 ℹ️ Set in your environment:
- - `INTEGRATION_TEST_GPD_SUBSCRIPTION_KEY` to set the subscription-key for `GPD core` APIs
- - `INTEGRATION_TEST_NODO_SUBSCRIPTION_KEY` to set the subscription-key for `Nodo` primitives
- - `INTEGRATION_TEST_FORWARDER_SUBSCRIPTION_KEY` to set the subscription-key for `node-forwarder` endpoint
- - `INTEGRATION_TEST_TECHNICALSUPPORT_SUBSCRIPTION_KEY` to set the subscription-key for `technical-support` APIs
- - `INTEGRATION_TEST_CHANNEL_WISP_PASSWORD` to set the password for channel used by WISP flow
- - `INTEGRATION_TEST_CHANNEL_CHECKOUT_PASSWORD` to set the password for channel used by Checkout
- - `INTEGRATION_TEST_CHANNEL_PAYMENT_PASSWORD` to set the password for channel used by payment flow
- - `INTEGRATION_TEST_STATION_PASSWORD` to set the password for station
- - `TAGS` to customize test you want execute. Default `runnable`;
- - `JUNIT=true` to execute _behave_ with the junit option;
+
+- `INTEGRATION_TEST_GPD_SUBSCRIPTION_KEY` to set the subscription-key for `GPD core` APIs
+- `INTEGRATION_TEST_NODO_SUBSCRIPTION_KEY` to set the subscription-key for `Nodo` primitives
+- `INTEGRATION_TEST_NUOVACONNETTIVITA_SUBSCRIPTION_KEY` to set the subscription-key for `node-forwarder` endpoint
+- `INTEGRATION_TEST_TECHNICALSUPPORT_SUBSCRIPTION_KEY` to set the subscription-key for `technical-support` APIs
+- `INTEGRATION_TEST_CHANNEL_WISP_PASSWORD` to set the password for channel used by WISP flow
+- `INTEGRATION_TEST_CHANNEL_CHECKOUT_PASSWORD` to set the password for channel used by Checkout
+- `INTEGRATION_TEST_CHANNEL_PAYMENT_PASSWORD` to set the password for channel used by payment flow
+- `INTEGRATION_TEST_STATION_PASSWORD` to set the password for station
+- `TAGS` to customize test you want execute. Default `runnable`;
+- `JUNIT=true` to execute _behave_ with the junit option;
 
 #### Things to know
 
-The test platform contains some fundamental data structures from which the steps generate the data to be sent: they are `test_data` and `flow_data`.  
- - `test_data` contains the definition of static common data set for environment. On this data, some variable values can be injected during suite start. The structure can be found in  `config/commondata.json` file.  
- - `flow_data` contains the data dynamically set and updated, extracted and re-generated from `test_data` in each executed scenario. The structure is defined as follows:  
+The test platform contains some fundamental data structures from which the steps generate the data to be sent: they
+are `test_data` and `flow_data`.
 
+- `test_data` contains the definition of static common data set for environment. On this data, some variable values can
+  be injected during suite start. The structure can be found in  `config/commondata.json` file.
+- `flow_data` contains the data dynamically set and updated, extracted and re-generated from `test_data` in each
+  executed scenario. The structure is defined as follows:
 
 ```json
 {
@@ -64,7 +68,13 @@ The test platform contains some fundamental data structures from which the steps
     },
     "common": {
       "session_id": "<SESSION_ID>",
-      "iuvs": [ "<IUV1>", "<IUV2>", null, null, null ],
+      "iuvs": [
+        "<IUV1>",
+        "<IUV2>",
+        null,
+        null,
+        null
+      ],
       "payment_notices": [
         {
           "domain_id": "<CREDITOR_INSTITUTION_ID>",

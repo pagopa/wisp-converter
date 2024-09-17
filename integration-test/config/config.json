@@ -3,7 +3,7 @@
   "services": {
     "nodo-per-pa": {
       "url": "https://api.ENV.platform.pagopa.it/nodo-auth/nodo-per-pa/v1",
-      "subscription_key": "INTEGRATION_TEST_FORWARDER_SUBSCRIPTION_KEY"
+      "subscription_key": "INTEGRATION_TEST_NUOVACONNETTIVITA_SUBSCRIPTION_KEY"
     },
     "node-for-psp": {
       "url": "https://api.ENV.platform.pagopa.it/nodo/node-for-psp/v1",

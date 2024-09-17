@@ -42,9 +42,9 @@ permissions:
 
 jobs:
   integration_test:
-    name: Test ${{(github.event.inputs == null && 'dev') || inputs.environment }}
+    name: Test ${{(github.event.inputs == null && 'uat') || inputs.environment }}
     runs-on: ubuntu-latest
-    environment: ${{(github.event.inputs == null && 'dev') || inputs.environment }}
+    environment: ${{(github.event.inputs == null && 'uat') || inputs.environment }}
     steps:
       - name: Checkout
         id: checkout
@@ -87,7 +87,7 @@ jobs:
           docker run \
           -e INTEGRATION_TEST_GPD_SUBSCRIPTION_KEY="${{ secrets.INTEGRATION_TEST_GPD_SUBSCRIPTION_KEY }}" \
           -e INTEGRATION_TEST_NODO_SUBSCRIPTION_KEY="${{ secrets.INTEGRATION_TEST_NODO_SUBSCRIPTION_KEY }}" \
-          -e INTEGRATION_TEST_FORWARDER_SUBSCRIPTION_KEY="${{ secrets.INTEGRATION_TEST_FORWARDER_SUBSCRIPTION_KEY }}" \
+          -e INTEGRATION_TEST_NUOVACONNETTIVITA_SUBSCRIPTION_KEY="${{ secrets.INTEGRATION_TEST_FORWARDER_SUBSCRIPTION_KEY }}" \
           -e INTEGRATION_TEST_TECHNICALSUPPORT_SUBSCRIPTION_KEY="${{ secrets.INTEGRATION_TEST_TECHNICALSUPPORT_SUBSCRIPTION_KEY }}" \
           -e INTEGRATION_TEST_CHANNEL_WISP_PASSWORD="${{ secrets.INTEGRATION_TEST_CHANNEL_WISP_PASSWORD }}" \
           -e INTEGRATION_TEST_CHANNEL_WFESP_PASSWORD="${{ secrets.INTEGRATION_TEST_CHANNEL_WFESP_PASSWORD }}" \
@@ -147,37 +147,3 @@ jobs:
           footer: 'Linked to <{workflow_url}| workflow file>'
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-
-#  delete_github_deployments:
-#    runs-on: ubuntu-latest
-#    needs: integration_test
-#    if: ${{ always() }}
-#    steps:
-#      - name: Delete Previous deployments
-#        uses: actions/github-script@v6
-#        env:
-#          SHA_HEAD: ${{ (github.event_name == 'pull_request' && github.event.pull_request.head.sha) || github.sha}}
-#        with:
-#          script: |
-#            const { SHA_HEAD } = process.env
-#
-#            const deployments = await github.rest.repos.listDeployments({
-#              owner: context.repo.owner,
-#              repo: context.repo.repo,
-#              sha: SHA_HEAD
-#            });
-#            await Promise.all(
-#              deployments.data.map(async (deployment) => {
-#                await github.rest.repos.createDeploymentStatus({
-#                  owner: context.repo.owner,
-#                  repo: context.repo.repo,
-#                  deployment_id: deployment.id,
-#                  state: 'inactive'
-#                });
-#                return github.rest.repos.deleteDeployment({
-#                  owner: context.repo.owner,
-#                  repo: context.repo.repo,
-#                  deployment_id: deployment.id
-#                });
-#              })
-#            );
