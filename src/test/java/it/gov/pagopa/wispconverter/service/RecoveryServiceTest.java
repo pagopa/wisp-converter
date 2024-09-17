@@ -14,6 +14,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.*;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -77,7 +78,6 @@ public class RecoveryServiceTest {
         verify(cacheRepository, times(2)).insert(anyString(), anyString(), anyLong(), any(ChronoUnit.class), anyBoolean());
     }
 
-
     @Test
     public void testRecoverReceiptKOAll() {
         // Arrange
@@ -92,6 +92,32 @@ public class RecoveryServiceTest {
 
         // Assert
         assertEquals(0, recoveredReceipt);
+    }
+
+    @Test
+    public void testRecoverReceiptKOAll_notEmpty() {
+        // Arrange
+        ZonedDateTime dateFrom = ZonedDateTime.now(ZoneOffset.UTC).minusHours(5);
+        ZonedDateTime dateTo = ZonedDateTime.now(ZoneOffset.UTC).minusHours(4);
+        List<RTEntity> mockRTEntities = List.of(RTEntity.builder()
+                                                        .iuv("iuv")
+                                                        .ccp("ccp")
+                                                        .idDominio("idDominio")
+                                                        .build());
+        List<ReEventEntity> mockReEventEntities = List.of(ReEventEntity.builder()
+                                                                  .status("GENERATED_CACHE_ABOUT_RPT_FOR_RT_GENERATION")
+                                                                  .ccp("ccp2")
+                                                                  .insertedTimestamp(Instant.now())
+                                                                  .build());
+
+        when(rtRepository.findPendingRT(anyString(), anyString())).thenReturn(mockRTEntities);
+        when(reRepository.findByIuvAndOrganizationId(anyString(), anyString(), anyString(), anyString())).thenReturn(mockReEventEntities);
+
+        // Act
+        int recoveredReceipt = recoveryService.recoverReceiptKOAll(dateFrom, dateTo);
+
+        // Assert
+        assertEquals(1, recoveredReceipt);
     }
 
     @Test
