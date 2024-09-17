@@ -10,6 +10,7 @@ import it.gov.pagopa.wispconverter.service.IdempotencyService;
 import it.gov.pagopa.wispconverter.service.PaaInviaRTSenderService;
 import it.gov.pagopa.wispconverter.service.ReceiptService;
 import it.gov.pagopa.wispconverter.util.CommonUtility;
+import it.gov.pagopa.wispconverter.util.MDCUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.MDC;
@@ -79,7 +80,7 @@ public class RPTTimeoutConsumer extends SBConsumer {
     }
 
     public void processMessage(ServiceBusReceivedMessageContext context) {
-        setSessionDataInfoInMDC("rpt-timeout-trigger");
+        MDCUtil.setSessionDataInfo("rpt-timeout-trigger");
         ServiceBusReceivedMessage message = context.getMessage();
         log.info("Processing message. Session: {}, Sequence #: {}. Contents: {}", message.getMessageId(), message.getSequenceNumber(), message.getBody());
         try {
