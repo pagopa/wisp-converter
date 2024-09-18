@@ -12,6 +12,7 @@ import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.service.RecoveryService;
 import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.ErrorUtil;
+import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
@@ -63,10 +64,10 @@ public class RecoveryController {
             @ApiResponse(responseCode = "200", description = "Started reconciling IUV with explicit RT send")
     })
     @PostMapping(value = "/{creditor_institution}/rpt/{iuv}/receipt-ko")
-    public ResponseEntity<String> recoverReceiptKOForCreditorInstitutionAndIUV(@PathVariable("creditor_institution") String ci,
-                                                                                                @PathVariable("iuv") String iuv,
-                                                                                                @QueryParam("date_from") String dateFrom,
-                                                                                                @QueryParam("date_to") String dateTo) {
+    public ResponseEntity<String> recoverReceiptKOForCreditorInstitutionAndIUV(@Pattern(regexp = "[a-zA-Z0-9_-]{1,100}") @PathVariable("creditor_institution") String ci,
+                                                                                                @Pattern(regexp = "[a-zA-Z0-9_-]{1,100}") @PathVariable("iuv") String iuv,
+                                                                                                @Pattern(regexp = "[a-zA-Z0-9_-]{1,10}") @QueryParam("date_from") String dateFrom,
+                                                                                                @Pattern(regexp = "[a-zA-Z0-9_-]{1,10}") @QueryParam("date_to") String dateTo) {
         try {
             log.info("Invoking API operation recoverReceiptKOForCreditorInstitution - args: {} {} {} {}", ci, iuv, dateFrom, dateTo);
 
