@@ -39,7 +39,7 @@ public class RPTTimerController {
     private final ErrorUtil errorUtil;
 
 
-    @Operation(summary = "createTimer", description = "Create a timer from sessionId data", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"RPTTimer"})
+    @Operation(summary = "createRPTTimer", description = "Create a timer from sessionId data", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"RPTTimer"})
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successfully rpt timer created", content = @Content(schema = @Schema()))
     })
@@ -55,17 +55,18 @@ public class RPTTimerController {
             rptTimerService.sendMessage(request);
             log.info("Successful API operation createRPTTimer");
         } catch (Exception ex) {
-            String operationId = MDC.get(Constants.MDC_OPERATION_ID);
-            log.error(String.format("GenericException: operation-id=[%s]", operationId != null ? operationId : "n/a"), ex);
-
-            AppException appException = new AppException(ex, AppErrorCodeMessageEnum.ERROR, ex.getMessage());
-            ErrorResponse errorResponse = errorUtil.forAppException(appException);
-            log.error("Failed API operation createRPTTimer - error: {}", errorResponse);
+            if(!(ex instanceof AppException)) {
+                String operationId = MDC.get(Constants.MDC_OPERATION_ID);
+                log.error(String.format("GenericException: operation-id=[%s]", operationId != null ? operationId : "n/a"), ex);
+                AppException appException = new AppException(ex, AppErrorCodeMessageEnum.ERROR, ex.getMessage());
+                ErrorResponse errorResponse = errorUtil.forAppException(appException);
+                log.error("Failed API operation createRPTTimer - error: {}", errorResponse);
+            }
             throw ex;
         }
     }
 
-    @Operation(summary = "deleteTimer", description = "Delete a timer by sessionId", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"RPTTimer"})
+    @Operation(summary = "deleteRPTTimer", description = "Delete a timer by sessionId", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"RPTTimer"})
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successfully rpt timer deleted", content = @Content(schema = @Schema()))
     })

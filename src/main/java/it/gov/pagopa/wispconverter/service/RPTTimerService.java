@@ -7,6 +7,7 @@ import it.gov.pagopa.wispconverter.controller.model.RPTTimerRequest;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.CacheRepository;
+import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
 import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import it.gov.pagopa.wispconverter.util.Constants;
@@ -48,11 +49,14 @@ public class RPTTimerService {
 
     private CacheRepository cacheRepository;
 
+    private RPTRequestRepository rptRequestRepository;
+
     @Autowired
-    public RPTTimerService(CacheRepository cacheRepository, ServiceBusSenderClient serviceBusSenderClient, ReService reService) {
+    public RPTTimerService(CacheRepository cacheRepository, ServiceBusSenderClient serviceBusSenderClient, ReService reService, RPTRequestRepository rptRequestRepository) {
         this.cacheRepository = cacheRepository;
         this.serviceBusSenderClient = serviceBusSenderClient;
         this.reService = reService;
+        this.rptRequestRepository = rptRequestRepository;
     }
 
     @PostConstruct
@@ -74,6 +78,9 @@ public class RPTTimerService {
 
         String sessionId = message.getSessionId();
         setRPTTimerInfoInMDC(sessionId);
+
+        // checking if sessionId is present in container data
+        this.rptRequestRepository.findById(sessionId).orElseThrow(() -> new AppException(AppErrorCodeMessageEnum.PERSISTENCE_RPT_NOT_FOUND, sessionId));
 
         String key = String.format(RPT_TIMER_MESSAGE_KEY_FORMAT, sessionId);
 
