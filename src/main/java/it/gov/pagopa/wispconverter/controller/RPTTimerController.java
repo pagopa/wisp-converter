@@ -39,7 +39,7 @@ public class RPTTimerController {
     private final ErrorUtil errorUtil;
 
 
-    @Operation(summary = "createTimer", description = "Create a timer from sessionId data", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"RPTTimer"})
+    @Operation(summary = "createRPTTimer", description = "Create a timer from sessionId data", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"RPTTimer"})
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successfully rpt timer created", content = @Content(schema = @Schema()))
     })
@@ -66,7 +66,7 @@ public class RPTTimerController {
         }
     }
 
-    @Operation(summary = "deleteTimer", description = "Delete a timer by sessionId", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"RPTTimer"})
+    @Operation(summary = "deleteRPTTimer", description = "Delete a timer by sessionId", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"RPTTimer"})
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successfully rpt timer deleted", content = @Content(schema = @Schema()))
     })
