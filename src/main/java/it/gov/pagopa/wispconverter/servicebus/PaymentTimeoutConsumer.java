@@ -8,6 +8,7 @@ import it.gov.pagopa.wispconverter.service.ReceiptService;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
 import it.gov.pagopa.wispconverter.util.CommonUtility;
 import it.gov.pagopa.wispconverter.util.Constants;
+import it.gov.pagopa.wispconverter.util.MDCUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.MDC;
@@ -50,9 +51,9 @@ public class PaymentTimeoutConsumer extends SBConsumer {
     }
 
     public void processMessage(ServiceBusReceivedMessageContext context) {
-        setSessionDataInfoInMDC("payment-token-timeout-trigger");
+        MDCUtil.setSessionDataInfo("payment-token-timeout-trigger");
         ServiceBusReceivedMessage message = context.getMessage();
-        log.info("Processing message. Session: {}, Sequence #: {}. Contents: {}", message.getMessageId(),
+        log.debug("Processing message. Session: {}, Sequence #: {}. Contents: {}", message.getMessageId(),
                 message.getSequenceNumber(), message.getBody());
         try {
             ReceiptDto receiptDto = mapper.readValue(message.getBody().toStream(), ReceiptDto.class);

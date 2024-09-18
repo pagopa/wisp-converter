@@ -60,7 +60,7 @@ public class CommonUtility {
             long executionTime = endTime - Long.parseLong(startTime);
             return String.valueOf(executionTime);
         }
-        return "-";
+        return "0";
     }
 
 
