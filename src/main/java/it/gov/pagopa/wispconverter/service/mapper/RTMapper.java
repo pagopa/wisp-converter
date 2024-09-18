@@ -50,7 +50,7 @@ public abstract class RTMapper {
     }
 
     @Mapping(target = "identificativoUnivocoAttestante.tipoIdentificativoUnivoco", expression = "java(it.gov.digitpa.schemas._2011.pagamenti.StTipoIdentificativoUnivoco.G)")
-    @Mapping(source = "receipt.fiscalCode", target = "identificativoUnivocoAttestante.codiceIdentificativoUnivoco")
+    @Mapping(source = "receipt.idPSP", target = "identificativoUnivocoAttestante.codiceIdentificativoUnivoco")
     @Mapping(source = "receipt.PSPCompanyName", target = "denominazioneAttestante")
     public abstract void toCtIstitutoAttestante(@MappingTarget CtIstitutoAttestante ctIstitutoAttestante, PaSendRTV2Request paSendRTV2Request);
 
@@ -141,7 +141,7 @@ public abstract class RTMapper {
     public abstract CtIdentificativoUnivocoPersonaFG toIdentificativoUnivocoPagatore(CtEntityUniqueIdentifier ctEntityUniqueIdentifier);
 
     @Mapping(target = "codiceEsitoPagamento", constant = "1")
-    @Mapping(target = "importoTotalePagato", expression = "java(java.math.BigDecimal.ZERO)")
+    @Mapping(target = "importoTotalePagato", expression = "java(it.gov.pagopa.wispconverter.util.XmlUtil.toBigDecimalWithScale(java.math.BigDecimal.ZERO, 2))")
     @Mapping(source = "transferDataDTO.iuv", target = "identificativoUnivocoVersamento")
     @Mapping(source = "transferDataDTO.ccp", target = "codiceContestoPagamento")
     @Mapping(target = "datiSingoloPagamento", expression = "java(toCtDatiSingoloPagamentoRTListForKoRT(transferDataDTO.getTransfer(), instant, paymentOutcome))")
@@ -170,7 +170,7 @@ public abstract class RTMapper {
         return ctDatiSingoloPagamentoRTList;
     }
 
-    @Mapping(target = "singoloImportoPagato", expression = "java(java.math.BigDecimal.ZERO)")
+    @Mapping(target = "singoloImportoPagato", expression = "java(it.gov.pagopa.wispconverter.util.XmlUtil.toBigDecimalWithScale(java.math.BigDecimal.ZERO, 2))")
     @Mapping(source = "paymentOutcome", target = "esitoSingoloPagamento")
     @Mapping(target = "dataEsitoSingoloPagamento", expression = "java(it.gov.pagopa.wispconverter.util.XmlUtil.toXMLGregoirianCalendar(instant))")
     @Mapping(target = "identificativoUnivocoRiscossione", constant = "0")

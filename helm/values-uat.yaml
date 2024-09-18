@@ -4,7 +4,7 @@ microservice-chart:
   fullnameOverride: ""
   image:
     repository: ghcr.io/pagopa/pagopa-wisp-converter
-    tag: "0.1.21"
+    tag: "0.2.2"
     pullPolicy: Always
   livenessProbe:
     httpGet:
@@ -65,6 +65,7 @@ microservice-chart:
     WEBSITE_SITE_NAME: 'pagopawispconverter' # required to show cloud role name in application insights
     ENV: 'aks-uat'
     APP_LOGGING_LEVEL: 'INFO'
+    APP_LOGGING_TRACING_LEVEL: 'ERROR'
     DEFAULT_LOGGING_LEVEL: 'INFO'
     CORS_CONFIGURATION: '{"origins": ["*"], "methods": ["*"]}'
     OTEL_SERVICE_NAME: "pagopa-wisp-converter"
@@ -96,6 +97,8 @@ microservice-chart:
     RT_SEND_MAX_RETRIES: '48'
     RT_SEND_SCHEDULING_TIME_IN_MINUTES: '60'
     RT_SEND_AVOID_SCHEDULING_ON_STATES: 'PAA_RT_DUPLICATA'
+    RPT_TIMER_QUEUE_NAME: "nodo_wisp_rpt_timeout_queue"
+    RPT_TIMEOUT: '1800'
     RE_TRACING_INTERFACE_IUVGENERATOR_ENABLED: 'true'
     RE_TRACING_INTERFACE_PAYMENTPOSITIONANALYSIS_ENABLED: 'true'
     RE_TRACING_INTERFACE_DECOUPLERCACHING_ENABLED: 'true'
@@ -115,6 +118,7 @@ microservice-chart:
       SERVICE_BUS_PAYMENT_TIMEOUT_QUEUE_CONNECTION_STRING: 'wisp-payment-timeout-queue-connection-string'
       SERVICE_BUS_PAAINVIART_QUEUE_CONNECTION_STRING: 'wisp-paainviart-queue-connection-string'
       ECOMMERCE_HANG_TIMER_QUEUE_CONNECTION_STRING: 'ecommerce-hang-timer-queue-connection-string'
+      RPT_TIMER_QUEUE_CONNECTION_STRING: 'wisp-rpt-timeout-queue-connection-string'
       OTEL_EXPORTER_OTLP_HEADERS: elastic-apm-secret-token
       REDIS_PASSWORD: 'redis-primary-key'
       REDIS_HOST: 'redis-hostname'

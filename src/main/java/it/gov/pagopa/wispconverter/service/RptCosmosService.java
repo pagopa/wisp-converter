@@ -29,20 +29,19 @@ public class RptCosmosService {
     private Boolean isTracingOnREEnabled;
 
     public RPTRequestEntity getRPTRequestEntity(String sessionId) {
+        MDC.put(Constants.MDC_SESSION_ID, sessionId);
 
         // searching RPT by session identifier: if no element is found throw an exception, in the RE will be saved an exception event of failure
         Optional<RPTRequestEntity> optRPTReqEntity = this.rptRequestRepository.findById(sessionId);
         RPTRequestEntity rptRequestEntity = optRPTReqEntity.orElseThrow(() -> new AppException(AppErrorCodeMessageEnum.PERSISTENCE_RPT_NOT_FOUND, sessionId));
 
         // generate and save RE event internal for change status
-        MDC.put(Constants.MDC_SESSION_ID, sessionId);
         generateRE(rptRequestEntity.getPayload());
 
         return rptRequestEntity;
     }
 
     private void generateRE(String payload) {
-
         // creating event to be persisted for RE
         if (Boolean.TRUE.equals(isTracingOnREEnabled)) {
             ReEventDto reEvent = ReUtil.getREBuilder()

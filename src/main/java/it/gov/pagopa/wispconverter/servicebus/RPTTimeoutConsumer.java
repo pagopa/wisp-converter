@@ -3,12 +3,13 @@ package it.gov.pagopa.wispconverter.servicebus;
 import com.azure.messaging.servicebus.ServiceBusReceivedMessage;
 import com.azure.messaging.servicebus.ServiceBusReceivedMessageContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import it.gov.pagopa.wispconverter.controller.model.RPTTimerRequest;
 import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
+import it.gov.pagopa.wispconverter.service.ConfigCacheService;
+import it.gov.pagopa.wispconverter.service.IdempotencyService;
+import it.gov.pagopa.wispconverter.service.PaaInviaRTSenderService;
 import it.gov.pagopa.wispconverter.service.ReceiptService;
-import it.gov.pagopa.wispconverter.service.model.ECommerceHangTimeoutMessage;
-import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
 import it.gov.pagopa.wispconverter.util.CommonUtility;
-import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.MDCUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -22,7 +23,6 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.time.ZonedDateTime;
-import java.util.List;
 
 /**
  * This class is the consumer of the queue 'ecommerce-hang-timeout' of the service bus.
@@ -31,18 +31,36 @@ import java.util.List;
  */
 @Slf4j
 @Component
-public class ECommerceHangTimeoutConsumer extends SBConsumer {
+public class RPTTimeoutConsumer extends SBConsumer {
 
     private final ObjectMapper mapper = new ObjectMapper();
 
-    @Value("${azure.sb.wisp-ecommerce-hang-timeout-queue.connectionString}")
+    @Value("${azure.sb.wisp-rpt-timeout-queue.connectionString}")
     private String connectionString;
 
-    @Value("${azure.sb.queue.ecommerce-hang-timeout.name}")
+    @Value("${azure.sb.queue.wisp-rpt-timeout.name}")
     private String queueName;
+
+    @Value("${wisp-converter.station-in-forwarder.partial-path}")
+    private String stationInForwarderPartialPath;
+
+    @Value("${wisp-converter.forwarder.api-key}")
+    private String forwarderSubscriptionKey;
 
     @Autowired
     private ReceiptService receiptService;
+
+    @Autowired
+    private PaaInviaRTSenderService paaInviaRTSenderService;
+
+    @Autowired
+    private ConfigCacheService configCacheService;
+
+    @Autowired
+    private IdempotencyService idempotencyService;
+
+    @Autowired
+    private it.gov.pagopa.gen.wispconverter.client.decouplercaching.invoker.ApiClient decouplerCachingClient;
 
 
     @PostConstruct
@@ -56,35 +74,24 @@ public class ECommerceHangTimeoutConsumer extends SBConsumer {
     @EventListener(ApplicationReadyEvent.class)
     public void initializeClient() {
         if (receiverClient != null) {
-            log.info("[Scheduled] Starting ECommerceHangTimeoutConsumer {}", ZonedDateTime.now());
+            log.info("[Scheduled] Starting RPTTimeoutConsumer {}", ZonedDateTime.now());
             receiverClient.start();
         }
     }
 
     public void processMessage(ServiceBusReceivedMessageContext context) {
-        MDCUtil.setSessionDataInfo("ecommerce-hang-timeout-trigger");
+        MDCUtil.setSessionDataInfo("rpt-timeout-trigger");
         ServiceBusReceivedMessage message = context.getMessage();
-        log.debug("Processing message. Session: {}, Sequence #: {}. Contents: {}", message.getMessageId(), message.getSequenceNumber(), message.getBody());
+        log.info("Processing message. Session: {}, Sequence #: {}. Contents: {}", message.getMessageId(), message.getSequenceNumber(), message.getBody());
         try {
             // read the message
-            ECommerceHangTimeoutMessage timeoutMessage = mapper.readValue(message.getBody().toStream(), ECommerceHangTimeoutMessage.class);
+            RPTTimerRequest timeoutMessage = mapper.readValue(message.getBody().toStream(), RPTTimerRequest.class);
 
-            // log event
-            MDC.put(Constants.MDC_DOMAIN_ID, timeoutMessage.getFiscalCode());
-            MDC.put(Constants.MDC_NOTICE_NUMBER, timeoutMessage.getNoticeNumber());
-            generateRE(InternalStepStatus.ECOMMERCE_HANG_TIMER_TRIGGER, "Expired eCommerce hang timer. A Negative sendRT will be sent: " + timeoutMessage);
-
-            // transform to string list
-            var inputPaaInviaRTKo = List.of(ReceiptDto.builder()
-                    .fiscalCode(timeoutMessage.getFiscalCode())
-                    .noticeNumber(timeoutMessage.getNoticeNumber())
-                    .build());
-            receiptService.sendKoPaaInviaRtToCreditorInstitution(inputPaaInviaRTKo);
+            // sending rt- from session id
+            receiptService.sendRTKoFromSessionId(timeoutMessage.getSessionId(), InternalStepStatus.RPT_TIMER_TRIGGER);
         } catch (IOException e) {
-            log.error("Error when read ECommerceHangTimeoutDto value from message: '{}'. Body: '{}'", message.getMessageId(), message.getBody());
+            log.error("Error when read rpt timer request value from message: '{}'. Body: '{}'", message.getMessageId(), message.getBody());
         }
         MDC.clear();
     }
-
-
 }

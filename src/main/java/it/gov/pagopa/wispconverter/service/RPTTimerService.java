@@ -3,11 +3,11 @@ package it.gov.pagopa.wispconverter.service;
 import com.azure.messaging.servicebus.ServiceBusClientBuilder;
 import com.azure.messaging.servicebus.ServiceBusMessage;
 import com.azure.messaging.servicebus.ServiceBusSenderClient;
+import it.gov.pagopa.wispconverter.controller.model.RPTTimerRequest;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.CacheRepository;
 import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
-import it.gov.pagopa.wispconverter.service.model.ECommerceHangTimeoutMessage;
 import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.LogUtils;
@@ -24,22 +24,22 @@ import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 
 import static it.gov.pagopa.wispconverter.util.CommonUtility.sanitizeInput;
-import static it.gov.pagopa.wispconverter.util.MDCUtil.setEcommerceHangTimerInfoInMDC;
+import static it.gov.pagopa.wispconverter.util.MDCUtil.setRPTTimerInfoInMDC;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class ECommerceHangTimerService {
+public class RPTTimerService {
 
-    public static final String ECOMMERCE_TIMER_MESSAGE_KEY_FORMAT = "wisp_timer_hang_%s_%s";
+    public static final String RPT_TIMER_MESSAGE_KEY_FORMAT = "wisp_timer_rpt_%s";
 
-    @Value("${azure.sb.wisp-ecommerce-hang-timeout-queue.connectionString}")
+    @Value("${azure.sb.wisp-rpt-timeout-queue.connectionString}")
     private String connectionString;
 
-    @Value("${azure.sb.queue.ecommerce-hang-timeout.name}")
+    @Value("${azure.sb.queue.wisp-rpt-timeout.name}")
     private String queueName;
 
-    @Value("${wisp-converter.ecommerce-hang.timeout.seconds}")
+    @Value("${wisp-converter.wisp-rpt.timeout.seconds}")
     private Integer expirationTime;
 
     private ReService reService;
@@ -49,7 +49,7 @@ public class ECommerceHangTimerService {
     private CacheRepository cacheRepository;
 
     @Autowired
-    public ECommerceHangTimerService(CacheRepository cacheRepository, ServiceBusSenderClient serviceBusSenderClient, ReService reService) {
+    public RPTTimerService(CacheRepository cacheRepository, ServiceBusSenderClient serviceBusSenderClient, ReService reService) {
         this.cacheRepository = cacheRepository;
         this.serviceBusSenderClient = serviceBusSenderClient;
         this.reService = reService;
@@ -70,30 +70,29 @@ public class ECommerceHangTimerService {
      *
      * @param message the message to send on the queue of the service bus.
      */
-    public void sendMessage(ECommerceHangTimeoutMessage message) {
+    public void sendMessage(RPTTimerRequest message) {
 
-        String noticeNumber = message.getNoticeNumber();
-        String fiscalCode = message.getFiscalCode();
-        setEcommerceHangTimerInfoInMDC(fiscalCode, noticeNumber);
+        String sessionId = message.getSessionId();
+        setRPTTimerInfoInMDC(sessionId);
 
-        String key = String.format(ECOMMERCE_TIMER_MESSAGE_KEY_FORMAT, noticeNumber, fiscalCode);
+        String key = String.format(RPT_TIMER_MESSAGE_KEY_FORMAT, sessionId);
 
         // If the key is already present in the cache, we delete it to avoid duplicated message.
         if (Boolean.TRUE.equals(cacheRepository.hasKey(key))) {
-            cancelScheduledMessage(noticeNumber, fiscalCode);
+            cancelScheduledMessage(sessionId);
         }
 
         // build the service bus message
         ServiceBusMessage serviceBusMessage = new ServiceBusMessage(message.toString());
-        log.debug("Sending scheduled message {} to the queue: {}", message, queueName);
+        log.debug("Sending scheduled message {} to the queue: {}", sanitizeInput(message.toString()), queueName);
 
         // compute time and schedule message for consumer trigger
         OffsetDateTime scheduledExpirationTime = OffsetDateTime.now().plusSeconds(expirationTime);
         Long sequenceNumber = serviceBusSenderClient.scheduleMessage(serviceBusMessage, scheduledExpirationTime);
 
         // log event
-        log.debug("Sent scheduled message_base64 {} to the queue: {}", LogUtils.encodeToBase64(message.toString()), queueName);
-        generateRE(InternalStepStatus.ECOMMERCE_HANG_TIMER_CREATED, "Scheduled eCommerce hang release: [" + message + "]");
+        log.info("Sent scheduled message_base64 {} to the queue: {}", LogUtils.encodeToBase64(sanitizeInput(message.toString())), queueName);
+        generateRE(InternalStepStatus.RPT_TIMER_CREATED, "Scheduled RPTTimerService: [" + message + "]");
 
         // insert in Redis cache sequenceNumber of the message
         cacheRepository.insert(key, sequenceNumber.toString(), expirationTime, ChronoUnit.SECONDS);
@@ -103,13 +102,12 @@ public class ECommerceHangTimerService {
     /**
      * This method deletes a scheduled message from the queue
      *
-     * @param noticeNumber use to find the message
-     * @param fiscalCode   use to find the message
+     * @param sessionId use to find the message
      */
-    public void cancelScheduledMessage(String noticeNumber, String fiscalCode) {
+    public void cancelScheduledMessage(String sessionId) {
 
-        log.debug("Cancel scheduled message for eCommerce hang release {} {}", sanitizeInput(noticeNumber), sanitizeInput(fiscalCode));
-        String key = String.format(ECOMMERCE_TIMER_MESSAGE_KEY_FORMAT, noticeNumber, fiscalCode);
+        log.debug("Cancel scheduled message for RPTTimer {}", sanitizeInput(sessionId));
+        String key = String.format(RPT_TIMER_MESSAGE_KEY_FORMAT, sessionId);
 
         // get the sequenceNumber from the Redis cache
         String sequenceNumber = cacheRepository.read(key, String.class);
@@ -118,14 +116,14 @@ public class ECommerceHangTimerService {
 
             // cancel scheduled message in the service bus queue
             callCancelScheduledMessage(sequenceNumber);
-            log.debug("Canceled scheduled message for ecommerce_hang_timeout_base64 {} {}", LogUtils.encodeToBase64(sanitizeInput(noticeNumber)), LogUtils.encodeToBase64(sanitizeInput(fiscalCode)));
+            log.info("Canceled scheduled message for rpt_timer_base64 {}", LogUtils.encodeToBase64(sanitizeInput(sessionId)));
 
             // delete the sequenceNumber from the Redis cache
             cacheRepository.delete(key);
 
             // log event
-            log.debug("Deleted sequence number {} for ecommerce_hang_timeout_base64-token: {} {} from cache", sequenceNumber, sanitizeInput(noticeNumber), sanitizeInput(fiscalCode));
-            generateRE(InternalStepStatus.ECOMMERCE_HANG_TIMER_DELETED, "Deleted sequence number: [" + sequenceNumber + "] for notice: [" + noticeNumber + "] for fiscalCode [" + fiscalCode + "]");
+            log.debug("Deleted sequence number {} for rpt_timer_base64-token: {} from cache", sequenceNumber, sanitizeInput(sessionId));
+            generateRE(InternalStepStatus.RPT_TIMER_DELETED, "Deleted sequence number: [" + sequenceNumber + "] for sessionId: [" + sessionId + "]");
         }
     }
 

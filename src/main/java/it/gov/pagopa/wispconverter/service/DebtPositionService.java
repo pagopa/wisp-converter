@@ -80,7 +80,6 @@ public class DebtPositionService {
     @Value("${wisp-converter.re-tracing.internal.payment-position-analysis.enabled}")
     private Boolean isTracingOnREEnabled;
 
-
     public void createDebtPositions(SessionDataDTO sessionData) {
 
         // initialize standard data
@@ -386,7 +385,7 @@ public class DebtPositionService {
     }
 
     private void handleValidPaymentPosition(DebtPositionsApiApi gpdClientInstance, SessionDataDTO sessionData, PaymentPositionModelDto extractedPaymentPosition, PaymentPositionModelBaseResponseDto paymentPositionFromGPD, String iuv, String creditorInstitutionId, List<PaymentPositionModelDto> extractedPaymentPositions) {
-
+    	
         try {
             // validate the station, checking if exists one with the required segregation code and, if is onboarded on GPD, has the correct primitive version
             CommonUtility.checkStationValidity(configCacheService, sessionData, creditorInstitutionId, CommonUtility.getSinglePaymentOption(paymentPositionFromGPD).getNav(), stationInGpdPartialPath);
