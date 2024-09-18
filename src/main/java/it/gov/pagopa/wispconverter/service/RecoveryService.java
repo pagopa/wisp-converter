@@ -41,11 +41,9 @@ public class RecoveryService {
 
     private static final String RPT_ACCETTATA_NODO = "RPT_ACCETTATA_NODO";
 
-    private static final String RT_SEND_SUCCESS = "RT_SEND_SUCCESS";
+    private static final String RPT_PARCHEGGIATA_NODO = "RPT_PARCHEGGIATA_NODO";
 
     private static final String STATUS_RT_SEND_SUCCESS = "RT_SEND_SUCCESS";
-
-    private static final String CREATED_NEW_PAYMENT_POSITION_IN_GPD = "CREATED_NEW_PAYMENT_POSITION_IN_GPD";
 
     private static final String RECOVERY_VALID_START_DATE = "2024-09-03";
 
@@ -65,6 +63,8 @@ public class RecoveryService {
 
     private static final String DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
 
+    private static final String DATE_FORMAT_DAY = "yyyy-MM-dd";
+
     @Value("${wisp-converter.cached-requestid-mapping.ttl.minutes:1440}")
     public Long requestIDMappingTTL;
 
@@ -74,7 +74,7 @@ public class RecoveryService {
     public boolean recoverReceiptKO(String creditorInstitution, String iuv, String dateFrom, String dateTo) {
         if(!areValidDates(dateFrom, dateTo)) {
             throw new AppException(AppErrorCodeMessageEnum.ERROR, String.format("The lower bound cannot be lower than [%s], the upper bound cannot be higher than [%s]",
-                    RECOVERY_VALID_START_DATE, LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))));
+                    RECOVERY_VALID_START_DATE, LocalDate.now().format(DateTimeFormatter.ofPattern(DATE_FORMAT_DAY))));
         }
 
         List<ReEventEntity> reEvents = reEventRepository.findByIuvAndOrganizationId(dateFrom, dateTo, iuv, creditorInstitution);
@@ -82,7 +82,7 @@ public class RecoveryService {
                                                 .sorted(Comparator.comparing(ReEventEntity::getInsertedTimestamp))
                                                 .toList();
 
-        Set<String> noRedirectSet = Set.of("RPT_ACCETTATA_NODO", "RPT_PARCHEGGIATA_NODO");
+        Set<String> noRedirectSet = Set.of(RPT_ACCETTATA_NODO, RPT_PARCHEGGIATA_NODO);
         Set<String> breakAfterRedirectSet = Set.of("GENERATED_NAV_FOR_NEW_PAYMENT_POSITION", "CREATED_NEW_PAYMENT_POSITION_IN_GPD",
                 "GENERATED_CACHE_ABOUT_RPT_FOR_DECOUPLER", "GENERATED_CACHE_ABOUT_RPT_FOR_RT_GENERATION", "SAVED_RPT_IN_CART_RECEIVED_REDIRECT_URL_FROM_CHECKOUT");
 
@@ -107,7 +107,7 @@ public class RecoveryService {
         LocalDate now = LocalDate.now();
         if(!areValidDates(dateFrom, dateTo)) {
             throw new AppException(AppErrorCodeMessageEnum.ERROR, String.format("The lower bound cannot be lower than [%s], the upper bound cannot be higher than [%s]",
-                    RECOVERY_VALID_START_DATE, now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))));
+                    RECOVERY_VALID_START_DATE, now.format(DateTimeFormatter.ofPattern(DATE_FORMAT_DAY))));
         }
 
         LocalDate parse = LocalDate.parse(dateTo, DateTimeFormatter.ISO_LOCAL_DATE);
@@ -151,7 +151,7 @@ public class RecoveryService {
         LocalDate now = LocalDate.now();
         LocalDate parse = LocalDate.parse(dateTo, DateTimeFormatter.ISO_LOCAL_DATE);
         if (parse.isAfter(now)) {
-            throw new AppException(AppErrorCodeMessageEnum.ERROR, String.format("The upper bound cannot be higher than [%s]", now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))));
+            throw new AppException(AppErrorCodeMessageEnum.ERROR, String.format("The upper bound cannot be higher than [%s]", now.format(DateTimeFormatter.ofPattern(DATE_FORMAT_DAY))));
         }
 
         return true;

@@ -64,7 +64,7 @@ public class RecoveryController {
     })
     @PostMapping(value = "/{creditor_institution}/rpt/{iuv}/receipt-ko")
     public ResponseEntity<String> recoverReceiptKOForCreditorInstitutionAndIUV(@PathVariable("creditor_institution") String ci,
-                                                                                                @PathVariable("creditor_institution") String iuv,
+                                                                                                @PathVariable("iuv") String iuv,
                                                                                                 @QueryParam("date_from") String dateFrom,
                                                                                                 @QueryParam("date_to") String dateTo) {
         try {
