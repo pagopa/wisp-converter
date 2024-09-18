@@ -20,6 +20,7 @@ import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -190,6 +191,8 @@ public class RecoveryService {
 
         if (reEventsRT.isEmpty()) {
             MDC.put(Constants.MDC_BUSINESS_PROCESS, "receipt-ko");
+            MDC.put(Constants.MDC_INSERTED_TIMESTAMP, Instant.now().toString());
+
             generateRE(Constants.PAA_INVIA_RT, null, InternalStepStatus.RT_START_RECONCILIATION_PROCESS, ci, iuv, ccp, sessionId);
 
             try {
