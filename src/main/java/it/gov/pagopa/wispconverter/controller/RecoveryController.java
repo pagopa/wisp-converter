@@ -60,7 +60,7 @@ public class RecoveryController {
 
     @Operation(summary = "Execute IUV reconciliation for certain creditor institution.", description = "Execute reconciliation of all IUVs for certain creditor institution, sending RT for close payment.", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"Recovery"})
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Started reconciling IUVs with explicit RT send")
+            @ApiResponse(responseCode = "200", description = "Started reconciling IUV with explicit RT send")
     })
     @PostMapping(value = "/{creditor_institution}/rpt/{iuv}/receipt-ko")
     public ResponseEntity<String> recoverReceiptKOForCreditorInstitutionAndIUV(@PathVariable("creditor_institution") String ci,
@@ -69,8 +69,11 @@ public class RecoveryController {
                                                                                                 @QueryParam("date_to") String dateTo) {
         try {
             log.info("Invoking API operation recoverReceiptKOForCreditorInstitution - args: {} {} {} {}", ci, iuv, dateFrom, dateTo);
-            recoveryService.recoverReceiptKO(ci, iuv, dateFrom, dateTo);
-            return ResponseEntity.ok("response");
+
+            boolean recovered = recoveryService.recoverReceiptKO(ci, iuv, dateFrom, dateTo);
+            if(recovered)
+                return ResponseEntity.ok(String.format("RPT with CI %s and IUV %s recovered via API", ci, iuv));
+            else return ResponseEntity.ok(String.format("RPT with CI %s and IUV %s could not be recovered via API", ci, iuv));
         } catch (Exception ex) {
             String operationId = MDC.get(Constants.MDC_OPERATION_ID);
             log.error(String.format("GenericException: operation-id=[%s]", operationId != null ? operationId : "n/a"), ex);

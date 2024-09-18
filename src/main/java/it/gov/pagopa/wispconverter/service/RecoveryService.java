@@ -71,7 +71,7 @@ public class RecoveryService {
     @Value("${wisp-converter.recovery.receipt-generation.wait-time.minutes:60}")
     public Long receiptGenerationWaitTime;
 
-    public void recoverReceiptKO(String creditorInstitution, String iuv, String dateFrom, String dateTo) {
+    public boolean recoverReceiptKO(String creditorInstitution, String iuv, String dateFrom, String dateTo) {
         if(!areValidDates(dateFrom, dateTo)) {
             throw new AppException(AppErrorCodeMessageEnum.ERROR, String.format("The lower bound cannot be lower than [%s], the upper bound cannot be higher than [%s]",
                     RECOVERY_VALID_START_DATE, LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))));
@@ -95,10 +95,12 @@ public class RecoveryService {
                 noticeNumber = MOCK_NOTICE_NUMBER;
             } else if(breakAfterRedirectSet.contains(status)) {
                 noticeNumber = lastEvent.getNoticeNumber();
-            } else return;
+            } else return false;
 
             this.recoverReceiptKO(creditorInstitution, noticeNumber, iuv, lastEvent.getSessionId(), lastEvent.getCcp(), dateFrom, dateTo);
         }
+
+        return true;
     }
 
     public RecoveryReceiptResponse recoverReceiptKOForCreditorInstitution(String creditorInstitution, String dateFrom, String dateTo) {
