@@ -55,9 +55,7 @@ public class RPTTimerController {
             rptTimerService.sendMessage(request);
             log.info("Successful API operation createRPTTimer");
         } catch (Exception ex) {
-            if(ex instanceof AppException) {
-                log.info(ex.getMessage());
-            } else {
+            if(!(ex instanceof AppException)) {
                 String operationId = MDC.get(Constants.MDC_OPERATION_ID);
                 log.error(String.format("GenericException: operation-id=[%s]", operationId != null ? operationId : "n/a"), ex);
                 AppException appException = new AppException(ex, AppErrorCodeMessageEnum.ERROR, ex.getMessage());
