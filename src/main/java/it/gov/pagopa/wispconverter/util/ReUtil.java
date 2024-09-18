@@ -267,7 +267,7 @@ public class ReUtil {
                 headers.add(s, StringUtils.join(h, ","));
             });
         } catch (UnsupportedOperationException e) {
-            log.trace("Impossible to add formatted header to existing Headers object:", e);
+            log.debug("Impossible to add formatted header to existing Headers object:", e);
         }
 
         return formatHeaders(headers);

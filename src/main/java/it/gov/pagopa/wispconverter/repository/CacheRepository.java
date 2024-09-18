@@ -42,8 +42,9 @@ public class CacheRepository {
         return result;
     }
 
-    public void delete(String key) {
-        this.redisSimpleTemplate.delete(key);
+    public boolean delete(String key) {
+        Boolean isDeleted = this.redisSimpleTemplate.delete(key);
+        return isDeleted != null && isDeleted;
     }
 
     public Boolean hasKey(String key) {

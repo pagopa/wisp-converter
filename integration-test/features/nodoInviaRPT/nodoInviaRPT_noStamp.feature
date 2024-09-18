@@ -7,7 +7,7 @@ Feature: User pays a single payment without stamps via nodoInviaRPT
   # ===============================================================================================
   # ===============================================================================================
 
-  @runnable @nodo_invia_rpt @happy_path
+  @runnable @nodo_invia_rpt @happy_path @test
   Scenario: User pays a single payment with single transfer and no stamp on nodoInviaRPT
     Given a single RPT of type BBT with 1 transfers of which none are stamps
     When the execution of "Send a nodoInviaRPT request" was successful

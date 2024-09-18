@@ -4,8 +4,6 @@ import com.azure.messaging.servicebus.ServiceBusClientBuilder;
 import com.azure.messaging.servicebus.ServiceBusMessage;
 import com.azure.messaging.servicebus.ServiceBusSenderClient;
 import it.gov.pagopa.wispconverter.controller.model.ReceiptTimerRequest;
-import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
-import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.CacheRepository;
 import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
@@ -77,7 +75,7 @@ public class ReceiptTimerService {
         // compute time and schedule message for consumer trigger
         OffsetDateTime scheduledExpirationTime = OffsetDateTime.now().plus(message.getExpirationTime(), ChronoUnit.MILLIS);
         Long sequenceNumber = serviceBusSenderClient.scheduleMessage(serviceBusMessage, scheduledExpirationTime);
-        log.info("Sent scheduled message_base64 {} to the queue: {}", LogUtils.encodeToBase64(message.toString()), queueName);
+        log.debug("Sent scheduled message_base64 {} to the queue: {}", LogUtils.encodeToBase64(message.toString()), queueName);
         generateRE(InternalStepStatus.RECEIPT_TIMER_GENERATION_CREATED_SCHEDULED_SEND, "Scheduled receipt: [" + message + "]");
 
         // insert {wisp_timer_<paymentToken>, sequenceNumber} for Duplicate Prevention Logic and for call cancelScheduledMessage(sequenceNumber)
@@ -103,26 +101,34 @@ public class ReceiptTimerService {
 
         // the message related to payment-token has either already been deleted or it does not exist:
         // without sequenceNumber is not possible to delete from serviceBus -> return
-        if (sequenceNumberString == null) return;
+        if (sequenceNumberString != null) {
 
-        // cancel scheduled message
-        if (this.callCancelScheduledMessage(sequenceNumberString)) {
-
-            log.info("Canceled scheduled message for payment-token_base64 {}", LogUtils.encodeToBase64(paymentToken));
-            cacheRepository.delete(sequenceNumberKey);
-            log.debug("Deleted sequence number {} for payment-token: {} from cache", sequenceNumberString, sequenceNumberKey);
-            generateRE(InternalStepStatus.RECEIPT_TIMER_GENERATION_DELETED_SCHEDULED_SEND, "Deleted sequence number: [" + sequenceNumberString + "] for payment token: [" + sequenceNumberKey + "]");
+            // cancel scheduled message
+            boolean deletedScheduledMessage = this.callCancelScheduledMessage(sequenceNumberString);
+            boolean isDeleted = cacheRepository.delete(sequenceNumberKey);
+            if (deletedScheduledMessage && isDeleted) {
+                log.debug("Canceled scheduled message for payment-token_base64 {}", LogUtils.encodeToBase64(paymentToken));
+                log.debug("Deleted sequence number {} for payment-token: {} from cache", sequenceNumberString, sequenceNumberKey);
+                generateRE(InternalStepStatus.RECEIPT_TIMER_GENERATION_DELETED_SCHEDULED_SEND, "Deleted sequence number: [" + sequenceNumberString + "] for payment token: [" + sequenceNumberKey + "]");
+            } else {
+                generateRE(InternalStepStatus.RECEIPT_TIMER_GENERATION_SKIP_DELETE_SCHEDULED_SEND, "No element found in queue for sequence number: [" + sequenceNumberString + "]. Skipping delete for payment token [" + sequenceNumberKey + "]");
+            }
+        } else {
+            generateRE(InternalStepStatus.RECEIPT_TIMER_GENERATION_SKIP_DELETE_SCHEDULED_SEND, "No element found in queue for payment token: [" + sequenceNumberKey + "]. The element was already deleted.");
         }
     }
 
     public boolean callCancelScheduledMessage(String sequenceNumberString) {
+        boolean isOk;
         long sequenceNumber = Long.parseLong(sequenceNumberString);
         try {
             serviceBusSenderClient.cancelScheduledMessage(sequenceNumber);
-            return true;
+            isOk = true;
         } catch (Exception exception) {
-            throw new AppException(AppErrorCodeMessageEnum.PERSISTENCE_SERVICE_BUS_CANCEL_ERROR, exception.getMessage());
+            log.debug(String.format("Scheduled message with sequence number [%s] not deleted. Cause: %s", sequenceNumberString, exception.getMessage()));
+            isOk = false;
         }
+        return isOk;
     }
 
 

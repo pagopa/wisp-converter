@@ -19,20 +19,25 @@ parameters:
       - "spike"
       - "stress"
       - "constant"
-      - # TODO: add your values
     default: "constant"
   - name: "SCRIPT"
     displayName: "Script name"
     type: string
     values:
-      - yourscriptname # TODO: add your script
+      - nodoInviaRPT_workflow
+      - nodoInviaCarrelloRPT_workflow
+
 variables:
   ${{ if eq(parameters['ENVIRONMENT'], 'dev') }}:
     poolImage: 'pagopa-dev-loadtest-linux'
-    API_SUBSCRIPTION_KEY: $(DEV_API_SUBSCRIPTION_KEY)
+    NODO_PA_SUBSCRIPTION_KEY: $(DEV_NODO_PA_SUBSCRIPTION_KEY)
+    STATION_PWD: $(DEV_STATION_PASSWORD)
+    CHANNEL_PWD: $(DEV_CHANNEL_PASSWORD)
   ${{ if eq(parameters['ENVIRONMENT'], 'uat') }}:
     poolImage: 'pagopa-uat-loadtest-linux'
-    API_SUBSCRIPTION_KEY: $(UAT_API_SUBSCRIPTION_KEY)
+    NODO_PA_SUBSCRIPTION_KEY: $(UAT_NODO_PA_SUBSCRIPTION_KEY)
+    STATION_PWD: $(UAT_STATION_PASSWORD)
+    CHANNEL_PWD: $(UAT_CHANNEL_PASSWORD)
 
 
 pool:
@@ -44,8 +49,7 @@ steps:
       docker pull grafana/k6
     displayName: Pull k6 image
 
-    # TODO: add your env params
   - script: |
       cd ./performance-test
-      sh ./run_performance_test.sh ${{ parameters.ENVIRONMENT }} ${{ parameters.TEST_TYPE }} ${{ parameters.SCRIPT }} afmcalculatork6 $(API_SUBSCRIPTION_KEY)
+      sh ./run_performance_test.sh ${{ parameters.ENVIRONMENT }} ${{ parameters.TEST_TYPE }} ${{ parameters.SCRIPT }} wispsoapconvk6 $(NODO_PA_SUBSCRIPTION_KEY) $(STATION_PWD) $(CHANNEL_PWD)
     displayName: Run k6 ${{ parameters.SCRIPT }} on ${{ parameters.ENVIRONMENT }}
