@@ -1,7 +1,5 @@
 package it.gov.pagopa.wispconverter.service;
 
-import com.azure.messaging.servicebus.ServiceBusReceivedMessage;
-import com.azure.messaging.servicebus.ServiceBusReceivedMessageContext;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.telematici.pagamenti.ws.nodoperpa.ppthead.IntestazionePPT;
@@ -15,7 +13,6 @@ import it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigDataV1Dto;
 import it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigurationKeyDto;
 import it.gov.pagopa.gen.wispconverter.client.cache.model.ConnectionDto;
 import it.gov.pagopa.gen.wispconverter.client.cache.model.StationDto;
-import it.gov.pagopa.wispconverter.controller.model.RPTTimerRequest;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
@@ -37,12 +34,10 @@ import jakarta.xml.soap.SOAPMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -302,9 +297,9 @@ public class ReceiptService {
         return deepCopySendRTV2;
     }
 
-    public String generateKoRtFromSessionData (String creditorInstitutionId, String iuv, RPTContentDTO rpt,
-                                               CommonFieldsDTO commonFields, gov.telematici.pagamenti.ws.papernodo.ObjectFactory objectFactory,
-                                                Map<String, ConfigurationKeyDto> configurations) {
+    public String generateKoRtFromSessionData(String creditorInstitutionId, String iuv, RPTContentDTO rpt,
+                                              CommonFieldsDTO commonFields, gov.telematici.pagamenti.ws.papernodo.ObjectFactory objectFactory,
+                                              Map<String, ConfigurationKeyDto> configurations) {
         // generate the header for the paaInviaRT SOAP request. This object is common for each generated request
         IntestazionePPT header = generateHeader(
                 creditorInstitutionId,
@@ -559,7 +554,7 @@ public class ReceiptService {
 
 
     public void scheduleRTSend(SessionDataDTO sessionData, String url, List<Pair<String, String>> headers, String payload, StationDto station,
-                                String iuv, String noticeNumber, String idempotencyKey, ReceiptTypeEnum receiptType) {
+                               String iuv, String noticeNumber, String idempotencyKey, ReceiptTypeEnum receiptType) {
 
         try {
 
@@ -727,17 +722,16 @@ public class ReceiptService {
         Map<String, it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigurationKeyDto> configurations = configData.getConfigurations();
         Map<String, StationDto> stations = configData.getStations();
 
-        for(RPTContentDTO rpt: sessionDataDTO.getRpts().values()) {
+        for (RPTContentDTO rpt : sessionDataDTO.getRpts().values()) {
             // idempotency key creation to check if the rt has already been sent
             String idempotencyKey = sessionDataDTO.getCommonFields().getSessionId() + "_" + null;
             String rtRawPayload = generateKoRtFromSessionData(
-                    sessionDataDTO.getCommonFields().getCreditorInstitutionId(),
+                    rpt.getRpt().getDomain().getDomainId(),
                     rpt.getIuv(),
                     rpt,
                     sessionDataDTO.getCommonFields(),
                     objectFactory,
                     configurations);
-            boolean isSuccessful = false;
             StationDto station = stations.get(sessionDataDTO.getCommonFields().getStationId());
             ConnectionDto stationConnection = station.getConnection();
             String url = CommonUtility.constructUrl(
@@ -758,7 +752,6 @@ public class ReceiptService {
                 // generate a new event in RE for store the successful sending of the receipt
                 generateREForSentRT(sessionDataDTO, rpt.getIuv(), null);
                 idempotencyStatus = IdempotencyStatusEnum.SUCCESS;
-                isSuccessful = true;
 
             } catch (Exception e) {
 
