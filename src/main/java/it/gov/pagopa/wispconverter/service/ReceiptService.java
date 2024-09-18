@@ -732,7 +732,6 @@ public class ReceiptService {
                     sessionDataDTO.getCommonFields(),
                     objectFactory,
                     configurations);
-            boolean isSuccessful = false;
             StationDto station = stations.get(sessionDataDTO.getCommonFields().getStationId());
             ConnectionDto stationConnection = station.getConnection();
             String url = CommonUtility.constructUrl(
@@ -753,7 +752,6 @@ public class ReceiptService {
                 // generate a new event in RE for store the successful sending of the receipt
                 generateREForSentRT(sessionDataDTO, rpt.getIuv(), null);
                 idempotencyStatus = IdempotencyStatusEnum.SUCCESS;
-                isSuccessful = true;
 
             } catch (Exception e) {
 
