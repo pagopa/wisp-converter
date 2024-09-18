@@ -17,10 +17,11 @@ import java.time.format.DateTimeFormatter;
 
 @Component
 @Slf4j
-@ConditionalOnProperty(name = "cron.job.schedule.recovery.enabled", matchIfMissing = true)
+@ConditionalOnProperty(name = "cron.job.schedule.recovery.enabled", matchIfMissing = false)
 public class RecoveryScheduler {
-    // UNTIL_N_HOURS_AGO: upperbound for a payment session (?)
-    private static final int UNTIL_N_HOURS_AGO = 3;
+    // UNTIL_N_HOURS_AGO: upperbound for a payment session
+    @Value("${cron.job.schedule.recovery.hours.ago.until}")
+    private int UNTIL_N_HOURS_AGO;
     @Value("${cron.job.schedule.recovery.hours.ago.from}")
     private int FROM_N_HOURS_AGO;
 
@@ -34,6 +35,7 @@ public class RecoveryScheduler {
     @Getter
     private Thread threadOfExecution;
 
+    // https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/scheduling/support/CronExpression.html
     @Scheduled(cron = "${cron.job.schedule.recovery.receipt-ko.trigger}")
     @Async
     public void recoverReceiptKOCronJob() {
