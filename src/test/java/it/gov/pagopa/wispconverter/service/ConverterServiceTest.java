@@ -1,11 +1,23 @@
 package it.gov.pagopa.wispconverter.service;
 
-import static org.junit.Assert.fail;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import com.azure.messaging.servicebus.ServiceBusMessage;
+import com.azure.messaging.servicebus.ServiceBusSenderClient;
+import it.gov.pagopa.gen.wispconverter.client.checkout.model.CartRequestDto;
+import it.gov.pagopa.gen.wispconverter.client.checkout.model.PaymentNoticeDto;
+import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
+import it.gov.pagopa.wispconverter.exception.AppException;
+import it.gov.pagopa.wispconverter.repository.CacheRepository;
+import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
+import it.gov.pagopa.wispconverter.service.model.session.CommonFieldsDTO;
+import it.gov.pagopa.wispconverter.service.model.session.PaymentNoticeContentDTO;
+import it.gov.pagopa.wispconverter.service.model.session.SessionDataDTO;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.*;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.OptimisticLockingFailureException;
 
 import java.net.URISyntaxException;
 import java.util.HashMap;
@@ -13,31 +25,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import org.junit.Assert;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Spy;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.dao.OptimisticLockingFailureException;
-
-import com.azure.messaging.servicebus.ServiceBusMessage;
-import com.azure.messaging.servicebus.ServiceBusSenderClient;
-
-import it.gov.pagopa.gen.wispconverter.client.checkout.model.CartRequestDto;
-import it.gov.pagopa.gen.wispconverter.client.checkout.model.PaymentNoticeDto;
-import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
-import it.gov.pagopa.wispconverter.exception.AppException;
-import it.gov.pagopa.wispconverter.repository.CacheRepository;
-import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
-import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
-import it.gov.pagopa.wispconverter.service.model.session.CommonFieldsDTO;
-import it.gov.pagopa.wispconverter.service.model.session.PaymentNoticeContentDTO;
-import it.gov.pagopa.wispconverter.service.model.session.SessionDataDTO;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ConverterServiceTest {
@@ -79,6 +68,9 @@ class ConverterServiceTest {
 	@Mock
 	private ECommerceHangTimerService eCommerceHangTimerService;
 
+	@Mock
+	private RPTTimerService rptTimerService;
+
 	@Captor
 	ArgumentCaptor<ServiceBusMessage> messageArgumentCaptor;
 
@@ -106,7 +98,7 @@ class ConverterServiceTest {
 		when(checkoutService.extractCart(sessionDataDTO)).thenReturn(cartRequestDto);
 
 		String checkoutResponse = converterService.convert(UUID.randomUUID().toString());
-		Assert.assertEquals("mock-checkout-redirect-url", checkoutResponse);
+		Assertions.assertEquals("mock-checkout-redirect-url", checkoutResponse);
 	}
 
 	@Test
@@ -117,13 +109,9 @@ class ConverterServiceTest {
 			converterService.convert(UUID.randomUUID().toString());
 		} catch (Exception e) {
 			if (e.getMessage().equals("mock-exception")) {
-				var inputPaaInviaRTKo = List.of(ReceiptDto.builder()
-						.fiscalCode(sessionDataDTO.getCommonFields().getCreditorInstitutionId())
-						.noticeNumber(sessionDataDTO.getNAVs().get(0))
-						.build());
-				verify(receiptService, times(1)).sendKoPaaInviaRtToCreditorInstitution(inputPaaInviaRTKo);
+				verify(receiptService, times(1)).sendRTKoFromSessionId(anyString(), any());
 			} else {
-				fail();
+				Assertions.fail();
 			}
 		}
 	}
@@ -136,17 +124,13 @@ class ConverterServiceTest {
 			converterService.convert(UUID.randomUUID().toString());
 		} catch (AppException e) {
 			if (e.getMessage().equals(AppErrorCodeMessageEnum.GENERIC_ERROR.getDetail())) {
-				var inputPaaInviaRTKo = List.of(ReceiptDto.builder()
-						.fiscalCode(sessionDataDTO.getCommonFields().getCreditorInstitutionId())
-						.noticeNumber(sessionDataDTO.getNAVs().get(0))
-						.build());
-				verify(receiptService, times(1)).sendKoPaaInviaRtToCreditorInstitution(inputPaaInviaRTKo);
+				verify(receiptService, times(1)).sendRTKoFromSessionId(anyString(), any());
 			} else {
-				fail();
+				Assertions.fail();
 			}
 		} 
 		catch (Exception e) {
-			fail();
+			Assertions.fail();
 		}
 	}
 
