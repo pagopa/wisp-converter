@@ -62,11 +62,7 @@ public class RecoveryService {
     public Long receiptGenerationWaitTime;
 
     public boolean recoverReceiptKO(String creditorInstitution, String iuv, String dateFrom, String dateTo) {
-        if(!areValidDates(dateFrom, dateTo)) {
-            throw new AppException(AppErrorCodeMessageEnum.ERROR, String.format("The lower bound cannot be lower than [%s], the upper bound cannot be higher than [%s]",
-                    RECOVERY_VALID_START_DATE, LocalDate.now().format(DateTimeFormatter.ofPattern(DATE_FORMAT_DAY))));
-        }
-
+        checkDateValidity(dateFrom, dateTo);
         List<ReEventEntity> reEvents = reEventRepository.findByIuvAndOrganizationId(dateFrom, dateTo, iuv, creditorInstitution)
                                                .stream()
                                                .sorted(Comparator.comparing(ReEventEntity::getInsertedTimestamp))
@@ -92,10 +88,7 @@ public class RecoveryService {
         }
 
         LocalDate now = LocalDate.now();
-        if(!areValidDates(dateFrom, dateTo)) {
-            throw new AppException(AppErrorCodeMessageEnum.ERROR, String.format("The lower bound cannot be lower than [%s], the upper bound cannot be higher than [%s]",
-                    RECOVERY_VALID_START_DATE, now.format(DateTimeFormatter.ofPattern(DATE_FORMAT_DAY))));
-        }
+        checkDateValidity(dateFrom, dateTo);
 
         LocalDate parse = LocalDate.parse(dateTo, DateTimeFormatter.ISO_LOCAL_DATE);
         String dateToRefactored;
@@ -129,21 +122,6 @@ public class RecoveryService {
                        .build();
     }
 
-    private boolean areValidDates(String dateFrom, String dateTo) {
-        LocalDate lowerLimit = LocalDate.parse(RECOVERY_VALID_START_DATE, DateTimeFormatter.ISO_LOCAL_DATE);
-        if (LocalDate.parse(dateFrom, DateTimeFormatter.ISO_LOCAL_DATE).isBefore(lowerLimit)) {
-            throw new AppException(AppErrorCodeMessageEnum.ERROR, String.format("The lower bound cannot be lower than [%s]", RECOVERY_VALID_START_DATE));
-        }
-
-        LocalDate now = LocalDate.now();
-        LocalDate parse = LocalDate.parse(dateTo, DateTimeFormatter.ISO_LOCAL_DATE);
-        if (parse.isAfter(now)) {
-            throw new AppException(AppErrorCodeMessageEnum.ERROR, String.format("The upper bound cannot be higher than [%s]", now.format(DateTimeFormatter.ofPattern(DATE_FORMAT_DAY))));
-        }
-
-        return true;
-    }
-
     private CompletableFuture<Boolean> recoverReceiptKOAsync(String dateFrom, String dateTo, List<RecoveryReceiptPaymentResponse> paymentsToReconcile) {
         return CompletableFuture.supplyAsync(() -> recoverReceiptKOByRecoveryPayment(dateFrom, dateTo, paymentsToReconcile));
     }
@@ -170,7 +148,7 @@ public class RecoveryService {
                     String sessionId = event.getSessionId();
 
                     log.info("[RECOVERY-MISSING-RT] Recovery with receipt-ko for ci = {}, iuv = {}, ccp = {}, sessionId = {}", ci, iuv, ccp, sessionId);
-                    this.receiptService.sendRTKoFromSessionId(sessionId, InternalStepStatus.NEGATIVE_RT_TRY_TO_SEND_TO_CREDITOR_INSTITUTION);
+                    this.recoverReceiptKO(ci, iuv, sessionId, ccp, dateFrom, dateTo);
                 }
             } catch (Exception e) {
                 generateRE(Constants.PAA_INVIA_RT, "Failure", InternalStepStatus.RT_END_RECONCILIATION_PROCESS, ci, iuv, ccp, null);
@@ -199,6 +177,19 @@ public class RecoveryService {
             }
             generateRE(Constants.PAA_INVIA_RT, "Success", InternalStepStatus.RT_END_RECONCILIATION_PROCESS, ci, iuv, ccp, sessionId);
             MDC.remove(Constants.MDC_BUSINESS_PROCESS);
+        }
+    }
+
+    private void checkDateValidity(String dateFrom, String dateTo) {
+        LocalDate lowerLimit = LocalDate.parse(RECOVERY_VALID_START_DATE, DateTimeFormatter.ISO_LOCAL_DATE);
+        if (LocalDate.parse(dateFrom, DateTimeFormatter.ISO_LOCAL_DATE).isBefore(lowerLimit)) {
+            throw new AppException(AppErrorCodeMessageEnum.ERROR, String.format("The lower bound cannot be lower than [%s]", RECOVERY_VALID_START_DATE));
+        }
+
+        LocalDate now = LocalDate.now();
+        LocalDate parse = LocalDate.parse(dateTo, DateTimeFormatter.ISO_LOCAL_DATE);
+        if (parse.isAfter(now)) {
+            throw new AppException(AppErrorCodeMessageEnum.ERROR, String.format("The upper bound cannot be higher than [%s]", now.format(DateTimeFormatter.ofPattern(DATE_FORMAT_DAY))));
         }
     }
 

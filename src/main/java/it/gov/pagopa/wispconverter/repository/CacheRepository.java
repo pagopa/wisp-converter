@@ -25,12 +25,6 @@ public class CacheRepository {
         this.redisSimpleTemplate.opsForValue().set(key, value, Duration.of(ttl, chronoUnit));
     }
 
-    public void insert(String key, String value, long ttl, ChronoUnit chronoUnit, boolean deleteIfAlreadyExists) {
-        if(deleteIfAlreadyExists && hasKey(key))
-            this.delete(key);
-        this.redisSimpleTemplate.opsForValue().set(key, value, Duration.of(ttl, chronoUnit));
-    }
-
     public <T> T read(String key, Class<T> clazz) {
         T result = null;
         try {
