@@ -39,9 +39,9 @@ public class RPTTimerController {
     private final ErrorUtil errorUtil;
 
 
-    @Operation(summary = "createTimer", description = "Create a timer linked with paymentToken and rpt data", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"RPTTimer"})
+    @Operation(summary = "createTimer", description = "Create a timer with sessionId data", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"RPTTimer"})
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully paymentToken expiration timer created", content = @Content(schema = @Schema()))
+            @ApiResponse(responseCode = "200", description = "Successfully rpt expiration timer created", content = @Content(schema = @Schema()))
     })
     @PostMapping(
             value = "/timer",
@@ -51,23 +51,23 @@ public class RPTTimerController {
     @Trace(businessProcess = RPT_BP_TIMER_SET, reEnabled = true)
     public void createTimer(@RequestBody RPTTimerRequest request) {
         try {
-            log.info("Invoking API operation createTimer - args: {}", sanitizeInput(request.toString()));
+            log.info("Invoking API operation createRPTTimer - args: {}", sanitizeInput(request.toString()));
             rptTimerService.sendMessage(request);
-            log.info("Successful API operation createTimer");
+            log.info("Successful API operation createRPTTimer");
         } catch (Exception ex) {
             String operationId = MDC.get(Constants.MDC_OPERATION_ID);
             log.error(String.format("GenericException: operation-id=[%s]", operationId != null ? operationId : "n/a"), ex);
 
             AppException appException = new AppException(ex, AppErrorCodeMessageEnum.ERROR, ex.getMessage());
             ErrorResponse errorResponse = errorUtil.forAppException(appException);
-            log.error("Failed API operation createTimer - error: {}", errorResponse);
+            log.error("Failed API operation createRPTTimer - error: {}", errorResponse);
             throw ex;
         }
     }
 
-    @Operation(summary = "deleteTimer", description = "Delete a timer by paymentToken", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"ReceiptTimer"})
+    @Operation(summary = "deleteTimer", description = "Delete a timer by sessionId", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"RPTTimer"})
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully paymentToken expiration timer deleted", content = @Content(schema = @Schema()))
+            @ApiResponse(responseCode = "200", description = "Successfully rpt expiration timer deleted", content = @Content(schema = @Schema()))
     })
     @DeleteMapping(
             value = "/timer",
