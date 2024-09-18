@@ -2,7 +2,7 @@
   "openapi": "3.0.1",
   "info": {
     "title": "WISP-Converter-redirect",
-    "version": "0.2.1-1-release-v0.2-fix-rt-domainid-error"
+    "version": "0.2.2"
   },
   "servers": [
     {
