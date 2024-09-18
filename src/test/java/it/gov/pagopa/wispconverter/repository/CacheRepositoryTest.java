@@ -42,38 +42,4 @@ class CacheRepositoryTest {
         cacheRepository.hasKey("key");
         verify(redisSimpleTemplate, times(1)).hasKey(eq("key"));
     }
-
-
-    @Test
-    void testInsertWhenDeleteIfAlreadyExistsTrueAndKeyExists() {
-        // Arrange
-        String key = "testKey";
-        String value = "testValue";
-        long ttl = 5;
-
-        when(redisSimpleTemplate.hasKey(key)).thenReturn(true);
-
-        // Act
-        cacheRepository.insert(key, value, ttl, ChronoUnit.MINUTES, true);
-
-        // Assert
-        verify(redisSimpleTemplate).hasKey(key); // Ensure hasKey is called
-        verify(redisSimpleTemplate).delete(key); // Ensure delete is called because deleteIfAlreadyExists is true and key exists
-    }
-
-    @Test
-    void testInsertWhenDeleteIfAlreadyExistsFalse() {
-        // Arrange
-        String key = "testKey";
-        String value = "testValue";
-        long ttl = 5;
-
-        when(redisSimpleTemplate.hasKey(key)).thenReturn(true);
-
-        // Act
-        cacheRepository.insert(key, value, ttl, ChronoUnit.MINUTES, false);
-
-        // Assert
-        verify(redisSimpleTemplate, never()).delete(key); // Ensure delete is NOT called
-    }
 }

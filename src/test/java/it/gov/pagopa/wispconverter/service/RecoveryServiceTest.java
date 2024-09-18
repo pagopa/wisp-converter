@@ -1,9 +1,7 @@
 package it.gov.pagopa.wispconverter.service;
 
-import it.gov.pagopa.wispconverter.controller.ReceiptController;
 import it.gov.pagopa.wispconverter.controller.model.RecoveryReceiptResponse;
 import it.gov.pagopa.wispconverter.exception.AppException;
-import it.gov.pagopa.wispconverter.repository.CacheRepository;
 import it.gov.pagopa.wispconverter.repository.RTRepository;
 import it.gov.pagopa.wispconverter.repository.ReEventRepository;
 import it.gov.pagopa.wispconverter.repository.model.RTEntity;
@@ -19,10 +17,10 @@ import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 public class RecoveryServiceTest {
@@ -34,10 +32,7 @@ public class RecoveryServiceTest {
     private ReEventRepository reRepository;
 
     @Mock
-    private CacheRepository cacheRepository;
-
-    @Mock
-    private ReceiptController receiptController;
+    private ReceiptService receiptService;
 
     @Mock
     private ReService reService;
@@ -58,24 +53,22 @@ public class RecoveryServiceTest {
         String dateFrom = "2024-09-05";
         String dateTo = "2024-09-09";
         String ci = "ci";
-        String nav = "nav";
         String iuv = "iuv";
         String ccp = "cpp";
         String session = "sessionId";
         List<ReEventEntity> rtSuccessReEventEntity = List.of();
 
         when(reRepository.findBySessionIdAndStatus(anyString(), anyString(), anyString(), anyString())).thenReturn(rtSuccessReEventEntity);
-        doNothing().when(cacheRepository)
-                .insert(anyString(), anyString(), anyLong(), any(ChronoUnit.class), anyBoolean());
-        doNothing().when(receiptController)
-                           .receiptKo(anyString());
+        // doNothing().when(cacheRepository).insert(anyString(), anyString(), anyLong(), any(ChronoUnit.class), anyBoolean());
+        doNothing().when(receiptService)
+                           .sendRTKoFromSessionId(anyString(), any());
         doNothing().when(reService).addRe(any(ReEventDto.class));
 
         // Act
-        recoveryService.recoverReceiptKO(ci, nav, iuv, session, ccp, dateFrom, dateTo);
+        recoveryService.recoverReceiptKO(ci, iuv, ccp, session, dateFrom, dateTo);
 
         // Assert
-        verify(cacheRepository, times(2)).insert(anyString(), anyString(), anyLong(), any(ChronoUnit.class), anyBoolean());
+        verify(reRepository, times(1)).findBySessionIdAndStatus(anyString(), anyString(), anyString(), anyString());
     }
 
     @Test

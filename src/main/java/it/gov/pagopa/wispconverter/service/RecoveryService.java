@@ -1,18 +1,15 @@
 package it.gov.pagopa.wispconverter.service;
 
-import it.gov.pagopa.wispconverter.controller.ReceiptController;
 import it.gov.pagopa.wispconverter.controller.model.RecoveryReceiptPaymentResponse;
 import it.gov.pagopa.wispconverter.controller.model.RecoveryReceiptResponse;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
-import it.gov.pagopa.wispconverter.repository.CacheRepository;
 import it.gov.pagopa.wispconverter.repository.RTRepository;
 import it.gov.pagopa.wispconverter.repository.ReEventRepository;
 import it.gov.pagopa.wispconverter.repository.model.RTEntity;
 import it.gov.pagopa.wispconverter.repository.model.ReEventEntity;
 import it.gov.pagopa.wispconverter.repository.model.SessionIdEntity;
 import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
-import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
 import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.MDCUtil;
@@ -27,7 +24,6 @@ import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -43,17 +39,11 @@ public class RecoveryService {
 
     private static final String RECOVERY_VALID_START_DATE = "2024-09-03";
 
-    private static final String MOCK_NOTICE_NUMBER = "348000000000000000";
-
-    private static final List<String> BUSINESS_PROCESSES = List.of("receipt-ok", "receipt-ko", "ecommerce-hang-timeout-trigger");
-
-    private final ReceiptController receiptController;
+    private final ReceiptService receiptService;
 
     private final RTRepository rtRepository;
 
     private final ReEventRepository reEventRepository;
-
-    private final CacheRepository cacheRepository;
 
     private final ReService reService;
 
@@ -146,11 +136,10 @@ public class RecoveryService {
                 ReEventEntity reEvent = reEventList.get(0);
                 String iuv = reEvent.getIuv();
                 String ccp = reEvent.getCcp();
-                // String noticeNumber = reEvent.getNoticeNumber(); always null in RPT_ACCETTATA_NODO, the NAV is created after /redirect call!
                 String ci = reEvent.getDomainId();
 
                 log.info("[RECOVER-MISSING-REDIRECT] Recovery with receipt-ko for ci = {}, iuv = {}, ccp = {}, sessionId = {}", ci, iuv, ccp, sessionId);
-                this.recoverReceiptKO(ci, MOCK_NOTICE_NUMBER, iuv, sessionId, ccp, dateFromString, dateToString);
+                this.recoverReceiptKO(ci, iuv, ccp, sessionId, dateFromString, dateToString);
             }
         }
 
@@ -180,14 +169,13 @@ public class RecoveryService {
                 int numberOfEvents = filteredEvents.size();
                 if (numberOfEvents > 0) {
                     ReEventEntity event = filteredEvents.get(numberOfEvents - 1);
-                    String noticeNumber = event.getNoticeNumber();
                     String sessionId = event.getSessionId();
 
                     log.info("[RECOVERY-MISSING-RT] Recovery with receipt-ko for ci = {}, iuv = {}, ccp = {}, sessionId = {}", ci, iuv, ccp, sessionId);
-                    this.recoverReceiptKO(ci, noticeNumber, iuv, sessionId, ccp, dateFrom, dateTo);
+                    this.recoverReceiptKO(ci, iuv, ccp, sessionId, dateFrom, dateTo);
                 }
             } catch (Exception e) {
-                generateRE(Constants.PAA_INVIA_RT, "Failure", InternalStepStatus.RT_END_RECONCILIATION_PROCESS, ci, iuv, null, ccp, null);
+                generateRE(Constants.PAA_INVIA_RT, "Failure", InternalStepStatus.RT_END_RECONCILIATION_PROCESS, ci, iuv, ccp, null);
                 throw new AppException(e, AppErrorCodeMessageEnum.ERROR, e.getMessage());
             }
         }
@@ -196,35 +184,26 @@ public class RecoveryService {
     }
 
     // check if there is a successful RT submission, if there isn't prepare cached data and send receipt-ko
-    public void recoverReceiptKO(String ci, String noticeNumber, String iuv, String sessionId, String ccp, String dateFrom, String dateTo) {
+    public void recoverReceiptKO(String ci, String iuv, String ccp, String sessionId, String dateFrom, String dateTo) {
         // search by sessionId, then filter by status=RT_SEND_SUCCESS. If there is zero, then proceed
         List<ReEventEntity> reEventsRT = reEventRepository.findBySessionIdAndStatus(dateFrom, dateTo, sessionId, STATUS_RT_SEND_SUCCESS);
 
         if (reEventsRT.isEmpty()) {
-            String navToIuvMapping = String.format(DecouplerService.MAP_CACHING_KEY_TEMPLATE, ci, noticeNumber);
-            String iuvToSessionIdMapping = String.format(DecouplerService.CACHING_KEY_TEMPLATE, ci, iuv);
-            this.cacheRepository.insert(navToIuvMapping, iuvToSessionIdMapping, this.requestIDMappingTTL, ChronoUnit.MINUTES,true);
-            this.cacheRepository.insert(iuvToSessionIdMapping, sessionId, this.requestIDMappingTTL, ChronoUnit.MINUTES,true);
-
             MDC.put(Constants.MDC_BUSINESS_PROCESS, "receipt-ko");
-            generateRE(Constants.PAA_INVIA_RT, null, InternalStepStatus.RT_START_RECONCILIATION_PROCESS, ci, iuv, noticeNumber, ccp, sessionId);
-            String receiptKoRequest = ReceiptDto.builder()
-                                              .fiscalCode(ci)
-                                              .noticeNumber(noticeNumber)
-                                              .build()
-                                              .toString();
+            generateRE(Constants.PAA_INVIA_RT, null, InternalStepStatus.RT_START_RECONCILIATION_PROCESS, ci, iuv, ccp, sessionId);
+
             try {
-                this.receiptController.receiptKo(receiptKoRequest);
+                this.receiptService.sendRTKoFromSessionId(sessionId, InternalStepStatus.NEGATIVE_RT_TRY_TO_SEND_TO_CREDITOR_INSTITUTION);
             } catch (Exception e) {
-                generateRE(Constants.PAA_INVIA_RT, "Failure", InternalStepStatus.RT_END_RECONCILIATION_PROCESS, ci, iuv, noticeNumber, ccp, sessionId);
+                generateRE(Constants.PAA_INVIA_RT, "Failure", InternalStepStatus.RT_END_RECONCILIATION_PROCESS, ci, iuv, ccp, sessionId);
                 throw new AppException(e, AppErrorCodeMessageEnum.ERROR, e.getMessage());
             }
-            generateRE(Constants.PAA_INVIA_RT, "Success", InternalStepStatus.RT_END_RECONCILIATION_PROCESS, ci, iuv, noticeNumber, ccp, sessionId);
+            generateRE(Constants.PAA_INVIA_RT, "Success", InternalStepStatus.RT_END_RECONCILIATION_PROCESS, ci, iuv, ccp, sessionId);
             MDC.remove(Constants.MDC_BUSINESS_PROCESS);
         }
     }
 
-    private void generateRE(String primitive, String operationStatus, InternalStepStatus status, String domainId, String iuv, String noticeNumber, String ccp, String sessionId) {
+    private void generateRE(String primitive, String operationStatus, InternalStepStatus status, String domainId, String iuv, String ccp, String sessionId) {
 
         // setting data in MDC for next use
         ReEventDto reEvent = ReUtil.getREBuilder()
@@ -235,7 +214,7 @@ public class RecoveryService {
                 .domainId(domainId)
                 .iuv(iuv)
                 .ccp(ccp)
-                .noticeNumber(noticeNumber)
+                .noticeNumber(null)
                 .build();
         reService.addRe(reEvent);
     }
