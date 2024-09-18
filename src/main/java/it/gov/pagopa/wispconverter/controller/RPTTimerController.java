@@ -55,12 +55,13 @@ public class RPTTimerController {
             rptTimerService.sendMessage(request);
             log.info("Successful API operation createRPTTimer");
         } catch (Exception ex) {
-            String operationId = MDC.get(Constants.MDC_OPERATION_ID);
-            log.error(String.format("GenericException: operation-id=[%s]", operationId != null ? operationId : "n/a"), ex);
-
-            AppException appException = new AppException(ex, AppErrorCodeMessageEnum.ERROR, ex.getMessage());
-            ErrorResponse errorResponse = errorUtil.forAppException(appException);
-            log.error("Failed API operation createRPTTimer - error: {}", errorResponse);
+            if(!(ex instanceof AppException)) {
+                String operationId = MDC.get(Constants.MDC_OPERATION_ID);
+                log.error(String.format("GenericException: operation-id=[%s]", operationId != null ? operationId : "n/a"), ex);
+                AppException appException = new AppException(ex, AppErrorCodeMessageEnum.ERROR, ex.getMessage());
+                ErrorResponse errorResponse = errorUtil.forAppException(appException);
+                log.error("Failed API operation createRPTTimer - error: {}", errorResponse);
+            }
             throw ex;
         }
     }
