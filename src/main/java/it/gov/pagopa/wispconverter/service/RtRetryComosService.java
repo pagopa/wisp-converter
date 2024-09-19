@@ -47,7 +47,13 @@ public class RtRetryComosService {
         RTRequestEntity rtRequestEntity = optRTReqEntity.orElseThrow(() -> new AppException(AppErrorCodeMessageEnum.PERSISTENCE_RT_NOT_FOUND, id, partitionKey));
 
         // generate and save RE event internal for change status
-        MDC.put(Constants.MDC_SESSION_ID, rtRequestEntity.getIdempotencyKey().split("_")[0]);
+        String idempotencyKey = rtRequestEntity.getIdempotencyKey();
+        if (idempotencyKey != null) {
+            String[] idempotencyKeySections = idempotencyKey.split("_");
+            if (idempotencyKeySections.length > 0) {
+                MDC.put(Constants.MDC_SESSION_ID, idempotencyKeySections[0]);
+            }
+        }
         generateRE(rtRequestEntity.getPayload());
 
         return rtRequestEntity;

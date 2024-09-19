@@ -150,8 +150,11 @@ public class RTConsumer extends SBConsumer {
             IntestazionePPT header = jaxbElementUtil.getHeader(envelopeElement, IntestazionePPT.class);
 
             // set MDC session data for RE
+            String noticeNumberFromIdempotencyKey = null;
             String[] idempotencyKeySections = idempotencyKey.split("_");
-            String noticeNumberFromIdempotencyKey = "null".equals(idempotencyKeySections[1]) ? null : idempotencyKeySections[1];
+            if (idempotencyKeySections.length > 1 && !"null".equals(idempotencyKeySections[1])) {
+                noticeNumberFromIdempotencyKey = idempotencyKeySections[1];
+            }
             MDCUtil.setSessionDataInfo(header, noticeNumberFromIdempotencyKey);
 
             String rawPayload = new String(unzippedPayload);
