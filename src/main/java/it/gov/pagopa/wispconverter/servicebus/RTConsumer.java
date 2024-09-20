@@ -17,7 +17,6 @@ import it.gov.pagopa.wispconverter.util.*;
 import jakarta.xml.soap.SOAPMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -93,7 +92,6 @@ public class RTConsumer extends SBConsumer {
         String receiptId = idSections[1] + "_" + idSections[2];
 
         // get RT request entity from database
-        MDC.put(Constants.MDC_SESSION_ID, receiptId);
         RTRequestEntity rtRequestEntity = rtRetryComosService.getRTRequestEntity(receiptId, rtInsertionDate);
         String idempotencyKey = rtRequestEntity.getIdempotencyKey();
         ReceiptTypeEnum receiptType = rtRequestEntity.getReceiptType();
@@ -152,8 +150,12 @@ public class RTConsumer extends SBConsumer {
             IntestazionePPT header = jaxbElementUtil.getHeader(envelopeElement, IntestazionePPT.class);
 
             // set MDC session data for RE
+            String noticeNumberFromIdempotencyKey = null;
             String[] idempotencyKeySections = idempotencyKey.split("_");
-            MDCUtil.setSessionDataInfo(header, idempotencyKeySections[2]);
+            if (idempotencyKeySections.length > 1 && !"null".equals(idempotencyKeySections[1])) {
+                noticeNumberFromIdempotencyKey = idempotencyKeySections[1];
+            }
+            MDCUtil.setSessionDataInfo(header, noticeNumberFromIdempotencyKey);
 
             String rawPayload = new String(unzippedPayload);
             paaInviaRTSenderService.sendToCreditorInstitution(receipt.getUrl(), extractHeaders(receipt.getHeaders()), rawPayload);
