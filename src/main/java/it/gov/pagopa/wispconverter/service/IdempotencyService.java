@@ -79,7 +79,7 @@ public class IdempotencyService {
 
             } else if (!IdempotencyStatusEnum.FAILED.equals(idempotencyKeyEntity.getStatus())) {
 
-                throw new AppException(AppErrorCodeMessageEnum.RECEIPT_GENERATION_NOT_PROCESSABLE, idempotencyKey);
+                throw new AppException(AppErrorCodeMessageEnum.RECEIPT_GENERATION_NOT_PROCESSABLE, idempotencyKey, idempotencyKeyEntity.getStatus());
             }
 
         } else {
