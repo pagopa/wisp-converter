@@ -229,6 +229,7 @@ public class DebtPositionService {
             // finally, generate the payment position and add the payment option
             String creditorInstitutionId = paymentExtractedFromRPT.getDomain().getDomainId();
             PaymentPositionModelDto paymentPosition = mapper.toPaymentPosition(rptContent);
+//            rptContent.getRpt().getPayer().getName().isBlank()
             paymentPosition.setIupd(generateIUPD(creditorInstitutionId));
             paymentPosition.setCompanyName(configCacheService.getCreditorInstitutionNameFromCache(creditorInstitutionId));
             paymentPosition.setPaymentOption(List.of(paymentOption));
