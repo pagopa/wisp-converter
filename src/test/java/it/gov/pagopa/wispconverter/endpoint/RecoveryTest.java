@@ -73,7 +73,7 @@ class RecoveryTest {
     }
 
     @Test
-    public void testRecoverReceiptKOForCreditorInstitutionAndIUV() throws Exception {
+    void testRecoverReceiptKOForCreditorInstitutionAndIUV() throws Exception {
         String ci = "77777777777";
         String iuv = "00000000000000000";
         String dateFrom = "2024-09-03";
@@ -88,7 +88,7 @@ class RecoveryTest {
     }
 
     @Test
-    public void testRecoverReceiptKOForCreditorInstitutionAndIUV_500() throws Exception {
+    void testRecoverReceiptKOForCreditorInstitutionAndIUV_500() throws Exception {
         String ci = "77777777777";
         String iuv = "00000000000000000";
         String dateFrom = "2024-09-03";

@@ -44,7 +44,7 @@ public class RecoveryServiceTest {
     }
 
     @Test
-    public void testRecoverReceiptKO() throws Exception {
+    void testRecoverReceiptKO() {
         // Arrange
         String dateFrom = "2024-09-05";
         String dateTo = "2024-09-09";
@@ -55,7 +55,6 @@ public class RecoveryServiceTest {
         List<ReEventEntity> rtSuccessReEventEntity = List.of();
 
         when(reRepository.findBySessionIdAndStatus(anyString(), anyString(), anyString(), anyString())).thenReturn(rtSuccessReEventEntity);
-        // doNothing().when(cacheRepository).insert(anyString(), anyString(), anyLong(), any(ChronoUnit.class), anyBoolean());
         doNothing().when(receiptService)
                 .sendRTKoFromSessionId(anyString(), any());
         doNothing().when(reService).addRe(any(ReEventDto.class));
@@ -68,7 +67,7 @@ public class RecoveryServiceTest {
     }
 
     @Test
-    public void testRecoverReceiptKOForCreditorInstitution_Success() {
+    void testRecoverReceiptKOForCreditorInstitution_Success() {
         // Arrange
         String creditorInstitution = "77777777777";
         String dateFrom = "2024-09-05";
@@ -86,7 +85,7 @@ public class RecoveryServiceTest {
     }
 
     @Test
-    public void testRecoverReceiptKOForCreditorInstitution_LowerBoundFailure() {
+    void testRecoverReceiptKOForCreditorInstitution_LowerBoundFailure() {
         // Arrange
         String creditorInstitution = "77777777777";
         String dateFrom = "2024-09-01";  // Date earlier than valid start date
@@ -100,7 +99,7 @@ public class RecoveryServiceTest {
     }
 
     @Test
-    public void testRecoverReceiptKOForCreditorInstitution_UpperBoundFailure() {
+    void testRecoverReceiptKOForCreditorInstitution_UpperBoundFailure() {
         // Arrange
         String creditorInstitution = "77777777777";
         String dateFrom = "2024-09-05";
@@ -115,7 +114,7 @@ public class RecoveryServiceTest {
     }
 
     @Test
-    public void testRecoverReceiptKOByIUV() {
+    void testRecoverReceiptKOByIUV() {
         // Arrange
         String dateFrom = "2024-09-05";
         String dateTo = "2024-09-09";

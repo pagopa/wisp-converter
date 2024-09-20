@@ -148,7 +148,7 @@ public class RecoveryService {
                     String sessionId = event.getSessionId();
 
                     log.info("[RECOVERY-MISSING-RT] Recovery with receipt-ko for ci = {}, iuv = {}, ccp = {}, sessionId = {}", ci, iuv, ccp, sessionId);
-                    this.recoverReceiptKO(ci, iuv, sessionId, ccp, dateFrom, dateTo);
+                    this.recoverReceiptKO(ci, iuv, ccp, sessionId, dateFrom, dateTo);
                 }
             } catch (Exception e) {
                 generateRE(Constants.PAA_INVIA_RT, "Failure", InternalStepStatus.RT_END_RECONCILIATION_PROCESS, ci, iuv, ccp, null);
@@ -216,7 +216,7 @@ public class RecoveryService {
                 "GENERATED_NAV_FOR_NEW_PAYMENT_POSITION",
                 "CREATED_NEW_PAYMENT_POSITION_IN_GPD",
                 "GENERATED_CACHE_ABOUT_RPT_FOR_DECOUPLER",
-                "GENERATED_CACHE_ABOUT_RPT_FOR_RT_GENERATION",
+                EVENT_TYPE_FOR_RECEIPTKO_SEARCH,
                 "SAVED_RPT_IN_CART_RECEIVED_REDIRECT_URL_FROM_CHECKOUT"
         );
     }
