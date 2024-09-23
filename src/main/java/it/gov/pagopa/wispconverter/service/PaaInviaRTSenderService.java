@@ -18,10 +18,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.util.Pair;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestTemplate;
 
+import java.net.InetSocketAddress;
+import java.net.Proxy;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -40,12 +44,23 @@ public class PaaInviaRTSenderService {
     @Value("${wisp-converter.rt-send.avoid-scheduling-on-states}")
     private Set<String> avoidSchedulingOnStates;
 
-    public void sendToCreditorInstitution(String url, List<Pair<String, String>> headers, String payload) {
+    public void sendToCreditorInstitution(String url, InetSocketAddress proxyAddress, List<Pair<String, String>> headers, String payload) {
 
         try {
 
-            // Generating the REST client and send the passed request payload to the passed URL
-            RestClient client = restClientBuilder.build();
+            // Generating the REST client, setting proxy specification if needed
+            RestClient client;
+            if (proxyAddress != null) {
+                SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+                factory.setProxy(new Proxy(Proxy.Type.HTTP, proxyAddress));
+                client = RestClient.builder(new RestTemplate(factory))
+                        .baseUrl(url)
+                        .build();
+            } else {
+                client = restClientBuilder.build();
+            }
+
+            // Send the passed request payload to the passed URL
             RestClient.RequestBodySpec bodySpec = client.post()
                     .uri(URI.create(url))
                     .body(payload);

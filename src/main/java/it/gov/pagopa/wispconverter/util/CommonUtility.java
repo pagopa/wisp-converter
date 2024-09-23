@@ -4,6 +4,7 @@ import com.azure.messaging.servicebus.ServiceBusClientBuilder;
 import com.azure.messaging.servicebus.ServiceBusErrorContext;
 import com.azure.messaging.servicebus.ServiceBusProcessorClient;
 import com.azure.messaging.servicebus.ServiceBusReceivedMessageContext;
+import it.gov.pagopa.gen.wispconverter.client.cache.model.ProxyDto;
 import it.gov.pagopa.gen.wispconverter.client.cache.model.ServiceDto;
 import it.gov.pagopa.gen.wispconverter.client.cache.model.StationDto;
 import it.gov.pagopa.gen.wispconverter.client.gpd.model.PaymentOptionModelDto;
@@ -19,6 +20,7 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.springframework.data.util.Pair;
 
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.LinkedList;
 import java.util.List;
@@ -100,6 +102,19 @@ public class CommonUtility {
             headers.add(Pair.of("Ocp-Apim-Subscription-Key", forwarderSubscriptionKey));
         }
         return headers;
+    }
+
+    public static InetSocketAddress constructProxyAddress(String startingUrl, StationDto station, String apimPath) {
+        InetSocketAddress proxyAddress = null;
+
+        if (startingUrl.contains(apimPath)) {
+            ProxyDto proxyDto = station.getProxy();
+            if (proxyDto == null || proxyDto.getProxyHost() == null || proxyDto.getProxyPort() == null) {
+                throw new AppException(AppErrorCodeMessageEnum.CONFIGURATION_INVALID_STATION_PROXY);
+            }
+            proxyAddress = new InetSocketAddress(proxyDto.getProxyHost(), proxyDto.getProxyPort().intValue());
+        }
+        return proxyAddress;
     }
 
     public static String getConfigKeyValueCache(Map<String, it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigurationKeyDto> configurations, String key) {
@@ -211,8 +226,7 @@ public class CommonUtility {
     public static String sanitizeInput(String input) {
         if (input.matches("\\w*")) {
             return input;
-        }
-        else {
+        } else {
             return "suspicious input";
         }
     }

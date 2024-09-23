@@ -26,6 +26,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.time.ZonedDateTime;
 import java.util.LinkedList;
 import java.util.List;
@@ -158,8 +159,17 @@ public class RTConsumer extends SBConsumer {
             }
             MDCUtil.setSessionDataInfo(header, noticeNumberFromIdempotencyKey);
 
+            InetSocketAddress proxyAddress = null;
+            if (receipt.getProxyAddress() != null) {
+                String[] proxyComponents = receipt.getProxyAddress().split(":");
+                if (proxyComponents.length != 2) {
+                    throw new AppException(AppErrorCodeMessageEnum.CONFIGURATION_INVALID_STATION_PROXY);
+                }
+                proxyAddress = new InetSocketAddress(proxyComponents[0], Integer.getInteger(proxyComponents[1]));
+            }
+
             String rawPayload = new String(unzippedPayload);
-            paaInviaRTSenderService.sendToCreditorInstitution(receipt.getUrl(), extractHeaders(receipt.getHeaders()), rawPayload);
+            paaInviaRTSenderService.sendToCreditorInstitution(receipt.getUrl(), proxyAddress, extractHeaders(receipt.getHeaders()), rawPayload);
             rtRetryComosService.deleteRTRequestEntity(receipt);
             log.debug("Sent receipt [{}]", receiptId);
 
