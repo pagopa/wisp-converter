@@ -15,6 +15,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+import static it.gov.pagopa.wispconverter.service.RecoveryService.EVENT_TYPE_FOR_RECEIPTKO_SEARCH;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
@@ -67,7 +68,7 @@ public class RecoveryServiceTest {
     }
 
     @Test
-    void testRecoverReceiptKOForCreditorInstitution_Success() {
+    void testRecoverReceiptKOForCreditorInstitution_Success_Empty() {
         // Arrange
         String creditorInstitution = "77777777777";
         String dateFrom = "2024-09-05";
@@ -82,6 +83,39 @@ public class RecoveryServiceTest {
         // Assert
         assertNotNull(response);
         assertEquals(0, response.getPayments().size());
+    }
+
+    @Test
+    void testRecoverReceiptKOForCreditorInstitution_Success_NotEmpty() {
+        // Arrange
+        String creditorInstitution = "77777777777";
+        String dateFrom = "2024-09-05";
+        String dateTo = "2024-09-09";
+        List<RTEntity> mockRTEntities = List.of(RTEntity.builder()
+                                                        .idDominio("ci")
+                                                        .iuv("iuv")
+                                                        .ccp("ccp")
+                                                        .build());
+        List<ReEventEntity> mockReEntities = List.of(ReEventEntity.builder()
+                                                             .status(EVENT_TYPE_FOR_RECEIPTKO_SEARCH)
+                                                             .ccp("ccp")
+                                                             .sessionId("sessionId")
+                                                             .build());
+        List<ReEventEntity> rtSuccessReEventEntity = List.of();
+
+        when(rtRepository.findByOrganizationId(anyString(), anyString(), anyString())).thenReturn(mockRTEntities);
+        when(reRepository.findByIuvAndOrganizationId(anyString(), anyString(), anyString(), anyString())).thenReturn(mockReEntities);
+        when(reRepository.findBySessionIdAndStatus(anyString(), anyString(), anyString(), anyString())).thenReturn(rtSuccessReEventEntity);
+        doNothing().when(receiptService)
+                .sendRTKoFromSessionId(anyString(), any());
+        doNothing().when(reService).addRe(any(ReEventDto.class));
+
+        // Act
+        RecoveryReceiptResponse response = recoveryService.recoverReceiptKOForCreditorInstitution(creditorInstitution, dateFrom, dateTo);
+
+        // Assert
+        assertNotNull(response);
+        assertEquals(1, response.getPayments().size());
     }
 
     @Test

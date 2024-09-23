@@ -33,7 +33,7 @@ import java.util.concurrent.CompletableFuture;
 @RequiredArgsConstructor
 public class RecoveryService {
 
-    private static final String EVENT_TYPE_FOR_RECEIPTKO_SEARCH = "GENERATED_CACHE_ABOUT_RPT_FOR_RT_GENERATION";
+    public static final String EVENT_TYPE_FOR_RECEIPTKO_SEARCH = "GENERATED_CACHE_ABOUT_RPT_FOR_RT_GENERATION";
 
     private static final String RPT_ACCETTATA_NODO = "RPT_ACCETTATA_NODO";
 
