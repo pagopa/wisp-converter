@@ -11,11 +11,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.*;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import static it.gov.pagopa.wispconverter.service.RecoveryService.EVENT_TYPE_FOR_RECEIPTKO_SEARCH;
+import static it.gov.pagopa.wispconverter.service.RecoveryService.RPT_PARCHEGGIATA_NODO;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
@@ -119,6 +121,24 @@ public class RecoveryServiceTest {
     }
 
     @Test
+    void testRecoverReceiptKOForCreditorInstitution_Success_Today() {
+        // Arrange
+        String creditorInstitution = "77777777777";
+        String dateFrom = "2024-09-05";
+        String dateTo = LocalDate.now().toString();
+        List<RTEntity> mockRTEntities = List.of();
+
+        when(rtRepository.findByOrganizationId(anyString(), anyString(), anyString())).thenReturn(mockRTEntities);
+
+        // Act
+        RecoveryReceiptResponse response = recoveryService.recoverReceiptKOForCreditorInstitution(creditorInstitution, dateFrom, dateTo);
+
+        // Assert
+        assertNotNull(response);
+        assertEquals(0, response.getPayments().size());
+    }
+
+    @Test
     void testRecoverReceiptKOForCreditorInstitution_LowerBoundFailure() {
         // Arrange
         String creditorInstitution = "77777777777";
@@ -157,6 +177,35 @@ public class RecoveryServiceTest {
         List<ReEventEntity> rtSuccessReEventEntity = List.of();
 
         when(reRepository.findByIuvAndOrganizationId(anyString(), anyString(), anyString(), anyString())).thenReturn(rtSuccessReEventEntity);
+        doNothing().when(receiptService).sendRTKoFromSessionId(anyString(), any());
+        doNothing().when(reService).addRe(any(ReEventDto.class));
+
+        // Act
+        recoveryService.recoverReceiptKO(ci, iuv, dateFrom, dateTo);
+
+        // Assert
+        verify(reRepository, times(1)).findByIuvAndOrganizationId(anyString(), anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void testRecoverReceiptKOByIUV_NotEmpty() {
+        // Arrange
+        String dateFrom = "2024-09-05";
+        String dateTo = "2024-09-09";
+        String ci = "ci";
+        String iuv = "iuv";
+        List<ReEventEntity> rtSuccessReEventEntity = List.of();
+        List<ReEventEntity> interruptedRPTEvents = List.of(ReEventEntity.builder()
+                                                                     .insertedTimestamp(Instant.now())
+                                                                     .status(RPT_PARCHEGGIATA_NODO)
+                                                                     .sessionId("sessionId")
+                                                                     .ccp("ccp")
+                                                                     .build());
+
+        when(reRepository.findByIuvAndOrganizationId(anyString(), anyString(), anyString(), anyString())).thenReturn(interruptedRPTEvents);
+        doNothing().when(receiptService).sendRTKoFromSessionId(anyString(), any());
+        doNothing().when(reService).addRe(any(ReEventDto.class));
+        when(reRepository.findBySessionIdAndStatus(anyString(), anyString(), anyString(), anyString())).thenReturn(rtSuccessReEventEntity);
         doNothing().when(receiptService).sendRTKoFromSessionId(anyString(), any());
         doNothing().when(reService).addRe(any(ReEventDto.class));
 

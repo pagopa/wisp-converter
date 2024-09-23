@@ -37,7 +37,7 @@ public class RecoveryService {
 
     private static final String RPT_ACCETTATA_NODO = "RPT_ACCETTATA_NODO";
 
-    private static final String RPT_PARCHEGGIATA_NODO = "RPT_PARCHEGGIATA_NODO";
+    public static final String RPT_PARCHEGGIATA_NODO = "RPT_PARCHEGGIATA_NODO";
 
     private static final String STATUS_RT_SEND_SUCCESS = "RT_SEND_SUCCESS";
 
@@ -80,19 +80,14 @@ public class RecoveryService {
     }
 
     public RecoveryReceiptResponse recoverReceiptKOForCreditorInstitution(String creditorInstitution, String dateFrom, String dateTo) {
-
         MDCUtil.setSessionDataInfo("recovery-receipt-ko");
-        LocalDate lowerLimit = LocalDate.parse(RECOVERY_VALID_START_DATE, DateTimeFormatter.ISO_LOCAL_DATE);
-        if (LocalDate.parse(dateFrom, DateTimeFormatter.ISO_LOCAL_DATE).isBefore(lowerLimit)) {
-            throw new AppException(AppErrorCodeMessageEnum.ERROR, String.format("The lower bound cannot be lower than [%s]", RECOVERY_VALID_START_DATE));
-        }
 
-        LocalDate now = LocalDate.now();
         checkDateValidity(dateFrom, dateTo);
 
         LocalDate parse = LocalDate.parse(dateTo, DateTimeFormatter.ISO_LOCAL_DATE);
         String dateToRefactored;
-        if (now.isEqual(parse)) {
+
+        if (LocalDate.now().isEqual(parse)) {
             ZonedDateTime nowMinusMinutes = ZonedDateTime.now(ZoneOffset.UTC).minusMinutes(receiptGenerationWaitTime);
             dateToRefactored = nowMinusMinutes.format(DateTimeFormatter.ofPattern(DATE_FORMAT));
             log.info("Upper bound forced to {}", dateToRefactored);
@@ -186,10 +181,10 @@ public class RecoveryService {
             throw new AppException(AppErrorCodeMessageEnum.ERROR, String.format("The lower bound cannot be lower than [%s]", RECOVERY_VALID_START_DATE));
         }
 
-        LocalDate now = LocalDate.now();
+        LocalDate today = LocalDate.now();
         LocalDate parse = LocalDate.parse(dateTo, DateTimeFormatter.ISO_LOCAL_DATE);
-        if (parse.isAfter(now)) {
-            throw new AppException(AppErrorCodeMessageEnum.ERROR, String.format("The upper bound cannot be higher than [%s]", now.format(DateTimeFormatter.ofPattern(DATE_FORMAT_DAY))));
+        if (parse.isAfter(today)) {
+            throw new AppException(AppErrorCodeMessageEnum.ERROR, String.format("The upper bound cannot be higher than [%s]", today.format(DateTimeFormatter.ofPattern(DATE_FORMAT_DAY))));
         }
     }
 
