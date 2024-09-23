@@ -165,7 +165,7 @@ public class RTConsumer extends SBConsumer {
                 if (proxyComponents.length != 2) {
                     throw new AppException(AppErrorCodeMessageEnum.CONFIGURATION_INVALID_STATION_PROXY);
                 }
-                proxyAddress = new InetSocketAddress(proxyComponents[0], Integer.getInteger(proxyComponents[1]));
+                proxyAddress = new InetSocketAddress(proxyComponents[0], Integer.parseInt(proxyComponents[1]));
             }
 
             String rawPayload = new String(unzippedPayload);
