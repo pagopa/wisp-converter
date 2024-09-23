@@ -96,6 +96,7 @@ microservice-chart:
     OTEL_TRACES_SAMPLER: "always_on"
     REDIS_PORT: "6380"
     COSMOS_URI: "https://pagopa-p-weu-nodo-wispconv-cosmos-account.documents.azure.com:443/"
+    COSMOS_READ_REGION: "North Europe"
     PAAINVIART_SERVICE_BUS_NAME: "nodo_wisp_paainviart_queue"
     RECEIPT_TIMER_QUEUE_NAME: "nodo_wisp_payment_timeout_queue"
     ECOMMERCE_HANG_TIMER_QUEUE_NAME: "nodo_wisp_ecommerce_hang_timeout_queue"
