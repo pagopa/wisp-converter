@@ -109,9 +109,9 @@ public class RTConsumer extends SBConsumer {
 
                 // If receipt was found, it must be sent to creditor institution, so it try this operation
                 log.debug("Sending message {}, retry: {}", compositedIdForReceipt, rtRequestEntity.getRetry());
-                resendRTToCreditorInstitution(receiptId, rtRequestEntity, compositedIdForReceipt, idempotencyKey);
+                boolean isSend = resendRTToCreditorInstitution(receiptId, rtRequestEntity, compositedIdForReceipt, idempotencyKey);
 
-                idempotencyStatus = IdempotencyStatusEnum.SUCCESS;
+                idempotencyStatus = isSend ? IdempotencyStatusEnum.SUCCESS : IdempotencyStatusEnum.FAILED;
 
             } else {
 
@@ -138,8 +138,9 @@ public class RTConsumer extends SBConsumer {
         }
     }
 
-    private void resendRTToCreditorInstitution(String receiptId, RTRequestEntity receipt, String compositedIdForReceipt, String idempotencyKey) {
+    private boolean resendRTToCreditorInstitution(String receiptId, RTRequestEntity receipt, String compositedIdForReceipt, String idempotencyKey) {
 
+        boolean isSend = false;
         try {
 
             log.debug("Sending receipt [{}]", receiptId);
@@ -164,6 +165,7 @@ public class RTConsumer extends SBConsumer {
 
             // generate a new event in RE for store the successful re-sending of the receipt
             generateREForSentRT();
+            isSend = true;
 
         } catch (AppException e) {
 
@@ -177,6 +179,7 @@ public class RTConsumer extends SBConsumer {
 
             throw new AppException(AppErrorCodeMessageEnum.PARSING_INVALID_ZIPPED_PAYLOAD);
         }
+        return isSend;
     }
 
     private List<Pair<String, String>> extractHeaders(List<String> headers) {
