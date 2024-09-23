@@ -235,8 +235,9 @@ public class RecoveryService {
                 InetSocketAddress proxyAddress = CommonUtility.constructProxyAddress(url, station, apimPath);
                 if (proxyAddress != null) {
                     rtRequestEntity.setProxyAddress(String.format("%s:%s", proxyAddress.getHostString(), proxyAddress.getPort()));
-                    rtRetryRepository.save(rtRequestEntity);
                 }
+                rtRequestEntity.setRetry(0);
+                rtRetryRepository.save(rtRequestEntity);
 
                 String compositedIdForReceipt = String.format("%s_%s", rtRequestEntity.getPartitionKey(), rtRequestEntity.getId());
                 serviceBusService.sendMessage(compositedIdForReceipt, null);

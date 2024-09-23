@@ -107,7 +107,7 @@ public class CommonUtility {
     public static InetSocketAddress constructProxyAddress(String startingUrl, StationDto station, String apimPath) {
         InetSocketAddress proxyAddress = null;
 
-        if (startingUrl.contains(apimPath)) {
+        if (!startingUrl.contains(apimPath)) {
             ProxyDto proxyDto = station.getProxy();
             if (proxyDto == null || proxyDto.getProxyHost() == null || proxyDto.getProxyPort() == null) {
                 throw new AppException(AppErrorCodeMessageEnum.CONFIGURATION_INVALID_STATION_PROXY);
