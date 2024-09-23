@@ -206,7 +206,7 @@ class ConsumerTest {
         when(ccs.getConfigData()).thenReturn(TestUtils.configData("mystation"));
 
         PaaInviaRTSenderService paaInviaRTSenderService = mock(PaaInviaRTSenderService.class);
-        doThrow(new AppException(AppErrorCodeMessageEnum.PARSING_GENERIC_ERROR)).when(paaInviaRTSenderService).sendToCreditorInstitution(any(), any(), any());
+        doThrow(new AppException(AppErrorCodeMessageEnum.PARSING_GENERIC_ERROR)).when(paaInviaRTSenderService).sendToCreditorInstitution(any(), any(), any(), any());
 
         ReflectionTestUtils.setField(rtConsumer, "rtRetryComosService", rtRetryComosService);
         ReflectionTestUtils.setField(rtConsumer, "paaInviaRTSenderService", paaInviaRTSenderService);
@@ -263,7 +263,7 @@ class ConsumerTest {
         when(ccs.getConfigData()).thenReturn(TestUtils.configData("mystation"));
 
         PaaInviaRTSenderService paaInviaRTSenderService = mock(PaaInviaRTSenderService.class);
-        doThrow(new AppException(AppErrorCodeMessageEnum.PARSING_GENERIC_ERROR)).when(paaInviaRTSenderService).sendToCreditorInstitution(any(), any(), any());
+        doThrow(new AppException(AppErrorCodeMessageEnum.PARSING_GENERIC_ERROR)).when(paaInviaRTSenderService).sendToCreditorInstitution(any(), any(), any(), any());
 
         ReflectionTestUtils.setField(rtConsumer, "rtRetryComosService", rtRetryComosService);
         ReflectionTestUtils.setField(rtConsumer, "paaInviaRTSenderService", paaInviaRTSenderService);
