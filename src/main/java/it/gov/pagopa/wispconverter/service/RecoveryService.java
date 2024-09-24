@@ -30,6 +30,7 @@ import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 
 import java.net.InetSocketAddress;
+import java.net.URI;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -224,15 +225,13 @@ public class RecoveryService {
                 StationDto station = configCacheService.getStationByIdFromCache(stationId);
 
                 ConnectionDto stationConnection = station.getConnection();
-                String url = CommonUtility.constructUrl(
+                URI uri = CommonUtility.constructUrl(
                         stationConnection.getProtocol().getValue(),
                         stationConnection.getIp(),
                         stationConnection.getPort().intValue(),
-                        station.getService() != null ? station.getService().getPath() : "",
-                        null,
-                        null
+                        station.getService() != null ? station.getService().getPath() : ""
                 );
-                InetSocketAddress proxyAddress = CommonUtility.constructProxyAddress(url, station, apimPath);
+                InetSocketAddress proxyAddress = CommonUtility.constructProxyAddress(uri, station, apimPath);
                 if (proxyAddress != null) {
                     rtRequestEntity.setProxyAddress(String.format("%s:%s", proxyAddress.getHostString(), proxyAddress.getPort()));
                 }

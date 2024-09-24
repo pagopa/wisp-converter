@@ -43,7 +43,7 @@ public class PaaInviaRTSenderService {
     @Value("${wisp-converter.rt-send.avoid-scheduling-on-states}")
     private Set<String> avoidSchedulingOnStates;
 
-    public void sendToCreditorInstitution(String url, InetSocketAddress proxyAddress, List<Pair<String, String>> headers, String payload) {
+    public void sendToCreditorInstitution(URI uri, InetSocketAddress proxyAddress, List<Pair<String, String>> headers, String payload) {
 
         try {
 
@@ -51,7 +51,6 @@ public class PaaInviaRTSenderService {
             RestClient client;
             if (proxyAddress != null) {
                 client = RestClient.builder(ProxyUtility.getProxiedClient(proxyAddress))
-                        .baseUrl(url)
                         .build();
             } else {
                 client = restClientBuilder.build();
@@ -59,14 +58,14 @@ public class PaaInviaRTSenderService {
 
             // Send the passed request payload to the passed URL
             RestClient.RequestBodySpec bodySpec = client.post()
-                    .uri(URI.create(url))
+                    .uri(uri)
                     .body(payload);
             for (Pair<String, String> header : headers) {
                 bodySpec.header(header.getFirst(), header.getSecond());
             }
 
             // Save an RE event in order to track the communication with creditor institution
-            generateREForRequestToCreditorInstitution(url, headers, payload);
+            generateREForRequestToCreditorInstitution(uri.toString(), headers, payload);
 
             // Communicating with creditor institution sending the paaInviaRT request
             ResponseEntity<String> response = bodySpec.retrieve().toEntity(String.class);
@@ -76,7 +75,7 @@ public class PaaInviaRTSenderService {
             PaaInviaRTRisposta body = checkResponseValidity(response, bodyPayload);
 
             // Save an RE event in order to track the response from creditor institution
-            generateREForResponseFromCreditorInstitution(url, response.getStatusCode().value(), response.getHeaders(), bodyPayload, OutcomeEnum.RECEIVED, null);
+            generateREForResponseFromCreditorInstitution(uri.toString(), response.getStatusCode().value(), response.getHeaders(), bodyPayload, OutcomeEnum.RECEIVED, null);
 
             // check the response and if the outcome is KO, throw an exception
             EsitoPaaInviaRT esitoPaaInviaRT = body.getPaaInviaRTRisposta();
@@ -111,7 +110,7 @@ public class PaaInviaRTSenderService {
                 int statusCode = error.getStatusCode().value();
                 String responseBody = error.getResponseBodyAsString();
                 String otherInfo = error.getStatusText();
-                generateREForResponseFromCreditorInstitution(url, statusCode, error.getResponseHeaders(), responseBody, OutcomeEnum.RECEIVED_FAILURE, otherInfo);
+                generateREForResponseFromCreditorInstitution(uri.toString(), statusCode, error.getResponseHeaders(), responseBody, OutcomeEnum.RECEIVED_FAILURE, otherInfo);
             }
 
             throw new AppException(AppErrorCodeMessageEnum.RECEIPT_GENERATION_GENERIC_ERROR, e.getMessage());

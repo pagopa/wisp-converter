@@ -27,6 +27,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.URI;
 import java.time.ZonedDateTime;
 import java.util.LinkedList;
 import java.util.List;
@@ -169,7 +170,7 @@ public class RTConsumer extends SBConsumer {
             }
 
             String rawPayload = new String(unzippedPayload);
-            paaInviaRTSenderService.sendToCreditorInstitution(receipt.getUrl(), proxyAddress, extractHeaders(receipt.getHeaders()), rawPayload);
+            paaInviaRTSenderService.sendToCreditorInstitution(URI.create(receipt.getUrl()), proxyAddress, extractHeaders(receipt.getHeaders()), rawPayload);
             rtRetryComosService.deleteRTRequestEntity(receipt);
             log.debug("Sent receipt [{}]", receiptId);
 

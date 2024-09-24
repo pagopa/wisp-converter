@@ -46,7 +46,7 @@ class PaaInviaRTSenderServiceTest {
 
         PaaInviaRTSenderService p = new PaaInviaRTSenderService(builder, reService, jaxbElementUtil);
         org.springframework.test.util.ReflectionTestUtils.setField(p, "jaxbElementUtil", new JaxbElementUtil());
-        p.sendToCreditorInstitution("", null, List.of(Pair.of("soapaction", "paaInviaRT")), "");
+        p.sendToCreditorInstitution(URI.create("http://pagopa.mock.dev/"), null, List.of(Pair.of("soapaction", "paaInviaRT")), "");
         assertTrue(true);
     }
 
@@ -77,7 +77,7 @@ class PaaInviaRTSenderServiceTest {
 
         PaaInviaRTSenderService p = new PaaInviaRTSenderService(builder, reService, jaxbElementUtil);
         try {
-            p.sendToCreditorInstitution("", null, List.of(Pair.of("soapaction", "paaInviaRT")), "");
+            p.sendToCreditorInstitution(URI.create("http://pagopa.mock.dev/"), null, List.of(Pair.of("soapaction", "paaInviaRT")), "");
             fail();
         } catch (AppException e) {
             assertTrue(true);
