@@ -4,24 +4,31 @@ import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 import it.gov.pagopa.wispconverter.service.RecoveryService;
+import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
+import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.time.ZonedDateTime;
 
+@ActiveProfiles(profiles = "test")
 @SpringBootTest(classes = RecoveryScheduler.class)
 class RecoverySchedulerTest {
     @MockBean
-    @Qualifier("recoveryService")
     private RecoveryService recoveryService;
 
-    @Autowired
-    @InjectMocks
     RecoveryScheduler recoveryScheduler;
+
+    @BeforeEach
+    public void setup() {
+        recoveryScheduler = new RecoveryScheduler(recoveryService);
+    }
 
     @Test
     void testRecoverReceiptKOCronJob() {

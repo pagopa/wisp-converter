@@ -3,6 +3,7 @@ package it.gov.pagopa.wispconverter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.wispconverter.controller.model.AppInfoResponse;
 import it.gov.pagopa.wispconverter.service.ReceiptService;
+import it.gov.pagopa.wispconverter.service.RecoveryService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -33,10 +34,11 @@ class HomeTest {
     @Autowired
     private MockMvc mvc;
 
-
-
     @MockBean
     private ReceiptService receiptService;
+
+    @MockBean
+    private RecoveryService recoveryService;
 
     @Test
     void slash() throws Exception {

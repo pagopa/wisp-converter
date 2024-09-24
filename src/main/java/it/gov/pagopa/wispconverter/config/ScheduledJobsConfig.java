@@ -27,7 +27,7 @@ public class ScheduledJobsConfig {
     @EventListener(ApplicationReadyEvent.class)
     public void refreshCache() {
         log.info("[Scheduled] Starting configuration cache refresh {}", ZonedDateTime.now());
-        configCacheService.refreshCache();
+        //configCacheService.refreshCache();
     }
 
 }

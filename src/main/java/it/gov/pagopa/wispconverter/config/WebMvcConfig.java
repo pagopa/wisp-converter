@@ -49,14 +49,14 @@ public class WebMvcConfig implements WebMvcConfigurer {
     }
 
 
-    @SneakyThrows
-    @Override
-    public void addCorsMappings(CorsRegistry registry) {
-        AppCors appCors = new ObjectMapper().readValue(corsConfiguration, AppCors.class);
-        registry.addMapping("/**")
-                .allowedOrigins(appCors.getOrigins())
-                .allowedMethods(appCors.getMethods());
-    }
+//    @SneakyThrows
+//    @Override
+//    public void addCorsMappings(CorsRegistry registry) {
+//        AppCors appCors = new ObjectMapper().readValue(corsConfiguration, AppCors.class);
+//        registry.addMapping("/**")
+//                .allowedOrigins(appCors.getOrigins())
+//                .allowedMethods(appCors.getMethods());
+//    }
 
     @Bean
     public LocaleResolver localeResolver() {

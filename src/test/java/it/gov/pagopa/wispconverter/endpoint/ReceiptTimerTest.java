@@ -44,9 +44,8 @@ public class ReceiptTimerTest {
     private ReceiptTimerService receiptTimerService;
     @MockBean
     private ReceiptService receiptService;
-
-
-
+    @MockBean
+    private RecoveryService recoveryService;
 
     /*
      * CREATE receipt/timer
