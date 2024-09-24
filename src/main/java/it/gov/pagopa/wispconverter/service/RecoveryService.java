@@ -72,11 +72,14 @@ public class RecoveryService {
 
         if(!reEvents.isEmpty()) {
             ReEventEntity lastEvent = reEvents.get(0);
-            if(interruptStatusSet.contains(lastEvent.getStatus()))
+            String status = lastEvent.getStatus();
+            if(status != null && interruptStatusSet.contains(status)) {
                 this.recoverReceiptKO(creditorInstitution, iuv, lastEvent.getSessionId(), lastEvent.getCcp(), dateFrom, dateTo);
+                return true;
+            }
         }
 
-        return true;
+        return false;
     }
 
     public RecoveryReceiptResponse recoverReceiptKOForCreditorInstitution(String creditorInstitution, String dateFrom, String dateTo) {
@@ -212,7 +215,8 @@ public class RecoveryService {
                 "CREATED_NEW_PAYMENT_POSITION_IN_GPD",
                 "GENERATED_CACHE_ABOUT_RPT_FOR_DECOUPLER",
                 EVENT_TYPE_FOR_RECEIPTKO_SEARCH,
-                "SAVED_RPT_IN_CART_RECEIVED_REDIRECT_URL_FROM_CHECKOUT"
+                "SAVED_RPT_IN_CART_RECEIVED_REDIRECT_URL_FROM_CHECKOUT",
+                "GENERATED_CACHE_ABOUT_RPT_FOR_CARTSESSION_CACHING"
         );
     }
 }
