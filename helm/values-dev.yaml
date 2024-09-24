@@ -4,7 +4,7 @@ microservice-chart:
   fullnameOverride: ""
   image:
     repository: ghcr.io/pagopa/pagopa-wisp-converter
-    tag: "0.3.0"
+    tag: "0.3.4-1-PAGOPA-2104-new-api-recover-by-iuv"
     pullPolicy: Always
   livenessProbe:
     httpGet:
@@ -98,11 +98,11 @@ microservice-chart:
     RT_SEND_SCHEDULING_TIME_IN_MINUTES: '1'
     RT_SEND_AVOID_SCHEDULING_ON_STATES: 'PAA_RT_DUPLICATA'
     RPT_TIMER_QUEUE_NAME: "nodo_wisp_rpt_timeout_queue"
-    RPT_TIMEOUT: '1800'
     CRON_JOB_SCHEDULE_RECOVERY_ENABLED: 'true'
     CRON_JOB_SCHEDULE_RECOVERY_RECEIPT_KO_ENABLED: '0 0 * * * *' # top of every hour of every
     CRON_JOB_SCHEDULE_RECOVERY_FROM_N_HOURS_AGO_UNTIL: '3'
     CRON_JOB_SCHEDULE_RECOVERY_FROM_N_HOURS_AGO_FROM: '4'
+    RPT_TIMEOUT: '60' # 1 minute
     RE_TRACING_INTERFACE_IUVGENERATOR_ENABLED: 'true'
     RE_TRACING_INTERFACE_PAYMENTPOSITIONANALYSIS_ENABLED: 'true'
     RE_TRACING_INTERFACE_DECOUPLERCACHING_ENABLED: 'true'

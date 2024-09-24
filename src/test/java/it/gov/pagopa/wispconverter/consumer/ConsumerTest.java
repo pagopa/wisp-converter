@@ -128,7 +128,7 @@ class ConsumerTest {
 
         IdempotencyKeyRepository idempotencyKeyRepository = mock(IdempotencyKeyRepository.class);
         IdempotencyService idempotencyService = new IdempotencyService(idempotencyKeyRepository);
-        when(idempotencyKeyRepository.findById(any(), any())).thenReturn(Optional.of(IdempotencyKeyEntity.builder()
+        when(idempotencyKeyRepository.findById(any())).thenReturn(Optional.of(IdempotencyKeyEntity.builder()
                 .status(isCompleted ? IdempotencyStatusEnum.SUCCESS : IdempotencyStatusEnum.LOCKED)
                 .receiptType("OK".equalsIgnoreCase(receiptType) ? ReceiptTypeEnum.OK : ReceiptTypeEnum.KO)
                 .lockedAt(Instant.now().minus(1, ChronoUnit.MINUTES))
