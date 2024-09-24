@@ -4,12 +4,12 @@ import it.gov.pagopa.wispconverter.controller.model.RecoveryReceiptPaymentRespon
 import it.gov.pagopa.wispconverter.controller.model.RecoveryReceiptResponse;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
-import it.gov.pagopa.wispconverter.repository.RTRepository;
-import it.gov.pagopa.wispconverter.repository.ReEventRepository;
 import it.gov.pagopa.wispconverter.repository.model.RTEntity;
 import it.gov.pagopa.wispconverter.repository.model.ReEventEntity;
 import it.gov.pagopa.wispconverter.repository.model.SessionIdEntity;
 import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
+import it.gov.pagopa.wispconverter.secondary.RTRepositorySecondary;
+import it.gov.pagopa.wispconverter.secondary.ReEventRepositorySecondary;
 import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.MDCUtil;
@@ -47,9 +47,9 @@ public class RecoveryService {
 
     private final ReceiptService receiptService;
 
-    private final RTRepository rtRepository;
+    private final RTRepositorySecondary rtRepository;
 
-    private final ReEventRepository reEventRepository;
+    private final ReEventRepositorySecondary reEventRepository;
 
     private final ReService reService;
 

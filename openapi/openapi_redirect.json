@@ -2,7 +2,7 @@
   "openapi": "3.0.1",
   "info": {
     "title": "WISP-Converter-redirect",
-    "version": "0.3.4-1-PAGOPA-2104-new-api-recover-by-iuv"
+    "version": "0.3.0-2-PAGOPA-2113-multiregion-cosmos"
   },
   "servers": [
     {
