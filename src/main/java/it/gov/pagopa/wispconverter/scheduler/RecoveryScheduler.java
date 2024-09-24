@@ -19,11 +19,12 @@ import java.time.format.DateTimeFormatter;
 @Slf4j
 @ConditionalOnProperty(name = "cron.job.schedule.recovery.enabled", matchIfMissing = false)
 public class RecoveryScheduler {
-    // UNTIL_N_HOURS_AGO: upperbound for a payment session
-    @Value("${cron.job.schedule.recovery.hours.ago.until}")
-    private int UNTIL_N_HOURS_AGO;
+
     @Value("${cron.job.schedule.recovery.hours.ago.from}")
-    private int FROM_N_HOURS_AGO;
+    private int fromHoursAgo;
+
+    @Value("${cron.job.schedule.recovery.hours.ago.until}") // untilHoursAgo: upperbound for a payment session
+    private int untilHoursAgo;
 
     private final RecoveryService recoveryService;
 
@@ -39,8 +40,8 @@ public class RecoveryScheduler {
     @Scheduled(cron = "${cron.job.schedule.recovery.receipt-ko.trigger}")
     @Async
     public void recoverReceiptKOCronJob() {
-        ZonedDateTime dateFrom = ZonedDateTime.now(ZoneOffset.UTC).minusHours(FROM_N_HOURS_AGO);
-        ZonedDateTime dateTo = ZonedDateTime.now(ZoneOffset.UTC).minusHours(UNTIL_N_HOURS_AGO);
+        ZonedDateTime dateFrom = ZonedDateTime.now(ZoneOffset.UTC).minusHours(fromHoursAgo);
+        ZonedDateTime dateTo = ZonedDateTime.now(ZoneOffset.UTC).minusHours(untilHoursAgo);
         log.info("[Scheduled] Reconciliation Cron: recoverReceiptKOCronJob running at {}, for recover stale RPT from {} to {}",
                 DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(LocalDateTime.now()), dateFrom, dateTo);
 
