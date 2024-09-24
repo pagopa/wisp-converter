@@ -76,7 +76,7 @@ public class CommonUtility {
             String pathMod = null;
             if (null != path) {
                 if (path.contains("?")) {
-                    String[] pathSplit = path.split("\\?", 1);
+                    String[] pathSplit = path.split("\\?", 2);
                     path = pathSplit[0];
                     query = pathSplit[1];
                 }
@@ -94,6 +94,11 @@ public class CommonUtility {
         } catch (Exception e) {
             throw new AppException(AppErrorCodeMessageEnum.PARSING_GENERIC_ERROR);
         }
+    }
+
+    public static void main(String[] args) {
+        URI uri = constructUrl("http", "FemsWSTest", 8080, "sia?CNC=12431&SNC=06230&AP=WPE02&ENV=PR&UDRALG=PDD?pippo=true");
+        System.out.println(uri);
     }
 
     public static List<Pair<String, String>> constructHeadersForPaaInviaRT(URI startingUri, StationDto station, String stationInForwarderPartialPath, String forwarderSubscriptionKey) {
