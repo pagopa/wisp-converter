@@ -69,13 +69,13 @@ public class PaaInviaRTSenderService {
 
             // Communicating with creditor institution sending the paaInviaRT request
             ResponseEntity<String> response = bodySpec.retrieve().toEntity(String.class);
-
-            // check SOAP response and extract body if it is valid
             String bodyPayload = response.getBody();
-            PaaInviaRTRisposta body = checkResponseValidity(response, bodyPayload);
 
             // Save an RE event in order to track the response from creditor institution
             generateREForResponseFromCreditorInstitution(uri.toString(), response.getStatusCode().value(), response.getHeaders(), bodyPayload, OutcomeEnum.RECEIVED, null);
+
+            // check SOAP response and extract body if it is valid
+            PaaInviaRTRisposta body = checkResponseValidity(response, bodyPayload);
 
             // check the response and if the outcome is KO, throw an exception
             EsitoPaaInviaRT esitoPaaInviaRT = body.getPaaInviaRTRisposta();

@@ -96,16 +96,11 @@ public class CommonUtility {
         }
     }
 
-    public static void main(String[] args) {
-        URI uri = constructUrl("http", "FemsWSTest", 8080, "sia?CNC=12431&SNC=06230&AP=WPE02&ENV=PR&UDRALG=PDD?pippo=true");
-        System.out.println(uri);
-    }
-
     public static List<Pair<String, String>> constructHeadersForPaaInviaRT(URI startingUri, StationDto station, String stationInForwarderPartialPath, String forwarderSubscriptionKey) {
         List<Pair<String, String>> headers = new LinkedList<>();
         headers.add(Pair.of("SOAPAction", "paaInviaRT"));
         headers.add(Pair.of("Content-Type", "text/xml"));
-        if (startingUri.getPath().contains(stationInForwarderPartialPath) && station.getService() != null) {
+        if (startingUri.toString().contains(stationInForwarderPartialPath) && station.getService() != null) {
             ServiceDto stationService = station.getService();
             headers.add(Pair.of("X-Host-Url", stationService.getTargetHost() == null ? "ND" : stationService.getTargetHost()));
             headers.add(Pair.of("X-Host-Port", stationService.getTargetPort() == null ? "ND" : String.valueOf(stationService.getTargetPort())));
@@ -118,7 +113,7 @@ public class CommonUtility {
     public static InetSocketAddress constructProxyAddress(URI startingUri, StationDto station, String apimPath) {
         InetSocketAddress proxyAddress = null;
 
-        if (!startingUri.getPath().contains(apimPath)) {
+        if (!startingUri.toString().contains(apimPath)) {
             ProxyDto proxyDto = station.getProxy();
             if (proxyDto == null || proxyDto.getProxyHost() == null || proxyDto.getProxyPort() == null) {
                 throw new AppException(AppErrorCodeMessageEnum.CONFIGURATION_INVALID_STATION_PROXY);
