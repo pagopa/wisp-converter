@@ -1,6 +1,5 @@
 package it.gov.pagopa.wispconverter.service;
 
-import com.azure.cosmos.models.PartitionKey;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.IdempotencyKeyRepository;
@@ -31,8 +30,7 @@ public class IdempotencyService {
         boolean isProcessable = true;
 
         // try to retrieve idempotency key entity from the storage and check if exists
-        PartitionKey partitionKey = extractPartitionKeyFromIdempotencyKey(idempotencyKey);
-        Optional<IdempotencyKeyEntity> optIdempotencyKeyEntity = idempotencyKeyRepository.findById(idempotencyKey, partitionKey);
+        Optional<IdempotencyKeyEntity> optIdempotencyKeyEntity = idempotencyKeyRepository.findById(idempotencyKey);
         if (optIdempotencyKeyEntity.isPresent()) {
 
             /*
@@ -55,8 +53,7 @@ public class IdempotencyService {
         boolean isSucceeded = false;
 
         // try to retrieve idempotency key entity from the storage and check if exists
-        PartitionKey partitionKey = extractPartitionKeyFromIdempotencyKey(idempotencyKey);
-        Optional<IdempotencyKeyEntity> optIdempotencyKeyEntity = idempotencyKeyRepository.findById(idempotencyKey, partitionKey);
+        Optional<IdempotencyKeyEntity> optIdempotencyKeyEntity = idempotencyKeyRepository.findById(idempotencyKey);
         if (optIdempotencyKeyEntity.isPresent()) {
 
             // check if the idempotency key is in a success status
@@ -71,8 +68,7 @@ public class IdempotencyService {
         IdempotencyKeyEntity idempotencyKeyEntity;
 
         // try to retrieve idempotency key entity from the storage and check if exists
-        PartitionKey partitionKey = extractPartitionKeyFromIdempotencyKey(idempotencyKey);
-        Optional<IdempotencyKeyEntity> optIdempotencyKeyEntity = idempotencyKeyRepository.findById(idempotencyKey, partitionKey);
+        Optional<IdempotencyKeyEntity> optIdempotencyKeyEntity = idempotencyKeyRepository.findById(idempotencyKey);
         if (optIdempotencyKeyEntity.isPresent()) {
 
             // check either if a lock exists and is active and if the status is not failed
@@ -83,7 +79,7 @@ public class IdempotencyService {
 
             } else if (!IdempotencyStatusEnum.FAILED.equals(idempotencyKeyEntity.getStatus())) {
 
-                throw new AppException(AppErrorCodeMessageEnum.RECEIPT_GENERATION_NOT_PROCESSABLE, idempotencyKey);
+                throw new AppException(AppErrorCodeMessageEnum.RECEIPT_GENERATION_NOT_PROCESSABLE, idempotencyKey, idempotencyKeyEntity.getStatus());
             }
 
         } else {
@@ -106,8 +102,7 @@ public class IdempotencyService {
         IdempotencyKeyEntity idempotencyKeyEntity;
 
         // try to retrieve idempotency key entity from the storage and check if exists
-        PartitionKey partitionKey = extractPartitionKeyFromIdempotencyKey(idempotencyKey);
-        Optional<IdempotencyKeyEntity> optIdempotencyKeyEntity = idempotencyKeyRepository.findById(idempotencyKey, partitionKey);
+        Optional<IdempotencyKeyEntity> optIdempotencyKeyEntity = idempotencyKeyRepository.findById(idempotencyKey);
         if (optIdempotencyKeyEntity.isPresent()) {
 
             // check if it is not in a locked state
@@ -130,12 +125,6 @@ public class IdempotencyService {
         idempotencyKeyEntity.setStatus(status);
         idempotencyKeyEntity.setLockedAt(null);
         idempotencyKeyRepository.save(idempotencyKeyEntity);
-    }
-
-    private PartitionKey extractPartitionKeyFromIdempotencyKey(String idempotencyKey) {
-
-        String[] idempotencyKeySections = idempotencyKey.split("_");
-        return new PartitionKey(idempotencyKeySections[0] + "_" + idempotencyKeySections[1]);
     }
 
     private boolean isActiveLockExpired(IdempotencyKeyEntity idempotencyKeyEntity) {

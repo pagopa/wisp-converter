@@ -3,6 +3,7 @@ package it.gov.pagopa.wispconverter.utils;
 import com.azure.messaging.servicebus.ServiceBusSenderClient;
 import it.gov.pagopa.wispconverter.repository.*;
 import it.gov.pagopa.wispconverter.service.ECommerceHangTimerService;
+import it.gov.pagopa.wispconverter.service.RPTTimerService;
 import it.gov.pagopa.wispconverter.service.ReceiptTimerService;
 import it.gov.pagopa.wispconverter.service.ServiceBusService;
 import org.mockito.Mockito;
@@ -41,6 +42,18 @@ public class MockBeans {
     @Primary
     ReEventRepository reEventRepository() {
         return Mockito.mock(ReEventRepository.class);
+    }
+
+    @Bean
+    @Primary
+    CacheRepository cacheRepository() {
+        return Mockito.mock(CacheRepository.class);
+    }
+
+    @Bean
+    @Primary
+    RPTTimerService rptTimerService() {
+        return Mockito.mock(RPTTimerService.class);
     }
 
     @Bean

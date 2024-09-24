@@ -27,6 +27,7 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 @Service
@@ -34,7 +35,11 @@ import java.util.concurrent.CompletableFuture;
 @RequiredArgsConstructor
 public class RecoveryService {
 
-    private static final String EVENT_TYPE_FOR_RECEIPTKO_SEARCH = "GENERATED_CACHE_ABOUT_RPT_FOR_RT_GENERATION";
+    public static final String EVENT_TYPE_FOR_RECEIPTKO_SEARCH = "GENERATED_CACHE_ABOUT_RPT_FOR_RT_GENERATION";
+
+    private static final String RPT_ACCETTATA_NODO = "RPT_ACCETTATA_NODO";
+
+    public static final String RPT_PARCHEGGIATA_NODO = "RPT_PARCHEGGIATA_NODO";
 
     private static final String STATUS_RT_SEND_SUCCESS = "RT_SEND_SUCCESS";
 
@@ -50,28 +55,44 @@ public class RecoveryService {
 
     private static final String DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
 
+    private static final String DATE_FORMAT_DAY = "yyyy-MM-dd";
+
     @Value("${wisp-converter.cached-requestid-mapping.ttl.minutes:1440}")
     public Long requestIDMappingTTL;
 
     @Value("${wisp-converter.recovery.receipt-generation.wait-time.minutes:60}")
     public Long receiptGenerationWaitTime;
 
+    public boolean recoverReceiptKO(String creditorInstitution, String iuv, String dateFrom, String dateTo) {
+        checkDateValidity(dateFrom, dateTo);
+        List<ReEventEntity> reEvents = reEventRepository.findByIuvAndOrganizationId(dateFrom, dateTo, iuv, creditorInstitution)
+                                               .stream()
+                                               .sorted(Comparator.comparing(ReEventEntity::getInsertedTimestamp))
+                                               .toList();
+
+        Set<String> interruptStatusSet = getWISPInterruptStatusSet();
+
+        if(!reEvents.isEmpty()) {
+            ReEventEntity lastEvent = reEvents.get(0);
+            String status = lastEvent.getStatus();
+            if(status != null && interruptStatusSet.contains(status)) {
+                this.recoverReceiptKO(creditorInstitution, iuv, lastEvent.getSessionId(), lastEvent.getCcp(), dateFrom, dateTo);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public RecoveryReceiptResponse recoverReceiptKOForCreditorInstitution(String creditorInstitution, String dateFrom, String dateTo) {
-
         MDCUtil.setSessionDataInfo("recovery-receipt-ko");
-        LocalDate lowerLimit = LocalDate.parse(RECOVERY_VALID_START_DATE, DateTimeFormatter.ISO_LOCAL_DATE);
-        if (LocalDate.parse(dateFrom, DateTimeFormatter.ISO_LOCAL_DATE).isBefore(lowerLimit)) {
-            throw new AppException(AppErrorCodeMessageEnum.ERROR, String.format("The lower bound cannot be lower than [%s]", RECOVERY_VALID_START_DATE));
-        }
 
-        LocalDate now = LocalDate.now();
+        checkDateValidity(dateFrom, dateTo);
+
         LocalDate parse = LocalDate.parse(dateTo, DateTimeFormatter.ISO_LOCAL_DATE);
-        if (parse.isAfter(now)) {
-            throw new AppException(AppErrorCodeMessageEnum.ERROR, String.format("The upper bound cannot be higher than [%s]", now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))));
-        }
-
         String dateToRefactored;
-        if (now.isEqual(parse)) {
+
+        if (LocalDate.now().isEqual(parse)) {
             ZonedDateTime nowMinusMinutes = ZonedDateTime.now(ZoneOffset.UTC).minusMinutes(receiptGenerationWaitTime);
             dateToRefactored = nowMinusMinutes.format(DateTimeFormatter.ofPattern(DATE_FORMAT));
             log.info("Upper bound forced to {}", dateToRefactored);
@@ -97,8 +118,8 @@ public class RecoveryService {
                 });
 
         return RecoveryReceiptResponse.builder()
-                .payments(paymentsToReconcile)
-                .build();
+                       .payments(paymentsToReconcile)
+                       .build();
     }
 
     // Recover all CI for which there is a stale/pending RPT (i.e. receipts-rt = null)
@@ -191,7 +212,6 @@ public class RecoveryService {
 
         if (reEventsRT.isEmpty()) {
             MDC.put(Constants.MDC_BUSINESS_PROCESS, "receipt-ko");
-            MDC.put(Constants.MDC_INSERTED_TIMESTAMP, Instant.now().toString());
 
             generateRE(Constants.PAA_INVIA_RT, null, InternalStepStatus.RT_START_RECONCILIATION_PROCESS, ci, iuv, ccp, sessionId);
 
@@ -203,6 +223,19 @@ public class RecoveryService {
             }
             generateRE(Constants.PAA_INVIA_RT, "Success", InternalStepStatus.RT_END_RECONCILIATION_PROCESS, ci, iuv, ccp, sessionId);
             MDC.remove(Constants.MDC_BUSINESS_PROCESS);
+        }
+    }
+
+    private void checkDateValidity(String dateFrom, String dateTo) {
+        LocalDate lowerLimit = LocalDate.parse(RECOVERY_VALID_START_DATE, DateTimeFormatter.ISO_LOCAL_DATE);
+        if (LocalDate.parse(dateFrom, DateTimeFormatter.ISO_LOCAL_DATE).isBefore(lowerLimit)) {
+            throw new AppException(AppErrorCodeMessageEnum.ERROR, String.format("The lower bound cannot be lower than [%s]", RECOVERY_VALID_START_DATE));
+        }
+
+        LocalDate today = LocalDate.now();
+        LocalDate parse = LocalDate.parse(dateTo, DateTimeFormatter.ISO_LOCAL_DATE);
+        if (parse.isAfter(today)) {
+            throw new AppException(AppErrorCodeMessageEnum.ERROR, String.format("The upper bound cannot be higher than [%s]", today.format(DateTimeFormatter.ofPattern(DATE_FORMAT_DAY))));
         }
     }
 
@@ -220,5 +253,18 @@ public class RecoveryService {
                 .noticeNumber(null)
                 .build();
         reService.addRe(reEvent);
+    }
+
+    private static Set<String> getWISPInterruptStatusSet() {
+        return Set.of(
+                RPT_ACCETTATA_NODO,
+                RPT_PARCHEGGIATA_NODO,
+                "GENERATED_NAV_FOR_NEW_PAYMENT_POSITION",
+                "CREATED_NEW_PAYMENT_POSITION_IN_GPD",
+                "GENERATED_CACHE_ABOUT_RPT_FOR_DECOUPLER",
+                EVENT_TYPE_FOR_RECEIPTKO_SEARCH,
+                "SAVED_RPT_IN_CART_RECEIVED_REDIRECT_URL_FROM_CHECKOUT",
+                "GENERATED_CACHE_ABOUT_RPT_FOR_CARTSESSION_CACHING"
+        );
     }
 }

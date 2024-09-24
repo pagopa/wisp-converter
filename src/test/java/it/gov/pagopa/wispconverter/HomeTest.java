@@ -35,15 +35,6 @@ class HomeTest {
 
 
 
-
-
-
-
-
-
-
-
-
     @MockBean
     private ReceiptService receiptService;
 

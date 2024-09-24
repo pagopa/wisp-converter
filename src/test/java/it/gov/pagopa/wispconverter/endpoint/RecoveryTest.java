@@ -4,12 +4,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.wispconverter.Application;
 import it.gov.pagopa.wispconverter.service.*;
 import org.junit.jupiter.api.Test;
+import org.junit.runner.RunWith;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.ArgumentMatchers.*;
@@ -19,8 +21,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @ActiveProfiles(profiles = "test")
 @SpringBootTest(classes = Application.class)
+@RunWith(SpringJUnit4ClassRunner.class)
 @AutoConfigureMockMvc
-public class RecoveryTest {
+class RecoveryTest {
     @Autowired
     ObjectMapper objectMapper;
     @Autowired
@@ -39,21 +42,21 @@ public class RecoveryTest {
     private ReceiptService receiptService;
 
     @Test
-    public void testRecoverReceiptKOForCreditorInstitution() throws Exception {
+    void testRecoverReceiptKOForCreditorInstitution() throws Exception {
         String ci = "77777777777";
         String dateFrom = "2024-09-03";
         String dateTo = "2024-09-09";
 
         mockMvc.perform(post("/recovery/{creditor_institution}/receipt-ko", ci)
-                                .queryParam("date_from", dateFrom)
-                                .queryParam("date_to", dateTo))
+                        .queryParam("date_from", dateFrom)
+                        .queryParam("date_to", dateTo))
                 .andExpect(status().isOk());
 
         Mockito.verify(recoveryService, times(1)).recoverReceiptKOForCreditorInstitution(eq(ci), any(), any());
     }
 
     @Test
-    public void testRecoverReceiptKOForCreditorInstitution_500() throws Exception {
+    void testRecoverReceiptKOForCreditorInstitution_500() throws Exception {
         String ci = "77777777777";
         String dateFrom = "2024-09-03";
         String dateTo = "2024-09-09";
@@ -62,10 +65,43 @@ public class RecoveryTest {
                 .thenThrow(new RuntimeException("Test exception"));
 
         mockMvc.perform(post("/recovery/{creditor_institution}/receipt-ko", ci)
+                        .queryParam("date_from", dateFrom)
+                        .queryParam("date_to", dateTo))
+                .andExpect(status().isInternalServerError());
+
+        Mockito.verify(recoveryService, times(1)).recoverReceiptKOForCreditorInstitution(eq(ci), any(), any());
+    }
+
+    @Test
+    void testRecoverReceiptKOForCreditorInstitutionAndIUV() throws Exception {
+        String ci = "77777777777";
+        String iuv = "00000000000000000";
+        String dateFrom = "2024-09-03";
+        String dateTo = "2024-09-09";
+
+        mockMvc.perform(post("/recovery/{ci}/rpt/{iuv}/receipt-ko", ci, iuv)
+                                .queryParam("date_from", dateFrom)
+                                .queryParam("date_to", dateTo))
+                .andExpect(status().isOk());
+
+        Mockito.verify(recoveryService, times(1)).recoverReceiptKO(eq(ci), eq(iuv), any(), any());
+    }
+
+    @Test
+    void testRecoverReceiptKOForCreditorInstitutionAndIUV_500() throws Exception {
+        String ci = "77777777777";
+        String iuv = "00000000000000000";
+        String dateFrom = "2024-09-03";
+        String dateTo = "2024-09-09";
+
+        Mockito.when(recoveryService.recoverReceiptKO(anyString(), anyString(), any(), any()))
+                .thenThrow(new RuntimeException("Test exception"));
+
+        mockMvc.perform(post("/recovery/{ci}/rpt/{iuv}/receipt-ko", ci, iuv)
                                 .queryParam("date_from", dateFrom)
                                 .queryParam("date_to", dateTo))
                 .andExpect(status().isInternalServerError());
 
-        Mockito.verify(recoveryService, times(1)).recoverReceiptKOForCreditorInstitution(eq(ci), any(), any());
+        Mockito.verify(recoveryService, times(1)).recoverReceiptKO(eq(ci), eq(iuv), any(), any());
     }
 }
