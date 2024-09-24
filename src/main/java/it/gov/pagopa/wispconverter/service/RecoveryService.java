@@ -152,7 +152,7 @@ public class RecoveryService {
 
         for(SessionIdEntity sessionIdEntity : sessionsWithoutRedirect) {
             String sessionId = sessionIdEntity.getSessionId();
-            List<ReEventEntity> reEventList = reEventRepository.findBySessionIdAndStatus(dateFromString, dateToString, sessionId, "RPT_ACCETTATA_NODO");
+            List<ReEventEntity> reEventList = reEventRepository.findBySessionIdAndStatus(dateFromString, dateToString, sessionId, RPT_ACCETTATA_NODO);
 
             if(!reEventList.isEmpty()) {
                 ReEventEntity reEvent = reEventList.get(0);

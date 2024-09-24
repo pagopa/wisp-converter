@@ -7,8 +7,11 @@ import com.azure.spring.data.cosmos.config.CosmosConfig;
 import com.azure.spring.data.cosmos.core.CosmosTemplate;
 import com.azure.spring.data.cosmos.core.convert.MappingCosmosConverter;
 import com.azure.spring.data.cosmos.repository.config.EnableCosmosRepositories;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -16,6 +19,9 @@ import java.util.List;
 
 @Configuration
 @EnableCosmosRepositories(basePackages = "it.gov.pagopa.wispconverter.secondary")
+@EnableConfigurationProperties
+@ConditionalOnExpression("'${info.properties.environment}'!='test'")
+@Slf4j
 public class SecondaryCosmosConfig extends AbstractCosmosConfiguration {
 
     @Value("${azure.cosmos.uri}")

@@ -2,11 +2,11 @@ package it.gov.pagopa.wispconverter.service;
 
 import it.gov.pagopa.wispconverter.controller.model.RecoveryReceiptResponse;
 import it.gov.pagopa.wispconverter.exception.AppException;
-import it.gov.pagopa.wispconverter.repository.RTRepository;
-import it.gov.pagopa.wispconverter.repository.ReEventRepository;
 import it.gov.pagopa.wispconverter.repository.model.RTEntity;
 import it.gov.pagopa.wispconverter.repository.model.ReEventEntity;
 import it.gov.pagopa.wispconverter.repository.model.SessionIdEntity;
+import it.gov.pagopa.wispconverter.secondary.RTRepositorySecondary;
+import it.gov.pagopa.wispconverter.secondary.ReEventRepositorySecondary;
 import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,10 +28,10 @@ import static org.mockito.Mockito.*;
 public class RecoveryServiceTest {
 
     @Mock
-    private RTRepository rtRepository;
+    private RTRepositorySecondary rtRepository;
 
     @Mock
-    private ReEventRepository reRepository;
+    private ReEventRepositorySecondary reRepository;
 
     @Mock
     private ReceiptService receiptService;
