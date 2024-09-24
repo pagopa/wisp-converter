@@ -11,6 +11,7 @@ import it.gov.pagopa.wispconverter.repository.model.enumz.OutcomeEnum;
 import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.JaxbElementUtil;
+import it.gov.pagopa.wispconverter.util.ProxyUtility;
 import it.gov.pagopa.wispconverter.util.ReUtil;
 import jakarta.xml.soap.SOAPMessage;
 import lombok.RequiredArgsConstructor;
@@ -18,18 +19,16 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.util.Pair;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestClient;
-import org.springframework.web.client.RestTemplate;
 
 import java.net.InetSocketAddress;
-import java.net.Proxy;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Set;
+
 
 @Service
 @RequiredArgsConstructor
@@ -51,9 +50,7 @@ public class PaaInviaRTSenderService {
             // Generating the REST client, setting proxy specification if needed
             RestClient client;
             if (proxyAddress != null) {
-                SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-                factory.setProxy(new Proxy(Proxy.Type.HTTP, proxyAddress));
-                client = RestClient.builder(new RestTemplate(factory))
+                client = RestClient.builder(ProxyUtility.getProxiedClient(proxyAddress))
                         .baseUrl(url)
                         .build();
             } else {
