@@ -176,7 +176,6 @@ public abstract class RTMapper {
     @Mapping(target = "identificativoUnivocoRiscossione", constant = "0")
     @Mapping(source = "transferDTO.remittanceInformation", target = "causaleVersamento")
     @Mapping(source = "transferDTO.category", target = "datiSpecificiRiscossione")
-    @Mapping(target = "allegatoRicevuta", expression = "java(extractStamp(transferDTO.getDigitalStamp()))")
     public abstract CtDatiSingoloPagamentoRT toCtDatiSingoloPagamentoRT(TransferDTO transferDTO, Instant instant, String paymentOutcome);
 
     @Mapping(source = "ctTransferPAReceiptV2.transferAmount", target = "singoloImportoPagato")
