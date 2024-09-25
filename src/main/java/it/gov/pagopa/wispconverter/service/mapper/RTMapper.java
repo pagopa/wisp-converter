@@ -176,6 +176,7 @@ public abstract class RTMapper {
     @Mapping(target = "identificativoUnivocoRiscossione", constant = "0")
     @Mapping(source = "transferDTO.remittanceInformation", target = "causaleVersamento")
     @Mapping(source = "transferDTO.category", target = "datiSpecificiRiscossione")
+    @Mapping(target = "allegatoRicevuta", expression = "java(extractStamp(transferDTO.getDigitalStamp()))")
     public abstract CtDatiSingoloPagamentoRT toCtDatiSingoloPagamentoRT(TransferDTO transferDTO, Instant instant, String paymentOutcome);
 
     @Mapping(source = "ctTransferPAReceiptV2.transferAmount", target = "singoloImportoPagato")
@@ -193,5 +194,17 @@ public abstract class RTMapper {
                 .stream()
                 .filter(v -> v.getKey().equals("DatiSpecificiRiscossione"))
                 .map(CtMapEntry::getValue).findFirst().orElse(null);
+    }
+
+
+    @Named("extractStamp")
+    public CtAllegatoRicevuta extractStamp(DigitalStampDTO digitalStamp) {
+        CtAllegatoRicevuta allegatoRicevuta = null;
+        if (digitalStamp != null) {
+            allegatoRicevuta = new CtAllegatoRicevuta();
+            allegatoRicevuta.setTipoAllegatoRicevuta(StTipoAllegatoRicevuta.BD);
+            allegatoRicevuta.setTestoAllegato(digitalStamp.getDocumentHash());
+        }
+        return allegatoRicevuta;
     }
 }
