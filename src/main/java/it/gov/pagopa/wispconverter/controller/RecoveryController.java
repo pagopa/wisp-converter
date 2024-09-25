@@ -44,7 +44,7 @@ public class RecoveryController {
     public ResponseEntity<RecoveryReceiptResponse> recoverReceiptKOForCreditorInstitution(@PathVariable("creditor_institution") String ci, @QueryParam("date_from") String dateFrom, @QueryParam("date_to") String dateTo) {
         try {
             log.info("Invoking API operation recoverReceiptKOForCreditorInstitution - args: {} {} {}", ci, dateFrom, dateTo);
-            RecoveryReceiptResponse response = recoveryService.recoverReceiptKOForCreditorInstitution(ci, dateFrom, dateTo);
+            RecoveryReceiptResponse response = recoveryService.recoverReceiptKOByCI(ci, dateFrom, dateTo);
             return ResponseEntity.ok(response);
         } catch (Exception ex) {
             String operationId = MDC.get(Constants.MDC_OPERATION_ID);
@@ -71,7 +71,7 @@ public class RecoveryController {
         try {
             log.info("Invoking API operation recoverReceiptKOForCreditorInstitution - args: {} {} {} {}", ci, iuv, dateFrom, dateTo);
 
-            boolean recovered = recoveryService.recoverReceiptKO(ci, iuv, dateFrom, dateTo);
+            boolean recovered = recoveryService.recoverReceiptKOByIUV(ci, iuv, dateFrom, dateTo);
             if(recovered)
                 return ResponseEntity.ok(String.format("RPT with CI %s and IUV %s recovered via API", ci, iuv));
             else return ResponseEntity.ok(String.format("RPT with CI %s and IUV %s could not be recovered via API", ci, iuv));

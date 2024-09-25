@@ -82,7 +82,7 @@ public class RecoveryServiceTest {
         when(rtRepository.findPendingRT(anyString(), anyString())).thenReturn(mockRTEntities);
 
         // Act
-        int recoveredReceipt = recoveryService.recoverReceiptKOAll(dateFrom, dateTo);
+        int recoveredReceipt = recoveryService.recoverReceiptKOByDates(dateFrom, dateTo);
 
         // Assert
         assertEquals(0, recoveredReceipt);
@@ -108,7 +108,7 @@ public class RecoveryServiceTest {
         when(reRepository.findByIuvAndOrganizationId(anyString(), anyString(), anyString(), anyString())).thenReturn(mockReEventEntities);
 
         // Act
-        int recoveredReceipt = recoveryService.recoverReceiptKOAll(dateFrom, dateTo);
+        int recoveredReceipt = recoveryService.recoverReceiptKOByDates(dateFrom, dateTo);
 
         // Assert
         assertEquals(1, recoveredReceipt);
@@ -150,7 +150,7 @@ public class RecoveryServiceTest {
         assertEquals(1, recoveredReceipt);
     }
 
-    void testRecoverReceiptKOForCreditorInstitution_Success_Empty() {
+    void testRecoverReceiptKOByIUVByCI_Success_Empty() {
         // Arrange
         String creditorInstitution = "77777777777";
         String dateFrom = "2024-09-05";
@@ -160,7 +160,7 @@ public class RecoveryServiceTest {
         when(rtRepository.findByOrganizationId(anyString(), anyString(), anyString())).thenReturn(mockRTEntities);
 
         // Act
-        RecoveryReceiptResponse response = recoveryService.recoverReceiptKOForCreditorInstitution(creditorInstitution, dateFrom, dateTo);
+        RecoveryReceiptResponse response = recoveryService.recoverReceiptKOByCI(creditorInstitution, dateFrom, dateTo);
 
         // Assert
         assertNotNull(response);
@@ -168,7 +168,7 @@ public class RecoveryServiceTest {
     }
 
     @Test
-    void testRecoverReceiptKOForCreditorInstitution_Success_NotEmpty() {
+    void testRecoverReceiptKOByIUVByCI_Success_NotEmpty() {
         // Arrange
         String creditorInstitution = "77777777777";
         String dateFrom = "2024-09-05";
@@ -193,7 +193,7 @@ public class RecoveryServiceTest {
         doNothing().when(reService).addRe(any(ReEventDto.class));
 
         // Act
-        RecoveryReceiptResponse response = recoveryService.recoverReceiptKOForCreditorInstitution(creditorInstitution, dateFrom, dateTo);
+        RecoveryReceiptResponse response = recoveryService.recoverReceiptKOByCI(creditorInstitution, dateFrom, dateTo);
 
         // Assert
         assertNotNull(response);
@@ -201,7 +201,7 @@ public class RecoveryServiceTest {
     }
 
     @Test
-    void testRecoverReceiptKOForCreditorInstitution_Success_Today() {
+    void testRecoverReceiptKOByIUVByCI_Success_Today() {
         // Arrange
         String creditorInstitution = "77777777777";
         String dateFrom = "2024-09-05";
@@ -211,14 +211,14 @@ public class RecoveryServiceTest {
         when(rtRepository.findByOrganizationId(anyString(), anyString(), anyString())).thenReturn(mockRTEntities);
 
         // Act
-        RecoveryReceiptResponse response = recoveryService.recoverReceiptKOForCreditorInstitution(creditorInstitution, dateFrom, dateTo);
+        RecoveryReceiptResponse response = recoveryService.recoverReceiptKOByCI(creditorInstitution, dateFrom, dateTo);
 
         // Assert
         assertNotNull(response);
         assertEquals(0, response.getPayments().size());
     }
 
-    void testRecoverReceiptKOForCreditorInstitution_LowerBoundFailure() {
+    void testRecoverReceiptKOByIUVByCI_LowerBoundFailure() {
         // Arrange
         String creditorInstitution = "77777777777";
         String dateFrom = "2024-09-01";  // Date earlier than valid start date
@@ -226,13 +226,13 @@ public class RecoveryServiceTest {
 
         // Act and Assert
         AppException exception = assertThrows(
-                AppException.class, () -> recoveryService.recoverReceiptKOForCreditorInstitution(creditorInstitution, dateFrom, dateTo)
+                AppException.class, () -> recoveryService.recoverReceiptKOByCI(creditorInstitution, dateFrom, dateTo)
         );
         assertEquals("The lower bound cannot be lower than [2024-09-03]", exception.getMessage());
     }
 
     @Test
-    void testRecoverReceiptKOForCreditorInstitution_UpperBoundFailure() {
+    void testRecoverReceiptKOByIUVByCI_UpperBoundFailure() {
         // Arrange
         String creditorInstitution = "77777777777";
         String dateFrom = "2024-09-05";
@@ -240,7 +240,7 @@ public class RecoveryServiceTest {
 
         // Act and Assert
         AppException exception = assertThrows(
-                AppException.class, () -> recoveryService.recoverReceiptKOForCreditorInstitution(creditorInstitution, dateFrom, dateTo)
+                AppException.class, () -> recoveryService.recoverReceiptKOByCI(creditorInstitution, dateFrom, dateTo)
         );
         String expectedMessage = String.format("The upper bound cannot be higher than [%s]", LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
         assertEquals(expectedMessage, exception.getMessage());
@@ -260,7 +260,7 @@ public class RecoveryServiceTest {
         doNothing().when(reService).addRe(any(ReEventDto.class));
 
         // Act
-        recoveryService.recoverReceiptKO(ci, iuv, dateFrom, dateTo);
+        recoveryService.recoverReceiptKOByIUV(ci, iuv, dateFrom, dateTo);
 
         // Assert
         verify(reRepository, times(1)).findByIuvAndOrganizationId(anyString(), anyString(), anyString(), anyString());
@@ -289,7 +289,7 @@ public class RecoveryServiceTest {
         doNothing().when(reService).addRe(any(ReEventDto.class));
 
         // Act
-        recoveryService.recoverReceiptKO(ci, iuv, dateFrom, dateTo);
+        recoveryService.recoverReceiptKOByIUV(ci, iuv, dateFrom, dateTo);
 
         // Assert
         verify(reRepository, times(1)).findByIuvAndOrganizationId(anyString(), anyString(), anyString(), anyString());

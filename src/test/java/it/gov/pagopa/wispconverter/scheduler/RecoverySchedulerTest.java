@@ -4,13 +4,8 @@ import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 import it.gov.pagopa.wispconverter.service.RecoveryService;
-import org.junit.Before;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.MockitoAnnotations;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
@@ -33,14 +28,14 @@ class RecoverySchedulerTest {
     @Test
     void testRecoverReceiptKOCronJob() {
         // Arrange
-        when(recoveryService.recoverReceiptKOAll(any(), any())).thenReturn(5);
+        when(recoveryService.recoverReceiptKOByDates(any(), any())).thenReturn(5);
         when(recoveryService.recoverMissingRedirect(any(), any())).thenReturn(3);
 
         // Act
         recoveryScheduler.recoverReceiptKOCronJob();
 
         // Assert
-        verify(recoveryService, times(1)).recoverReceiptKOAll(any(ZonedDateTime.class), any(ZonedDateTime.class));
+        verify(recoveryService, times(1)).recoverReceiptKOByDates(any(ZonedDateTime.class), any(ZonedDateTime.class));
         verify(recoveryService, times(1)).recoverMissingRedirect(any(ZonedDateTime.class), any(ZonedDateTime.class));
 
         assertNotNull(recoveryScheduler.getThreadOfExecution());

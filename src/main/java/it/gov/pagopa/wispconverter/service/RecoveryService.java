@@ -20,7 +20,6 @@ import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -63,7 +62,7 @@ public class RecoveryService {
     @Value("${wisp-converter.recovery.receipt-generation.wait-time.minutes:60}")
     public Long receiptGenerationWaitTime;
 
-    public boolean recoverReceiptKO(String creditorInstitution, String iuv, String dateFrom, String dateTo) {
+    public boolean recoverReceiptKOByIUV(String creditorInstitution, String iuv, String dateFrom, String dateTo) {
         checkDateValidity(dateFrom, dateTo);
         List<ReEventEntity> reEvents = reEventRepository.findByIuvAndOrganizationId(dateFrom, dateTo, iuv, creditorInstitution)
                                                .stream()
@@ -84,7 +83,7 @@ public class RecoveryService {
         return false;
     }
 
-    public RecoveryReceiptResponse recoverReceiptKOForCreditorInstitution(String creditorInstitution, String dateFrom, String dateTo) {
+    public RecoveryReceiptResponse recoverReceiptKOByCI(String creditorInstitution, String dateFrom, String dateTo) {
         MDCUtil.setSessionDataInfo("recovery-receipt-ko");
 
         checkDateValidity(dateFrom, dateTo);
@@ -123,7 +122,7 @@ public class RecoveryService {
     }
 
     // Recover all CI for which there is a stale/pending RPT (i.e. receipts-rt = null)
-    public int recoverReceiptKOAll(ZonedDateTime dateFrom, ZonedDateTime dateTo) {
+    public int recoverReceiptKOByDates(ZonedDateTime dateFrom, ZonedDateTime dateTo) {
         String dateFromString = dateFrom.format(DateTimeFormatter.ofPattern(DATE_FORMAT));
         String dateToString = dateTo.format(DateTimeFormatter.ofPattern(DATE_FORMAT));
 
