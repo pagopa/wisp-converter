@@ -186,6 +186,7 @@ public abstract class RTMapper {
     @Mapping(source = "ctTransferPAReceiptV2.remittanceInformation", target = "causaleVersamento")
     @Mapping(target = "datiSpecificiRiscossione", expression = "java(ctTransferPAReceiptV2.getMetadata() != null ? extractMetadata(ctTransferPAReceiptV2.getMetadata().getMapEntry()) : \"\")")
     @Mapping(source = "ctReceiptV2.fee", target = "commissioniApplicatePSP")
+    @Mapping(target = "allegatoRicevuta", expression = "java(extractStamp(ctTransferPAReceiptV2))")
     public abstract CtDatiSingoloPagamentoRT toCtDatiSingoloPagamentoRTForOkRT(CtTransferPAReceiptV2 ctTransferPAReceiptV2, CtReceiptV2 ctReceiptV2);
 
     @Named("extractMetadata")
@@ -198,12 +199,13 @@ public abstract class RTMapper {
 
 
     @Named("extractStamp")
-    public CtAllegatoRicevuta extractStamp(DigitalStampDTO digitalStamp) {
+    public CtAllegatoRicevuta extractStamp(CtTransferPAReceiptV2 ctTransferPAReceiptV2) {
         CtAllegatoRicevuta allegatoRicevuta = null;
-        if (digitalStamp != null) {
+        byte[] attachment = ctTransferPAReceiptV2.getMBDAttachment();
+        if (attachment != null) {
             allegatoRicevuta = new CtAllegatoRicevuta();
             allegatoRicevuta.setTipoAllegatoRicevuta(StTipoAllegatoRicevuta.BD);
-            allegatoRicevuta.setTestoAllegato(digitalStamp.getDocumentHash());
+            allegatoRicevuta.setTestoAllegato(attachment);
         }
         return allegatoRicevuta;
     }
