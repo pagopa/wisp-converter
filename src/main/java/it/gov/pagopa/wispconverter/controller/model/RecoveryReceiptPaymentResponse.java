@@ -13,4 +13,5 @@ public class RecoveryReceiptPaymentResponse {
 
     private String iuv;
     private String ccp;
+    private String ci;
 }
