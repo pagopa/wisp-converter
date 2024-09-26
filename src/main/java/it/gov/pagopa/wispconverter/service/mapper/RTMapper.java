@@ -184,7 +184,8 @@ public abstract class RTMapper {
     @Mapping(source = "ctReceiptV2.receiptId", target = "identificativoUnivocoRiscossione")
     @Mapping(source = "ctTransferPAReceiptV2.remittanceInformation", target = "causaleVersamento")
     @Mapping(target = "datiSpecificiRiscossione", expression = "java(ctTransferPAReceiptV2.getMetadata() != null ? extractMetadata(ctTransferPAReceiptV2.getMetadata().getMapEntry()) : \"\")")
-    @Mapping(source = "ctReceiptV2.fee", target = "commissioniApplicatePSP")
+    @Mapping(target = "commissioniApplicatePSP", expression = "java(ctTransferPAReceiptV2.getMBDAttachment() == null ? ctReceiptV2.getFee() : null)")
+    @Mapping(target = "allegatoRicevuta", expression = "java(extractStamp(ctTransferPAReceiptV2))")
     public abstract CtDatiSingoloPagamentoRT toCtDatiSingoloPagamentoRTForOkRT(CtTransferPAReceiptV2 ctTransferPAReceiptV2, CtReceiptV2 ctReceiptV2);
 
     @Named("extractMetadata")
@@ -193,5 +194,18 @@ public abstract class RTMapper {
                 .stream()
                 .filter(v -> v.getKey().equals("DatiSpecificiRiscossione"))
                 .map(CtMapEntry::getValue).findFirst().orElse(null);
+    }
+
+
+    @Named("extractStamp")
+    public CtAllegatoRicevuta extractStamp(CtTransferPAReceiptV2 ctTransferPAReceiptV2) {
+        CtAllegatoRicevuta allegatoRicevuta = null;
+        byte[] attachment = ctTransferPAReceiptV2.getMBDAttachment();
+        if (attachment != null) {
+            allegatoRicevuta = new CtAllegatoRicevuta();
+            allegatoRicevuta.setTipoAllegatoRicevuta(StTipoAllegatoRicevuta.BD);
+            allegatoRicevuta.setTestoAllegato(attachment);
+        }
+        return allegatoRicevuta;
     }
 }

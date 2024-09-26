@@ -39,6 +39,8 @@ import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.net.InetSocketAddress;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -88,6 +90,9 @@ public class ReceiptService {
 
     @Value("${wisp-converter.station-in-forwarder.partial-path}")
     private String stationInForwarderPartialPath;
+
+    @Value("${wisp-converter.apim.path}")
+    private String apimPath;
 
     @Value("${wisp-converter.forwarder.api-key}")
     private String forwarderSubscriptionKey;
@@ -348,15 +353,14 @@ public class ReceiptService {
           from the cache and then generate the URL that will be used to send the paaInviaRT SOAP request.
         */
         ConnectionDto stationConnection = station.getConnection();
-        String url = CommonUtility.constructUrl(
+        URI uri = CommonUtility.constructUrl(
                 stationConnection.getProtocol().getValue(),
                 stationConnection.getIp(),
                 stationConnection.getPort().intValue(),
-                station.getService() != null ? station.getService().getPath() : "",
-                null,
-                null
+                station.getService() != null ? station.getService().getPath() : ""
         );
-        List<Pair<String, String>> headers = CommonUtility.constructHeadersForPaaInviaRT(url, station, stationInForwarderPartialPath, forwarderSubscriptionKey);
+        List<Pair<String, String>> headers = CommonUtility.constructHeadersForPaaInviaRT(uri, station, stationInForwarderPartialPath, forwarderSubscriptionKey);
+        InetSocketAddress proxyAddress = CommonUtility.constructProxyAddress(uri, station, apimPath);
 
         // idempotency key creation to check if the rt has already been sent
         String idempotencyKey = sessionData.getCommonFields().getSessionId() + "_" + noticeNumber;
@@ -376,7 +380,7 @@ public class ReceiptService {
             try {
 
                 // send the receipt to the creditor institution via the URL set in the station configuration
-                paaInviaRTSenderService.sendToCreditorInstitution(url, headers, rawPayload);
+                paaInviaRTSenderService.sendToCreditorInstitution(uri, proxyAddress, headers, rawPayload);
 
                 // generate a new event in RE for store the successful sending of the receipt
                 generateREForSentRT(sessionData, iuv, noticeNumber);
@@ -395,7 +399,7 @@ public class ReceiptService {
                 generateREForNotSentRT(sessionData, iuv, noticeNumber, message);
 
                 // because of the not sent receipt, it is necessary to schedule a retry of the sending process for this receipt
-                scheduleRTSend(sessionData, url, headers, rawPayload, station, iuv, noticeNumber, idempotencyKey, receiptType);
+                scheduleRTSend(sessionData, uri, proxyAddress, headers, rawPayload, station, iuv, noticeNumber, idempotencyKey, receiptType);
                 idempotencyStatus = IdempotencyStatusEnum.FAILED;
             }
 
@@ -553,8 +557,8 @@ public class ReceiptService {
     }
 
 
-    public void scheduleRTSend(SessionDataDTO sessionData, String url, List<Pair<String, String>> headers, String payload, StationDto station,
-                               String iuv, String noticeNumber, String idempotencyKey, ReceiptTypeEnum receiptType) {
+    public void scheduleRTSend(SessionDataDTO sessionData, URI uri, InetSocketAddress proxyAddress, List<Pair<String, String>> headers, String payload,
+                               StationDto station, String iuv, String noticeNumber, String idempotencyKey, ReceiptTypeEnum receiptType) {
 
         try {
 
@@ -563,13 +567,19 @@ public class ReceiptService {
                 formattedHeaders.add(header.getFirst() + ":" + header.getSecond());
             }
 
+            String proxy = null;
+            if (proxyAddress != null) {
+                proxy = String.format("%s:%s", proxyAddress.getHostString(), proxyAddress.getPort());
+            }
+
             // generate the RT to be persisted in storage, then save in the same storage
             RTRequestEntity rtRequestEntity = RTRequestEntity.builder()
                     .id(station.getBrokerCode() + "_" + UUID.randomUUID())
                     .primitive(PAA_INVIA_RT)
                     .partitionKey(LocalDate.ofInstant(Instant.now(), ZoneId.systemDefault()).toString())
                     .payload(AppBase64Util.base64Encode(ZipUtil.zip(payload)))
-                    .url(url)
+                    .url(uri.toString())
+                    .proxyAddress(proxy)
                     .headers(formattedHeaders)
                     .retry(0)
                     .idempotencyKey(idempotencyKey)
@@ -734,20 +744,19 @@ public class ReceiptService {
                     configurations);
             StationDto station = stations.get(sessionDataDTO.getCommonFields().getStationId());
             ConnectionDto stationConnection = station.getConnection();
-            String url = CommonUtility.constructUrl(
+            URI uri = CommonUtility.constructUrl(
                     stationConnection.getProtocol().getValue(),
                     stationConnection.getIp(),
                     stationConnection.getPort().intValue(),
-                    station.getService() != null ? station.getService().getPath() : "",
-                    null,
-                    null
+                    station.getService() != null ? station.getService().getPath() : ""
             );
-            List<Pair<String, String>> headers = CommonUtility.constructHeadersForPaaInviaRT(url, station, stationInForwarderPartialPath, forwarderSubscriptionKey);
+            List<Pair<String, String>> headers = CommonUtility.constructHeadersForPaaInviaRT(uri, station, stationInForwarderPartialPath, forwarderSubscriptionKey);
+            InetSocketAddress proxyAddress = CommonUtility.constructProxyAddress(uri, station, apimPath);
             IdempotencyStatusEnum idempotencyStatus;
             try {
 
                 // send the receipt to the creditor institution via the URL set in the station configuration
-                paaInviaRTSenderService.sendToCreditorInstitution(url, headers, rtRawPayload);
+                paaInviaRTSenderService.sendToCreditorInstitution(uri, proxyAddress, headers, rtRawPayload);
 
                 // generate a new event in RE for store the successful sending of the receipt
                 generateREForSentRT(sessionDataDTO, rpt.getIuv(), null);
@@ -765,7 +774,7 @@ public class ReceiptService {
                 generateREForNotSentRT(sessionDataDTO, rpt.getIuv(), null, messageException);
 
                 // because of the not sent receipt, it is necessary to schedule a retry of the sending process for this receipt
-                scheduleRTSend(sessionDataDTO, url, headers, rtRawPayload, station, rpt.getIuv(), null, idempotencyKey, ReceiptTypeEnum.KO);
+                scheduleRTSend(sessionDataDTO, uri, proxyAddress, headers, rtRawPayload, station, rpt.getIuv(), null, idempotencyKey, ReceiptTypeEnum.KO);
                 idempotencyStatus = IdempotencyStatusEnum.FAILED;
             }
 

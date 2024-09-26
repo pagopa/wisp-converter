@@ -44,6 +44,8 @@ class ReceiptTest {
     private static final String STATION_ID = "mystation";
     @Autowired
     ObjectMapper objectMapper;
+    @MockBean
+    RtReceiptCosmosService rtReceiptCosmosService;
     @Autowired
     private MockMvc mvc;
     @Autowired
@@ -54,9 +56,6 @@ class ReceiptTest {
     private PaaInviaRTSenderService paaInviaRTSenderService;
     @MockBean
     private CacheRepository cacheRepository;
-    @MockBean
-    RtReceiptCosmosService rtReceiptCosmosService;
-
 
     private String getPaSendRTPayload() {
         return TestUtils.loadFileContent("/requests/paSendRTV2.xml");
@@ -77,9 +76,9 @@ class ReceiptTest {
 
         // executing request
         mvc.perform(MockMvcRequestBuilders.get("/receipt")
-                            .queryParam("ci", "ci1")
-                            .queryParam("ccp", "ccp1")
-                            .queryParam("iuv", "iuv1"))
+                        .queryParam("ci", "ci1")
+                        .queryParam("ccp", "ccp1")
+                        .queryParam("iuv", "iuv1"))
                 .andExpect(MockMvcResultMatchers.status().is2xxSuccessful());
     }
 
@@ -90,9 +89,9 @@ class ReceiptTest {
 
         // executing request
         mvc.perform(MockMvcRequestBuilders.get("/receipt")
-                            .queryParam("ci", "<ci>")
-                            .queryParam("ccp", "<ccp>")
-                            .queryParam("iuv", "<iuv>"))
+                        .queryParam("ci", "<ci>")
+                        .queryParam("ccp", "<ccp>")
+                        .queryParam("iuv", "<iuv>"))
                 .andExpect(MockMvcResultMatchers.status().isNotFound());
     }
 
@@ -104,9 +103,9 @@ class ReceiptTest {
 
         // executing request
         mvc.perform(MockMvcRequestBuilders.get("/receipt")
-                            .queryParam("ci", "ci1")
-                            .queryParam("ccp", "ccp1")
-                            .queryParam("iuv", "iuv1"))
+                        .queryParam("ci", "ci1")
+                        .queryParam("ccp", "ccp1")
+                        .queryParam("iuv", "iuv1"))
                 .andExpect(MockMvcResultMatchers.status().isInternalServerError());
     }
 
@@ -219,7 +218,7 @@ class ReceiptTest {
 
         // mocking error response from creditor institution
         doThrow(new AppException(AppErrorCodeMessageEnum.RECEIPT_GENERATION_ERROR_RESPONSE_FROM_CREDITOR_INSTITUTION, "PAA_ERRORE_RESPONSE", "PAA_ERRORE_RESPONSE", "Errore PA"))
-                .when(paaInviaRTSenderService).sendToCreditorInstitution(anyString(), any(), anyString());
+                .when(paaInviaRTSenderService).sendToCreditorInstitution(any(), any(), any(), anyString());
 
         mvc.perform(MockMvcRequestBuilders.post("/receipt/ok")
                         .accept(MediaType.APPLICATION_JSON)
@@ -232,7 +231,7 @@ class ReceiptTest {
                             assertNotNull(result.getResponse());
                         });
 
-        verify(paaInviaRTSenderService, times(1)).sendToCreditorInstitution(anyString(), any(), anyString());
+        verify(paaInviaRTSenderService, times(1)).sendToCreditorInstitution(any(), any(), any(), anyString());
     }
 
     @ParameterizedTest
@@ -428,7 +427,7 @@ class ReceiptTest {
                 .paymentToken("token01")
                 .build();
         doThrow(new AppException(AppErrorCodeMessageEnum.RECEIPT_GENERATION_ERROR_RESPONSE_FROM_CREDITOR_INSTITUTION, "PAA_ERRORE_RESPONSE", "PAA_ERRORE_RESPONSE", "Errore PA"))
-                .when(paaInviaRTSenderService).sendToCreditorInstitution(anyString(), any(), anyString());
+                .when(paaInviaRTSenderService).sendToCreditorInstitution(any(), any(), any(), anyString());
 
         mvc.perform(MockMvcRequestBuilders.post("/receipt/ko")
                         .accept(MediaType.APPLICATION_JSON)
@@ -441,6 +440,6 @@ class ReceiptTest {
                             assertNotNull(result.getResponse());
                         });
 
-        verify(paaInviaRTSenderService, times(1)).sendToCreditorInstitution(anyString(), any(), anyString());
+        verify(paaInviaRTSenderService, times(1)).sendToCreditorInstitution(any(), any(), any(), anyString());
     }
 }
