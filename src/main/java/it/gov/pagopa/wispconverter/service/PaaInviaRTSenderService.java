@@ -11,6 +11,7 @@ import it.gov.pagopa.wispconverter.repository.model.enumz.OutcomeEnum;
 import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.JaxbElementUtil;
+import it.gov.pagopa.wispconverter.util.ProxyUtility;
 import it.gov.pagopa.wispconverter.util.ReUtil;
 import jakarta.xml.soap.SOAPMessage;
 import lombok.RequiredArgsConstructor;
@@ -22,10 +23,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestClient;
 
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Set;
+
 
 @Service
 @RequiredArgsConstructor
@@ -40,31 +43,39 @@ public class PaaInviaRTSenderService {
     @Value("${wisp-converter.rt-send.avoid-scheduling-on-states}")
     private Set<String> avoidSchedulingOnStates;
 
-    public void sendToCreditorInstitution(String url, List<Pair<String, String>> headers, String payload) {
+    public void sendToCreditorInstitution(URI uri, InetSocketAddress proxyAddress, List<Pair<String, String>> headers, String payload) {
 
         try {
 
-            // Generating the REST client and send the passed request payload to the passed URL
-            RestClient client = restClientBuilder.build();
+            // Generating the REST client, setting proxy specification if needed
+            RestClient client;
+            if (proxyAddress != null) {
+                client = RestClient.builder(ProxyUtility.getProxiedClient(proxyAddress))
+                        .build();
+            } else {
+                client = restClientBuilder.build();
+            }
+
+            // Send the passed request payload to the passed URL
             RestClient.RequestBodySpec bodySpec = client.post()
-                    .uri(URI.create(url))
+                    .uri(uri)
                     .body(payload);
             for (Pair<String, String> header : headers) {
                 bodySpec.header(header.getFirst(), header.getSecond());
             }
 
             // Save an RE event in order to track the communication with creditor institution
-            generateREForRequestToCreditorInstitution(url, headers, payload);
+            generateREForRequestToCreditorInstitution(uri.toString(), headers, payload);
 
             // Communicating with creditor institution sending the paaInviaRT request
             ResponseEntity<String> response = bodySpec.retrieve().toEntity(String.class);
-
-            // check SOAP response and extract body if it is valid
             String bodyPayload = response.getBody();
-            PaaInviaRTRisposta body = checkResponseValidity(response, bodyPayload);
 
             // Save an RE event in order to track the response from creditor institution
-            generateREForResponseFromCreditorInstitution(url, response.getStatusCode().value(), response.getHeaders(), bodyPayload, OutcomeEnum.RECEIVED, null);
+            generateREForResponseFromCreditorInstitution(uri.toString(), response.getStatusCode().value(), response.getHeaders(), bodyPayload, OutcomeEnum.RECEIVED, null);
+
+            // check SOAP response and extract body if it is valid
+            PaaInviaRTRisposta body = checkResponseValidity(response, bodyPayload);
 
             // check the response and if the outcome is KO, throw an exception
             EsitoPaaInviaRT esitoPaaInviaRT = body.getPaaInviaRTRisposta();
@@ -99,7 +110,7 @@ public class PaaInviaRTSenderService {
                 int statusCode = error.getStatusCode().value();
                 String responseBody = error.getResponseBodyAsString();
                 String otherInfo = error.getStatusText();
-                generateREForResponseFromCreditorInstitution(url, statusCode, error.getResponseHeaders(), responseBody, OutcomeEnum.RECEIVED_FAILURE, otherInfo);
+                generateREForResponseFromCreditorInstitution(uri.toString(), statusCode, error.getResponseHeaders(), responseBody, OutcomeEnum.RECEIVED_FAILURE, otherInfo);
             }
 
             throw new AppException(AppErrorCodeMessageEnum.RECEIPT_GENERATION_GENERIC_ERROR, e.getMessage());
@@ -120,7 +131,7 @@ public class PaaInviaRTSenderService {
         SOAPMessage soapMessage = jaxbElementUtil.getMessage(rawBody.getBytes(StandardCharsets.UTF_8));
         PaaInviaRTRisposta body = this.jaxbElementUtil.getBody(soapMessage, PaaInviaRTRisposta.class);
         if (body.getPaaInviaRTRisposta() == null) {
-            throw new AppException(AppErrorCodeMessageEnum.RECEIPT_GENERATION_WRONG_RESPONSE_FROM_CREDITOR_INSTITUTION, "Passed null paaInviaRTRisposta tag");
+            throw new AppException(AppErrorCodeMessageEnum.RECEIPT_GENERATION_WRONG_RESPONSE_FROM_CREDITOR_INSTITUTION, String.format("Passed null paaInviaRTRisposta tag. Body: [%s]", rawBody));
         }
 
         return body;

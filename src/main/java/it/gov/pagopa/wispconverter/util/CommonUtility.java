@@ -4,6 +4,7 @@ import com.azure.messaging.servicebus.ServiceBusClientBuilder;
 import com.azure.messaging.servicebus.ServiceBusErrorContext;
 import com.azure.messaging.servicebus.ServiceBusProcessorClient;
 import com.azure.messaging.servicebus.ServiceBusReceivedMessageContext;
+import it.gov.pagopa.gen.wispconverter.client.cache.model.ProxyDto;
 import it.gov.pagopa.gen.wispconverter.client.cache.model.ServiceDto;
 import it.gov.pagopa.gen.wispconverter.client.cache.model.StationDto;
 import it.gov.pagopa.gen.wispconverter.client.gpd.model.PaymentOptionModelDto;
@@ -19,6 +20,7 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.springframework.data.util.Pair;
 
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.LinkedList;
 import java.util.List;
@@ -68,10 +70,16 @@ public class CommonUtility {
         return String.format("%s-%s", Constants.SERVICE_CODE_APP, error.getCode());
     }
 
-    public static String constructUrl(String protocol, String hostname, int port, String path, String query, String fragment) {
+    public static URI constructUrl(String protocol, String hostname, int port, String path) {
         try {
+            String query = null;
             String pathMod = null;
             if (null != path) {
+                if (path.contains("?")) {
+                    String[] pathSplit = path.split("\\?", 2);
+                    path = pathSplit[0];
+                    query = pathSplit[1];
+                }
                 pathMod = path.startsWith("/") ? path : ("/" + path);
             }
 
@@ -82,17 +90,17 @@ public class CommonUtility {
                     port,
                     pathMod,
                     query,
-                    fragment).toString();
+                    null);
         } catch (Exception e) {
             throw new AppException(AppErrorCodeMessageEnum.PARSING_GENERIC_ERROR);
         }
     }
 
-    public static List<Pair<String, String>> constructHeadersForPaaInviaRT(String startingUrl, StationDto station, String stationInForwarderPartialPath, String forwarderSubscriptionKey) {
+    public static List<Pair<String, String>> constructHeadersForPaaInviaRT(URI startingUri, StationDto station, String stationInForwarderPartialPath, String forwarderSubscriptionKey) {
         List<Pair<String, String>> headers = new LinkedList<>();
         headers.add(Pair.of("SOAPAction", "paaInviaRT"));
         headers.add(Pair.of("Content-Type", "text/xml"));
-        if (startingUrl.contains(stationInForwarderPartialPath) && station.getService() != null) {
+        if (startingUri.toString().contains(stationInForwarderPartialPath) && station.getService() != null) {
             ServiceDto stationService = station.getService();
             headers.add(Pair.of("X-Host-Url", stationService.getTargetHost() == null ? "ND" : stationService.getTargetHost()));
             headers.add(Pair.of("X-Host-Port", stationService.getTargetPort() == null ? "ND" : String.valueOf(stationService.getTargetPort())));
@@ -100,6 +108,19 @@ public class CommonUtility {
             headers.add(Pair.of("Ocp-Apim-Subscription-Key", forwarderSubscriptionKey));
         }
         return headers;
+    }
+
+    public static InetSocketAddress constructProxyAddress(URI startingUri, StationDto station, String apimPath) {
+        InetSocketAddress proxyAddress = null;
+
+        if (!startingUri.toString().contains(apimPath)) {
+            ProxyDto proxyDto = station.getProxy();
+            if (proxyDto == null || proxyDto.getProxyHost() == null || proxyDto.getProxyPort() == null) {
+                throw new AppException(AppErrorCodeMessageEnum.CONFIGURATION_INVALID_STATION_PROXY, station.getStationCode());
+            }
+            proxyAddress = new InetSocketAddress(proxyDto.getProxyHost(), proxyDto.getProxyPort().intValue());
+        }
+        return proxyAddress;
     }
 
     public static String getConfigKeyValueCache(Map<String, it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigurationKeyDto> configurations, String key) {
@@ -211,8 +232,7 @@ public class CommonUtility {
     public static String sanitizeInput(String input) {
         if (input.matches("\\w*")) {
             return input;
-        }
-        else {
+        } else {
             return "suspicious input";
         }
     }
