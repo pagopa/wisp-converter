@@ -151,7 +151,13 @@ public class ReceiptController {
     	String args = "n/a";
     	try {
     		if (StringUtils.isNotEmpty(xml)) {
+    			// fix for sonar issue XML external entity in user-controlled data
+    			saxParserFactory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+                saxParserFactory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+                saxParserFactory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+                
     			saxParserFactory.newSAXParser().parse(new InputSource(new StringReader(xml)), receiptRequestHandler);
+    			
     			PaSendRTV2Request result = receiptRequestHandler.getPaSendRTV2Request();
     			args = "noticeNumber="+result.getNoticeNumber()+", fiscalCode="+result.getFiscalCode()+", creditorReferenceId="+result.getCreditorReferenceId();
     		}
