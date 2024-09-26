@@ -17,25 +17,29 @@ import it.gov.pagopa.wispconverter.service.RtReceiptCosmosService;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
 import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.ErrorUtil;
+import it.gov.pagopa.wispconverter.util.ReceiptRequestHandler;
 import it.gov.pagopa.wispconverter.util.Trace;
+import it.gov.pagopa.wispconverter.util.ReceiptRequestHandler.PaSendRTV2Request;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.MDC;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.*;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
 
-import javax.net.ssl.SSLSession;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.parsers.SAXParserFactory;
+
 import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpHeaders;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
+import java.io.StringReader;
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/receipt")
@@ -56,6 +60,11 @@ public class ReceiptController {
     private final ObjectMapper mapper;
 
     private final ErrorUtil errorUtil;
+    
+    private final SAXParserFactory saxParserFactory = SAXParserFactory.newInstance();
+    
+    @Autowired
+    private final ReceiptRequestHandler receiptRequestHandler;
 
     @Operation(summary = "", description = "", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"Receipt"})
     @ApiResponses(value = {
@@ -124,7 +133,7 @@ public class ReceiptController {
     public void receiptOk(@RequestBody ReceiptRequest request) throws IOException {
 
         try {
-            log.info("Invoking API operation receiptOk - args: {}", request.toString());
+            log.info("Invoking API operation receiptOk - args: {}", this.getReceiptRequestInfoToLog(request.getContent()));
             receiptService.sendOkPaaInviaRtToCreditorInstitution(request.getContent());
             log.info("Successful API operation receiptOk");
         } catch (Exception ex) {
@@ -136,5 +145,19 @@ public class ReceiptController {
             log.error("Failed API operation receiptOk - error: {}", errorResponse);
             throw ex;
         }
+    }
+    
+    private String getReceiptRequestInfoToLog(String xml) {
+    	String args = "n/a";
+    	try {
+    		if (StringUtils.isNotEmpty(xml)) {
+    			saxParserFactory.newSAXParser().parse(new InputSource(new StringReader(xml)), receiptRequestHandler);
+    			PaSendRTV2Request result = receiptRequestHandler.getPaSendRTV2Request();
+    			args = "noticeNumber="+result.getNoticeNumber()+", fiscalCode="+result.getFiscalCode()+", creditorReferenceId="+result.getCreditorReferenceId();
+    		}
+		} catch (SAXException | IOException | ParserConfigurationException e) {
+			return args;
+		}
+    	return args;
     }
 }
