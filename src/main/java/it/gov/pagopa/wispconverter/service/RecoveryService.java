@@ -1,16 +1,28 @@
 package it.gov.pagopa.wispconverter.service;
 
+import it.gov.pagopa.gen.wispconverter.client.cache.model.ConnectionDto;
+import it.gov.pagopa.gen.wispconverter.client.cache.model.StationDto;
+import it.gov.pagopa.wispconverter.controller.ReceiptController;
+import it.gov.pagopa.wispconverter.controller.model.RecoveryProxyReceiptRequest;
+import it.gov.pagopa.wispconverter.controller.model.RecoveryProxyReceiptResponse;
 import it.gov.pagopa.wispconverter.controller.model.RecoveryReceiptPaymentResponse;
 import it.gov.pagopa.wispconverter.controller.model.RecoveryReceiptResponse;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
+import it.gov.pagopa.wispconverter.repository.*;
+import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
+import it.gov.pagopa.wispconverter.repository.RTRepository;
+import it.gov.pagopa.wispconverter.repository.ReEventRepository;
 import it.gov.pagopa.wispconverter.repository.model.RTEntity;
+import it.gov.pagopa.wispconverter.repository.model.RTRequestEntity;
 import it.gov.pagopa.wispconverter.repository.model.ReEventEntity;
 import it.gov.pagopa.wispconverter.repository.model.SessionIdEntity;
 import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
 import it.gov.pagopa.wispconverter.secondary.RTRepositorySecondary;
 import it.gov.pagopa.wispconverter.secondary.ReEventRepositorySecondary;
 import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
+import it.gov.pagopa.wispconverter.service.model.session.SessionDataDTO;
+import it.gov.pagopa.wispconverter.util.CommonUtility;
 import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.MDCUtil;
 import it.gov.pagopa.wispconverter.util.ReUtil;
@@ -18,14 +30,19 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 
+import java.net.InetSocketAddress;
+import java.net.URI;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
@@ -44,20 +61,27 @@ public class RecoveryService {
 
     private static final String RECOVERY_VALID_START_DATE = "2024-09-03";
 
-    private final ReceiptService receiptService;
+    private static final String DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
 
     private final RTRepositorySecondary rtRepository;
 
     private final ReEventRepositorySecondary reEventRepository;
 
-    private final ReService reService;
-
-    private static final String DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
-
     private static final String DATE_FORMAT_DAY = "yyyy-MM-dd";
+
+    private final ReceiptService receiptService;
+    private final RPTRequestRepository rptRequestRepository;
+    private final RTRetryRepository rtRetryRepository;
+    private final ReService reService;
+    private final RPTExtractorService rptExtractorService;
+    private final ConfigCacheService configCacheService;
+    private final ServiceBusService serviceBusService;
 
     @Value("${wisp-converter.cached-requestid-mapping.ttl.minutes:1440}")
     public Long requestIDMappingTTL;
+
+    @Value("${wisp-converter.apim.path}")
+    private String apimPath;
 
     @Value("${wisp-converter.recovery.receipt-generation.wait-time.minutes:60}")
     public Long receiptGenerationWaitTime;
@@ -90,6 +114,7 @@ public class RecoveryService {
 
         return null;
     }
+
 
     public RecoveryReceiptResponse recoverReceiptKOByCI(String creditorInstitution, String dateFrom, String dateTo) {
         MDCUtil.setSessionDataInfo("recovery-receipt-ko");
@@ -281,5 +306,71 @@ public class RecoveryService {
                 "SAVED_RPT_IN_CART_RECEIVED_REDIRECT_URL_FROM_CHECKOUT",
                 "GENERATED_CACHE_ABOUT_RPT_FOR_CARTSESSION_CACHING"
         );
+    }
+
+    public RecoveryProxyReceiptResponse recoverReceiptToBeSentByProxy(RecoveryProxyReceiptRequest request) {
+
+        RecoveryProxyReceiptResponse response = RecoveryProxyReceiptResponse.builder()
+                .receiptStatus(new LinkedList<>())
+                .build();
+
+        MDCUtil.setSessionDataInfo("recovery-receipt-without-proxy");
+        for (String receiptId : request.getReceiptIds()) {
+
+            String sessionId = null;
+            try {
+                Optional<RTRequestEntity> rtRequestEntityOpt = rtRetryRepository.findById(receiptId);
+                if (rtRequestEntityOpt.isEmpty()) {
+                    throw new AppException(AppErrorCodeMessageEnum.ERROR, String.format("No valid receipt found with id [%s]", receiptId));
+                }
+
+                RTRequestEntity rtRequestEntity = rtRequestEntityOpt.get();
+                String idempotencyKey = rtRequestEntity.getIdempotencyKey();
+                String[] idempotencyKeyComponents = idempotencyKey.split("_");
+                if (idempotencyKeyComponents.length != 2) {
+                    throw new AppException(AppErrorCodeMessageEnum.ERROR, String.format("Invalid idempotency key [%s]. It must be composed of sessionId and notice number.", idempotencyKey));
+                }
+
+                sessionId = idempotencyKeyComponents[0];
+                Optional<RPTRequestEntity> rptRequestOpt = rptRequestRepository.findById(sessionId);
+                if (rptRequestOpt.isEmpty()) {
+                    throw new AppException(AppErrorCodeMessageEnum.ERROR, String.format("No valid RPT request found with id [%s].", sessionId));
+                }
+
+                RPTRequestEntity rptRequestEntity = rptRequestOpt.get();
+                SessionDataDTO sessionData = rptExtractorService.extractSessionData(rptRequestEntity.getPrimitive(), rptRequestEntity.getPayload());
+
+                String stationId = sessionData.getCommonFields().getStationId();
+                StationDto station = configCacheService.getStationByIdFromCache(stationId);
+
+                ConnectionDto stationConnection = station.getConnection();
+                URI uri = CommonUtility.constructUrl(
+                        stationConnection.getProtocol().getValue(),
+                        stationConnection.getIp(),
+                        stationConnection.getPort().intValue(),
+                        station.getService() != null ? station.getService().getPath() : ""
+                );
+                InetSocketAddress proxyAddress = CommonUtility.constructProxyAddress(uri, station, apimPath);
+                if (proxyAddress != null) {
+                    rtRequestEntity.setProxyAddress(String.format("%s:%s", proxyAddress.getHostString(), proxyAddress.getPort()));
+                }
+                rtRequestEntity.setRetry(0);
+                rtRetryRepository.save(rtRequestEntity);
+
+                String compositedIdForReceipt = String.format("%s_%s", rtRequestEntity.getPartitionKey(), rtRequestEntity.getId());
+                serviceBusService.sendMessage(compositedIdForReceipt, null);
+                generateRE(null, "Success", InternalStepStatus.RT_SEND_RESCHEDULING_SUCCESS, null, null, null, sessionId);
+                response.getReceiptStatus().add(Pair.of(receiptId, "SCHEDULED"));
+
+            } catch (Exception e) {
+
+                log.error("Reconciliation for receipt id [{}] ended unsuccessfully!", receiptId, e);
+                generateRE(Constants.PAA_INVIA_RT, "Failure", InternalStepStatus.RT_SEND_RESCHEDULING_FAILURE, null, null, null, sessionId);
+
+                response.getReceiptStatus().add(Pair.of(receiptId, String.format("FAILED: [%s]", e.getMessage())));
+            }
+        }
+
+        return response;
     }
 }

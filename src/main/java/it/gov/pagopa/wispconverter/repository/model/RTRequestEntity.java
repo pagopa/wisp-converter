@@ -32,6 +32,8 @@ public class RTRequestEntity {
 
     private String url;
 
+    private String proxyAddress;
+
     private List<String> headers;
 
     private Integer retry;

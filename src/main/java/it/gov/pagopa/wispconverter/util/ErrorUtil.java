@@ -21,6 +21,7 @@ import java.time.Instant;
 public class ErrorUtil {
 
     public static final String EXTRA_FIELD_OPERATION_ID = "operation-id";
+    public static final String EXTRA_FIELD_SESSION_ID = "session-id";
     public static final String EXTRA_FIELD_ERROR_TIMESTAMP = "timestamp";
     public static final String EXTRA_FIELD_ERROR_CODE = "error-code";
     private static final String ERROR_CODE_TITLE = "error-code.%s.title";
@@ -55,6 +56,10 @@ public class ErrorUtil {
         String operationId = MDC.get(Constants.MDC_OPERATION_ID);
         if (operationId != null) {
             problemDetail.setProperty(EXTRA_FIELD_OPERATION_ID, operationId);
+        }
+        String sessionId = MDC.get(Constants.MDC_SESSION_ID);
+        if (sessionId != null) {
+            problemDetail.setProperty(EXTRA_FIELD_SESSION_ID, sessionId);
         }
     }
 

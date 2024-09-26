@@ -6,6 +6,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import it.gov.pagopa.wispconverter.controller.model.RecoveryProxyReceiptRequest;
+import it.gov.pagopa.wispconverter.controller.model.RecoveryProxyReceiptResponse;
 import it.gov.pagopa.wispconverter.controller.model.RecoveryReceiptResponse;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
@@ -19,10 +21,7 @@ import org.slf4j.MDC;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.ErrorResponse;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/recovery")
@@ -92,4 +91,22 @@ public class RecoveryController {
         }
     }
 
+    @Operation(summary = "Execute reconciliation for passed receipts.", description = "Execute reconciliation of all receipts in the request, searching by passed identifier", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"Recovery"})
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Reconciliation completed")
+    })
+    @PostMapping(value = "/proxy")
+    public ResponseEntity<RecoveryProxyReceiptResponse> recoverReceiptToBeSentByProxy(@RequestBody RecoveryProxyReceiptRequest request) {
+        try {
+            log.info("Invoking API operation recoverReceiptToBeSentByProxy - args: {}", request);
+            return ResponseEntity.ok(recoveryService.recoverReceiptToBeSentByProxy(request));
+        } catch (Exception ex) {
+            String operationId = MDC.get(Constants.MDC_OPERATION_ID);
+            log.error(String.format("GenericException: operation-id=[%s]", operationId != null ? operationId : "n/a"), ex);
+            AppException appException = new AppException(ex, AppErrorCodeMessageEnum.ERROR, ex.getMessage());
+            ErrorResponse errorResponse = errorUtil.forAppException(appException);
+            log.error("Failed API operation recoverReceiptToBeSentByProxy - error: {}", errorResponse);
+            throw ex;
+        }
+    }
 }
