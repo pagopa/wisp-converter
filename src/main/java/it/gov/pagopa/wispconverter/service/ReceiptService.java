@@ -15,10 +15,12 @@ import it.gov.pagopa.gen.wispconverter.client.cache.model.ConnectionDto;
 import it.gov.pagopa.gen.wispconverter.client.cache.model.StationDto;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
+import it.gov.pagopa.wispconverter.repository.RTRepository;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
 import it.gov.pagopa.wispconverter.repository.model.RTRequestEntity;
 import it.gov.pagopa.wispconverter.repository.model.enumz.IdempotencyStatusEnum;
 import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
+import it.gov.pagopa.wispconverter.repository.model.enumz.ReceiptStatusEnum;
 import it.gov.pagopa.wispconverter.repository.model.enumz.ReceiptTypeEnum;
 import it.gov.pagopa.wispconverter.service.mapper.RTMapper;
 import it.gov.pagopa.wispconverter.service.model.CachedKeysMapping;
@@ -180,13 +182,13 @@ public class ReceiptService {
                         String paaInviaRtPayload = generatePayloadAsRawString(header, null, rawGeneratedReceipt, objectFactory);
 
                         // save receipt-rt
-                        rtReceiptCosmosService.saveRTEntity(rpt, rawGeneratedReceipt, ReceiptTypeEnum.KO);
+                        rtReceiptCosmosService.saveRTEntity(sessionData.getCommonFields().getSessionId(), rpt, ReceiptStatusEnum.SENDING, rawGeneratedReceipt, ReceiptTypeEnum.KO);
 
                         // retrieve station from common station identifier
                         StationDto station = stations.get(commonFields.getStationId());
 
                         // send receipt to the creditor institution and, if not correctly sent, add to queue for retry
-                        sendReceiptToCreditorInstitution(sessionData, paaInviaRtPayload, receipt, rpt.getIuv(), noticeNumber, station, true);
+                        sendReceiptToCreditorInstitution(sessionData, rpt, paaInviaRtPayload, receipt, rpt.getIuv(), noticeNumber, station, true);
                     }
                 }
             }
@@ -263,10 +265,10 @@ public class ReceiptService {
                     String paaInviaRtPayload = generatePayloadAsRawString(intestazionePPT, commonFields.getSignatureType(), rawGeneratedReceipt, objectFactory);
 
                     // save receipt-rt
-                    rtReceiptCosmosService.saveRTEntity(rpt, rawGeneratedReceipt, ReceiptTypeEnum.OK);
+                    rtReceiptCosmosService.saveRTEntity(sessionData.getCommonFields().getSessionId(), rpt, ReceiptStatusEnum.SENDING, rawGeneratedReceipt, ReceiptTypeEnum.OK);
 
                     // send receipt to the creditor institution and, if not correctly sent, add to queue for retry
-                    sendReceiptToCreditorInstitution(sessionData, paaInviaRtPayload, receipt, rpt.getIuv(), noticeNumber, station, false);
+                    sendReceiptToCreditorInstitution(sessionData, rpt, paaInviaRtPayload, receipt, rpt.getIuv(), noticeNumber, station, false);
                 }
             }
 
@@ -321,7 +323,7 @@ public class ReceiptService {
         String paaInviaRtPayload = generatePayloadAsRawString(header, null, rawGeneratedReceipt, objectFactory);
 
         // save receipt-rt
-        rtReceiptCosmosService.saveRTEntity(rpt, rawGeneratedReceipt, ReceiptTypeEnum.KO);
+        rtReceiptCosmosService.saveRTEntity(commonFields.getSessionId(), rpt, ReceiptStatusEnum.SENDING, rawGeneratedReceipt, ReceiptTypeEnum.KO);
 
         return paaInviaRtPayload;
     }
@@ -343,8 +345,10 @@ public class ReceiptService {
         return getSessionDataFromSessionId(cachedSessionId);
     }
 
-    private boolean sendReceiptToCreditorInstitution(SessionDataDTO sessionData, String rawPayload, Object receipt,
-                                                     String iuv, String noticeNumber, StationDto station, boolean mustSendNegativeRT) {
+    private boolean sendReceiptToCreditorInstitution(SessionDataDTO sessionData, RPTContentDTO rpt,
+                                                     String rawPayload, Object receipt,
+                                                     String iuv, String noticeNumber,
+                                                     StationDto station, boolean mustSendNegativeRT) {
 
         boolean isSuccessful = false;
 
@@ -378,7 +382,7 @@ public class ReceiptService {
             // finally, send the receipt to the creditor institution
             IdempotencyStatusEnum idempotencyStatus;
             try {
-
+                rtReceiptCosmosService.updateReceiptStatus(rpt, ReceiptStatusEnum.SENDING);
                 // send the receipt to the creditor institution via the URL set in the station configuration
                 paaInviaRTSenderService.sendToCreditorInstitution(uri, proxyAddress, headers, rawPayload);
 
@@ -387,8 +391,9 @@ public class ReceiptService {
                 idempotencyStatus = IdempotencyStatusEnum.SUCCESS;
                 isSuccessful = true;
 
+                rtReceiptCosmosService.updateReceiptStatus(rpt, ReceiptStatusEnum.SENT);
             } catch (Exception e) {
-
+                rtReceiptCosmosService.updateReceiptStatus(rpt, ReceiptStatusEnum.SCHEDULED);
                 // generate a new event in RE for store the unsuccessful sending of the receipt
                 String message = e.getMessage();
                 if (e instanceof AppException appException) {

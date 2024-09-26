@@ -170,6 +170,7 @@ public class RTConsumer extends SBConsumer {
             }
 
             String rawPayload = new String(unzippedPayload);
+            // todo RT-STATUS-SENDING
             paaInviaRTSenderService.sendToCreditorInstitution(URI.create(receipt.getUrl()), proxyAddress, extractHeaders(receipt.getHeaders()), rawPayload);
             rtRetryComosService.deleteRTRequestEntity(receipt);
             log.debug("Sent receipt [{}]", receiptId);
@@ -177,9 +178,9 @@ public class RTConsumer extends SBConsumer {
             // generate a new event in RE for store the successful re-sending of the receipt
             generateREForSentRT();
             isSend = true;
-
+            // todo RT-STATUS-SENT
         } catch (AppException e) {
-
+            // todo RT-STATUS-SCHEDULED
             // generate a new event in RE for store the unsuccessful re-sending of the receipt
             generateREForNotSentRT(e);
 
@@ -231,6 +232,8 @@ public class RTConsumer extends SBConsumer {
 
             // generate a new event in RE for store the unsuccessful scheduling of the RT send
             generateREForMaxRetriesOnReschedulingSentRT(receipt.getRetry());
+
+            // todo RT-STATUS-NOT-SENT
         }
     }
 
