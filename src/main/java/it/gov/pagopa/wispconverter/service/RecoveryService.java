@@ -62,7 +62,7 @@ public class RecoveryService {
     @Value("${wisp-converter.recovery.receipt-generation.wait-time.minutes:60}")
     public Long receiptGenerationWaitTime;
 
-    public boolean recoverReceiptKOByIUV(String creditorInstitution, String iuv, String dateFrom, String dateTo) {
+    public RecoveryReceiptResponse recoverReceiptKOByIUV(String creditorInstitution, String iuv, String dateFrom, String dateTo) {
         checkDateValidity(dateFrom, dateTo);
         List<ReEventEntity> reEvents = reEventRepository.findByIuvAndOrganizationId(dateFrom, dateTo, iuv, creditorInstitution)
                                                .stream()
@@ -76,11 +76,19 @@ public class RecoveryService {
             String status = lastEvent.getStatus();
             if(status != null && interruptStatusSet.contains(status)) {
                 this.recoverReceiptKO(creditorInstitution, iuv, lastEvent.getSessionId(), lastEvent.getCcp(), dateFrom, dateTo);
-                return true;
+                return RecoveryReceiptResponse.builder()
+                        .payments(
+                            List.of(
+                                RecoveryReceiptPaymentResponse.builder()
+                                    .iuv(iuv)
+                                    .ccp(lastEvent.getCcp())
+                                    .ci(lastEvent.getDomainId())
+                                    .build()))
+                        .build();
             }
         }
 
-        return false;
+        return null;
     }
 
     public RecoveryReceiptResponse recoverReceiptKOByCI(String creditorInstitution, String dateFrom, String dateTo) {
@@ -121,52 +129,6 @@ public class RecoveryService {
                        .build();
     }
 
-    // Recover all CI for which there is a stale/pending RPT (i.e. receipts-rt = null)
-    public int recoverReceiptKOByDates(ZonedDateTime dateFrom, ZonedDateTime dateTo) {
-        String dateFromString = dateFrom.format(DateTimeFormatter.ofPattern(DATE_FORMAT));
-        String dateToString = dateTo.format(DateTimeFormatter.ofPattern(DATE_FORMAT));
-
-        List<RTEntity> receiptRTs = rtRepository.findPendingRT(dateFromString, dateToString);
-        List<RecoveryReceiptPaymentResponse> paymentsToReconcile = receiptRTs.stream().map(entity -> RecoveryReceiptPaymentResponse.builder()
-                                                                                                             .iuv(entity.getIuv())
-                                                                                                             .ccp(entity.getCcp())
-                                                                                                             .ci(entity.getIdDominio())
-                                                                                                             .build())
-                                                                           .toList();
-
-        recoverReceiptKOByRecoveryPayment(dateFromString, dateToString, paymentsToReconcile);
-
-        return RecoveryReceiptResponse.builder()
-                       .payments(paymentsToReconcile)
-                       .build()
-                       .getPayments()
-                       .size();
-    }
-
-    public int recoverMissingRedirect(ZonedDateTime dateFrom, ZonedDateTime dateTo) {
-        String dateFromString = dateFrom.format(DateTimeFormatter.ofPattern(DATE_FORMAT));
-        String dateToString = dateTo.format(DateTimeFormatter.ofPattern(DATE_FORMAT));
-
-        List<SessionIdEntity> sessionsWithoutRedirect = reEventRepository.findSessionWithoutRedirect(dateFromString, dateToString);
-
-        for(SessionIdEntity sessionIdEntity : sessionsWithoutRedirect) {
-            String sessionId = sessionIdEntity.getSessionId();
-            List<ReEventEntity> reEventList = reEventRepository.findBySessionIdAndStatus(dateFromString, dateToString, sessionId, RPT_ACCETTATA_NODO);
-
-            if(!reEventList.isEmpty()) {
-                ReEventEntity reEvent = reEventList.get(0);
-                String iuv = reEvent.getIuv();
-                String ccp = reEvent.getCcp();
-                String ci = reEvent.getDomainId();
-
-                log.info("[RECOVER-MISSING-REDIRECT] Recovery with receipt-ko for ci = {}, iuv = {}, ccp = {}, sessionId = {}", ci, iuv, ccp, sessionId);
-                this.recoverReceiptKO(ci, iuv, ccp, sessionId, dateFromString, dateToString);
-            }
-        }
-
-        return sessionsWithoutRedirect.size();
-    }
-
     private CompletableFuture<Boolean> recoverReceiptKOAsync(String dateFrom, String dateTo, List<RecoveryReceiptPaymentResponse> paymentsToReconcile) {
         return CompletableFuture.supplyAsync(() -> recoverReceiptKOByRecoveryPayment(dateFrom, dateTo, paymentsToReconcile));
     }
@@ -202,6 +164,60 @@ public class RecoveryService {
         }
 
         return true;
+    }
+
+    // missing rt recovery
+    public int recoverMissingRT(ZonedDateTime dateFrom, ZonedDateTime dateTo) {
+        String dateFromString = dateFrom.format(DateTimeFormatter.ofPattern(DATE_FORMAT));
+        String dateToString = dateTo.format(DateTimeFormatter.ofPattern(DATE_FORMAT));
+        List<RTEntity> receiptRTs = rtRepository.findPendingRT(dateFromString, dateToString);
+        int recovered = 0;
+
+        for(RTEntity rt : receiptRTs) {
+            String iuv = rt.getIuv();
+            String ci = rt.getIdDominio();
+            String ccp = rt.getCcp();
+
+            List<ReEventEntity> reEvents = reEventRepository.findByIuvAndOrganizationId(dateFromString, dateToString, iuv, ci);
+            Set<String> interruptStatusSet = getWISPInterruptStatusSet();
+
+            if(!reEvents.isEmpty()) {
+                ReEventEntity lastEvent = reEvents.get(0);
+                String status = lastEvent.getStatus();
+                if(status != null && interruptStatusSet.contains(status)) {
+                    log.info("[RECOVER-MISSING-RT] Recovery with receipt-ko for ci = {}, iuv = {}, ccp = {}", ci, iuv, ccp);
+                    this.recoverReceiptKO(ci, iuv, lastEvent.getSessionId(), lastEvent.getCcp(), dateFromString, dateToString);
+                    recovered++;
+                }
+            }
+        }
+
+        return recovered;
+    }
+
+    // missing redirect recovery
+    public int recoverMissingRedirect(ZonedDateTime dateFrom, ZonedDateTime dateTo) {
+        String dateFromString = dateFrom.format(DateTimeFormatter.ofPattern(DATE_FORMAT));
+        String dateToString = dateTo.format(DateTimeFormatter.ofPattern(DATE_FORMAT));
+
+        List<SessionIdEntity> sessionsWithoutRedirect = reEventRepository.findSessionWithoutRedirect(dateFromString, dateToString);
+
+        for(SessionIdEntity sessionIdEntity : sessionsWithoutRedirect) {
+            String sessionId = sessionIdEntity.getSessionId();
+            List<ReEventEntity> reEventList = reEventRepository.findBySessionIdAndStatus(dateFromString, dateToString, sessionId, RPT_ACCETTATA_NODO);
+
+            if(!reEventList.isEmpty()) {
+                ReEventEntity reEvent = reEventList.get(0);
+                String iuv = reEvent.getIuv();
+                String ccp = reEvent.getCcp();
+                String ci = reEvent.getDomainId();
+
+                log.info("[RECOVER-MISSING-REDIRECT] Recovery with receipt-ko for ci = {}, iuv = {}, ccp = {}, sessionId = {}", ci, iuv, ccp, sessionId);
+                this.recoverReceiptKO(ci, iuv, ccp, sessionId, dateFromString, dateToString);
+            }
+        }
+
+        return sessionsWithoutRedirect.size();
     }
 
     // check if there is a successful RT submission, if there isn't prepare cached data and send receipt-ko

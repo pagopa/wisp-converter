@@ -28,14 +28,14 @@ class RecoverySchedulerTest {
     @Test
     void testRecoverReceiptKOCronJob() {
         // Arrange
-        when(recoveryService.recoverReceiptKOByDates(any(), any())).thenReturn(5);
+        when(recoveryService.recoverMissingRT(any(), any())).thenReturn(5);
         when(recoveryService.recoverMissingRedirect(any(), any())).thenReturn(3);
 
         // Act
         recoveryScheduler.recoverReceiptKOCronJob();
 
         // Assert
-        verify(recoveryService, times(1)).recoverReceiptKOByDates(any(ZonedDateTime.class), any(ZonedDateTime.class));
+        verify(recoveryService, times(1)).recoverMissingRT(any(ZonedDateTime.class), any(ZonedDateTime.class));
         verify(recoveryService, times(1)).recoverMissingRedirect(any(ZonedDateTime.class), any(ZonedDateTime.class));
 
         assertNotNull(recoveryScheduler.getThreadOfExecution());

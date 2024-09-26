@@ -82,7 +82,7 @@ class RecoveryTest {
         mockMvc.perform(post("/recovery/{ci}/rpt/{iuv}/receipt-ko", ci, iuv)
                                 .queryParam("date_from", dateFrom)
                                 .queryParam("date_to", dateTo))
-                .andExpect(status().isOk());
+                .andExpect(status().isBadRequest());
 
         Mockito.verify(recoveryService, times(1)).recoverReceiptKOByIUV(eq(ci), eq(iuv), any(), any());
     }

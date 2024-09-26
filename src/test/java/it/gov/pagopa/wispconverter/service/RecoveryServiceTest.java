@@ -82,7 +82,7 @@ public class RecoveryServiceTest {
         when(rtRepository.findPendingRT(anyString(), anyString())).thenReturn(mockRTEntities);
 
         // Act
-        int recoveredReceipt = recoveryService.recoverReceiptKOByDates(dateFrom, dateTo);
+        int recoveredReceipt = recoveryService.recoverMissingRT(dateFrom, dateTo);
 
         // Assert
         assertEquals(0, recoveredReceipt);
@@ -108,7 +108,7 @@ public class RecoveryServiceTest {
         when(reRepository.findByIuvAndOrganizationId(anyString(), anyString(), anyString(), anyString())).thenReturn(mockReEventEntities);
 
         // Act
-        int recoveredReceipt = recoveryService.recoverReceiptKOByDates(dateFrom, dateTo);
+        int recoveredReceipt = recoveryService.recoverMissingRT(dateFrom, dateTo);
 
         // Assert
         assertEquals(1, recoveredReceipt);
