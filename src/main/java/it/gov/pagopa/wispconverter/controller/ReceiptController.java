@@ -25,7 +25,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.MDC;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -63,7 +62,6 @@ public class ReceiptController {
     
     private final SAXParserFactory saxParserFactory = SAXParserFactory.newInstance();
     
-    @Autowired
     private final ReceiptRequestHandler receiptRequestHandler;
 
     @Operation(summary = "", description = "", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"Receipt"})
