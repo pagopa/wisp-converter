@@ -58,8 +58,6 @@ class ReceiptTest {
     @MockBean
     private CacheRepository cacheRepository;
     @MockBean
-    RtReceiptCosmosService rtReceiptCosmosService;
-    @MockBean
     RecoveryService recoveryService;
 
     private String getPaSendRTPayload() {

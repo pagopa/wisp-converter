@@ -2,7 +2,6 @@ package it.gov.pagopa.wispconverter.service;
 
 import it.gov.pagopa.gen.wispconverter.client.cache.model.ConnectionDto;
 import it.gov.pagopa.gen.wispconverter.client.cache.model.StationDto;
-import it.gov.pagopa.wispconverter.controller.ReceiptController;
 import it.gov.pagopa.wispconverter.controller.model.RecoveryProxyReceiptRequest;
 import it.gov.pagopa.wispconverter.controller.model.RecoveryProxyReceiptResponse;
 import it.gov.pagopa.wispconverter.controller.model.RecoveryReceiptPaymentResponse;
@@ -11,8 +10,6 @@ import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.*;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
-import it.gov.pagopa.wispconverter.repository.RTRepository;
-import it.gov.pagopa.wispconverter.repository.ReEventRepository;
 import it.gov.pagopa.wispconverter.repository.model.RTEntity;
 import it.gov.pagopa.wispconverter.repository.model.RTRequestEntity;
 import it.gov.pagopa.wispconverter.repository.model.ReEventEntity;
