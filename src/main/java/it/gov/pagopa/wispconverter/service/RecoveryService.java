@@ -292,13 +292,14 @@ public class RecoveryService {
 
                 String compositedIdForReceipt = String.format("%s_%s", rtRequestEntity.getPartitionKey(), rtRequestEntity.getId());
                 serviceBusService.sendMessage(compositedIdForReceipt, null);
-                generateRE(null, "Success", InternalStepStatus.RT_SEND_RESCHEDULING_SUCCESS, null, null, null, null, sessionId);
+                generateRE(null, "Success", InternalStepStatus.RT_SEND_RESCHEDULING_SUCCESS, null, null, null, sessionId);
                 response.getReceiptStatus().add(Pair.of(receiptId, "SCHEDULED"));
 
             } catch (Exception e) {
 
                 log.error("Reconciliation for receipt id [{}] ended unsuccessfully!", receiptId, e);
-                generateRE(Constants.PAA_INVIA_RT, "Failure", InternalStepStatus.RT_SEND_RESCHEDULING_FAILURE, null, null, null, null, sessionId);
+                generateRE(Constants.PAA_INVIA_RT, "Failure", InternalStepStatus.RT_SEND_RESCHEDULING_FAILURE, null, null, null, sessionId);
+
                 response.getReceiptStatus().add(Pair.of(receiptId, String.format("FAILED: [%s]", e.getMessage())));
             }
         }

@@ -116,7 +116,7 @@ public class CommonUtility {
         if (!startingUri.toString().contains(apimPath)) {
             ProxyDto proxyDto = station.getProxy();
             if (proxyDto == null || proxyDto.getProxyHost() == null || proxyDto.getProxyPort() == null) {
-                throw new AppException(AppErrorCodeMessageEnum.CONFIGURATION_INVALID_STATION_PROXY);
+                throw new AppException(AppErrorCodeMessageEnum.CONFIGURATION_INVALID_STATION_PROXY, station.getStationCode());
             }
             proxyAddress = new InetSocketAddress(proxyDto.getProxyHost(), proxyDto.getProxyPort().intValue());
         }
