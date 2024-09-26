@@ -15,7 +15,6 @@ import it.gov.pagopa.gen.wispconverter.client.cache.model.ConnectionDto;
 import it.gov.pagopa.gen.wispconverter.client.cache.model.StationDto;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
-import it.gov.pagopa.wispconverter.repository.RTRepository;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
 import it.gov.pagopa.wispconverter.repository.model.RTRequestEntity;
 import it.gov.pagopa.wispconverter.repository.model.enumz.IdempotencyStatusEnum;
@@ -404,7 +403,7 @@ public class ReceiptService {
                 generateREForNotSentRT(sessionData, iuv, noticeNumber, message);
 
                 // because of the not sent receipt, it is necessary to schedule a retry of the sending process for this receipt
-                scheduleRTSend(sessionData, uri, proxyAddress, headers, rawPayload, station, iuv, noticeNumber, idempotencyKey, receiptType);
+                scheduleRTSend(sessionData, uri, proxyAddress, headers, rawPayload, station, rpt, noticeNumber, idempotencyKey, receiptType);
                 idempotencyStatus = IdempotencyStatusEnum.FAILED;
             }
 
@@ -563,7 +562,7 @@ public class ReceiptService {
 
 
     public void scheduleRTSend(SessionDataDTO sessionData, URI uri, InetSocketAddress proxyAddress, List<Pair<String, String>> headers, String payload,
-                               StationDto station, String iuv, String noticeNumber, String idempotencyKey, ReceiptTypeEnum receiptType) {
+                               StationDto station, RPTContentDTO rpt, String noticeNumber, String idempotencyKey, ReceiptTypeEnum receiptType) {
 
         try {
 
@@ -580,6 +579,10 @@ public class ReceiptService {
             // generate the RT to be persisted in storage, then save in the same storage
             RTRequestEntity rtRequestEntity = RTRequestEntity.builder()
                     .id(station.getBrokerCode() + "_" + UUID.randomUUID())
+                    .domainId(rpt.getRpt().getDomain().getDomainId())
+                    .iuv(rpt.getIuv())
+                    .ccp(rpt.getCcp())
+                    .sessionId(sessionData.getCommonFields().getSessionId())
                     .primitive(PAA_INVIA_RT)
                     .partitionKey(LocalDate.ofInstant(Instant.now(), ZoneId.systemDefault()).toString())
                     .payload(AppBase64Util.base64Encode(ZipUtil.zip(payload)))
@@ -596,12 +599,12 @@ public class ReceiptService {
             serviceBusService.sendMessage(rtRequestEntity.getPartitionKey() + "_" + rtRequestEntity.getId(), schedulingTimeInMinutes);
 
             // generate a new event in RE for store the successful scheduling of the RT send
-            generateREForSuccessfulSchedulingSentRT(sessionData, iuv, noticeNumber);
+            generateREForSuccessfulSchedulingSentRT(sessionData, rpt.getIuv(), noticeNumber);
 
         } catch (Exception e) {
 
             // generate a new event in RE for store the unsuccessful scheduling of the RT send
-            generateREForFailedSchedulingSentRT(sessionData, iuv, noticeNumber, e);
+            generateREForFailedSchedulingSentRT(sessionData, rpt.getIuv(), noticeNumber, e);
         }
     }
 
@@ -779,7 +782,7 @@ public class ReceiptService {
                 generateREForNotSentRT(sessionDataDTO, rpt.getIuv(), null, messageException);
 
                 // because of the not sent receipt, it is necessary to schedule a retry of the sending process for this receipt
-                scheduleRTSend(sessionDataDTO, uri, proxyAddress, headers, rtRawPayload, station, rpt.getIuv(), null, idempotencyKey, ReceiptTypeEnum.KO);
+                scheduleRTSend(sessionDataDTO, uri, proxyAddress, headers, rtRawPayload, station, rpt, null, idempotencyKey, ReceiptTypeEnum.KO);
                 idempotencyStatus = IdempotencyStatusEnum.FAILED;
             }
 

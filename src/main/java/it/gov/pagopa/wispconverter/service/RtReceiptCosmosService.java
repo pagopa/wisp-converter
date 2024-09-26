@@ -19,7 +19,6 @@ import java.io.IOException;
 import java.time.ZonedDateTime;
 import java.util.Optional;
 
-
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -52,41 +51,49 @@ public class RtReceiptCosmosService {
 
     @Transactional
     public boolean updateReceiptStatus(RPTContentDTO rptContentDTO, ReceiptStatusEnum status) {
-        try {
-            String domainId = rptContentDTO.getRpt().getDomain().getDomainId();
-            String iuv = rptContentDTO.getIuv();
-            String ccp = rptContentDTO.getCcp();
+        String domainId = rptContentDTO.getRpt().getDomain().getDomainId();
+        String iuv = rptContentDTO.getIuv();
+        String ccp = rptContentDTO.getCcp();
 
-            String id = String.format("%s_%s_%s", domainId, iuv, ccp);
+        return this.updateReceiptStatus(domainId, iuv, ccp, status);
+    }
+
+    @Transactional
+    public boolean updateReceiptStatus(String ci, String iuv, String ccp, ReceiptStatusEnum status) {
+        try {
+            String id = getId(ci, iuv, ccp);
             Optional<RTEntity> rtEntityOptional = rtRepository.findById(id, new PartitionKey(id));
 
-            if(rtEntityOptional.isEmpty()) return false;
+            if (rtEntityOptional.isEmpty())
+                return false;
 
-            RTEntity old = rtEntityOptional.get();
-            RTEntity newRtEntity = createRTEntity(old.getSessionId(), rptContentDTO, status, old.getRt(), old.getReceiptType(), old.getRtTimestamp());
-            rtRepository.save(newRtEntity);
+            RTEntity rtEntity = rtEntityOptional.get();
+            rtEntity.setReceiptStatus(status);
+            rtRepository.save(rtEntity);
+
+            return true;
         } catch (CosmosException e) {
             log.error("An exception occurred while saveRTEntity: " + e.getMessage());
+            return false;
         }
     }
 
-
     public boolean receiptRtExist(String domainId, String iuv, String ccp) {
+        String id = getId(domainId, iuv, ccp);
+        return rtRepository.findById(id, new PartitionKey(id)).isPresent();
+    }
+
+    private String getId(String domainId, String iuv, String ccp) {
         String id = String.format("%s_%s_%s", domainId, iuv, ccp);
         // Remove illegal characters ['/', '\', '#'] because cannot be used in Resource ID
-        id = id.replaceAll(ILLEGAL_CHARS_FOR_ID, "");
-        return rtRepository.findById(id, new PartitionKey(id)).isPresent();
+        return id.replaceAll(ILLEGAL_CHARS_FOR_ID, "");
     }
 
     private RTEntity createRTEntity(String sessionId, RPTContentDTO rptContentDTO, ReceiptStatusEnum status, String rt, ReceiptTypeEnum receiptType, Long rtTimestamp) {
         String domainId = rptContentDTO.getRpt().getDomain().getDomainId();
         String iuv = rptContentDTO.getIuv();
         String ccp = rptContentDTO.getCcp();
-
-        String id = String.format("%s_%s_%s", domainId, iuv, ccp);
-
-        // Remove illegal characters ['/', '\', '#'] because cannot be used in Resource ID
-        id = id.replaceAll(ILLEGAL_CHARS_FOR_ID, "");
+        String id = getId(domainId, iuv, ccp);
 
         return RTEntity.builder()
                 .id(id)
