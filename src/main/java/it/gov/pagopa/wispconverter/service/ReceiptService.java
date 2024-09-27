@@ -366,7 +366,7 @@ public class ReceiptService {
         InetSocketAddress proxyAddress = CommonUtility.constructProxyAddress(uri, station, apimPath);
 
         // idempotency key creation to check if the rt has already been sent
-        String idempotencyKey = sessionData.getCommonFields().getSessionId() + "_" + noticeNumber;
+        String idempotencyKey = IdempotencyService.generateIdempotencyKeyId(sessionData.getCommonFields().getSessionId(), noticeNumber, rpt.getRpt().getDomain().getDomainId());
 
         // send to creditor institution only if another receipt wasn't already sent
         ReceiptTypeEnum receiptType = mustSendNegativeRT ? ReceiptTypeEnum.KO : ReceiptTypeEnum.OK;
@@ -719,11 +719,14 @@ public class ReceiptService {
     }
 
     public void sendRTKoFromSessionId(String sessionId, InternalStepStatus internalStepStatus) {
-        log.info("Processing session id: {}", sessionId);
+
+        log.debug("Processing session id: {}", sessionId);
+
         // deactivate the sessionId inside the cache
         it.gov.pagopa.gen.wispconverter.client.decouplercaching.api.DefaultApi apiInstance = new it.gov.pagopa.gen.wispconverter.client.decouplercaching.api.DefaultApi(decouplerCachingClient);
         it.gov.pagopa.gen.wispconverter.client.decouplercaching.model.SessionIdDto sessionIdDto = new it.gov.pagopa.gen.wispconverter.client.decouplercaching.model.SessionIdDto();
         sessionIdDto.setSessionId(sessionId);
+
         // necessary only if rptTimer is triggered, otherwise it has already been removed
         apiInstance.deleteSessionId(sessionIdDto, MDC.get(Constants.MDC_REQUEST_ID));
 
@@ -741,10 +744,15 @@ public class ReceiptService {
         Map<String, StationDto> stations = configData.getStations();
 
         for (RPTContentDTO rpt : sessionDataDTO.getRpts().values()) {
+
+            String domainId = rpt.getRpt().getDomain().getDomainId();
+
             // idempotency key creation to check if the rt has already been sent
-            String idempotencyKey = sessionDataDTO.getCommonFields().getSessionId() + "_" + null;
+            String idempotencyKey = IdempotencyService.generateIdempotencyKeyId(sessionDataDTO.getCommonFields().getSessionId(), null, domainId);
+            idempotencyService.lockIdempotencyKey(idempotencyKey, ReceiptTypeEnum.KO);
+
             String rtRawPayload = generateKoRtFromSessionData(
-                    rpt.getRpt().getDomain().getDomainId(),
+                    domainId,
                     rpt.getIuv(),
                     rpt,
                     sessionDataDTO.getCommonFields(),
