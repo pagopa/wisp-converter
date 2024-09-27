@@ -24,15 +24,15 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class RtReceiptCosmosService {
 
-    private final RTRepository rtRepository;
     private static final String ILLEGAL_CHARS_FOR_ID = "[/\\\\#]";
+    private final RTRepository rtRepository;
 
     @Transactional
     public void saveRTEntity(SessionDataDTO sessionData, ReceiptStatusEnum status) {
         String sessionId = sessionData.getCommonFields().getSessionId();
-        for(RPTContentDTO rptContentDTO : sessionData.getAllRPTs()) {
+        for (RPTContentDTO rptContentDTO : sessionData.getAllRPTs()) {
             try {
-                rtRepository.save(createRTEntity(sessionId, rptContentDTO, status,null, null, null));
+                rtRepository.save(createRTEntity(sessionId, rptContentDTO, status, null, null, null));
             } catch (CosmosException e) {
                 log.error("An exception occurred while saveRTEntity: " + e.getMessage());
             }
@@ -102,7 +102,7 @@ public class RtReceiptCosmosService {
                 .ccp(ccp)
                 .sessionId(sessionId)
                 .receiptStatus(status)
-                .idDominio(domainId)
+                .domainId(domainId)
                 .rt(rt)
                 .receiptType(receiptType)
                 .rtTimestamp(rtTimestamp)

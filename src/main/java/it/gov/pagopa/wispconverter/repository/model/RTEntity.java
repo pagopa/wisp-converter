@@ -17,12 +17,12 @@ import org.springframework.data.annotation.Id;
 public class RTEntity {
 
     @Id
-    private String id; // todo is useful update id adding sessionId?
+    private String id; // as domainId + iuv + ccp
 
     @PartitionKey
     private String partitionKey;
 
-    private String idDominio;
+    private String domainId;
 
     private String iuv;
 

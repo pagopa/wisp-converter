@@ -12,7 +12,7 @@ import java.util.List;
 public interface RTRepository extends CosmosRepository<RTEntity, String> {
 
 
-    @Query("SELECT * FROM c WHERE IS_NULL(c.rt) AND c.idDominio = @organizationId AND c._ts >= DateTimeToTimestamp(@dateFrom) / 1000 and c._ts <= DateTimeToTimestamp(@dateTo) / 1000")
+    @Query("SELECT * FROM c WHERE IS_NULL(c.rt) AND c.domainId = @organizationId AND c._ts >= DateTimeToTimestamp(@dateFrom) / 1000 and c._ts <= DateTimeToTimestamp(@dateTo) / 1000")
     List<RTEntity> findByOrganizationId(@Param("organizationId") String organizationId,
                                         @Param("dateFrom") String dateFrom,
                                         @Param("dateTo") String dateTo);
