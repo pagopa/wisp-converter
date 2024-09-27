@@ -250,8 +250,8 @@ public class RecoveryService {
                 RTRequestEntity rtRequestEntity = rtRequestEntityOpt.get();
                 String idempotencyKey = rtRequestEntity.getIdempotencyKey();
                 String[] idempotencyKeyComponents = idempotencyKey.split("_");
-                if (idempotencyKeyComponents.length != 2) {
-                    throw new AppException(AppErrorCodeMessageEnum.ERROR, String.format("Invalid idempotency key [%s]. It must be composed of sessionId and notice number.", idempotencyKey));
+                if (idempotencyKeyComponents.length == 3) {
+                    throw new AppException(AppErrorCodeMessageEnum.ERROR, String.format("Invalid idempotency key [%s]. It must be composed of sessionId, notice number and domain.", idempotencyKey));
                 }
 
                 sessionId = idempotencyKeyComponents[0];
