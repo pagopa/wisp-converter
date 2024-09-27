@@ -391,8 +391,11 @@ public class ReceiptService {
                 isSuccessful = true;
 
                 rtReceiptCosmosService.updateReceiptStatus(rpt, ReceiptStatusEnum.SENT);
+
             } catch (Exception e) {
+
                 rtReceiptCosmosService.updateReceiptStatus(rpt, ReceiptStatusEnum.SCHEDULED);
+
                 // generate a new event in RE for store the unsuccessful sending of the receipt
                 String message = e.getMessage();
                 if (e instanceof AppException appException) {
