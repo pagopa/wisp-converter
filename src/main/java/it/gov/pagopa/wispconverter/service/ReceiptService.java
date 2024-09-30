@@ -350,6 +350,7 @@ public class ReceiptService {
                                                      StationDto station, boolean mustSendNegativeRT) {
 
         boolean isSuccessful = false;
+        String domainId = rpt.getRpt().getDomain().getDomainId();
 
         /*
           From station identifier (the common one defined, not the payment reference), retrieve the data
@@ -366,7 +367,7 @@ public class ReceiptService {
         InetSocketAddress proxyAddress = CommonUtility.constructProxyAddress(uri, station, apimPath);
 
         // idempotency key creation to check if the rt has already been sent
-        String idempotencyKey = IdempotencyService.generateIdempotencyKeyId(sessionData.getCommonFields().getSessionId(), iuv, rpt.getRpt().getDomain().getDomainId());
+        String idempotencyKey = IdempotencyService.generateIdempotencyKeyId(sessionData.getCommonFields().getSessionId(), iuv, domainId);
 
         // send to creditor institution only if another receipt wasn't already sent
         ReceiptTypeEnum receiptType = mustSendNegativeRT ? ReceiptTypeEnum.KO : ReceiptTypeEnum.OK;
@@ -381,20 +382,17 @@ public class ReceiptService {
             // finally, send the receipt to the creditor institution
             IdempotencyStatusEnum idempotencyStatus;
             try {
-                rtReceiptCosmosService.updateReceiptStatus(rpt, ReceiptStatusEnum.SENDING);
+
                 // send the receipt to the creditor institution via the URL set in the station configuration
-                paaInviaRTSenderService.sendToCreditorInstitution(uri, proxyAddress, headers, rawPayload);
+                String ccp = rpt.getCcp();
+                paaInviaRTSenderService.sendToCreditorInstitution(uri, proxyAddress, headers, rawPayload, domainId, iuv, ccp);
 
                 // generate a new event in RE for store the successful sending of the receipt
                 generateREForSentRT(rpt, iuv, noticeNumber);
                 idempotencyStatus = IdempotencyStatusEnum.SUCCESS;
                 isSuccessful = true;
 
-                rtReceiptCosmosService.updateReceiptStatus(rpt, ReceiptStatusEnum.SENT);
-
             } catch (Exception e) {
-
-                rtReceiptCosmosService.updateReceiptStatus(rpt, ReceiptStatusEnum.SCHEDULED);
 
                 // generate a new event in RE for store the unsuccessful sending of the receipt
                 String message = e.getMessage();
@@ -603,11 +601,13 @@ public class ReceiptService {
 
             // generate a new event in RE for store the successful scheduling of the RT send
             generateREForSuccessfulSchedulingSentRT(rpt, rpt.getIuv(), noticeNumber);
+            rtReceiptCosmosService.updateReceiptStatus(rpt, ReceiptStatusEnum.SCHEDULED);
 
         } catch (Exception e) {
 
             // generate a new event in RE for store the unsuccessful scheduling of the RT send
             generateREForFailedSchedulingSentRT(rpt, rpt.getIuv(), noticeNumber, e);
+            rtReceiptCosmosService.updateReceiptStatus(rpt, ReceiptStatusEnum.NOT_SENT);
         }
     }
 
@@ -729,9 +729,10 @@ public class ReceiptService {
         for (RPTContentDTO rpt : sessionDataDTO.getRpts().values()) {
 
             String domainId = rpt.getRpt().getDomain().getDomainId();
+            String iuv = rpt.getIuv();
 
             // idempotency key creation to check if the rt has already been sent
-            String idempotencyKey = IdempotencyService.generateIdempotencyKeyId(sessionDataDTO.getCommonFields().getSessionId(), rpt.getIuv(), domainId);
+            String idempotencyKey = IdempotencyService.generateIdempotencyKeyId(sessionDataDTO.getCommonFields().getSessionId(), iuv, domainId);
             idempotencyService.lockIdempotencyKey(idempotencyKey, ReceiptTypeEnum.KO);
 
             String rtRawPayload = generateKoRtFromSessionData(
@@ -755,7 +756,8 @@ public class ReceiptService {
             try {
 
                 // send the receipt to the creditor institution via the URL set in the station configuration
-                paaInviaRTSenderService.sendToCreditorInstitution(uri, proxyAddress, headers, rtRawPayload);
+                String ccp = rpt.getCcp();
+                paaInviaRTSenderService.sendToCreditorInstitution(uri, proxyAddress, headers, rtRawPayload, domainId, iuv, ccp);
 
                 // generate a new event in RE for store the successful sending of the receipt
                 generateREForSentRT(rpt, rpt.getIuv(), null);

@@ -176,24 +176,25 @@ public class RTConsumer extends SBConsumer {
 
             String rawPayload = new String(unzippedPayload);
 
-            rtReceiptCosmosService.updateReceiptStatus(ci, iuv, ccp, ReceiptStatusEnum.SENDING);
-            paaInviaRTSenderService.sendToCreditorInstitution(URI.create(receipt.getUrl()), proxyAddress, extractHeaders(receipt.getHeaders()), rawPayload);
+            paaInviaRTSenderService.sendToCreditorInstitution(URI.create(receipt.getUrl()), proxyAddress, extractHeaders(receipt.getHeaders()), rawPayload, ci, iuv, ccp);
             rtRetryComosService.deleteRTRequestEntity(receipt);
             log.debug("Sent receipt [{}]", receiptId);
 
             // generate a new event in RE for store the successful re-sending of the receipt
             generateREForSentRT();
             isSend = true;
-            rtReceiptCosmosService.updateReceiptStatus(ci, iuv, ccp, ReceiptStatusEnum.SENT);
+
         } catch (AppException e) {
+
             // generate a new event in RE for store the unsuccessful re-sending of the receipt
             generateREForNotSentRT(e);
 
             // Rescheduled due to errors caused by faulty communication with creditor institution
             reScheduleReceiptSend(receipt, receiptId, compositedIdForReceipt);
 
-            rtReceiptCosmosService.updateReceiptStatus(ci, iuv, ccp, ReceiptStatusEnum.SCHEDULED);
         } catch (IOException e) {
+
+            rtReceiptCosmosService.updateReceiptStatus(ci, iuv, ccp, ReceiptStatusEnum.NOT_SENT);
 
             throw new AppException(AppErrorCodeMessageEnum.PARSING_INVALID_ZIPPED_PAYLOAD);
         }
@@ -231,11 +232,13 @@ public class RTConsumer extends SBConsumer {
 
                 // generate a new event in RE for store the successful scheduling of the RT send
                 generateREForSuccessfulReschedulingSentRT();
+                rtReceiptCosmosService.updateReceiptStatus(ci, iuv, ccp, ReceiptStatusEnum.SCHEDULED);
 
             } catch (Exception e) {
 
                 // generate a new event in RE for store the unsuccessful scheduling of the RT send
                 generateREForFailedReschedulingSentRT(e);
+                rtReceiptCosmosService.updateReceiptStatus(ci, iuv, ccp, ReceiptStatusEnum.NOT_SENT);
             }
         } else {
 
