@@ -46,7 +46,7 @@ class ConsumerTest {
                 .receiptType(type)
                 .url(url)
                 .headers(List.of("soapaction:paaInviaRT"))
-                .idempotencyKey("uuid_nav_idDominio")
+                .idempotencyKey("uuid_iuv_idDominio")
                 .build();
     }
 
@@ -218,7 +218,7 @@ class ConsumerTest {
         when(ccs.getConfigData()).thenReturn(TestUtils.configData("mystation"));
 
         PaaInviaRTSenderService paaInviaRTSenderService = mock(PaaInviaRTSenderService.class);
-        doThrow(new AppException(AppErrorCodeMessageEnum.PARSING_GENERIC_ERROR)).when(paaInviaRTSenderService).sendToCreditorInstitution(any(), any(), any(), any());
+        doThrow(new AppException(AppErrorCodeMessageEnum.PARSING_GENERIC_ERROR)).when(paaInviaRTSenderService).sendToCreditorInstitution(any(), any(), any(), any(), any(), any(), any());
 
         ReflectionTestUtils.setField(rtConsumer, "rtRetryComosService", rtRetryComosService);
         ReflectionTestUtils.setField(rtConsumer, "rtReceiptCosmosService", rtReceiptCosmosService);
@@ -276,7 +276,7 @@ class ConsumerTest {
         when(ccs.getConfigData()).thenReturn(TestUtils.configData("mystation"));
 
         PaaInviaRTSenderService paaInviaRTSenderService = mock(PaaInviaRTSenderService.class);
-        doThrow(new AppException(AppErrorCodeMessageEnum.PARSING_GENERIC_ERROR)).when(paaInviaRTSenderService).sendToCreditorInstitution(any(), any(), any(), any());
+        doThrow(new AppException(AppErrorCodeMessageEnum.PARSING_GENERIC_ERROR)).when(paaInviaRTSenderService).sendToCreditorInstitution(any(), any(), any(), any(), any(), any(), any());
 
         ReflectionTestUtils.setField(rtConsumer, "rtRetryComosService", rtRetryComosService);
         ReflectionTestUtils.setField(rtConsumer, "paaInviaRTSenderService", paaInviaRTSenderService);
