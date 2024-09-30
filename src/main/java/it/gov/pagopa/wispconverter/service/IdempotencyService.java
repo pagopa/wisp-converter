@@ -25,8 +25,8 @@ public class IdempotencyService {
     @Value("${wisp-converter.idempotency.lock-validity-in-minutes}")
     private Integer lockValidityInMinutes;
 
-    public static String generateIdempotencyKeyId(String sessionId, String noticeNumber, String domainId) {
-        return String.format("%s_%s_%s", sessionId, noticeNumber, domainId);
+    public static String generateIdempotencyKeyId(String sessionId, String iuv, String domainId) {
+        return String.format("%s_%s_%s", sessionId, iuv, domainId);
     }
 
     public boolean isIdempotencyKeyProcessable(String idempotencyKey, ReceiptTypeEnum receiptType) {

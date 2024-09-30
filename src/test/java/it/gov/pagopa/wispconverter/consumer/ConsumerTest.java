@@ -46,7 +46,7 @@ class ConsumerTest {
                 .receiptType(type)
                 .url(url)
                 .headers(List.of("soapaction:paaInviaRT"))
-                .idempotencyKey("uuid_nav_idDominio")
+                .idempotencyKey("uuid_iuv_idDominio")
                 .build();
     }
 

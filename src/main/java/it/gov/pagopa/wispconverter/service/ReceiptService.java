@@ -366,7 +366,7 @@ public class ReceiptService {
         InetSocketAddress proxyAddress = CommonUtility.constructProxyAddress(uri, station, apimPath);
 
         // idempotency key creation to check if the rt has already been sent
-        String idempotencyKey = IdempotencyService.generateIdempotencyKeyId(sessionData.getCommonFields().getSessionId(), noticeNumber, rpt.getRpt().getDomain().getDomainId());
+        String idempotencyKey = IdempotencyService.generateIdempotencyKeyId(sessionData.getCommonFields().getSessionId(), iuv, rpt.getRpt().getDomain().getDomainId());
 
         // send to creditor institution only if another receipt wasn't already sent
         ReceiptTypeEnum receiptType = mustSendNegativeRT ? ReceiptTypeEnum.KO : ReceiptTypeEnum.OK;
@@ -731,7 +731,7 @@ public class ReceiptService {
             String domainId = rpt.getRpt().getDomain().getDomainId();
 
             // idempotency key creation to check if the rt has already been sent
-            String idempotencyKey = IdempotencyService.generateIdempotencyKeyId(sessionDataDTO.getCommonFields().getSessionId(), null, domainId);
+            String idempotencyKey = IdempotencyService.generateIdempotencyKeyId(sessionDataDTO.getCommonFields().getSessionId(), rpt.getIuv(), domainId);
             idempotencyService.lockIdempotencyKey(idempotencyKey, ReceiptTypeEnum.KO);
 
             String rtRawPayload = generateKoRtFromSessionData(
