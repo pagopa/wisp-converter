@@ -47,7 +47,7 @@ public class IdempotencyService {
             }
 
             // check the processability of the idempotency key
-            isProcessable = isActiveLockExpired(idempotencyKeyEntity) || IdempotencyStatusEnum.FAILED.equals(idempotencyKeyEntity.getStatus());
+            isProcessable = !IdempotencyStatusEnum.SUCCESS.equals(idempotencyKeyEntity.getStatus()) && isActiveLockExpired(idempotencyKeyEntity) || IdempotencyStatusEnum.FAILED.equals(idempotencyKeyEntity.getStatus());
         }
         return isProcessable;
     }
