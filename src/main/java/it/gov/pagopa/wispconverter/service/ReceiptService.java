@@ -19,6 +19,7 @@ import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
 import it.gov.pagopa.wispconverter.repository.model.RTRequestEntity;
 import it.gov.pagopa.wispconverter.repository.model.enumz.IdempotencyStatusEnum;
 import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
+import it.gov.pagopa.wispconverter.repository.model.enumz.ReceiptStatusEnum;
 import it.gov.pagopa.wispconverter.repository.model.enumz.ReceiptTypeEnum;
 import it.gov.pagopa.wispconverter.service.mapper.RTMapper;
 import it.gov.pagopa.wispconverter.service.model.CachedKeysMapping;
@@ -180,13 +181,13 @@ public class ReceiptService {
                         String paaInviaRtPayload = generatePayloadAsRawString(header, null, rawGeneratedReceipt, objectFactory);
 
                         // save receipt-rt
-                        rtReceiptCosmosService.saveRTEntity(rpt, rawGeneratedReceipt, ReceiptTypeEnum.KO);
+                        rtReceiptCosmosService.saveRTEntity(sessionData.getCommonFields().getSessionId(), rpt, ReceiptStatusEnum.SENDING, rawGeneratedReceipt, ReceiptTypeEnum.KO);
 
                         // retrieve station from common station identifier
                         StationDto station = stations.get(commonFields.getStationId());
 
                         // send receipt to the creditor institution and, if not correctly sent, add to queue for retry
-                        sendReceiptToCreditorInstitution(sessionData, paaInviaRtPayload, receipt, rpt.getIuv(), noticeNumber, station, true);
+                        sendReceiptToCreditorInstitution(sessionData, rpt, paaInviaRtPayload, receipt, rpt.getIuv(), noticeNumber, station, true);
                     }
                 }
             }
@@ -263,10 +264,10 @@ public class ReceiptService {
                     String paaInviaRtPayload = generatePayloadAsRawString(intestazionePPT, commonFields.getSignatureType(), rawGeneratedReceipt, objectFactory);
 
                     // save receipt-rt
-                    rtReceiptCosmosService.saveRTEntity(rpt, rawGeneratedReceipt, ReceiptTypeEnum.OK);
+                    rtReceiptCosmosService.saveRTEntity(sessionData.getCommonFields().getSessionId(), rpt, ReceiptStatusEnum.SENDING, rawGeneratedReceipt, ReceiptTypeEnum.OK);
 
                     // send receipt to the creditor institution and, if not correctly sent, add to queue for retry
-                    sendReceiptToCreditorInstitution(sessionData, paaInviaRtPayload, receipt, rpt.getIuv(), noticeNumber, station, false);
+                    sendReceiptToCreditorInstitution(sessionData, rpt, paaInviaRtPayload, receipt, rpt.getIuv(), noticeNumber, station, false);
                 }
             }
 
@@ -321,7 +322,7 @@ public class ReceiptService {
         String paaInviaRtPayload = generatePayloadAsRawString(header, null, rawGeneratedReceipt, objectFactory);
 
         // save receipt-rt
-        rtReceiptCosmosService.saveRTEntity(rpt, rawGeneratedReceipt, ReceiptTypeEnum.KO);
+        rtReceiptCosmosService.saveRTEntity(commonFields.getSessionId(), rpt, ReceiptStatusEnum.SENDING, rawGeneratedReceipt, ReceiptTypeEnum.KO);
 
         return paaInviaRtPayload;
     }
@@ -343,8 +344,10 @@ public class ReceiptService {
         return getSessionDataFromSessionId(cachedSessionId);
     }
 
-    private boolean sendReceiptToCreditorInstitution(SessionDataDTO sessionData, String rawPayload, Object receipt,
-                                                     String iuv, String noticeNumber, StationDto station, boolean mustSendNegativeRT) {
+    private boolean sendReceiptToCreditorInstitution(SessionDataDTO sessionData, RPTContentDTO rpt,
+                                                     String rawPayload, Object receipt,
+                                                     String iuv, String noticeNumber,
+                                                     StationDto station, boolean mustSendNegativeRT) {
 
         boolean isSuccessful = false;
 
@@ -363,7 +366,7 @@ public class ReceiptService {
         InetSocketAddress proxyAddress = CommonUtility.constructProxyAddress(uri, station, apimPath);
 
         // idempotency key creation to check if the rt has already been sent
-        String idempotencyKey = sessionData.getCommonFields().getSessionId() + "_" + noticeNumber;
+        String idempotencyKey = IdempotencyService.generateIdempotencyKeyId(sessionData.getCommonFields().getSessionId(), noticeNumber, rpt.getRpt().getDomain().getDomainId());
 
         // send to creditor institution only if another receipt wasn't already sent
         ReceiptTypeEnum receiptType = mustSendNegativeRT ? ReceiptTypeEnum.KO : ReceiptTypeEnum.OK;
@@ -373,21 +376,25 @@ public class ReceiptService {
             idempotencyService.lockIdempotencyKey(idempotencyKey, receiptType);
 
             // Save an RE event in order to track the sending RT operation
-            generateREForSendingRT(mustSendNegativeRT, sessionData, receipt, iuv, noticeNumber);
+            generateREForSendingRT(mustSendNegativeRT, rpt, receipt, iuv, noticeNumber);
 
             // finally, send the receipt to the creditor institution
             IdempotencyStatusEnum idempotencyStatus;
             try {
-
+                rtReceiptCosmosService.updateReceiptStatus(rpt, ReceiptStatusEnum.SENDING);
                 // send the receipt to the creditor institution via the URL set in the station configuration
                 paaInviaRTSenderService.sendToCreditorInstitution(uri, proxyAddress, headers, rawPayload);
 
                 // generate a new event in RE for store the successful sending of the receipt
-                generateREForSentRT(sessionData, iuv, noticeNumber);
+                generateREForSentRT(rpt, iuv, noticeNumber);
                 idempotencyStatus = IdempotencyStatusEnum.SUCCESS;
                 isSuccessful = true;
 
+                rtReceiptCosmosService.updateReceiptStatus(rpt, ReceiptStatusEnum.SENT);
+
             } catch (Exception e) {
+
+                rtReceiptCosmosService.updateReceiptStatus(rpt, ReceiptStatusEnum.SCHEDULED);
 
                 // generate a new event in RE for store the unsuccessful sending of the receipt
                 String message = e.getMessage();
@@ -396,10 +403,10 @@ public class ReceiptService {
                 }
 
                 log.error("Exception: " + AppErrorCodeMessageEnum.RECEIPT_KO_NOT_GENERATED_BUT_MAYBE_RESCHEDULED.getDetail());
-                generateREForNotSentRT(sessionData, iuv, noticeNumber, message);
+                generateREForNotSentRT(rpt, iuv, noticeNumber, message);
 
                 // because of the not sent receipt, it is necessary to schedule a retry of the sending process for this receipt
-                scheduleRTSend(sessionData, uri, proxyAddress, headers, rawPayload, station, iuv, noticeNumber, idempotencyKey, receiptType);
+                scheduleRTSend(sessionData, uri, proxyAddress, headers, rawPayload, station, rpt, noticeNumber, idempotencyKey, receiptType);
                 idempotencyStatus = IdempotencyStatusEnum.FAILED;
             }
 
@@ -558,7 +565,7 @@ public class ReceiptService {
 
 
     public void scheduleRTSend(SessionDataDTO sessionData, URI uri, InetSocketAddress proxyAddress, List<Pair<String, String>> headers, String payload,
-                               StationDto station, String iuv, String noticeNumber, String idempotencyKey, ReceiptTypeEnum receiptType) {
+                               StationDto station, RPTContentDTO rpt, String noticeNumber, String idempotencyKey, ReceiptTypeEnum receiptType) {
 
         try {
 
@@ -575,6 +582,10 @@ public class ReceiptService {
             // generate the RT to be persisted in storage, then save in the same storage
             RTRequestEntity rtRequestEntity = RTRequestEntity.builder()
                     .id(station.getBrokerCode() + "_" + UUID.randomUUID())
+                    .domainId(rpt.getRpt().getDomain().getDomainId())
+                    .iuv(rpt.getIuv())
+                    .ccp(rpt.getCcp())
+                    .sessionId(sessionData.getCommonFields().getSessionId())
                     .primitive(PAA_INVIA_RT)
                     .partitionKey(LocalDate.ofInstant(Instant.now(), ZoneId.systemDefault()).toString())
                     .payload(AppBase64Util.base64Encode(ZipUtil.zip(payload)))
@@ -591,12 +602,12 @@ public class ReceiptService {
             serviceBusService.sendMessage(rtRequestEntity.getPartitionKey() + "_" + rtRequestEntity.getId(), schedulingTimeInMinutes);
 
             // generate a new event in RE for store the successful scheduling of the RT send
-            generateREForSuccessfulSchedulingSentRT(sessionData, iuv, noticeNumber);
+            generateREForSuccessfulSchedulingSentRT(rpt, rpt.getIuv(), noticeNumber);
 
         } catch (Exception e) {
 
             // generate a new event in RE for store the unsuccessful scheduling of the RT send
-            generateREForFailedSchedulingSentRT(sessionData, iuv, noticeNumber, e);
+            generateREForFailedSchedulingSentRT(rpt, rpt.getIuv(), noticeNumber, e);
         }
     }
 
@@ -613,60 +624,44 @@ public class ReceiptService {
         }
     }
 
-    public void generateREForSentRT(SessionDataDTO sessionData, String iuv, String noticeNumber) {
+    public void generateREForSentRT(RPTContentDTO rptContent, String iuv, String noticeNumber) {
 
         // extract psp on which the payment will be sent
-        List<RPTContentDTO> rpts = sessionData.getRPTByIUV(iuv);
-        for (RPTContentDTO rptContent : rpts) {
+        String psp = rptContent.getRpt().getPayeeInstitution().getSubjectUniqueIdentifier().getCode();
 
-            String psp = rptContent.getRpt().getPayeeInstitution().getSubjectUniqueIdentifier().getCode();
-
-            // creating event to be persisted for RE
-            generateRE(InternalStepStatus.RT_SEND_SUCCESS, iuv, noticeNumber, rptContent.getCcp(), psp, null);
-        }
+        // creating event to be persisted for RE
+        generateRE(InternalStepStatus.RT_SEND_SUCCESS, iuv, noticeNumber, rptContent.getCcp(), psp, null);
     }
 
-    public void generateREForNotSentRT(SessionDataDTO sessionData, String iuv, String noticeNumber, String otherInfo) {
+    public void generateREForNotSentRT(RPTContentDTO rptContent, String iuv, String noticeNumber, String otherInfo) {
 
         // extract psp on which the payment will be sent
-        List<RPTContentDTO> rpts = sessionData.getRPTByIUV(iuv);
-        for (RPTContentDTO rptContent : rpts) {
+        String psp = rptContent.getRpt().getPayeeInstitution().getSubjectUniqueIdentifier().getCode();
 
-            String psp = rptContent.getRpt().getPayeeInstitution().getSubjectUniqueIdentifier().getCode();
-
-            // creating event to be persisted for RE
-            generateRE(InternalStepStatus.RT_SEND_FAILURE, iuv, noticeNumber, rptContent.getCcp(), psp, otherInfo);
-        }
+        // creating event to be persisted for RE
+        generateRE(InternalStepStatus.RT_SEND_FAILURE, iuv, noticeNumber, rptContent.getCcp(), psp, otherInfo);
     }
 
-    private void generateREForSuccessfulSchedulingSentRT(SessionDataDTO sessionData, String iuv, String noticeNumber) {
+    private void generateREForSuccessfulSchedulingSentRT(RPTContentDTO rptContent, String iuv, String noticeNumber) {
 
         // extract psp on which the payment will be sent
-        List<RPTContentDTO> rpts = sessionData.getRPTByIUV(iuv);
-        for (RPTContentDTO rptContent : rpts) {
+        String psp = rptContent.getRpt().getPayeeInstitution().getSubjectUniqueIdentifier().getCode();
 
-            String psp = rptContent.getRpt().getPayeeInstitution().getSubjectUniqueIdentifier().getCode();
-
-            // creating event to be persisted for RE
-            generateRE(InternalStepStatus.RT_SEND_SCHEDULING_SUCCESS, iuv, noticeNumber, rptContent.getCcp(), psp, null);
-        }
+        // creating event to be persisted for RE
+        generateRE(InternalStepStatus.RT_SEND_SCHEDULING_SUCCESS, iuv, noticeNumber, rptContent.getCcp(), psp, null);
     }
 
-    private void generateREForFailedSchedulingSentRT(SessionDataDTO sessionData, String iuv, String noticeNumber, Throwable e) {
+    private void generateREForFailedSchedulingSentRT(RPTContentDTO rptContent, String iuv, String noticeNumber, Throwable e) {
 
         // extract psp on which the payment will be sent
-        List<RPTContentDTO> rpts = sessionData.getRPTByIUV(iuv);
-        for (RPTContentDTO rptContent : rpts) {
+        String psp = rptContent.getRpt().getPayeeInstitution().getSubjectUniqueIdentifier().getCode();
 
-            String psp = rptContent.getRpt().getPayeeInstitution().getSubjectUniqueIdentifier().getCode();
-
-            // creating event to be persisted for RE
-            String otherInfo = "Caused by: " + e.getMessage();
-            generateRE(InternalStepStatus.RT_SEND_SCHEDULING_FAILURE, iuv, noticeNumber, rptContent.getCcp(), psp, otherInfo);
-        }
+        // creating event to be persisted for RE
+        String otherInfo = "Caused by: " + e.getMessage();
+        generateRE(InternalStepStatus.RT_SEND_SCHEDULING_FAILURE, iuv, noticeNumber, rptContent.getCcp(), psp, otherInfo);
     }
 
-    private void generateREForSendingRT(boolean mustSendNegativeRT, SessionDataDTO sessionData, Object receipt, String iuv, String noticeNumber) {
+    private void generateREForSendingRT(boolean mustSendNegativeRT, RPTContentDTO rpt, Object receipt, String iuv, String noticeNumber) {
 
         StringBuilder receiptContent = new StringBuilder("Trying to send the following receipt ");
         if (receipt instanceof CtReceiptV2 ctReceiptV2) {
@@ -679,20 +674,16 @@ public class ReceiptService {
             receiptContent.append(" [KO]: ").append(receipt.toString());
         }
         InternalStepStatus status = mustSendNegativeRT ? InternalStepStatus.NEGATIVE_RT_TRY_TO_SEND_TO_CREDITOR_INSTITUTION : InternalStepStatus.POSITIVE_RT_TRY_TO_SEND_TO_CREDITOR_INSTITUTION;
-        generateREForSendRTProcess(sessionData, iuv, noticeNumber, status, receiptContent.toString());
+        generateREForSendRTProcess(rpt, iuv, noticeNumber, status, receiptContent.toString());
     }
 
-    private void generateREForSendRTProcess(SessionDataDTO sessionData, String iuv, String noticeNumber, InternalStepStatus status, String info) {
+    private void generateREForSendRTProcess(RPTContentDTO rptContent, String iuv, String noticeNumber, InternalStepStatus status, String info) {
 
         // extract psp on which the payment will be sent
-        List<RPTContentDTO> rpts = sessionData.getRPTByIUV(iuv);
-        for (RPTContentDTO rptContent : rpts) {
+        String psp = rptContent.getRpt().getPayeeInstitution().getSubjectUniqueIdentifier().getCode();
 
-            String psp = rptContent.getRpt().getPayeeInstitution().getSubjectUniqueIdentifier().getCode();
-
-            // creating event to be persisted for RE
-            generateRE(status, iuv, noticeNumber, rptContent.getCcp(), psp, info);
-        }
+        // creating event to be persisted for RE
+        generateRE(status, iuv, noticeNumber, rptContent.getCcp(), psp, info);
     }
 
     private void generateRE(InternalStepStatus status, String iuv, String noticeNumber, String ccp, String psp, String otherInfo) {
@@ -711,11 +702,14 @@ public class ReceiptService {
     }
 
     public void sendRTKoFromSessionId(String sessionId, InternalStepStatus internalStepStatus) {
-        log.info("Processing session id: {}", sessionId);
+
+        log.debug("Processing session id: {}", sessionId);
+
         // deactivate the sessionId inside the cache
         it.gov.pagopa.gen.wispconverter.client.decouplercaching.api.DefaultApi apiInstance = new it.gov.pagopa.gen.wispconverter.client.decouplercaching.api.DefaultApi(decouplerCachingClient);
         it.gov.pagopa.gen.wispconverter.client.decouplercaching.model.SessionIdDto sessionIdDto = new it.gov.pagopa.gen.wispconverter.client.decouplercaching.model.SessionIdDto();
         sessionIdDto.setSessionId(sessionId);
+
         // necessary only if rptTimer is triggered, otherwise it has already been removed
         apiInstance.deleteSessionId(sessionIdDto, MDC.get(Constants.MDC_REQUEST_ID));
 
@@ -733,10 +727,15 @@ public class ReceiptService {
         Map<String, StationDto> stations = configData.getStations();
 
         for (RPTContentDTO rpt : sessionDataDTO.getRpts().values()) {
+
+            String domainId = rpt.getRpt().getDomain().getDomainId();
+
             // idempotency key creation to check if the rt has already been sent
-            String idempotencyKey = sessionDataDTO.getCommonFields().getSessionId() + "_" + null;
+            String idempotencyKey = IdempotencyService.generateIdempotencyKeyId(sessionDataDTO.getCommonFields().getSessionId(), null, domainId);
+            idempotencyService.lockIdempotencyKey(idempotencyKey, ReceiptTypeEnum.KO);
+
             String rtRawPayload = generateKoRtFromSessionData(
-                    rpt.getRpt().getDomain().getDomainId(),
+                    domainId,
                     rpt.getIuv(),
                     rpt,
                     sessionDataDTO.getCommonFields(),
@@ -759,7 +758,7 @@ public class ReceiptService {
                 paaInviaRTSenderService.sendToCreditorInstitution(uri, proxyAddress, headers, rtRawPayload);
 
                 // generate a new event in RE for store the successful sending of the receipt
-                generateREForSentRT(sessionDataDTO, rpt.getIuv(), null);
+                generateREForSentRT(rpt, rpt.getIuv(), null);
                 idempotencyStatus = IdempotencyStatusEnum.SUCCESS;
 
             } catch (Exception e) {
@@ -771,10 +770,10 @@ public class ReceiptService {
                 }
 
                 log.error("Exception: " + AppErrorCodeMessageEnum.RECEIPT_KO_NOT_GENERATED_BUT_MAYBE_RESCHEDULED.getDetail());
-                generateREForNotSentRT(sessionDataDTO, rpt.getIuv(), null, messageException);
+                generateREForNotSentRT(rpt, rpt.getIuv(), null, messageException);
 
                 // because of the not sent receipt, it is necessary to schedule a retry of the sending process for this receipt
-                scheduleRTSend(sessionDataDTO, uri, proxyAddress, headers, rtRawPayload, station, rpt.getIuv(), null, idempotencyKey, ReceiptTypeEnum.KO);
+                scheduleRTSend(sessionDataDTO, uri, proxyAddress, headers, rtRawPayload, station, rpt, null, idempotencyKey, ReceiptTypeEnum.KO);
                 idempotencyStatus = IdempotencyStatusEnum.FAILED;
             }
 

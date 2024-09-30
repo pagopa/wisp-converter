@@ -2,17 +2,17 @@ package it.gov.pagopa.wispconverter.service;
 
 import it.gov.pagopa.gen.wispconverter.client.cache.model.ConnectionDto;
 import it.gov.pagopa.gen.wispconverter.client.cache.model.StationDto;
-import it.gov.pagopa.wispconverter.controller.ReceiptController;
 import it.gov.pagopa.wispconverter.controller.model.RecoveryProxyReceiptRequest;
 import it.gov.pagopa.wispconverter.controller.model.RecoveryProxyReceiptResponse;
 import it.gov.pagopa.wispconverter.controller.model.RecoveryReceiptPaymentResponse;
 import it.gov.pagopa.wispconverter.controller.model.RecoveryReceiptResponse;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
-import it.gov.pagopa.wispconverter.repository.*;
-import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
+import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.RTRepository;
+import it.gov.pagopa.wispconverter.repository.RTRetryRepository;
 import it.gov.pagopa.wispconverter.repository.ReEventRepository;
+import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
 import it.gov.pagopa.wispconverter.repository.model.RTEntity;
 import it.gov.pagopa.wispconverter.repository.model.RTRequestEntity;
 import it.gov.pagopa.wispconverter.repository.model.ReEventEntity;
@@ -36,11 +36,7 @@ import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Comparator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 @Service
@@ -49,11 +45,8 @@ import java.util.concurrent.CompletableFuture;
 public class RecoveryService {
 
     public static final String EVENT_TYPE_FOR_RECEIPTKO_SEARCH = "GENERATED_CACHE_ABOUT_RPT_FOR_RT_GENERATION";
-
-    private static final String RPT_ACCETTATA_NODO = "RPT_ACCETTATA_NODO";
-
     public static final String RPT_PARCHEGGIATA_NODO = "RPT_PARCHEGGIATA_NODO";
-
+    private static final String RPT_ACCETTATA_NODO = "RPT_ACCETTATA_NODO";
     private static final String STATUS_RT_SEND_SUCCESS = "RT_SEND_SUCCESS";
 
     private static final String RECOVERY_VALID_START_DATE = "2024-09-03";
@@ -74,26 +67,37 @@ public class RecoveryService {
 
     @Value("${wisp-converter.cached-requestid-mapping.ttl.minutes:1440}")
     public Long requestIDMappingTTL;
-
+    @Value("${wisp-converter.recovery.receipt-generation.wait-time.minutes:60}")
+    public Long receiptGenerationWaitTime;
     @Value("${wisp-converter.apim.path}")
     private String apimPath;
 
-    @Value("${wisp-converter.recovery.receipt-generation.wait-time.minutes:60}")
-    public Long receiptGenerationWaitTime;
+    private static Set<String> getWISPInterruptStatusSet() {
+        return Set.of(
+                RPT_ACCETTATA_NODO,
+                RPT_PARCHEGGIATA_NODO,
+                "GENERATED_NAV_FOR_NEW_PAYMENT_POSITION",
+                "CREATED_NEW_PAYMENT_POSITION_IN_GPD",
+                "GENERATED_CACHE_ABOUT_RPT_FOR_DECOUPLER",
+                EVENT_TYPE_FOR_RECEIPTKO_SEARCH,
+                "SAVED_RPT_IN_CART_RECEIVED_REDIRECT_URL_FROM_CHECKOUT",
+                "GENERATED_CACHE_ABOUT_RPT_FOR_CARTSESSION_CACHING"
+        );
+    }
 
     public boolean recoverReceiptKO(String creditorInstitution, String iuv, String dateFrom, String dateTo) {
         checkDateValidity(dateFrom, dateTo);
         List<ReEventEntity> reEvents = reEventRepository.findByIuvAndOrganizationId(dateFrom, dateTo, iuv, creditorInstitution)
-                                               .stream()
-                                               .sorted(Comparator.comparing(ReEventEntity::getInsertedTimestamp))
-                                               .toList();
+                .stream()
+                .sorted(Comparator.comparing(ReEventEntity::getInsertedTimestamp))
+                .toList();
 
         Set<String> interruptStatusSet = getWISPInterruptStatusSet();
 
-        if(!reEvents.isEmpty()) {
+        if (!reEvents.isEmpty()) {
             ReEventEntity lastEvent = reEvents.get(0);
             String status = lastEvent.getStatus();
-            if(status != null && interruptStatusSet.contains(status)) {
+            if (status != null && interruptStatusSet.contains(status)) {
                 this.recoverReceiptKO(creditorInstitution, iuv, lastEvent.getSessionId(), lastEvent.getCcp(), dateFrom, dateTo);
                 return true;
             }
@@ -101,7 +105,6 @@ public class RecoveryService {
 
         return false;
     }
-
 
     public RecoveryReceiptResponse recoverReceiptKOForCreditorInstitution(String creditorInstitution, String dateFrom, String dateTo) {
         MDCUtil.setSessionDataInfo("recovery-receipt-ko");
@@ -122,11 +125,11 @@ public class RecoveryService {
 
         List<RTEntity> receiptRTs = rtRepository.findByOrganizationId(creditorInstitution, dateFrom, dateToRefactored);
         List<RecoveryReceiptPaymentResponse> paymentsToReconcile = receiptRTs.stream().map(entity -> RecoveryReceiptPaymentResponse.builder()
-                                                                                                             .iuv(entity.getIuv())
-                                                                                                             .ccp(entity.getCcp())
-                                                                                                             .ci(entity.getIdDominio())
-                                                                                                             .build())
-                                                                           .toList();
+                        .iuv(entity.getIuv())
+                        .ccp(entity.getCcp())
+                        .ci(entity.getDomainId())
+                        .build())
+                .toList();
 
         CompletableFuture<Boolean> executeRecovery = recoverReceiptKOAsync(dateFrom, dateTo, paymentsToReconcile);
         executeRecovery
@@ -137,8 +140,8 @@ public class RecoveryService {
                 });
 
         return RecoveryReceiptResponse.builder()
-                       .payments(paymentsToReconcile)
-                       .build();
+                .payments(paymentsToReconcile)
+                .build();
     }
 
     private CompletableFuture<Boolean> recoverReceiptKOAsync(String dateFrom, String dateTo, List<RecoveryReceiptPaymentResponse> paymentsToReconcile) {
@@ -156,10 +159,10 @@ public class RecoveryService {
                 List<ReEventEntity> reEvents = reEventRepository.findByIuvAndOrganizationId(dateFrom, dateTo, iuv, ci);
 
                 List<ReEventEntity> filteredEvents = reEvents.stream()
-                                                             .filter(event -> EVENT_TYPE_FOR_RECEIPTKO_SEARCH.equals(event.getStatus()))
-                                                             .filter(event -> ccp.equals(event.getCcp()))
-                                                             .sorted(Comparator.comparing(ReEventEntity::getInsertedTimestamp))
-                                                             .toList();
+                        .filter(event -> EVENT_TYPE_FOR_RECEIPTKO_SEARCH.equals(event.getStatus()))
+                        .filter(event -> ccp.equals(event.getCcp()))
+                        .sorted(Comparator.comparing(ReEventEntity::getInsertedTimestamp))
+                        .toList();
 
                 int numberOfEvents = filteredEvents.size();
                 if (numberOfEvents > 0) {
@@ -228,19 +231,6 @@ public class RecoveryService {
         reService.addRe(reEvent);
     }
 
-    private static Set<String> getWISPInterruptStatusSet() {
-        return Set.of(
-                RPT_ACCETTATA_NODO,
-                RPT_PARCHEGGIATA_NODO,
-                "GENERATED_NAV_FOR_NEW_PAYMENT_POSITION",
-                "CREATED_NEW_PAYMENT_POSITION_IN_GPD",
-                "GENERATED_CACHE_ABOUT_RPT_FOR_DECOUPLER",
-                EVENT_TYPE_FOR_RECEIPTKO_SEARCH,
-                "SAVED_RPT_IN_CART_RECEIVED_REDIRECT_URL_FROM_CHECKOUT",
-                "GENERATED_CACHE_ABOUT_RPT_FOR_CARTSESSION_CACHING"
-        );
-    }
-
     public RecoveryProxyReceiptResponse recoverReceiptToBeSentByProxy(RecoveryProxyReceiptRequest request) {
 
         RecoveryProxyReceiptResponse response = RecoveryProxyReceiptResponse.builder()
@@ -260,8 +250,8 @@ public class RecoveryService {
                 RTRequestEntity rtRequestEntity = rtRequestEntityOpt.get();
                 String idempotencyKey = rtRequestEntity.getIdempotencyKey();
                 String[] idempotencyKeyComponents = idempotencyKey.split("_");
-                if (idempotencyKeyComponents.length != 2) {
-                    throw new AppException(AppErrorCodeMessageEnum.ERROR, String.format("Invalid idempotency key [%s]. It must be composed of sessionId and notice number.", idempotencyKey));
+                if (idempotencyKeyComponents.length < 2) {
+                    throw new AppException(AppErrorCodeMessageEnum.ERROR, String.format("Invalid idempotency key [%s]. It must be composed of sessionId, notice number and domain.", idempotencyKey));
                 }
 
                 sessionId = idempotencyKeyComponents[0];
