@@ -13,13 +13,24 @@ import java.util.List;
 @Qualifier("secondaryCosmosTemplate")
 public interface RTRepositorySecondary extends CosmosRepository<RTEntity, String> {
 
+    @Query("SELECT * FROM c WHERE c.receiptStatus in ('NOT_SENT', 'SCHEDULED', 'REDIRECT') " +
+                   "AND c._ts >= DateTimeToTimestamp(@dateFrom) / 1000 AND c._ts <= DateTimeToTimestamp(@dateTo) / 1000")
+    List<RTEntity> findByBlockedReceiptStatusInAndTimestampBetween(@Param("dateFrom") String dateFrom, @Param("dateTo") String dateTo);
 
-    @Query("SELECT * FROM c WHERE IS_NULL(c.rt) AND c.idDominio = @organizationId AND c._ts >= DateTimeToTimestamp(@dateFrom) / 1000 and c._ts <= DateTimeToTimestamp(@dateTo) / 1000")
-    List<RTEntity> findByOrganizationId(@Param("organizationId") String organizationId,
-                                        @Param("dateFrom") String dateFrom,
-                                        @Param("dateTo") String dateTo);
+    @Query("SELECT * FROM c WHERE c.receiptStatus in ('NOT_SENT', 'SCHEDULED', 'REDIRECT') " +
+                   "AND c._ts >= DateTimeToTimestamp(@dateFrom) / 1000 AND c._ts <= DateTimeToTimestamp(@dateTo) / 1000 " +
+                   "AND c.domainId = @domainId")
+    List<RTEntity> findByBlockedReceiptStatusInAndTimestampBetween(@Param("dateFrom") String dateFrom,
+                                                                   @Param("dateTo") String dateTo,
+                                                                   @Param("domainId") String domainId);
 
-    @Query("SELECT * FROM c WHERE IS_NULL(c.rt) AND c._ts >= DateTimeToTimestamp(@dateFrom) / 1000 and c._ts <= DateTimeToTimestamp(@dateTo) / 1000")
-    List<RTEntity> findPendingRT(@Param("dateFrom") String dateFrom, @Param("dateTo") String dateTo);
+
+    @Query("SELECT * FROM c WHERE c.receiptStatus in ('NOT_SENT', 'SCHEDULED', 'REDIRECT') " +
+                   "AND c._ts >= DateTimeToTimestamp(@dateFrom) / 1000 AND c._ts <= DateTimeToTimestamp(@dateTo) / 1000 " +
+                   "AND c.iuv = @iuv AND c.domainId = @domainId")
+    List<RTEntity> findByBlockedReceiptStatusInAndTimestampBetween(@Param("dateFrom") String dateFrom,
+                                                                   @Param("dateTo") String dateTo,
+                                                                   @Param("domainId") String domainId,
+                                                                   @Param("iuv") String iuv);
 }
 

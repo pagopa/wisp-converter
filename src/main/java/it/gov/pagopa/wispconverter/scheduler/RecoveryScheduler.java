@@ -45,7 +45,7 @@ public class RecoveryScheduler {
         log.info("[Scheduled] Reconciliation Cron: recoverReceiptKOCronJob running at {}, for recover stale RPT from {} to {}",
                 DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(LocalDateTime.now()), dateFrom, dateTo);
 
-        int missingRTRecovered = this.recoveryService.recoverMissingRT(dateFrom, dateTo);
+        int missingRTRecovered = this.recoveryService.recoverReceiptKOByDate(dateFrom, dateTo).getPayments().size();
         int missingRedirectRecovered = this.recoveryService.recoverMissingRedirect(dateFrom, dateTo);
 
         log.info("[Scheduled] Reconciliation Cron: recoverReceiptKOCronJob {} receipt-ko sent", missingRedirectRecovered + missingRTRecovered);

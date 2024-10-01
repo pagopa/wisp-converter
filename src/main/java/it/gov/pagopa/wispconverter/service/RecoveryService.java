@@ -2,7 +2,6 @@ package it.gov.pagopa.wispconverter.service;
 
 import it.gov.pagopa.gen.wispconverter.client.cache.model.ConnectionDto;
 import it.gov.pagopa.gen.wispconverter.client.cache.model.StationDto;
-import it.gov.pagopa.wispconverter.controller.ReceiptController;
 import it.gov.pagopa.wispconverter.controller.model.RecoveryProxyReceiptRequest;
 import it.gov.pagopa.wispconverter.controller.model.RecoveryProxyReceiptResponse;
 import it.gov.pagopa.wispconverter.controller.model.RecoveryReceiptPaymentResponse;
@@ -10,13 +9,11 @@ import it.gov.pagopa.wispconverter.controller.model.RecoveryReceiptResponse;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.*;
-import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
-import it.gov.pagopa.wispconverter.repository.RTRepository;
-import it.gov.pagopa.wispconverter.repository.ReEventRepository;
-import it.gov.pagopa.wispconverter.repository.model.RTEntity;
-import it.gov.pagopa.wispconverter.repository.model.RTRequestEntity;
-import it.gov.pagopa.wispconverter.repository.model.ReEventEntity;
+import it.gov.pagopa.wispconverter.repository.model.*;
 import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
+import it.gov.pagopa.wispconverter.repository.model.enumz.ReceiptStatusEnum;
+import it.gov.pagopa.wispconverter.secondary.RTRepositorySecondary;
+import it.gov.pagopa.wispconverter.secondary.ReEventRepositorySecondary;
 import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import it.gov.pagopa.wispconverter.service.model.session.SessionDataDTO;
 import it.gov.pagopa.wispconverter.util.CommonUtility;
@@ -32,15 +29,9 @@ import org.springframework.stereotype.Service;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
-import java.time.LocalDate;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
-import java.util.Comparator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 @Service
@@ -48,11 +39,7 @@ import java.util.concurrent.CompletableFuture;
 @RequiredArgsConstructor
 public class RecoveryService {
 
-    public static final String EVENT_TYPE_FOR_RECEIPTKO_SEARCH = "GENERATED_CACHE_ABOUT_RPT_FOR_RT_GENERATION";
-
     private static final String RPT_ACCETTATA_NODO = "RPT_ACCETTATA_NODO";
-
-    public static final String RPT_PARCHEGGIATA_NODO = "RPT_PARCHEGGIATA_NODO";
 
     private static final String STATUS_RT_SEND_SUCCESS = "RT_SEND_SUCCESS";
 
@@ -65,6 +52,12 @@ public class RecoveryService {
     private final ReEventRepositorySecondary reEventRepository;
 
     private static final String DATE_FORMAT_DAY = "yyyy-MM-dd";
+
+  private static final List<String> blockedReceiptStatus =
+      List.of(
+              ReceiptStatusEnum.NOT_SENT.name(),
+              ReceiptStatusEnum.REDIRECT.name(),
+              ReceiptStatusEnum.SCHEDULED.name());
 
     private final ReceiptService receiptService;
     private final RPTRequestRepository rptRequestRepository;
@@ -82,153 +75,43 @@ public class RecoveryService {
 
     @Value("${wisp-converter.recovery.receipt-generation.wait-time.minutes:60}")
     public Long receiptGenerationWaitTime;
-    @Value("${wisp-converter.apim.path}")
-    private String apimPath;
 
-    private static Set<String> getWISPInterruptStatusSet() {
-        return Set.of(
-                RPT_ACCETTATA_NODO,
-                RPT_PARCHEGGIATA_NODO,
-                "GENERATED_NAV_FOR_NEW_PAYMENT_POSITION",
-                "CREATED_NEW_PAYMENT_POSITION_IN_GPD",
-                "GENERATED_CACHE_ABOUT_RPT_FOR_DECOUPLER",
-                EVENT_TYPE_FOR_RECEIPTKO_SEARCH,
-                "SAVED_RPT_IN_CART_RECEIVED_REDIRECT_URL_FROM_CHECKOUT",
-                "GENERATED_CACHE_ABOUT_RPT_FOR_CARTSESSION_CACHING"
-        );
-    }
-
+    // Recover by IUV
     public RecoveryReceiptResponse recoverReceiptKOByIUV(String creditorInstitution, String iuv, String dateFrom, String dateTo) {
-        checkDateValidity(dateFrom, dateTo);
-        List<ReEventEntity> reEvents = reEventRepository.findByIuvAndOrganizationId(dateFrom, dateTo, iuv, creditorInstitution)
-                                               .stream()
-                                               .sorted(Comparator.comparing(ReEventEntity::getInsertedTimestamp))
-                                               .toList();
-
-        Set<String> interruptStatusSet = getWISPInterruptStatusSet();
-
-        if (!reEvents.isEmpty()) {
-            ReEventEntity lastEvent = reEvents.get(0);
-            String status = lastEvent.getStatus();
-            if (status != null && interruptStatusSet.contains(status)) {
-                this.recoverReceiptKO(creditorInstitution, iuv, lastEvent.getSessionId(), lastEvent.getCcp(), dateFrom, dateTo);
-                return RecoveryReceiptResponse.builder()
-                        .payments(
-                            List.of(
-                                RecoveryReceiptPaymentResponse.builder()
-                                    .iuv(iuv)
-                                    .ccp(lastEvent.getCcp())
-                                    .ci(lastEvent.getDomainId())
-                                    .build()))
-                        .build();
-            }
-        }
-
-        return null;
+        // Query database for blocked Receipt in given timestamp with given IUV
+        List<RTEntity> rtEntities = rtRepository.findByBlockedReceiptStatusInAndTimestampBetween(getDateFrom(dateFrom), getDateTo(dateTo), creditorInstitution, iuv);
+        // For each entity call send receipt KO
+        rtEntities.forEach(rtEntity -> callSendReceiptKO(rtEntity.getDomainId(), rtEntity.getIuv(), rtEntity.getSessionId(), rtEntity.getCcp()));
+        return this.extractRecoveryReceiptResponse(rtEntities);
     }
 
-    public RecoveryReceiptResponse recoverReceiptKOForCreditorInstitution(String creditorInstitution, String dateFrom, String dateTo) {
-        MDCUtil.setSessionDataInfo("recovery-receipt-ko");
-
-        checkDateValidity(dateFrom, dateTo);
-
-        LocalDate parse = LocalDate.parse(dateTo, DateTimeFormatter.ISO_LOCAL_DATE);
-        String dateToRefactored;
-
-        if (LocalDate.now().isEqual(parse)) {
-            ZonedDateTime nowMinusMinutes = ZonedDateTime.now(ZoneOffset.UTC).minusMinutes(receiptGenerationWaitTime);
-            dateToRefactored = nowMinusMinutes.format(DateTimeFormatter.ofPattern(DATE_FORMAT));
-            log.info("Upper bound forced to {}", dateToRefactored);
-        } else {
-            dateToRefactored = dateTo + " 23:59:59";
-            log.info("Upper bound set to {}", dateToRefactored);
-        }
-
-        List<RTEntity> receiptRTs = rtRepository.findByOrganizationId(creditorInstitution, dateFrom, dateToRefactored);
-        List<RecoveryReceiptPaymentResponse> paymentsToReconcile = receiptRTs.stream().map(entity -> RecoveryReceiptPaymentResponse.builder()
-                        .iuv(entity.getIuv())
-                        .ccp(entity.getCcp())
-                        .ci(entity.getDomainId())
-                        .build())
-                .toList();
-
-        CompletableFuture<Boolean> executeRecovery = recoverReceiptKOAsync(dateFrom, dateTo, paymentsToReconcile);
+    // Recover by CI (async)
+    public RecoveryReceiptResponse recoverReceiptKOByCI(String creditorInstitution, String dateFrom, String dateTo) {
+        MDCUtil.setSessionDataInfo("recovery-ci-receipt-ko");
+        // Query database for blocked Receipt in given timestamp with given domainId (-> creditorInstitution)
+        List<RTEntity> rtEntities = rtRepository.findByBlockedReceiptStatusInAndTimestampBetween(getDateFrom(dateFrom), getDateTo(dateTo), creditorInstitution);
+        // Future
+        CompletableFuture<Boolean> executeRecovery = CompletableFuture.supplyAsync(() -> {
+            rtEntities.forEach(rtEntity -> callSendReceiptKO(rtEntity.getDomainId(), rtEntity.getIuv(), rtEntity.getSessionId(), rtEntity.getCcp()));
+            return true;
+        });
         executeRecovery
                 .thenAccept(value -> log.debug("Reconciliation for creditor institution [{}] in date range [{}-{}] completed!", creditorInstitution, dateFrom, dateTo))
                 .exceptionally(e -> {
                     log.error("Reconciliation for creditor institution [{}] in date range [{}-{}] ended unsuccessfully!", creditorInstitution, dateFrom, dateTo, e);
                     throw new AppException(e, AppErrorCodeMessageEnum.ERROR, e.getMessage());
                 });
-
-        return RecoveryReceiptResponse.builder()
-                .payments(paymentsToReconcile)
-                .build();
+        // Returns the entities that will be recovered in async
+        return extractRecoveryReceiptResponse(rtEntities);
     }
 
-    private CompletableFuture<Boolean> recoverReceiptKOAsync(String dateFrom, String dateTo, List<RecoveryReceiptPaymentResponse> paymentsToReconcile) {
-        return CompletableFuture.supplyAsync(() -> recoverReceiptKOByRecoveryPayment(dateFrom, dateTo, paymentsToReconcile));
-    }
-
-    private boolean recoverReceiptKOByRecoveryPayment(String dateFrom, String dateTo, List<RecoveryReceiptPaymentResponse> paymentsToReconcile) {
-
-        for (RecoveryReceiptPaymentResponse payment : paymentsToReconcile) {
-            String iuv = payment.getIuv();
-            String ccp = payment.getCcp();
-            String ci = payment.getCi();
-
-            try {
-                List<ReEventEntity> reEvents = reEventRepository.findByIuvAndOrganizationId(dateFrom, dateTo, iuv, ci);
-
-                List<ReEventEntity> filteredEvents = reEvents.stream()
-                        .filter(event -> EVENT_TYPE_FOR_RECEIPTKO_SEARCH.equals(event.getStatus()))
-                        .filter(event -> ccp.equals(event.getCcp()))
-                        .sorted(Comparator.comparing(ReEventEntity::getInsertedTimestamp))
-                        .toList();
-
-                int numberOfEvents = filteredEvents.size();
-                if (numberOfEvents > 0) {
-                    ReEventEntity event = filteredEvents.get(numberOfEvents - 1);
-                    String sessionId = event.getSessionId();
-
-                    log.info("[RECOVERY-MISSING-RT] Recovery with receipt-ko for ci = {}, iuv = {}, ccp = {}, sessionId = {}", ci, iuv, ccp, sessionId);
-                    this.recoverReceiptKO(ci, iuv, ccp, sessionId, dateFrom, dateTo);
-                }
-            } catch (Exception e) {
-                generateRE(Constants.PAA_INVIA_RT, "Failure", InternalStepStatus.RT_END_RECONCILIATION_PROCESS, ci, iuv, ccp, null);
-                throw new AppException(e, AppErrorCodeMessageEnum.ERROR, e.getMessage());
-            }
-        }
-
-        return true;
-    }
-
-    // missing rt recovery
-    public int recoverMissingRT(ZonedDateTime dateFrom, ZonedDateTime dateTo) {
-        String dateFromString = dateFrom.format(DateTimeFormatter.ofPattern(DATE_FORMAT));
-        String dateToString = dateTo.format(DateTimeFormatter.ofPattern(DATE_FORMAT));
-        List<RTEntity> receiptRTs = rtRepository.findPendingRT(dateFromString, dateToString);
-        int recovered = 0;
-
-        for(RTEntity rt : receiptRTs) {
-            String iuv = rt.getIuv();
-            String ci = rt.getIdDominio();
-            String ccp = rt.getCcp();
-
-            List<ReEventEntity> reEvents = reEventRepository.findByIuvAndOrganizationId(dateFromString, dateToString, iuv, ci);
-            Set<String> interruptStatusSet = getWISPInterruptStatusSet();
-
-            if(!reEvents.isEmpty()) {
-                ReEventEntity lastEvent = reEvents.get(0);
-                String status = lastEvent.getStatus();
-                if(status != null && interruptStatusSet.contains(status)) {
-                    log.info("[RECOVER-MISSING-RT] Recovery with receipt-ko for ci = {}, iuv = {}, ccp = {}", ci, iuv, ccp);
-                    this.recoverReceiptKO(ci, iuv, lastEvent.getSessionId(), lastEvent.getCcp(), dateFromString, dateToString);
-                    recovered++;
-                }
-            }
-        }
-
-        return recovered;
+    // Recover by dates (cron)
+    public RecoveryReceiptResponse recoverReceiptKOByDate(ZonedDateTime dateFrom, ZonedDateTime dateTo) {
+        // Query database for blocked Receipt in given timestamp
+        List<RTEntity> rtEntities = rtRepository.findByBlockedReceiptStatusInAndTimestampBetween(dateFrom.toString(), dateTo.toString());
+        // For each entity call send receipt KO
+        rtEntities.forEach(rtEntity -> callSendReceiptKO(rtEntity.getDomainId(), rtEntity.getIuv(), rtEntity.getSessionId(), rtEntity.getCcp()));
+        return this.extractRecoveryReceiptResponse(rtEntities);
     }
 
     // missing redirect recovery
@@ -249,45 +132,77 @@ public class RecoveryService {
                 String ci = reEvent.getDomainId();
 
                 log.info("[RECOVER-MISSING-REDIRECT] Recovery with receipt-ko for ci = {}, iuv = {}, ccp = {}, sessionId = {}", ci, iuv, ccp, sessionId);
-                this.recoverReceiptKO(ci, iuv, ccp, sessionId, dateFromString, dateToString);
+                // search by sessionId, then filter by status=RT_SEND_SUCCESS. If there is zero, then proceed
+                List<ReEventEntity> reEventsRT = reEventRepository.findBySessionIdAndStatus(dateFromString, dateToString, sessionId, STATUS_RT_SEND_SUCCESS);
+                if(reEventsRT.isEmpty())
+                    this.callSendReceiptKO(ci, iuv, ccp, sessionId);
             }
         }
 
         return sessionsWithoutRedirect.size();
     }
 
-    // check if there is a successful RT submission, if there isn't prepare cached data and send receipt-ko
-    public void recoverReceiptKO(String ci, String iuv, String ccp, String sessionId, String dateFrom, String dateTo) {
-        // search by sessionId, then filter by status=RT_SEND_SUCCESS. If there is zero, then proceed
-        List<ReEventEntity> reEventsRT = reEventRepository.findBySessionIdAndStatus(dateFrom, dateTo, sessionId, STATUS_RT_SEND_SUCCESS);
+    // call sendRTKoFromSessionId
+    public void callSendReceiptKO(String ci, String iuv, String ccp, String sessionId) {
+        MDC.put(Constants.MDC_BUSINESS_PROCESS, "receipt-ko");
 
-        if (reEventsRT.isEmpty()) {
-            MDC.put(Constants.MDC_BUSINESS_PROCESS, "receipt-ko");
+        generateRE(Constants.PAA_INVIA_RT, null, InternalStepStatus.RT_START_RECONCILIATION_PROCESS, ci, iuv, ccp, sessionId);
 
-            generateRE(Constants.PAA_INVIA_RT, null, InternalStepStatus.RT_START_RECONCILIATION_PROCESS, ci, iuv, ccp, sessionId);
-
-            try {
-                this.receiptService.sendRTKoFromSessionId(sessionId, InternalStepStatus.NEGATIVE_RT_TRY_TO_SEND_TO_CREDITOR_INSTITUTION);
-            } catch (Exception e) {
-                generateRE(Constants.PAA_INVIA_RT, "Failure", InternalStepStatus.RT_END_RECONCILIATION_PROCESS, ci, iuv, ccp, sessionId);
-                throw new AppException(e, AppErrorCodeMessageEnum.ERROR, e.getMessage());
-            }
-            generateRE(Constants.PAA_INVIA_RT, "Success", InternalStepStatus.RT_END_RECONCILIATION_PROCESS, ci, iuv, ccp, sessionId);
-            MDC.remove(Constants.MDC_BUSINESS_PROCESS);
+        try {
+            this.receiptService.sendRTKoFromSessionId(sessionId, InternalStepStatus.NEGATIVE_RT_TRY_TO_SEND_TO_CREDITOR_INSTITUTION);
+        } catch (Exception e) {
+            generateRE(Constants.PAA_INVIA_RT, "Failure", InternalStepStatus.RT_END_RECONCILIATION_PROCESS, ci, iuv, ccp, sessionId);
+            throw new AppException(e, AppErrorCodeMessageEnum.ERROR, e.getMessage());
         }
+        generateRE(Constants.PAA_INVIA_RT, "Success", InternalStepStatus.RT_END_RECONCILIATION_PROCESS, ci, iuv, ccp, sessionId);
+        MDC.remove(Constants.MDC_BUSINESS_PROCESS);
     }
 
-    private void checkDateValidity(String dateFrom, String dateTo) {
+    // checks date validity
+    private String getDateFrom(String dateFrom) {
         LocalDate lowerLimit = LocalDate.parse(RECOVERY_VALID_START_DATE, DateTimeFormatter.ISO_LOCAL_DATE);
-        if (LocalDate.parse(dateFrom, DateTimeFormatter.ISO_LOCAL_DATE).isBefore(lowerLimit)) {
+        LocalDate dateFromLocalDate = LocalDate.parse(dateFrom, DateTimeFormatter.ISO_LOCAL_DATE);
+        if (dateFromLocalDate.isBefore(lowerLimit)) {
             throw new AppException(AppErrorCodeMessageEnum.ERROR, String.format("The lower bound cannot be lower than [%s]", RECOVERY_VALID_START_DATE));
         }
+        return dateFrom;
+    }
 
-        LocalDate today = LocalDate.now();
-        LocalDate parse = LocalDate.parse(dateTo, DateTimeFormatter.ISO_LOCAL_DATE);
-        if (parse.isAfter(today)) {
-            throw new AppException(AppErrorCodeMessageEnum.ERROR, String.format("The upper bound cannot be higher than [%s]", today.format(DateTimeFormatter.ofPattern(DATE_FORMAT_DAY))));
+    // checks date validity and adjusts the value if necessary
+    private String getDateTo(String dateTo) {
+        LocalDate now = LocalDate.now();
+        String dateToRefactored;
+
+        LocalDate dateToLocalDate = LocalDate.parse(dateTo, DateTimeFormatter.ISO_LOCAL_DATE);
+        if (dateToLocalDate.isAfter(now)) {
+            throw new AppException(AppErrorCodeMessageEnum.ERROR, String.format("The upper bound cannot be higher than [%s]", now.format(DateTimeFormatter.ofPattern(DATE_FORMAT_DAY))));
         }
+
+        if (LocalDate.now().isEqual(dateToLocalDate)) {
+            ZonedDateTime nowMinusMinutes = ZonedDateTime.now(ZoneOffset.UTC).minusMinutes(receiptGenerationWaitTime);
+            dateToRefactored = nowMinusMinutes.format(DateTimeFormatter.ofPattern(DATE_FORMAT));
+        } else {
+            dateToRefactored = dateTo + " 23:59:59";
+        }
+
+        return dateToRefactored;
+    }
+
+    private RecoveryReceiptResponse extractRecoveryReceiptResponse(List<RTEntity> rtEntities) {
+        List<RecoveryReceiptPaymentResponse> responses = new ArrayList<>();
+
+        for (RTEntity rtEntity : rtEntities) {
+            responses.add(
+                    RecoveryReceiptPaymentResponse.builder()
+                            .iuv(rtEntity.getIuv())
+                            .ccp(rtEntity.getCcp())
+                            .ci(rtEntity.getDomainId())
+                            .build());
+        }
+
+        return RecoveryReceiptResponse.builder()
+                       .payments(responses)
+                       .build();
     }
 
     private void generateRE(String primitive, String operationStatus, InternalStepStatus status, String domainId, String iuv, String ccp, String sessionId) {
