@@ -24,6 +24,14 @@ public class RTRequestEntity {
     @PartitionKey
     private String partitionKey;
 
+    private String domainId;
+
+    private String iuv;
+
+    private String ccp;
+
+    private String sessionId;
+
     private String primitive;
 
     private String payload;

@@ -10,7 +10,9 @@ import it.gov.pagopa.wispconverter.secondary.ReEventRepositorySecondary;
 import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.*;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -174,15 +176,15 @@ public class RecoveryServiceTest {
         String dateFrom = "2024-09-05";
         String dateTo = "2024-09-09";
         List<RTEntity> mockRTEntities = List.of(RTEntity.builder()
-                                                        .idDominio("ci")
-                                                        .iuv("iuv")
-                                                        .ccp("ccp")
-                                                        .build());
+                .domainId("ci")
+                .iuv("iuv")
+                .ccp("ccp")
+                .build());
         List<ReEventEntity> mockReEntities = List.of(ReEventEntity.builder()
-                                                             .status(EVENT_TYPE_FOR_RECEIPTKO_SEARCH)
-                                                             .ccp("ccp")
-                                                             .sessionId("sessionId")
-                                                             .build());
+                .status(EVENT_TYPE_FOR_RECEIPTKO_SEARCH)
+                .ccp("ccp")
+                .sessionId("sessionId")
+                .build());
         List<ReEventEntity> rtSuccessReEventEntity = List.of();
 
         when(rtRepository.findByOrganizationId(anyString(), anyString(), anyString())).thenReturn(mockRTEntities);
@@ -275,11 +277,11 @@ public class RecoveryServiceTest {
         String iuv = "iuv";
         List<ReEventEntity> rtSuccessReEventEntity = List.of();
         List<ReEventEntity> interruptedRPTEvents = List.of(ReEventEntity.builder()
-                                                                     .insertedTimestamp(Instant.now())
-                                                                     .status(RPT_PARCHEGGIATA_NODO)
-                                                                     .sessionId("sessionId")
-                                                                     .ccp("ccp")
-                                                                     .build());
+                .insertedTimestamp(Instant.now())
+                .status(RPT_PARCHEGGIATA_NODO)
+                .sessionId("sessionId")
+                .ccp("ccp")
+                .build());
 
         when(reRepository.findByIuvAndOrganizationId(anyString(), anyString(), anyString(), anyString())).thenReturn(interruptedRPTEvents);
         doNothing().when(receiptService).sendRTKoFromSessionId(anyString(), any());

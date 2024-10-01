@@ -8,11 +8,9 @@ import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.model.RTRequestEntity;
 import it.gov.pagopa.wispconverter.repository.model.enumz.IdempotencyStatusEnum;
 import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
+import it.gov.pagopa.wispconverter.repository.model.enumz.ReceiptStatusEnum;
 import it.gov.pagopa.wispconverter.repository.model.enumz.ReceiptTypeEnum;
-import it.gov.pagopa.wispconverter.service.IdempotencyService;
-import it.gov.pagopa.wispconverter.service.PaaInviaRTSenderService;
-import it.gov.pagopa.wispconverter.service.RtRetryComosService;
-import it.gov.pagopa.wispconverter.service.ServiceBusService;
+import it.gov.pagopa.wispconverter.service.*;
 import it.gov.pagopa.wispconverter.util.*;
 import jakarta.xml.soap.SOAPMessage;
 import lombok.extern.slf4j.Slf4j;
@@ -49,6 +47,9 @@ public class RTConsumer extends SBConsumer {
 
     @Autowired
     private RtRetryComosService rtRetryComosService;
+
+    @Autowired
+    private RtReceiptCosmosService rtReceiptCosmosService;
 
     @Autowired
     private IdempotencyService idempotencyService;
@@ -143,6 +144,10 @@ public class RTConsumer extends SBConsumer {
     private boolean resendRTToCreditorInstitution(String receiptId, RTRequestEntity receipt, String compositedIdForReceipt, String idempotencyKey) {
 
         boolean isSend = false;
+        String ci = receipt.getDomainId();
+        String iuv = receipt.getIuv();
+        String ccp = receipt.getCcp();
+
         try {
 
             log.debug("Sending receipt [{}]", receiptId);
@@ -170,7 +175,8 @@ public class RTConsumer extends SBConsumer {
             }
 
             String rawPayload = new String(unzippedPayload);
-            paaInviaRTSenderService.sendToCreditorInstitution(URI.create(receipt.getUrl()), proxyAddress, extractHeaders(receipt.getHeaders()), rawPayload);
+
+            paaInviaRTSenderService.sendToCreditorInstitution(URI.create(receipt.getUrl()), proxyAddress, extractHeaders(receipt.getHeaders()), rawPayload, ci, iuv, ccp);
             rtRetryComosService.deleteRTRequestEntity(receipt);
             log.debug("Sent receipt [{}]", receiptId);
 
@@ -187,6 +193,8 @@ public class RTConsumer extends SBConsumer {
             reScheduleReceiptSend(receipt, receiptId, compositedIdForReceipt);
 
         } catch (IOException e) {
+
+            rtReceiptCosmosService.updateReceiptStatus(ci, iuv, ccp, ReceiptStatusEnum.NOT_SENT);
 
             throw new AppException(AppErrorCodeMessageEnum.PARSING_INVALID_ZIPPED_PAYLOAD);
         }
@@ -205,6 +213,9 @@ public class RTConsumer extends SBConsumer {
     }
 
     private void reScheduleReceiptSend(RTRequestEntity receipt, String receiptId, String compositedIdForReceipt) {
+        String ci = receipt.getDomainId();
+        String iuv = receipt.getIuv();
+        String ccp = receipt.getCcp();
 
         // because of the not sent receipt, it is necessary to schedule a retry of the sending process for this receipt
         if (receipt.getRetry() < this.maxRetries - 1) {
@@ -221,16 +232,19 @@ public class RTConsumer extends SBConsumer {
 
                 // generate a new event in RE for store the successful scheduling of the RT send
                 generateREForSuccessfulReschedulingSentRT();
+                rtReceiptCosmosService.updateReceiptStatus(ci, iuv, ccp, ReceiptStatusEnum.SCHEDULED);
 
             } catch (Exception e) {
 
                 // generate a new event in RE for store the unsuccessful scheduling of the RT send
                 generateREForFailedReschedulingSentRT(e);
+                rtReceiptCosmosService.updateReceiptStatus(ci, iuv, ccp, ReceiptStatusEnum.NOT_SENT);
             }
         } else {
 
             // generate a new event in RE for store the unsuccessful scheduling of the RT send
             generateREForMaxRetriesOnReschedulingSentRT(receipt.getRetry());
+            rtReceiptCosmosService.updateReceiptStatus(ci, iuv, ccp, ReceiptStatusEnum.NOT_SENT);
         }
     }
 

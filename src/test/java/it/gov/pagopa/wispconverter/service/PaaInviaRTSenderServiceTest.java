@@ -27,6 +27,7 @@ class PaaInviaRTSenderServiceTest {
         RestClient.Builder builder = mock(RestClient.Builder.class);
         ReService reService = mock(ReService.class);
         JaxbElementUtil jaxbElementUtil = mock(JaxbElementUtil.class);
+        RtReceiptCosmosService rtReceiptCosmosService = mock(RtReceiptCosmosService.class);
 
         RestClient client = mock(RestClient.class);
         when(builder.build()).thenReturn(client);
@@ -44,9 +45,9 @@ class PaaInviaRTSenderServiceTest {
         when(responseSpec.toEntity(String.class))
                 .thenReturn(ResponseEntity.ok().body(paaInviaRTRisposta));
 
-        PaaInviaRTSenderService p = new PaaInviaRTSenderService(builder, reService, jaxbElementUtil);
+        PaaInviaRTSenderService p = new PaaInviaRTSenderService(builder, reService, rtReceiptCosmosService, jaxbElementUtil);
         org.springframework.test.util.ReflectionTestUtils.setField(p, "jaxbElementUtil", new JaxbElementUtil());
-        p.sendToCreditorInstitution(URI.create("http://pagopa.mock.dev/"), null, List.of(Pair.of("soapaction", "paaInviaRT")), "");
+        p.sendToCreditorInstitution(URI.create("http://pagopa.mock.dev/"), null, List.of(Pair.of("soapaction", "paaInviaRT")), "", "", "", "");
         assertTrue(true);
     }
 
@@ -55,6 +56,7 @@ class PaaInviaRTSenderServiceTest {
         RestClient.Builder builder = mock(RestClient.Builder.class);
         ReService reService = mock(ReService.class);
         JaxbElementUtil jaxbElementUtil = mock(JaxbElementUtil.class);
+        RtReceiptCosmosService rtReceiptCosmosService = mock(RtReceiptCosmosService.class);
         RestClient client = mock(RestClient.class);
         when(builder.build()).thenReturn(client);
         RestClient.RequestBodyUriSpec requestBodyUriSpec = mock(RestClient.RequestBodyUriSpec.class);
@@ -75,9 +77,9 @@ class PaaInviaRTSenderServiceTest {
         when(responseSpec.toEntity(PaaInviaRTRisposta.class))
                 .thenReturn(ResponseEntity.ok().body(paaInviaRTRisposta));
 
-        PaaInviaRTSenderService p = new PaaInviaRTSenderService(builder, reService, jaxbElementUtil);
+        PaaInviaRTSenderService p = new PaaInviaRTSenderService(builder, reService, rtReceiptCosmosService, jaxbElementUtil);
         try {
-            p.sendToCreditorInstitution(URI.create("http://pagopa.mock.dev/"), null, List.of(Pair.of("soapaction", "paaInviaRT")), "");
+            p.sendToCreditorInstitution(URI.create("http://pagopa.mock.dev/"), null, List.of(Pair.of("soapaction", "paaInviaRT")), "", "", "", "");
             fail();
         } catch (AppException e) {
             assertTrue(true);

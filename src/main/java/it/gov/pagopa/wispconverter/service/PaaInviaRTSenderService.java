@@ -8,6 +8,7 @@ import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.model.enumz.ClientEnum;
 import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
 import it.gov.pagopa.wispconverter.repository.model.enumz.OutcomeEnum;
+import it.gov.pagopa.wispconverter.repository.model.enumz.ReceiptStatusEnum;
 import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.JaxbElementUtil;
@@ -38,12 +39,14 @@ public class PaaInviaRTSenderService {
 
     private final ReService reService;
 
+    private final RtReceiptCosmosService rtReceiptCosmosService;
+
     private final JaxbElementUtil jaxbElementUtil;
 
     @Value("${wisp-converter.rt-send.avoid-scheduling-on-states}")
     private Set<String> avoidSchedulingOnStates;
 
-    public void sendToCreditorInstitution(URI uri, InetSocketAddress proxyAddress, List<Pair<String, String>> headers, String payload) {
+    public void sendToCreditorInstitution(URI uri, InetSocketAddress proxyAddress, List<Pair<String, String>> headers, String payload, String domainId, String iuv, String ccp) {
 
         try {
 
@@ -64,6 +67,8 @@ public class PaaInviaRTSenderService {
                 bodySpec.header(header.getFirst(), header.getSecond());
             }
 
+            rtReceiptCosmosService.updateReceiptStatus(domainId, iuv, ccp, ReceiptStatusEnum.SENDING);
+
             // Save an RE event in order to track the communication with creditor institution
             generateREForRequestToCreditorInstitution(uri.toString(), headers, payload);
 
@@ -83,7 +88,9 @@ public class PaaInviaRTSenderService {
 
             // set the correct response regarding the creditor institution response
             if (avoidReScheduling) {
+
                 generateREForAlreadySentRtToCreditorInstitution();
+
             } else if (Constants.KO.equals(esitoPaaInviaRT.getEsito()) || !Constants.OK.equals(esitoPaaInviaRT.getEsito())) {
                 FaultBean fault = esitoPaaInviaRT.getFault();
                 String faultCode = "ND";
@@ -113,8 +120,12 @@ public class PaaInviaRTSenderService {
                 generateREForResponseFromCreditorInstitution(uri.toString(), statusCode, error.getResponseHeaders(), responseBody, OutcomeEnum.RECEIVED_FAILURE, otherInfo);
             }
 
+
             throw new AppException(AppErrorCodeMessageEnum.RECEIPT_GENERATION_GENERIC_ERROR, e.getMessage());
         }
+
+
+        rtReceiptCosmosService.updateReceiptStatus(domainId, iuv, ccp, ReceiptStatusEnum.SENT);
     }
 
 

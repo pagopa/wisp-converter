@@ -25,6 +25,10 @@ public class IdempotencyService {
     @Value("${wisp-converter.idempotency.lock-validity-in-minutes}")
     private Integer lockValidityInMinutes;
 
+    public static String generateIdempotencyKeyId(String sessionId, String iuv, String domainId) {
+        return String.format("%s_%s_%s", sessionId, iuv, domainId);
+    }
+
     public boolean isIdempotencyKeyProcessable(String idempotencyKey, ReceiptTypeEnum receiptType) {
 
         boolean isProcessable = true;
@@ -43,7 +47,7 @@ public class IdempotencyService {
             }
 
             // check the processability of the idempotency key
-            isProcessable = isActiveLockExpired(idempotencyKeyEntity) || IdempotencyStatusEnum.FAILED.equals(idempotencyKeyEntity.getStatus());
+            isProcessable = !IdempotencyStatusEnum.SUCCESS.equals(idempotencyKeyEntity.getStatus()) && isActiveLockExpired(idempotencyKeyEntity) || IdempotencyStatusEnum.FAILED.equals(idempotencyKeyEntity.getStatus());
         }
         return isProcessable;
     }
@@ -68,6 +72,7 @@ public class IdempotencyService {
         IdempotencyKeyEntity idempotencyKeyEntity;
 
         // try to retrieve idempotency key entity from the storage and check if exists
+        // In this case, no findBy with partition key is set because the search could refers to different days
         Optional<IdempotencyKeyEntity> optIdempotencyKeyEntity = idempotencyKeyRepository.findById(idempotencyKey);
         if (optIdempotencyKeyEntity.isPresent()) {
 
@@ -84,10 +89,18 @@ public class IdempotencyService {
 
         } else {
 
+            // extracting sessionId for entity
+            String sessionId = null;
+            String[] idempotencyKeyComponents = idempotencyKey.split("_");
+            if (idempotencyKeyComponents.length > 0) {
+                sessionId = idempotencyKeyComponents[0];
+            }
+
             // it not exists, so it can be created a new idempotency key entity ex novo
             idempotencyKeyEntity = IdempotencyKeyEntity.builder()
                     .id(idempotencyKey)
                     .receiptType(receiptTypeEnum)
+                    .sessionId(sessionId)
                     .build();
         }
 

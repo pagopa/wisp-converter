@@ -11,6 +11,7 @@ import it.gov.pagopa.wispconverter.repository.RTRetryRepository;
 import it.gov.pagopa.wispconverter.repository.model.IdempotencyKeyEntity;
 import it.gov.pagopa.wispconverter.repository.model.RTRequestEntity;
 import it.gov.pagopa.wispconverter.repository.model.enumz.IdempotencyStatusEnum;
+import it.gov.pagopa.wispconverter.repository.model.enumz.ReceiptStatusEnum;
 import it.gov.pagopa.wispconverter.repository.model.enumz.ReceiptTypeEnum;
 import it.gov.pagopa.wispconverter.service.*;
 import it.gov.pagopa.wispconverter.servicebus.RTConsumer;
@@ -45,7 +46,7 @@ class ConsumerTest {
                 .receiptType(type)
                 .url(url)
                 .headers(List.of("soapaction:paaInviaRT"))
-                .idempotencyKey("idpa_uuid_nav")
+                .idempotencyKey("uuid_iuv_idDominio")
                 .build();
     }
 
@@ -81,6 +82,9 @@ class ConsumerTest {
         RtRetryComosService rtRetryComosService = new RtRetryComosService(reService, rtRetryRepository);
         ReflectionTestUtils.setField(rtRetryComosService, "isTracingOnREEnabled", true);
 
+        RtReceiptCosmosService rtReceiptCosmosService = mock(RtReceiptCosmosService.class);
+        when(rtReceiptCosmosService.updateReceiptStatus(anyString(), anyString(), anyString(), any(ReceiptStatusEnum.class))).thenReturn(true);
+
         ServiceBusService serviceBusService = new ServiceBusService();
         ServiceBusSenderClient serviceBusSenderClient = mock(ServiceBusSenderClient.class);
         doNothing().when(serviceBusSenderClient).sendMessage(any());
@@ -93,6 +97,7 @@ class ConsumerTest {
         PaaInviaRTSenderService paaInviaRTSenderService = mock(PaaInviaRTSenderService.class);
 
         ReflectionTestUtils.setField(rtConsumer, "rtRetryComosService", rtRetryComosService);
+        ReflectionTestUtils.setField(rtConsumer, "rtReceiptCosmosService", rtReceiptCosmosService);
         ReflectionTestUtils.setField(rtConsumer, "paaInviaRTSenderService", paaInviaRTSenderService);
         ReflectionTestUtils.setField(rtConsumer, "serviceBusService", serviceBusService);
         ReflectionTestUtils.setField(rtConsumer, "reService", reService);
@@ -143,6 +148,9 @@ class ConsumerTest {
         RtRetryComosService rtRetryComosService = new RtRetryComosService(reService, rtRetryRepository);
         ReflectionTestUtils.setField(rtRetryComosService, "isTracingOnREEnabled", true);
 
+        RtReceiptCosmosService rtReceiptCosmosService = mock(RtReceiptCosmosService.class);
+        when(rtReceiptCosmosService.updateReceiptStatus(anyString(), anyString(), anyString(), any(ReceiptStatusEnum.class))).thenReturn(true);
+
         ServiceBusService serviceBusService = new ServiceBusService();
         ServiceBusSenderClient serviceBusSenderClient = mock(ServiceBusSenderClient.class);
         doNothing().when(serviceBusSenderClient).sendMessage(any());
@@ -155,6 +163,7 @@ class ConsumerTest {
         PaaInviaRTSenderService paaInviaRTSenderService = mock(PaaInviaRTSenderService.class);
 
         ReflectionTestUtils.setField(rtConsumer, "rtRetryComosService", rtRetryComosService);
+        ReflectionTestUtils.setField(rtConsumer, "rtReceiptCosmosService", rtReceiptCosmosService);
         ReflectionTestUtils.setField(rtConsumer, "paaInviaRTSenderService", paaInviaRTSenderService);
         ReflectionTestUtils.setField(rtConsumer, "serviceBusService", serviceBusService);
         ReflectionTestUtils.setField(rtConsumer, "reService", reService);
@@ -201,14 +210,18 @@ class ConsumerTest {
         doNothing().when(serviceBusSenderClient).sendMessage(any());
         ReflectionTestUtils.setField(serviceBusService, "serviceBusSenderClient", serviceBusSenderClient);
 
+        RtReceiptCosmosService rtReceiptCosmosService = mock(RtReceiptCosmosService.class);
+        when(rtReceiptCosmosService.updateReceiptStatus(anyString(), anyString(), anyString(), any(ReceiptStatusEnum.class))).thenReturn(true);
+
         RTConsumer rtConsumer = new RTConsumer();
         ConfigCacheService ccs = mock(ConfigCacheService.class);
         when(ccs.getConfigData()).thenReturn(TestUtils.configData("mystation"));
 
         PaaInviaRTSenderService paaInviaRTSenderService = mock(PaaInviaRTSenderService.class);
-        doThrow(new AppException(AppErrorCodeMessageEnum.PARSING_GENERIC_ERROR)).when(paaInviaRTSenderService).sendToCreditorInstitution(any(), any(), any(), any());
+        doThrow(new AppException(AppErrorCodeMessageEnum.PARSING_GENERIC_ERROR)).when(paaInviaRTSenderService).sendToCreditorInstitution(any(), any(), any(), any(), any(), any(), any());
 
         ReflectionTestUtils.setField(rtConsumer, "rtRetryComosService", rtRetryComosService);
+        ReflectionTestUtils.setField(rtConsumer, "rtReceiptCosmosService", rtReceiptCosmosService);
         ReflectionTestUtils.setField(rtConsumer, "paaInviaRTSenderService", paaInviaRTSenderService);
         ReflectionTestUtils.setField(rtConsumer, "serviceBusService", serviceBusService);
         ReflectionTestUtils.setField(rtConsumer, "reService", reService);
@@ -263,7 +276,7 @@ class ConsumerTest {
         when(ccs.getConfigData()).thenReturn(TestUtils.configData("mystation"));
 
         PaaInviaRTSenderService paaInviaRTSenderService = mock(PaaInviaRTSenderService.class);
-        doThrow(new AppException(AppErrorCodeMessageEnum.PARSING_GENERIC_ERROR)).when(paaInviaRTSenderService).sendToCreditorInstitution(any(), any(), any(), any());
+        doThrow(new AppException(AppErrorCodeMessageEnum.PARSING_GENERIC_ERROR)).when(paaInviaRTSenderService).sendToCreditorInstitution(any(), any(), any(), any(), any(), any(), any());
 
         ReflectionTestUtils.setField(rtConsumer, "rtRetryComosService", rtRetryComosService);
         ReflectionTestUtils.setField(rtConsumer, "paaInviaRTSenderService", paaInviaRTSenderService);
