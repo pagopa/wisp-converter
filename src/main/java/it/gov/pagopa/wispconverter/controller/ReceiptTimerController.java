@@ -52,9 +52,9 @@ public class ReceiptTimerController {
     @Trace(businessProcess = BP_TIMER_SET, reEnabled = true)
     public void createTimer(@RequestBody ReceiptTimerRequest request) {
         try {
-            log.info("Invoking API operation createTimer - args: {}", request.toString());
+            log.debug("Invoking API operation createTimer - args: {}", request.toString());
             receiptTimerService.sendMessage(request);
-            log.info("Successful API operation createTimer");
+            log.debug("Successful API operation createTimer");
         } catch (Exception ex) {
             String operationId = MDC.get(Constants.MDC_OPERATION_ID);
             log.error(String.format("GenericException: operation-id=[%s]", operationId != null ? operationId : "n/a"), ex);
@@ -77,10 +77,10 @@ public class ReceiptTimerController {
     @Trace(businessProcess = BP_TIMER_DELETE, reEnabled = true)
     public void deleteTimer(@RequestParam() String paymentTokens) {
         try {
-            log.info("Invoking API operation deleteTimer - args: {}", paymentTokens);
+            log.debug("Invoking API operation deleteTimer - args: {}", paymentTokens);
             List<String> tokens = Arrays.asList(paymentTokens.split(","));
             receiptTimerService.cancelScheduledMessage(tokens);
-            log.info("Successful API operation deleteTimer");
+            log.debug("Successful API operation deleteTimer");
         } catch (Exception ex) {
             String operationId = MDC.get(Constants.MDC_OPERATION_ID);
             log.error(String.format("GenericException: operation-id=[%s]", operationId != null ? operationId : "n/a"), ex);

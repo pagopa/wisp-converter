@@ -42,7 +42,7 @@ public class RecoveryController {
     @PostMapping(value = "/{creditor_institution}/receipt-ko")
     public ResponseEntity<RecoveryReceiptResponse> recoverReceiptKOForCreditorInstitution(@PathVariable("creditor_institution") String ci, @QueryParam("date_from") String dateFrom, @QueryParam("date_to") String dateTo) {
         try {
-            log.info("Invoking API operation recoverReceiptKOForCreditorInstitution - args: {} {} {}", ci, dateFrom, dateTo);
+            log.debug("Invoking API operation recoverReceiptKOForCreditorInstitution - args: {} {} {}", ci, dateFrom, dateTo);
             RecoveryReceiptResponse response = recoveryService.recoverReceiptKOForCreditorInstitution(ci, dateFrom, dateTo);
             return ResponseEntity.ok(response);
         } catch (Exception ex) {
@@ -53,7 +53,7 @@ public class RecoveryController {
             log.error("Failed API operation recoverReceiptKOForCreditorInstitution - error: {}", errorResponse);
             throw ex;
         } finally {
-            log.info("Successful API operation recoverReceiptKOForCreditorInstitution");
+            log.debug("Successful API operation recoverReceiptKOForCreditorInstitution");
         }
     }
 
@@ -68,7 +68,7 @@ public class RecoveryController {
                                                                                                 @Pattern(regexp = "[a-zA-Z0-9_-]{1,10}") @QueryParam("date_from") String dateFrom,
                                                                                                 @Pattern(regexp = "[a-zA-Z0-9_-]{1,10}") @QueryParam("date_to") String dateTo) {
         try {
-            log.info("Invoking API operation recoverReceiptKOForCreditorInstitution - args: {} {} {} {}", ci, iuv, dateFrom, dateTo);
+            log.debug("Invoking API operation recoverReceiptKOForCreditorInstitution - args: {} {} {} {}", ci, iuv, dateFrom, dateTo);
 
             boolean recovered = recoveryService.recoverReceiptKO(ci, iuv, dateFrom, dateTo);
             if(recovered)
@@ -82,7 +82,7 @@ public class RecoveryController {
             log.error("Failed API operation recoverReceiptKOForCreditorInstitution - error: {}", errorResponse);
             throw ex;
         } finally {
-            log.info("Successful API operation recoverReceiptKOForCreditorInstitution");
+            log.debug("Successful API operation recoverReceiptKOForCreditorInstitution");
         }
     }
 
@@ -93,7 +93,7 @@ public class RecoveryController {
     @PostMapping(value = "/proxy")
     public ResponseEntity<RecoveryProxyReceiptResponse> recoverReceiptToBeSentByProxy(@RequestBody RecoveryProxyReceiptRequest request) {
         try {
-            log.info("Invoking API operation recoverReceiptToBeSentByProxy - args: {}", request);
+            log.debug("Invoking API operation recoverReceiptToBeSentByProxy - args: {}", request);
             return ResponseEntity.ok(recoveryService.recoverReceiptToBeSentByProxy(request));
         } catch (Exception ex) {
             String operationId = MDC.get(Constants.MDC_OPERATION_ID);

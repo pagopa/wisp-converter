@@ -117,10 +117,10 @@ public class RecoveryService {
         if (LocalDate.now().isEqual(parse)) {
             ZonedDateTime nowMinusMinutes = ZonedDateTime.now(ZoneOffset.UTC).minusMinutes(receiptGenerationWaitTime);
             dateToRefactored = nowMinusMinutes.format(DateTimeFormatter.ofPattern(DATE_FORMAT));
-            log.info("Upper bound forced to {}", dateToRefactored);
+            log.debug("Upper bound forced to {}", dateToRefactored);
         } else {
             dateToRefactored = dateTo + " 23:59:59";
-            log.info("Upper bound set to {}", dateToRefactored);
+            log.debug("Upper bound set to {}", dateToRefactored);
         }
 
         List<RTEntity> receiptRTs = rtRepository.findByOrganizationId(creditorInstitution, dateFrom, dateToRefactored);
