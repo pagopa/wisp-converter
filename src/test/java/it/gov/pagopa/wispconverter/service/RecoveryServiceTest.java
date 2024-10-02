@@ -70,7 +70,7 @@ public class RecoveryServiceTest {
     }
 
     @Test
-    public void testRecoverReceiptKOAll() {
+    void testRecoverReceiptKOAll() {
         // Arrange
         ZonedDateTime dateFrom = ZonedDateTime.now(ZoneOffset.UTC).minusHours(5);
         ZonedDateTime dateTo = ZonedDateTime.now(ZoneOffset.UTC).minusHours(4);
@@ -86,7 +86,7 @@ public class RecoveryServiceTest {
     }
 
     @Test
-    public void testRecoverReceiptKOAll_notEmpty() {
+    void testRecoverReceiptKOAll_notEmpty() {
         // Arrange
         ZonedDateTime dateFrom = ZonedDateTime.now(ZoneOffset.UTC).minusHours(5);
         ZonedDateTime dateTo = ZonedDateTime.now(ZoneOffset.UTC).minusHours(4);
@@ -112,7 +112,7 @@ public class RecoveryServiceTest {
     }
 
     @Test
-    public void testRecoverMissingRedirect() {
+    void testRecoverMissingRedirect() {
         // Arrange
         ZonedDateTime dateFrom = ZonedDateTime.now(ZoneOffset.UTC).minusHours(5);
         ZonedDateTime dateTo = ZonedDateTime.now(ZoneOffset.UTC).minusHours(4);
@@ -130,7 +130,7 @@ public class RecoveryServiceTest {
     }
 
     @Test
-    public void testRecoverMissingRedirect_notEmpty() {
+    void testRecoverMissingRedirect_notEmpty() {
         // Arrange
         ZonedDateTime dateFrom = ZonedDateTime.now(ZoneOffset.UTC).minusHours(5);
         ZonedDateTime dateTo = ZonedDateTime.now(ZoneOffset.UTC).minusHours(4);

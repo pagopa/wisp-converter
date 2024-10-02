@@ -12,8 +12,6 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 
-import java.time.temporal.ChronoUnit;
-
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
