@@ -32,8 +32,4 @@ public class AppException extends RuntimeException {
         }
         return null;
     }
-
-    public static void main(String[] args) {
-        throw new AppException(AppErrorCodeMessageEnum.RECEIPT_GENERATION_ERROR_RESPONSE_FROM_CREDITOR_INSTITUTION, "pippo", "pluto", "topolino");
-    }
 }
