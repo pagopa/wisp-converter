@@ -120,7 +120,7 @@ public class RecoveryServiceTest {
         List<ReEventEntity> mockReEventEntities = List.of();
 
         when(reRepository.findSessionWithoutRedirect(anyString(), anyString())).thenReturn(mockSessionEntities);
-        when(reRepository.findBySessionIdAndStatus(anyString(), anyString(), anyString(), anyString())).thenReturn(mockReEventEntities);
+        when(reRepository.findBySessionIdAndStatus(anyString(), anyString(), anyString(), anyString(), anyString())).thenReturn(mockReEventEntities);
 
         // Act
         int recoveredReceipt = recoveryService.recoverMissingRedirect(dateFrom, dateTo);
@@ -138,7 +138,7 @@ public class RecoveryServiceTest {
         List<ReEventEntity> mockReEventEntities = List.of();
 
         when(reRepository.findSessionWithoutRedirect(anyString(), anyString())).thenReturn(mockSessionEntities);
-        when(reRepository.findBySessionIdAndStatus(anyString(), anyString(), anyString(), anyString())).thenReturn(mockReEventEntities);
+        when(reRepository.findBySessionIdAndStatus(anyString(), anyString(), anyString(), anyString(), anyString())).thenReturn(mockReEventEntities);
 
         // Act
         int recoveredReceipt = recoveryService.recoverMissingRedirect(dateFrom, dateTo);

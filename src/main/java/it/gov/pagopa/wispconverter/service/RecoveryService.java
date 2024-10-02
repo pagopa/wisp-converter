@@ -117,25 +117,27 @@ public class RecoveryService {
     public int recoverMissingRedirect(ZonedDateTime dateFrom, ZonedDateTime dateTo) {
         String dateFromString = dateFrom.format(DateTimeFormatter.ofPattern(DATE_FORMAT_DAY));
         String dateToString = dateTo.format(DateTimeFormatter.ofPattern(DATE_FORMAT_DAY));
+        String dateFromTSString = dateFrom.format(DateTimeFormatter.ofPattern(DATE_FORMAT));
+        String dateToTSString = dateTo.format(DateTimeFormatter.ofPattern(DATE_FORMAT));
+        int sent = 0;
 
-        List<SessionIdEntity> sessionsWithoutRedirect = reEventRepository.findSessionWithoutRedirect(dateFromString, dateToString);
+        List<SessionIdEntity> sessionsWithoutRedirect = reEventRepository.findSessionWithoutRedirect(dateFromTSString, dateToTSString);
 
         for(SessionIdEntity sessionIdEntity : sessionsWithoutRedirect) {
             String sessionId = sessionIdEntity.getSessionId();
-            List<ReEventEntity> reEventList = reEventRepository.findBySessionIdAndStatus(dateFromString, dateToString, sessionId, RPT_ACCETTATA_NODO);
+            List<ReEventEntity> reEventList = reEventRepository.findBySessionIdAndStatus(dateFromString, dateToString, sessionId, RPT_ACCETTATA_NODO, "1");
 
             if(!reEventList.isEmpty()) {
                 ReEventEntity reEvent = reEventList.get(0);
                 String iuv = reEvent.getIuv();
                 String ccp = reEvent.getCcp();
                 String ci = reEvent.getDomainId();
-
-                log.info("[RECOVER-MISSING-REDIRECT] Recovery with receipt-ko for ci = {}, iuv = {}, ccp = {}, sessionId = {}", ci, iuv, ccp, sessionId);
+                sent++;
                 this.callSendReceiptKO(ci, iuv, ccp, sessionId);
             }
         }
 
-        return sessionsWithoutRedirect.size();
+        return sent;
     }
 
     // call sendRTKoFromSessionId
@@ -145,6 +147,7 @@ public class RecoveryService {
         generateRE(Constants.PAA_INVIA_RT, null, InternalStepStatus.RT_START_RECONCILIATION_PROCESS, ci, iuv, ccp, sessionId);
 
         try {
+            log.info("[RECOVERY-SEND-RECEIPT-KO] Recovery with receipt-ko for ci = {}, iuv = {}, ccp = {}, sessionId = {}", ci, iuv, ccp, sessionId);
             this.receiptService.sendRTKoFromSessionId(sessionId, InternalStepStatus.NEGATIVE_RT_TRY_TO_SEND_TO_CREDITOR_INSTITUTION);
         } catch (Exception e) {
             generateRE(Constants.PAA_INVIA_RT, "Failure", InternalStepStatus.RT_END_RECONCILIATION_PROCESS, ci, iuv, ccp, sessionId);
