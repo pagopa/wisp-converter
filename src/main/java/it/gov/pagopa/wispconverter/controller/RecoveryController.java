@@ -23,6 +23,8 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.*;
 
+import static it.gov.pagopa.wispconverter.util.CommonUtility.sanitizeInput;
+
 @RestController
 @RequestMapping("/recovery")
 @Validated
@@ -42,8 +44,9 @@ public class RecoveryController {
     @PostMapping(value = "/{creditor_institution}/receipt-ko")
     public ResponseEntity<RecoveryReceiptResponse> recoverReceiptKOForCreditorInstitution(@PathVariable("creditor_institution") String ci, @QueryParam("date_from") String dateFrom, @QueryParam("date_to") String dateTo) {
         try {
-            log.debug("Invoking API operation recoverReceiptKOForCreditorInstitution - args: {} {} {}", ci, dateFrom, dateTo);
-            RecoveryReceiptResponse response = recoveryService.recoverReceiptKOForCreditorInstitution(ci, dateFrom, dateTo);
+            log.debug("Invoking API operation recoverReceiptKOForCreditorInstitution - args: {} {} {}",
+                    sanitizeInput(ci), sanitizeInput(dateFrom), sanitizeInput(dateTo));
+            RecoveryReceiptResponse response = recoveryService.recoverReceiptKOByCI(ci, dateFrom, dateTo);
             return ResponseEntity.ok(response);
         } catch (Exception ex) {
             String operationId = MDC.get(Constants.MDC_OPERATION_ID);
@@ -69,7 +72,8 @@ public class RecoveryController {
                                                                                                 @Pattern(regexp = "[a-zA-Z0-9_-]{1,10}") @QueryParam("date_from") String dateFrom,
                                                                                                 @Pattern(regexp = "[a-zA-Z0-9_-]{1,10}") @QueryParam("date_to") String dateTo) {
         try {
-            log.debug("Invoking API operation recoverReceiptKOForCreditorInstitution - args: {} {} {} {}", ci, iuv, dateFrom, dateTo);
+            log.debug("Invoking API operation recoverReceiptKOForCreditorInstitution - args: {} {} {} {}",
+                    sanitizeInput(ci), sanitizeInput(iuv), sanitizeInput(dateFrom), sanitizeInput(dateTo));
 
             RecoveryReceiptResponse recoveryReceiptResponse = recoveryService.recoverReceiptKOByIUV(ci, iuv, dateFrom, dateTo);
             if(recoveryReceiptResponse != null) {
@@ -97,7 +101,7 @@ public class RecoveryController {
     @PostMapping(value = "/proxy")
     public ResponseEntity<RecoveryProxyReceiptResponse> recoverReceiptToBeSentByProxy(@RequestBody RecoveryProxyReceiptRequest request) {
         try {
-            log.debug("Invoking API operation recoverReceiptToBeSentByProxy - args: {}", request);
+            log.debug("Invoking API operation recoverReceiptToBeSentByProxy - args: {}", sanitizeInput(request.toString()));
             return ResponseEntity.ok(recoveryService.recoverReceiptToBeSentByProxy(request));
         } catch (Exception ex) {
             String operationId = MDC.get(Constants.MDC_OPERATION_ID);
