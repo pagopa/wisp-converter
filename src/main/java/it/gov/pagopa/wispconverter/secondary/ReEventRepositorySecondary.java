@@ -28,7 +28,7 @@ public interface ReEventRepositorySecondary extends CosmosRepository<ReEventEnti
     @Query("SELECT * FROM c " +
                    "WHERE (c.partitionKey >= @dateFrom AND c.partitionKey <= @dateTo) " +
                    "AND c.sessionId = @sessionId " +
-                   "AND c.status = @status")
+                   "AND c.status = @status ORDER BY c._ts OFFSET 0 LIMIT 1")
     List<ReEventEntity> findBySessionIdAndStatus(@Param("dateFrom") String dateFrom,
                                                  @Param("dateTo") String dateTo,
                                                  @Param("sessionId") String sessionId,
