@@ -20,6 +20,7 @@ public class Constants {
     public static final String SOAP_ENV = "soapenv";
     public static final BigDecimal AMOUNT_SCALE_INCREMENT = new BigDecimal(100L);
 
+    public static final String MDC_INSERTED_TIMESTAMP = "insertTimestamp";
     public static final String MDC_CONTROL_FLAG = "controlFlag";
     public static final String MDC_START_TIME = "startTime";
     public static final String MDC_CALL_TYPE = "callType";

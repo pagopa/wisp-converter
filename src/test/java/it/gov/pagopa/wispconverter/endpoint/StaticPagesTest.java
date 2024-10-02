@@ -2,10 +2,7 @@ package it.gov.pagopa.wispconverter.endpoint;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.wispconverter.Application;
-import it.gov.pagopa.wispconverter.service.ConfigCacheService;
-import it.gov.pagopa.wispconverter.service.PaaInviaRTSenderService;
-import it.gov.pagopa.wispconverter.service.ReceiptService;
-import it.gov.pagopa.wispconverter.service.ServiceBusService;
+import it.gov.pagopa.wispconverter.service.*;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -34,7 +31,8 @@ public class StaticPagesTest {
     private ServiceBusService paaInviaRTServiceBusService;
     @Autowired
     private MockMvc mockMvc;
-
+    @MockBean
+    private RecoveryService recoveryService;
     @MockBean
     private ReceiptService receiptService;
 
