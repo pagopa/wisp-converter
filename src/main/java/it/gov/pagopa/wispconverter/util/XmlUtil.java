@@ -19,6 +19,7 @@ public class XmlUtil {
         gregorianCalendar.setTimeInMillis(instant.toEpochMilli());
         try {
             XMLGregorianCalendar xmlGregorianCalendar = DatatypeFactory.newInstance().newXMLGregorianCalendar(gregorianCalendar);
+            xmlGregorianCalendar.setMillisecond(DatatypeConstants.FIELD_UNDEFINED); // removing info about milliseconds
             xmlGregorianCalendar.setTimezone(DatatypeConstants.FIELD_UNDEFINED); // removing all references about timezone
             return xmlGregorianCalendar;
         } catch (DatatypeConfigurationException e) {
