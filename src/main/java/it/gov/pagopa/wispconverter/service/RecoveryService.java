@@ -81,7 +81,7 @@ public class RecoveryService {
         // Query database for blocked Receipt in given timestamp with given IUV
         List<RTEntity> rtEntities = rtRepository.findByMidReceiptStatusInAndTimestampBetween(getDateFrom(dateFrom), getDateTo(dateTo), creditorInstitution, iuv);
         // For each entity call send receipt KO
-        rtEntities.forEach(rtEntity -> callSendReceiptKO(rtEntity.getDomainId(), rtEntity.getIuv(), rtEntity.getSessionId(), rtEntity.getCcp()));
+        rtEntities.forEach(rtEntity -> callSendReceiptKO(rtEntity.getDomainId(), rtEntity.getIuv(), rtEntity.getCcp(), rtEntity.getSessionId()));
         return this.extractRecoveryReceiptResponse(rtEntities);
     }
 
@@ -91,7 +91,7 @@ public class RecoveryService {
         List<RTEntity> rtEntities = rtRepository.findByMidReceiptStatusInAndTimestampBetween(getDateFrom(dateFrom), getDateTo(dateTo), creditorInstitution);
         // Future
         CompletableFuture<Boolean> executeRecovery = CompletableFuture.supplyAsync(() -> {
-            rtEntities.forEach(rtEntity -> callSendReceiptKO(rtEntity.getDomainId(), rtEntity.getIuv(), rtEntity.getSessionId(), rtEntity.getCcp()));
+            rtEntities.forEach(rtEntity -> callSendReceiptKO(rtEntity.getDomainId(), rtEntity.getIuv(), rtEntity.getCcp(), rtEntity.getSessionId()));
             return true;
         });
         executeRecovery
@@ -109,7 +109,7 @@ public class RecoveryService {
         // Query database for blocked Receipt in given timestamp
         List<RTEntity> rtEntities = rtRepository.findByMidReceiptStatusInAndTimestampBetween(dateFrom.toString(), dateTo.toString());
         // For each entity call send receipt KO
-        rtEntities.forEach(rtEntity -> callSendReceiptKO(rtEntity.getDomainId(), rtEntity.getIuv(), rtEntity.getSessionId(), rtEntity.getCcp()));
+        rtEntities.forEach(rtEntity -> callSendReceiptKO(rtEntity.getDomainId(), rtEntity.getIuv(), rtEntity.getCcp(), rtEntity.getSessionId()));
         return this.extractRecoveryReceiptResponse(rtEntities);
     }
 
@@ -125,15 +125,19 @@ public class RecoveryService {
 
         for(SessionIdEntity sessionIdEntity : sessionsWithoutRedirect) {
             String sessionId = sessionIdEntity.getSessionId();
-            List<ReEventEntity> reEventList = reEventRepository.findBySessionIdAndStatus(dateFromString, dateToString, sessionId, RPT_ACCETTATA_NODO, "1");
+            List<ReEventEntity> reEventList = reEventRepository.findBySessionIdAndStatus(dateFromString, dateToString, sessionId, RPT_ACCETTATA_NODO, 1);
 
             if(!reEventList.isEmpty()) {
                 ReEventEntity reEvent = reEventList.get(0);
                 String iuv = reEvent.getIuv();
                 String ccp = reEvent.getCcp();
                 String ci = reEvent.getDomainId();
-                sent++;
-                this.callSendReceiptKO(ci, iuv, ccp, sessionId);
+
+                List<ReEventEntity> reEventsRT = reEventRepository.findBySessionIdAndStatus(dateFromString, dateToString, sessionId, STATUS_RT_SEND_SUCCESS, 1);
+                if(reEventsRT.isEmpty()) {
+                    this.callSendReceiptKO(ci, iuv, ccp, sessionId);
+                    sent++;
+                }
             }
         }
 

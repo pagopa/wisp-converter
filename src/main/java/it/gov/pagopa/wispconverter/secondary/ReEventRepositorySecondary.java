@@ -33,7 +33,7 @@ public interface ReEventRepositorySecondary extends CosmosRepository<ReEventEnti
                                                  @Param("dateTo") String dateTo,
                                                  @Param("sessionId") String sessionId,
                                                  @Param("status") String status,
-                                                 @Param("limit") String limit);
+                                                 @Param("limit") int limit);
 
 
     @Query(
