@@ -186,6 +186,7 @@ pagopa-wisp-converter-cron:
   !!merge <<: *microservice-chart
   ingress:
     !!merge <<: *ingress
+    path: /pagopa-wisp-converter-notused/(.*)
   resources:
     !!merge <<: *resources
     requests:
