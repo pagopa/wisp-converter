@@ -73,8 +73,7 @@ public class RecoveryController {
 
             RecoveryReceiptResponse recoveryReceiptResponse = recoveryService.recoverReceiptKOByIUV(ci, iuv, dateFrom, dateTo);
             if(recoveryReceiptResponse != null) {
-                RecoveryReceiptResponse response = recoveryService.recoverReceiptKOByCI(ci, dateFrom, dateTo);
-                return ResponseEntity.ok(response);
+                return ResponseEntity.ok(recoveryReceiptResponse);
             } else {
                 // RPT with CI and IUV could not be recovered via API
                 return ResponseEntity.badRequest().build();

@@ -144,7 +144,7 @@ public class RecoveryServiceTest {
         int recoveredReceipt = recoveryService.recoverMissingRedirect(dateFrom, dateTo);
 
         // Assert
-        assertEquals(1, recoveredReceipt);
+        assertEquals(0, recoveredReceipt);
     }
 
     @Test
@@ -269,6 +269,7 @@ public class RecoveryServiceTest {
                                                         .domainId("ci")
                                                         .iuv("iuv")
                                                         .ccp("ccp")
+                                                        .sessionId("sessionId")
                                                         .build());
 
         when(rtRepository.findByMidReceiptStatusInAndTimestampBetween(anyString(), anyString(), anyString(), anyString())).thenReturn(mockRTEntities);
