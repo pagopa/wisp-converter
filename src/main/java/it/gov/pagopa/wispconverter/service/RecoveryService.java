@@ -87,7 +87,6 @@ public class RecoveryService {
 
     // Recover by CI (async)
     public RecoveryReceiptResponse recoverReceiptKOByCI(String creditorInstitution, String dateFrom, String dateTo) {
-        MDCUtil.setSessionDataInfo("recovery-ci-receipt-ko");
         // Query database for blocked Receipt in given timestamp with given domainId (-> creditorInstitution)
         List<RTEntity> rtEntities = rtRepository.findByMidReceiptStatusInAndTimestampBetween(getDateFrom(dateFrom), getDateTo(dateTo), creditorInstitution);
         // Future
@@ -116,8 +115,8 @@ public class RecoveryService {
 
     // missing redirect recovery
     public int recoverMissingRedirect(ZonedDateTime dateFrom, ZonedDateTime dateTo) {
-        String dateFromString = dateFrom.format(DateTimeFormatter.ofPattern(DATE_FORMAT));
-        String dateToString = dateTo.format(DateTimeFormatter.ofPattern(DATE_FORMAT));
+        String dateFromString = dateFrom.format(DateTimeFormatter.ofPattern(DATE_FORMAT_DAY));
+        String dateToString = dateTo.format(DateTimeFormatter.ofPattern(DATE_FORMAT_DAY));
 
         List<SessionIdEntity> sessionsWithoutRedirect = reEventRepository.findSessionWithoutRedirect(dateFromString, dateToString);
 
@@ -132,10 +131,7 @@ public class RecoveryService {
                 String ci = reEvent.getDomainId();
 
                 log.info("[RECOVER-MISSING-REDIRECT] Recovery with receipt-ko for ci = {}, iuv = {}, ccp = {}, sessionId = {}", ci, iuv, ccp, sessionId);
-                // search by sessionId, then filter by status=RT_SEND_SUCCESS. If there is zero, then proceed
-                List<ReEventEntity> reEventsRT = reEventRepository.findBySessionIdAndStatus(dateFromString, dateToString, sessionId, STATUS_RT_SEND_SUCCESS);
-                if(reEventsRT.isEmpty())
-                    this.callSendReceiptKO(ci, iuv, ccp, sessionId);
+                this.callSendReceiptKO(ci, iuv, ccp, sessionId);
             }
         }
 
@@ -144,7 +140,7 @@ public class RecoveryService {
 
     // call sendRTKoFromSessionId
     public void callSendReceiptKO(String ci, String iuv, String ccp, String sessionId) {
-        MDC.put(Constants.MDC_BUSINESS_PROCESS, "receipt-ko");
+        MDC.put(Constants.MDC_BUSINESS_PROCESS, "recovery-receipt-ko");
 
         generateRE(Constants.PAA_INVIA_RT, null, InternalStepStatus.RT_START_RECONCILIATION_PROCESS, ci, iuv, ccp, sessionId);
 
