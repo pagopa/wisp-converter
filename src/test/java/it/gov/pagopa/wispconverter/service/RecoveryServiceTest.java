@@ -76,7 +76,7 @@ public class RecoveryServiceTest {
         ZonedDateTime dateTo = ZonedDateTime.now(ZoneOffset.UTC).minusHours(4);
         List<RTEntity> mockRTEntities = List.of();
 
-        when(rtRepository.findByBlockedReceiptStatusInAndTimestampBetween(anyString(), anyString())).thenReturn(mockRTEntities);
+        when(rtRepository.findByMidReceiptStatusInAndTimestampBetween(anyString(), anyString())).thenReturn(mockRTEntities);
 
         // Act
         RecoveryReceiptResponse recoveredReceipt = recoveryService.recoverReceiptKOByDate(dateFrom, dateTo);
@@ -101,7 +101,7 @@ public class RecoveryServiceTest {
                                                                   .insertedTimestamp(Instant.now())
                                                                   .build());
 
-        when(rtRepository.findByBlockedReceiptStatusInAndTimestampBetween(anyString(), anyString())).thenReturn(mockRTEntities);
+        when(rtRepository.findByMidReceiptStatusInAndTimestampBetween(anyString(), anyString())).thenReturn(mockRTEntities);
         when(reRepository.findByIuvAndOrganizationId(anyString(), anyString(), anyString(), anyString())).thenReturn(mockReEventEntities);
 
         // Act
@@ -155,7 +155,7 @@ public class RecoveryServiceTest {
         String dateTo = "2024-09-09";
         List<RTEntity> mockRTEntities = List.of();
 
-        when(rtRepository.findByBlockedReceiptStatusInAndTimestampBetween(anyString(), anyString(), anyString())).thenReturn(mockRTEntities);
+        when(rtRepository.findByMidReceiptStatusInAndTimestampBetween(anyString(), anyString(), anyString())).thenReturn(mockRTEntities);
 
         // Act
         RecoveryReceiptResponse response = recoveryService.recoverReceiptKOByCI(creditorInstitution, dateFrom, dateTo);
@@ -177,7 +177,7 @@ public class RecoveryServiceTest {
                 .ccp("ccp")
                 .build());
 
-        when(rtRepository.findByBlockedReceiptStatusInAndTimestampBetween(anyString(), anyString(), anyString())).thenReturn(mockRTEntities);
+        when(rtRepository.findByMidReceiptStatusInAndTimestampBetween(anyString(), anyString(), anyString())).thenReturn(mockRTEntities);
         doNothing().when(receiptService)
                 .sendRTKoFromSessionId(anyString(), any());
         doNothing().when(reService).addRe(any(ReEventDto.class));
@@ -198,7 +198,7 @@ public class RecoveryServiceTest {
         String dateTo = LocalDate.now().toString();
         List<RTEntity> mockRTEntities = List.of();
 
-        when(rtRepository.findByBlockedReceiptStatusInAndTimestampBetween(anyString(), anyString(), anyString())).thenReturn(mockRTEntities);
+        when(rtRepository.findByMidReceiptStatusInAndTimestampBetween(anyString(), anyString(), anyString())).thenReturn(mockRTEntities);
 
         // Act
         RecoveryReceiptResponse response = recoveryService.recoverReceiptKOByCI(creditorInstitution, dateFrom, dateTo);
@@ -245,7 +245,7 @@ public class RecoveryServiceTest {
         String ci = "ci";
         String iuv = "iuv";
 
-        when(rtRepository.findByBlockedReceiptStatusInAndTimestampBetween(anyString(), anyString(), anyString(), anyString())).thenReturn(List.of());
+        when(rtRepository.findByMidReceiptStatusInAndTimestampBetween(anyString(), anyString(), anyString(), anyString())).thenReturn(List.of());
         doNothing().when(receiptService).sendRTKoFromSessionId(anyString(), any());
         doNothing().when(reService).addRe(any(ReEventDto.class));
 
@@ -271,7 +271,7 @@ public class RecoveryServiceTest {
                                                         .ccp("ccp")
                                                         .build());
 
-        when(rtRepository.findByBlockedReceiptStatusInAndTimestampBetween(anyString(), anyString(), anyString(), anyString())).thenReturn(mockRTEntities);
+        when(rtRepository.findByMidReceiptStatusInAndTimestampBetween(anyString(), anyString(), anyString(), anyString())).thenReturn(mockRTEntities);
 
         // Act
         RecoveryReceiptResponse response = recoveryService.recoverReceiptKOByIUV(creditorInstitution, iuv, dateFrom, dateTo);

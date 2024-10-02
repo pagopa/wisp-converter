@@ -79,7 +79,7 @@ public class RecoveryService {
     // Recover by IUV
     public RecoveryReceiptResponse recoverReceiptKOByIUV(String creditorInstitution, String iuv, String dateFrom, String dateTo) {
         // Query database for blocked Receipt in given timestamp with given IUV
-        List<RTEntity> rtEntities = rtRepository.findByBlockedReceiptStatusInAndTimestampBetween(getDateFrom(dateFrom), getDateTo(dateTo), creditorInstitution, iuv);
+        List<RTEntity> rtEntities = rtRepository.findByMidReceiptStatusInAndTimestampBetween(getDateFrom(dateFrom), getDateTo(dateTo), creditorInstitution, iuv);
         // For each entity call send receipt KO
         rtEntities.forEach(rtEntity -> callSendReceiptKO(rtEntity.getDomainId(), rtEntity.getIuv(), rtEntity.getSessionId(), rtEntity.getCcp()));
         return this.extractRecoveryReceiptResponse(rtEntities);
@@ -89,7 +89,7 @@ public class RecoveryService {
     public RecoveryReceiptResponse recoverReceiptKOByCI(String creditorInstitution, String dateFrom, String dateTo) {
         MDCUtil.setSessionDataInfo("recovery-ci-receipt-ko");
         // Query database for blocked Receipt in given timestamp with given domainId (-> creditorInstitution)
-        List<RTEntity> rtEntities = rtRepository.findByBlockedReceiptStatusInAndTimestampBetween(getDateFrom(dateFrom), getDateTo(dateTo), creditorInstitution);
+        List<RTEntity> rtEntities = rtRepository.findByMidReceiptStatusInAndTimestampBetween(getDateFrom(dateFrom), getDateTo(dateTo), creditorInstitution);
         // Future
         CompletableFuture<Boolean> executeRecovery = CompletableFuture.supplyAsync(() -> {
             rtEntities.forEach(rtEntity -> callSendReceiptKO(rtEntity.getDomainId(), rtEntity.getIuv(), rtEntity.getSessionId(), rtEntity.getCcp()));
@@ -108,7 +108,7 @@ public class RecoveryService {
     // Recover by dates (cron)
     public RecoveryReceiptResponse recoverReceiptKOByDate(ZonedDateTime dateFrom, ZonedDateTime dateTo) {
         // Query database for blocked Receipt in given timestamp
-        List<RTEntity> rtEntities = rtRepository.findByBlockedReceiptStatusInAndTimestampBetween(dateFrom.toString(), dateTo.toString());
+        List<RTEntity> rtEntities = rtRepository.findByMidReceiptStatusInAndTimestampBetween(dateFrom.toString(), dateTo.toString());
         // For each entity call send receipt KO
         rtEntities.forEach(rtEntity -> callSendReceiptKO(rtEntity.getDomainId(), rtEntity.getIuv(), rtEntity.getSessionId(), rtEntity.getCcp()));
         return this.extractRecoveryReceiptResponse(rtEntities);
