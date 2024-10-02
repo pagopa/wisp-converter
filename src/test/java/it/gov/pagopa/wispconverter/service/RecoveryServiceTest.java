@@ -2,10 +2,12 @@ package it.gov.pagopa.wispconverter.service;
 
 import it.gov.pagopa.wispconverter.controller.model.RecoveryReceiptResponse;
 import it.gov.pagopa.wispconverter.exception.AppException;
-import it.gov.pagopa.wispconverter.repository.RTRepository;
-import it.gov.pagopa.wispconverter.repository.ReEventRepository;
 import it.gov.pagopa.wispconverter.repository.model.RTEntity;
 import it.gov.pagopa.wispconverter.repository.model.ReEventEntity;
+import it.gov.pagopa.wispconverter.repository.model.SessionIdEntity;
+import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
+import it.gov.pagopa.wispconverter.secondary.RTRepositorySecondary;
+import it.gov.pagopa.wispconverter.secondary.ReEventRepositorySecondary;
 import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -15,11 +17,11 @@ import org.mockito.MockitoAnnotations;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-import static it.gov.pagopa.wispconverter.service.RecoveryService.EVENT_TYPE_FOR_RECEIPTKO_SEARCH;
-import static it.gov.pagopa.wispconverter.service.RecoveryService.RPT_PARCHEGGIATA_NODO;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
@@ -27,10 +29,10 @@ import static org.mockito.Mockito.*;
 public class RecoveryServiceTest {
 
     @Mock
-    private RTRepository rtRepository;
+    private RTRepositorySecondary rtRepository;
 
     @Mock
-    private ReEventRepository reRepository;
+    private ReEventRepositorySecondary reRepository;
 
     @Mock
     private ReceiptService receiptService;
@@ -51,38 +53,112 @@ public class RecoveryServiceTest {
     @Test
     void testRecoverReceiptKO() {
         // Arrange
-        String dateFrom = "2024-09-05";
-        String dateTo = "2024-09-09";
         String ci = "ci";
         String iuv = "iuv";
         String ccp = "cpp";
         String session = "sessionId";
-        List<ReEventEntity> rtSuccessReEventEntity = List.of();
 
-        when(reRepository.findBySessionIdAndStatus(anyString(), anyString(), anyString(), anyString())).thenReturn(rtSuccessReEventEntity);
         doNothing().when(receiptService)
                 .sendRTKoFromSessionId(anyString(), any());
         doNothing().when(reService).addRe(any(ReEventDto.class));
 
         // Act
-        recoveryService.recoverReceiptKO(ci, iuv, ccp, session, dateFrom, dateTo);
+        recoveryService.callSendReceiptKO(ci, iuv, ccp, session);
 
         // Assert
-        verify(reRepository, times(1)).findBySessionIdAndStatus(anyString(), anyString(), anyString(), anyString());
+        verify(receiptService, times(1)).sendRTKoFromSessionId(anyString(), any(InternalStepStatus.class));
     }
 
     @Test
-    void testRecoverReceiptKOForCreditorInstitution_Success_Empty() {
+    void testRecoverReceiptKOAll() {
+        // Arrange
+        ZonedDateTime dateFrom = ZonedDateTime.now(ZoneOffset.UTC).minusHours(5);
+        ZonedDateTime dateTo = ZonedDateTime.now(ZoneOffset.UTC).minusHours(4);
+        List<RTEntity> mockRTEntities = List.of();
+
+        when(rtRepository.findByMidReceiptStatusInAndTimestampBetween(anyString(), anyString())).thenReturn(mockRTEntities);
+
+        // Act
+        RecoveryReceiptResponse recoveredReceipt = recoveryService.recoverReceiptKOByDate(dateFrom, dateTo);
+
+        // Assert
+        assertEquals(0, recoveredReceipt.getPayments().size());
+    }
+
+    @Test
+    void testRecoverReceiptKOAll_notEmpty() {
+        // Arrange
+        ZonedDateTime dateFrom = ZonedDateTime.now(ZoneOffset.UTC).minusHours(5);
+        ZonedDateTime dateTo = ZonedDateTime.now(ZoneOffset.UTC).minusHours(4);
+        List<RTEntity> mockRTEntities = List.of(RTEntity.builder()
+                                                        .iuv("iuv")
+                                                        .ccp("ccp")
+                                                        .domainId("idDominio")
+                                                        .build());
+        List<ReEventEntity> mockReEventEntities = List.of(ReEventEntity.builder()
+                                                                  .status("GENERATED_CACHE_ABOUT_RPT_FOR_RT_GENERATION")
+                                                                  .ccp("ccp2")
+                                                                  .insertedTimestamp(Instant.now())
+                                                                  .build());
+
+        when(rtRepository.findByMidReceiptStatusInAndTimestampBetween(anyString(), anyString())).thenReturn(mockRTEntities);
+        when(reRepository.findByIuvAndOrganizationId(anyString(), anyString(), anyString(), anyString())).thenReturn(mockReEventEntities);
+
+        // Act
+        RecoveryReceiptResponse recoveredReceipt = recoveryService.recoverReceiptKOByDate(dateFrom, dateTo);
+
+        // Assert
+        assertEquals(1, recoveredReceipt.getPayments().size());
+    }
+
+    @Test
+    void testRecoverMissingRedirect() {
+        // Arrange
+        ZonedDateTime dateFrom = ZonedDateTime.now(ZoneOffset.UTC).minusHours(5);
+        ZonedDateTime dateTo = ZonedDateTime.now(ZoneOffset.UTC).minusHours(4);
+        List<SessionIdEntity> mockSessionEntities = List.of();
+        List<ReEventEntity> mockReEventEntities = List.of();
+
+        when(reRepository.findSessionWithoutRedirect(anyString(), anyString())).thenReturn(mockSessionEntities);
+        when(reRepository.findBySessionIdAndStatus(anyString(), anyString(), anyString(), anyString(), anyInt())).thenReturn(mockReEventEntities);
+
+        // Act
+        int recoveredReceipt = recoveryService.recoverMissingRedirect(dateFrom, dateTo);
+
+        // Assert
+        assertEquals(0, recoveredReceipt);
+    }
+
+    @Test
+    void testRecoverMissingRedirect_notEmpty() {
+        // Arrange
+        ZonedDateTime dateFrom = ZonedDateTime.now(ZoneOffset.UTC).minusHours(5);
+        ZonedDateTime dateTo = ZonedDateTime.now(ZoneOffset.UTC).minusHours(4);
+        List<SessionIdEntity> mockSessionEntities = List.of(SessionIdEntity.builder().sessionId("mockSessionId").build());
+        List<ReEventEntity> mockReEventEntities = List.of();
+
+        when(reRepository.findSessionWithoutRedirect(anyString(), anyString())).thenReturn(mockSessionEntities);
+        when(reRepository.findBySessionIdAndStatus(anyString(), anyString(), anyString(), anyString(), anyInt())).thenReturn(mockReEventEntities);
+
+        // Act
+        int recoveredReceipt = recoveryService.recoverMissingRedirect(dateFrom, dateTo);
+
+        // Assert
+        assertEquals(0, recoveredReceipt);
+    }
+
+    @Test
+    void testRecoverReceiptKOByCI_Success_Empty() {
         // Arrange
         String creditorInstitution = "77777777777";
         String dateFrom = "2024-09-05";
         String dateTo = "2024-09-09";
         List<RTEntity> mockRTEntities = List.of();
 
-        when(rtRepository.findByOrganizationId(anyString(), anyString(), anyString())).thenReturn(mockRTEntities);
+        when(rtRepository.findByMidReceiptStatusInAndTimestampBetween(anyString(), anyString(), anyString())).thenReturn(mockRTEntities);
 
         // Act
-        RecoveryReceiptResponse response = recoveryService.recoverReceiptKOForCreditorInstitution(creditorInstitution, dateFrom, dateTo);
+        RecoveryReceiptResponse response = recoveryService.recoverReceiptKOByCI(creditorInstitution, dateFrom, dateTo);
 
         // Assert
         assertNotNull(response);
@@ -90,7 +166,7 @@ public class RecoveryServiceTest {
     }
 
     @Test
-    void testRecoverReceiptKOForCreditorInstitution_Success_NotEmpty() {
+    void testRecoverReceiptKOByCI_Success_NotEmpty() {
         // Arrange
         String creditorInstitution = "77777777777";
         String dateFrom = "2024-09-05";
@@ -100,22 +176,14 @@ public class RecoveryServiceTest {
                 .iuv("iuv")
                 .ccp("ccp")
                 .build());
-        List<ReEventEntity> mockReEntities = List.of(ReEventEntity.builder()
-                .status(EVENT_TYPE_FOR_RECEIPTKO_SEARCH)
-                .ccp("ccp")
-                .sessionId("sessionId")
-                .build());
-        List<ReEventEntity> rtSuccessReEventEntity = List.of();
 
-        when(rtRepository.findByOrganizationId(anyString(), anyString(), anyString())).thenReturn(mockRTEntities);
-        when(reRepository.findByIuvAndOrganizationId(anyString(), anyString(), anyString(), anyString())).thenReturn(mockReEntities);
-        when(reRepository.findBySessionIdAndStatus(anyString(), anyString(), anyString(), anyString())).thenReturn(rtSuccessReEventEntity);
+        when(rtRepository.findByMidReceiptStatusInAndTimestampBetween(anyString(), anyString(), anyString())).thenReturn(mockRTEntities);
         doNothing().when(receiptService)
                 .sendRTKoFromSessionId(anyString(), any());
         doNothing().when(reService).addRe(any(ReEventDto.class));
 
         // Act
-        RecoveryReceiptResponse response = recoveryService.recoverReceiptKOForCreditorInstitution(creditorInstitution, dateFrom, dateTo);
+        RecoveryReceiptResponse response = recoveryService.recoverReceiptKOByCI(creditorInstitution, dateFrom, dateTo);
 
         // Assert
         assertNotNull(response);
@@ -123,17 +191,17 @@ public class RecoveryServiceTest {
     }
 
     @Test
-    void testRecoverReceiptKOForCreditorInstitution_Success_Today() {
+    void testCallSendReceiptKOByCI_Success_Today() {
         // Arrange
         String creditorInstitution = "77777777777";
         String dateFrom = "2024-09-05";
         String dateTo = LocalDate.now().toString();
         List<RTEntity> mockRTEntities = List.of();
 
-        when(rtRepository.findByOrganizationId(anyString(), anyString(), anyString())).thenReturn(mockRTEntities);
+        when(rtRepository.findByMidReceiptStatusInAndTimestampBetween(anyString(), anyString(), anyString())).thenReturn(mockRTEntities);
 
         // Act
-        RecoveryReceiptResponse response = recoveryService.recoverReceiptKOForCreditorInstitution(creditorInstitution, dateFrom, dateTo);
+        RecoveryReceiptResponse response = recoveryService.recoverReceiptKOByCI(creditorInstitution, dateFrom, dateTo);
 
         // Assert
         assertNotNull(response);
@@ -141,7 +209,7 @@ public class RecoveryServiceTest {
     }
 
     @Test
-    void testRecoverReceiptKOForCreditorInstitution_LowerBoundFailure() {
+    void testCallSendReceiptKOByCI_LowerBoundFailure() {
         // Arrange
         String creditorInstitution = "77777777777";
         String dateFrom = "2024-09-01";  // Date earlier than valid start date
@@ -149,13 +217,13 @@ public class RecoveryServiceTest {
 
         // Act and Assert
         AppException exception = assertThrows(
-                AppException.class, () -> recoveryService.recoverReceiptKOForCreditorInstitution(creditorInstitution, dateFrom, dateTo)
+                AppException.class, () -> recoveryService.recoverReceiptKOByCI(creditorInstitution, dateFrom, dateTo)
         );
         assertEquals("The lower bound cannot be lower than [2024-09-03]", exception.getMessage());
     }
 
     @Test
-    void testRecoverReceiptKOForCreditorInstitution_UpperBoundFailure() {
+    void testCallSendReceiptKOByCI_UpperBoundFailure() {
         // Arrange
         String creditorInstitution = "77777777777";
         String dateFrom = "2024-09-05";
@@ -163,58 +231,55 @@ public class RecoveryServiceTest {
 
         // Act and Assert
         AppException exception = assertThrows(
-                AppException.class, () -> recoveryService.recoverReceiptKOForCreditorInstitution(creditorInstitution, dateFrom, dateTo)
+                AppException.class, () -> recoveryService.recoverReceiptKOByCI(creditorInstitution, dateFrom, dateTo)
         );
         String expectedMessage = String.format("The upper bound cannot be higher than [%s]", LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
         assertEquals(expectedMessage, exception.getMessage());
     }
 
     @Test
-    void testRecoverReceiptKOByIUV() {
+    void testCallSendReceiptKOByIUV() {
         // Arrange
         String dateFrom = "2024-09-05";
         String dateTo = "2024-09-09";
         String ci = "ci";
         String iuv = "iuv";
-        List<ReEventEntity> rtSuccessReEventEntity = List.of();
 
-        when(reRepository.findByIuvAndOrganizationId(anyString(), anyString(), anyString(), anyString())).thenReturn(rtSuccessReEventEntity);
+        when(rtRepository.findByMidReceiptStatusInAndTimestampBetween(anyString(), anyString(), anyString(), anyString())).thenReturn(List.of());
         doNothing().when(receiptService).sendRTKoFromSessionId(anyString(), any());
         doNothing().when(reService).addRe(any(ReEventDto.class));
 
         // Act
-        recoveryService.recoverReceiptKO(ci, iuv, dateFrom, dateTo);
+        RecoveryReceiptResponse response = recoveryService.recoverReceiptKOByIUV(ci, iuv, dateFrom, dateTo);
 
         // Assert
-        verify(reRepository, times(1)).findByIuvAndOrganizationId(anyString(), anyString(), anyString(), anyString());
+        assertNotNull(response);
+        assertEquals(0, response.getPayments().size());
+        verify(receiptService, times(0)).sendRTKoFromSessionId(anyString(), any(InternalStepStatus.class));
     }
 
     @Test
-    void testRecoverReceiptKOByIUV_NotEmpty() {
+    void testCallSendReceiptKOByIUV_NotEmpty() {
         // Arrange
+        String iuv = "00000000000000000";
+        String creditorInstitution = "77777777777";
         String dateFrom = "2024-09-05";
         String dateTo = "2024-09-09";
-        String ci = "ci";
-        String iuv = "iuv";
-        List<ReEventEntity> rtSuccessReEventEntity = List.of();
-        List<ReEventEntity> interruptedRPTEvents = List.of(ReEventEntity.builder()
-                .insertedTimestamp(Instant.now())
-                .status(RPT_PARCHEGGIATA_NODO)
-                .sessionId("sessionId")
-                .ccp("ccp")
-                .build());
+        List<RTEntity> mockRTEntities = List.of(RTEntity.builder()
+                                                        .domainId("ci")
+                                                        .iuv("iuv")
+                                                        .ccp("ccp")
+                                                        .sessionId("sessionId")
+                                                        .build());
 
-        when(reRepository.findByIuvAndOrganizationId(anyString(), anyString(), anyString(), anyString())).thenReturn(interruptedRPTEvents);
-        doNothing().when(receiptService).sendRTKoFromSessionId(anyString(), any());
-        doNothing().when(reService).addRe(any(ReEventDto.class));
-        when(reRepository.findBySessionIdAndStatus(anyString(), anyString(), anyString(), anyString())).thenReturn(rtSuccessReEventEntity);
-        doNothing().when(receiptService).sendRTKoFromSessionId(anyString(), any());
-        doNothing().when(reService).addRe(any(ReEventDto.class));
+        when(rtRepository.findByMidReceiptStatusInAndTimestampBetween(anyString(), anyString(), anyString(), anyString())).thenReturn(mockRTEntities);
 
         // Act
-        recoveryService.recoverReceiptKO(ci, iuv, dateFrom, dateTo);
+        RecoveryReceiptResponse response = recoveryService.recoverReceiptKOByIUV(creditorInstitution, iuv, dateFrom, dateTo);
 
         // Assert
-        verify(reRepository, times(1)).findByIuvAndOrganizationId(anyString(), anyString(), anyString(), anyString());
+        assertNotNull(response);
+        assertEquals(1, response.getPayments().size());
+        verify(receiptService, times(1)).sendRTKoFromSessionId(anyString(), any(InternalStepStatus.class));
     }
 }

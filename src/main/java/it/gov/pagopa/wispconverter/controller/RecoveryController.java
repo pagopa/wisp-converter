@@ -43,7 +43,7 @@ public class RecoveryController {
     public ResponseEntity<RecoveryReceiptResponse> recoverReceiptKOForCreditorInstitution(@PathVariable("creditor_institution") String ci, @QueryParam("date_from") String dateFrom, @QueryParam("date_to") String dateTo) {
         try {
             log.info("Invoking API operation recoverReceiptKOForCreditorInstitution - args: {} {} {}", ci, dateFrom, dateTo);
-            RecoveryReceiptResponse response = recoveryService.recoverReceiptKOForCreditorInstitution(ci, dateFrom, dateTo);
+            RecoveryReceiptResponse response = recoveryService.recoverReceiptKOByCI(ci, dateFrom, dateTo);
             return ResponseEntity.ok(response);
         } catch (Exception ex) {
             String operationId = MDC.get(Constants.MDC_OPERATION_ID);
@@ -60,20 +60,24 @@ public class RecoveryController {
 
     @Operation(summary = "Execute IUV reconciliation for certain creditor institution.", description = "Execute reconciliation of all IUVs for certain creditor institution, sending RT for close payment.", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"Recovery"})
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Started reconciling IUV with explicit RT send")
+            @ApiResponse(responseCode = "200", description = "Completed IUV reconciliation with explicit RT submission"),
+            @ApiResponse(responseCode = "400", description = "It is not possible to complete reconciliation (with explicit RT submission) for the submitted UIV")
     })
     @PostMapping(value = "/{creditor_institution}/rpt/{iuv}/receipt-ko")
-    public ResponseEntity<String> recoverReceiptKOForCreditorInstitutionAndIUV(@Pattern(regexp = "[a-zA-Z0-9_-]{1,100}") @PathVariable("creditor_institution") String ci,
+    public ResponseEntity<RecoveryReceiptResponse> recoverReceiptKOForCreditorInstitutionAndIUV(@Pattern(regexp = "[a-zA-Z0-9_-]{1,100}") @PathVariable("creditor_institution") String ci,
                                                                                                 @Pattern(regexp = "[a-zA-Z0-9_-]{1,100}") @PathVariable("iuv") String iuv,
                                                                                                 @Pattern(regexp = "[a-zA-Z0-9_-]{1,10}") @QueryParam("date_from") String dateFrom,
                                                                                                 @Pattern(regexp = "[a-zA-Z0-9_-]{1,10}") @QueryParam("date_to") String dateTo) {
         try {
             log.info("Invoking API operation recoverReceiptKOForCreditorInstitution - args: {} {} {} {}", ci, iuv, dateFrom, dateTo);
 
-            boolean recovered = recoveryService.recoverReceiptKO(ci, iuv, dateFrom, dateTo);
-            if(recovered)
-                return ResponseEntity.ok(String.format("RPT with CI %s and IUV %s recovered via API", ci, iuv));
-            else return ResponseEntity.ok(String.format("RPT with CI %s and IUV %s could not be recovered via API", ci, iuv));
+            RecoveryReceiptResponse recoveryReceiptResponse = recoveryService.recoverReceiptKOByIUV(ci, iuv, dateFrom, dateTo);
+            if(recoveryReceiptResponse != null) {
+                return ResponseEntity.ok(recoveryReceiptResponse);
+            } else {
+                // RPT with CI and IUV could not be recovered via API
+                return ResponseEntity.badRequest().build();
+            }
         } catch (Exception ex) {
             String operationId = MDC.get(Constants.MDC_OPERATION_ID);
             log.error(String.format("GenericException: operation-id=[%s]", operationId != null ? operationId : "n/a"), ex);
