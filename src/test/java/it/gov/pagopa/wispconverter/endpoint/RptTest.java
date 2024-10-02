@@ -11,6 +11,7 @@ import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
 import it.gov.pagopa.wispconverter.service.ConfigCacheService;
 import it.gov.pagopa.wispconverter.service.ReceiptService;
+import it.gov.pagopa.wispconverter.service.RecoveryService;
 import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import it.gov.pagopa.wispconverter.utils.TestUtils;
 import org.junit.jupiter.api.Test;
@@ -76,9 +77,8 @@ class RptTest {
     private CacheRepository cacheRepository;
     @MockBean
     private ReceiptService receiptService;
-
-
-
+    @MockBean
+    private RecoveryService recoveryService;
 
     private void setConfigCacheStoredData(String servicePath, int primitiveVersion) {
         StationCreditorInstitutionDto stationCreditorInstitutionDto = new StationCreditorInstitutionDto();
