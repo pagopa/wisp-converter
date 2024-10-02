@@ -2,7 +2,7 @@
   "openapi": "3.0.1",
   "info": {
     "title": "WISP-Converter-redirect",
-    "version": "0.3.8-3-PAGOPA-2113"
+    "version": "0.3.8-4-PAGOPA-2113"
   },
   "servers": [
     {
