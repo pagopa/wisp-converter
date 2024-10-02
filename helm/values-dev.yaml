@@ -4,7 +4,7 @@ microservice-chart: &microservice-chart
   fullnameOverride: ""
   image:
     repository: ghcr.io/pagopa/pagopa-wisp-converter
-    tag: "0.4.2"
+    tag: "0.4.2-1-update-chart-for-cron"
     pullPolicy: Always
   livenessProbe:
     httpGet:
@@ -170,7 +170,6 @@ microservice-chart: &microservice-chart
         pullPolicy: Always
       envConfig: {}
       envSecret: {}
-
 # 1 - wisp converter service
 pagopa-wisp-converter:
   !!merge <<: *microservice-chart
@@ -182,7 +181,6 @@ pagopa-wisp-converter:
     !!merge <<: *envConfig
   envSecret:
     !!merge <<: *envSecret
-
 # 2 - wisp converter cron
 pagopa-wisp-converter-cron:
   !!merge <<: *microservice-chart
