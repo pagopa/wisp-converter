@@ -27,7 +27,7 @@ if test -f "$FILE"; then
 fi
 config=$(yq  -r '."microservice-chart".envConfig' ../helm/values-$ENV.yaml)
 IFS=$'\n'
-for line in $(echo "$config" | jq -r '. | to_entries[] | select(.key) | "\(.key)=\(.value)"'); do
+for line in $(echo "$config" | yq -r '. | to_entries[] | select(.key) | "\(.key)=\(.value)"'); do
     echo "$line" >> .env
 done
 
