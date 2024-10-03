@@ -162,17 +162,6 @@ public class PaaInviaRTSenderService {
         return body;
     }
 
-    private void saveDeadLetter (String id, String faultCode, String payload) {
-        receiptDeadLetterRepository.save(
-                ReceiptDeadLetterEntity.builder()
-                        .id(id)
-                        .faultCode(faultCode)
-                        .payload(payload)
-                        .build()
-        );
-    }
-
-
     private void generateREForRequestToCreditorInstitution(String uri, List<Pair<String, String>> headers, String body) {
 
         StringBuilder headerBuilder = new StringBuilder();
