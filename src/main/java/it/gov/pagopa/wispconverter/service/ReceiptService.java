@@ -184,7 +184,7 @@ public class ReceiptService {
                         StationDto station = stations.get(commonFields.getStationId());
 
                         // send receipt to the creditor institution and, if not correctly sent, add to queue for retry
-                        sendReceiptToCreditorInstitution(sessionData, rpt, paaInviaRtPayload, receipt, rpt.getIuv(), noticeNumber, station, true);
+                        sendReceiptToCreditorInstitution(sessionData, rpt, paaInviaRtPayload, rawGeneratedReceipt, receipt, rpt.getIuv(), noticeNumber, station, true);
                     }
                 }
             }
@@ -260,11 +260,8 @@ public class ReceiptService {
                     String rawGeneratedReceipt = jaxbElementUtil.objectToString(generatedReceipt);
                     String paaInviaRtPayload = generatePayloadAsRawString(intestazionePPT, commonFields.getSignatureType(), rawGeneratedReceipt, objectFactory);
 
-                    // save receipt-rt
-                    rtReceiptCosmosService.saveRTEntity(sessionData.getCommonFields().getSessionId(), rpt, ReceiptStatusEnum.SENDING, rawGeneratedReceipt, ReceiptTypeEnum.OK);
-
                     // send receipt to the creditor institution and, if not correctly sent, add to queue for retry
-                    sendReceiptToCreditorInstitution(sessionData, rpt, paaInviaRtPayload, receipt, rpt.getIuv(), noticeNumber, station, false);
+                    sendReceiptToCreditorInstitution(sessionData, rpt, paaInviaRtPayload, rawGeneratedReceipt, receipt, rpt.getIuv(), noticeNumber, station, false);
                 }
             }
 
