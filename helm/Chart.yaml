@@ -8,8 +8,7 @@ dependencies:
   - name: microservice-chart
     version: 3.0.0
     repository: "https://pagopa.github.io/aks-microservice-chart-blueprint"
-    alias: pagopa-wisp-converter
   - name: microservice-chart
     version: 3.0.0
     repository: "https://pagopa.github.io/aks-microservice-chart-blueprint"
-    alias: pagopa-wisp-converter-cron
+    alias: cron
