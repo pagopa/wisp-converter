@@ -180,14 +180,11 @@ public class ReceiptService {
                         String rawGeneratedReceipt = jaxbElementUtil.objectToString(generatedReceipt);
                         String paaInviaRtPayload = generatePayloadAsRawString(header, null, rawGeneratedReceipt, objectFactory);
 
-                        // save receipt-rt
-                        rtReceiptCosmosService.saveRTEntity(sessionData.getCommonFields().getSessionId(), rpt, ReceiptStatusEnum.SENDING, rawGeneratedReceipt, ReceiptTypeEnum.KO);
-
                         // retrieve station from common station identifier
                         StationDto station = stations.get(commonFields.getStationId());
 
                         // send receipt to the creditor institution and, if not correctly sent, add to queue for retry
-                        sendReceiptToCreditorInstitution(sessionData, rpt, paaInviaRtPayload, receipt, rpt.getIuv(), noticeNumber, station, true);
+                        sendReceiptToCreditorInstitution(sessionData, rpt, paaInviaRtPayload, rawGeneratedReceipt, receipt, rpt.getIuv(), noticeNumber, station, true);
                     }
                 }
             }
@@ -263,11 +260,8 @@ public class ReceiptService {
                     String rawGeneratedReceipt = jaxbElementUtil.objectToString(generatedReceipt);
                     String paaInviaRtPayload = generatePayloadAsRawString(intestazionePPT, commonFields.getSignatureType(), rawGeneratedReceipt, objectFactory);
 
-                    // save receipt-rt
-                    rtReceiptCosmosService.saveRTEntity(sessionData.getCommonFields().getSessionId(), rpt, ReceiptStatusEnum.SENDING, rawGeneratedReceipt, ReceiptTypeEnum.OK);
-
                     // send receipt to the creditor institution and, if not correctly sent, add to queue for retry
-                    sendReceiptToCreditorInstitution(sessionData, rpt, paaInviaRtPayload, receipt, rpt.getIuv(), noticeNumber, station, false);
+                    sendReceiptToCreditorInstitution(sessionData, rpt, paaInviaRtPayload, rawGeneratedReceipt, receipt, rpt.getIuv(), noticeNumber, station, false);
                 }
             }
 
@@ -345,7 +339,7 @@ public class ReceiptService {
     }
 
     private boolean sendReceiptToCreditorInstitution(SessionDataDTO sessionData, RPTContentDTO rpt,
-                                                     String rawPayload, Object receipt,
+                                                     String rawPayload, String rawReceipt, Object receipt,
                                                      String iuv, String noticeNumber,
                                                      StationDto station, boolean mustSendNegativeRT) {
 
@@ -372,7 +366,6 @@ public class ReceiptService {
         // send to creditor institution only if another receipt wasn't already sent
         ReceiptTypeEnum receiptType = mustSendNegativeRT ? ReceiptTypeEnum.KO : ReceiptTypeEnum.OK;
         if (idempotencyService.isIdempotencyKeyProcessable(idempotencyKey, receiptType)) {
-
             // lock idempotency key status to avoid concurrency issues
             idempotencyService.lockIdempotencyKey(idempotencyKey, receiptType);
 
@@ -382,6 +375,8 @@ public class ReceiptService {
             // finally, send the receipt to the creditor institution
             IdempotencyStatusEnum idempotencyStatus;
             try {
+                // save receipt-rt with status SENDING and rawReceipt
+                rtReceiptCosmosService.saveRTEntity(sessionData.getCommonFields().getSessionId(), rpt, ReceiptStatusEnum.SENDING, rawReceipt, receiptType);
 
                 // send the receipt to the creditor institution via the URL set in the station configuration
                 String ccp = rpt.getCcp();
