@@ -47,8 +47,8 @@ public class PaaInviaRTSenderService {
 
     private final ReceiptDeadLetterRepository receiptDeadLetterRepository;
 
-    @Value("${wisp-converter.rt-send.no-dead-letter-on-states}")
-    private Set<String> noDeadLetterOnStates;
+    @Value("#{'${wisp-converter.rt-send.no-dead-letter-on-states}'.split(',')}")
+    private List<String> noDeadLetterOnStates;
 
     public void sendToCreditorInstitution(URI uri, InetSocketAddress proxyAddress, List<Pair<String, String>> headers, String payload, String domainId, String iuv, String ccp) {
 
