@@ -4,6 +4,7 @@ import gov.telematici.pagamenti.ws.papernodo.EsitoPaaInviaRT;
 import gov.telematici.pagamenti.ws.papernodo.FaultBean;
 import gov.telematici.pagamenti.ws.papernodo.PaaInviaRTRisposta;
 import it.gov.pagopa.wispconverter.exception.AppException;
+import it.gov.pagopa.wispconverter.repository.ReceiptDeadLetterRepository;
 import it.gov.pagopa.wispconverter.util.JaxbElementUtil;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.util.Pair;
@@ -28,6 +29,7 @@ class PaaInviaRTSenderServiceTest {
         ReService reService = mock(ReService.class);
         JaxbElementUtil jaxbElementUtil = mock(JaxbElementUtil.class);
         RtReceiptCosmosService rtReceiptCosmosService = mock(RtReceiptCosmosService.class);
+        ReceiptDeadLetterRepository receiptDeadLetterRepository = mock(ReceiptDeadLetterRepository.class);
 
         RestClient client = mock(RestClient.class);
         when(builder.build()).thenReturn(client);
@@ -45,7 +47,7 @@ class PaaInviaRTSenderServiceTest {
         when(responseSpec.toEntity(String.class))
                 .thenReturn(ResponseEntity.ok().body(paaInviaRTRisposta));
 
-        PaaInviaRTSenderService p = new PaaInviaRTSenderService(builder, reService, rtReceiptCosmosService, jaxbElementUtil);
+        PaaInviaRTSenderService p = new PaaInviaRTSenderService(builder, reService, rtReceiptCosmosService, jaxbElementUtil, receiptDeadLetterRepository);
         org.springframework.test.util.ReflectionTestUtils.setField(p, "jaxbElementUtil", new JaxbElementUtil());
         p.sendToCreditorInstitution(URI.create("http://pagopa.mock.dev/"), null, List.of(Pair.of("soapaction", "paaInviaRT")), "", "", "", "");
         assertTrue(true);
@@ -57,6 +59,7 @@ class PaaInviaRTSenderServiceTest {
         ReService reService = mock(ReService.class);
         JaxbElementUtil jaxbElementUtil = mock(JaxbElementUtil.class);
         RtReceiptCosmosService rtReceiptCosmosService = mock(RtReceiptCosmosService.class);
+        ReceiptDeadLetterRepository receiptDeadLetterRepository = mock(ReceiptDeadLetterRepository.class);
         RestClient client = mock(RestClient.class);
         when(builder.build()).thenReturn(client);
         RestClient.RequestBodyUriSpec requestBodyUriSpec = mock(RestClient.RequestBodyUriSpec.class);
@@ -77,7 +80,7 @@ class PaaInviaRTSenderServiceTest {
         when(responseSpec.toEntity(PaaInviaRTRisposta.class))
                 .thenReturn(ResponseEntity.ok().body(paaInviaRTRisposta));
 
-        PaaInviaRTSenderService p = new PaaInviaRTSenderService(builder, reService, rtReceiptCosmosService, jaxbElementUtil);
+        PaaInviaRTSenderService p = new PaaInviaRTSenderService(builder, reService, rtReceiptCosmosService, jaxbElementUtil, receiptDeadLetterRepository);
         try {
             p.sendToCreditorInstitution(URI.create("http://pagopa.mock.dev/"), null, List.of(Pair.of("soapaction", "paaInviaRT")), "", "", "", "");
             fail();
