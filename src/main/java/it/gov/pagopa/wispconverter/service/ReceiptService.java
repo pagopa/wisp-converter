@@ -609,6 +609,7 @@ public class ReceiptService {
                     .retry(0)
                     .idempotencyKey(idempotencyKey)
                     .receiptType(receiptType)
+                    .station(station.getStationCode())
                     .build();
             rtRetryComosService.saveRTRequestEntity(rtRequestEntity);
 
