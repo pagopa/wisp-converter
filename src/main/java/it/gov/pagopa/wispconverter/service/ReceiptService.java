@@ -101,6 +101,17 @@ public class ReceiptService {
     @Value("${wisp-converter.rt-send.scheduling-time-in-minutes:60}")
     private Integer schedulingTimeInMinutes;
 
+    public static IntestazionePPT generateHeader(String creditorInstitutionId, String iuv, String ccp, String brokerId, String stationId) {
+
+        gov.telematici.pagamenti.ws.nodoperpa.ppthead.ObjectFactory objectFactoryHead = new gov.telematici.pagamenti.ws.nodoperpa.ppthead.ObjectFactory();
+        IntestazionePPT header = objectFactoryHead.createIntestazionePPT();
+        header.setIdentificativoDominio(creditorInstitutionId);
+        header.setIdentificativoUnivocoVersamento(iuv);
+        header.setCodiceContestoPagamento(ccp);
+        header.setIdentificativoIntermediarioPA(brokerId);
+        header.setIdentificativoStazioneIntermediarioPA(stationId);
+        return header;
+    }
 
     /**
      * @param payload a list of {@link ReceiptDto} elements
@@ -116,7 +127,6 @@ public class ReceiptService {
         }
         sendKoPaaInviaRtToCreditorInstitution(receipts);
     }
-
 
     /**
      * send a paaInviaRT with a KO. The body is generated from the list of receipts.
@@ -202,7 +212,6 @@ public class ReceiptService {
         }
     }
 
-
     public void sendOkPaaInviaRtToCreditorInstitution(String payload) {
 
         try {
@@ -258,13 +267,7 @@ public class ReceiptService {
                     );
 
                     // Generating the paaInviaRT payload from the RPT
-                    JAXBElement<CtRicevutaTelematica> generatedReceipt = new it.gov.digitpa.schemas._2011.pagamenti.ObjectFactory()
-                            .createRT(generateRTContentForOkReceipt(rpt, deepCopySendRTV2));
-                    String rawGeneratedReceipt = jaxbElementUtil.objectToString(generatedReceipt);
-                    String paaInviaRtPayload = generatePayloadAsRawString(intestazionePPT, commonFields.getSignatureType(), rawGeneratedReceipt, objectFactory);
-
-                    // save receipt-rt
-                    rtReceiptCosmosService.saveRTEntity(sessionData.getCommonFields().getSessionId(), rpt, ReceiptStatusEnum.SENDING, rawGeneratedReceipt, ReceiptTypeEnum.OK);
+                    String paaInviaRtPayload = generateOkRtFromSessionData(rpt, deepCopySendRTV2, intestazionePPT, commonFields, objectFactory, ReceiptStatusEnum.SENDING);
 
                     // send receipt to the creditor institution and, if not correctly sent, add to queue for retry
                     sendReceiptToCreditorInstitution(sessionData, rpt, paaInviaRtPayload, receipt, rpt.getIuv(), noticeNumber, station, false);
@@ -305,7 +308,7 @@ public class ReceiptService {
 
     public String generateKoRtFromSessionData(String creditorInstitutionId, String iuv, RPTContentDTO rpt,
                                               CommonFieldsDTO commonFields, gov.telematici.pagamenti.ws.papernodo.ObjectFactory objectFactory,
-                                              Map<String, ConfigurationKeyDto> configurations) {
+                                              Map<String, ConfigurationKeyDto> configurations, ReceiptStatusEnum receiptStatus) {
         // generate the header for the paaInviaRT SOAP request. This object is common for each generated request
         IntestazionePPT header = generateHeader(
                 creditorInstitutionId,
@@ -322,7 +325,21 @@ public class ReceiptService {
         String paaInviaRtPayload = generatePayloadAsRawString(header, null, rawGeneratedReceipt, objectFactory);
 
         // save receipt-rt
-        rtReceiptCosmosService.saveRTEntity(commonFields.getSessionId(), rpt, ReceiptStatusEnum.SENDING, rawGeneratedReceipt, ReceiptTypeEnum.KO);
+        rtReceiptCosmosService.saveRTEntity(commonFields.getSessionId(), rpt, receiptStatus, rawGeneratedReceipt, ReceiptTypeEnum.KO);
+
+        return paaInviaRtPayload;
+    }
+
+    public String generateOkRtFromSessionData(RPTContentDTO rpt, PaSendRTV2Request paSendRTV2,
+                                              IntestazionePPT intestazionePPT, CommonFieldsDTO commonFields,
+                                              gov.telematici.pagamenti.ws.papernodo.ObjectFactory objectFactory, ReceiptStatusEnum receiptStatus) {
+        JAXBElement<CtRicevutaTelematica> generatedReceipt = new it.gov.digitpa.schemas._2011.pagamenti.ObjectFactory()
+                .createRT(generateRTContentForOkReceipt(rpt, paSendRTV2));
+        String rawGeneratedReceipt = jaxbElementUtil.objectToString(generatedReceipt);
+        String paaInviaRtPayload = generatePayloadAsRawString(intestazionePPT, commonFields.getSignatureType(), rawGeneratedReceipt, objectFactory);
+
+        // save receipt-rt
+        rtReceiptCosmosService.saveRTEntity(commonFields.getSessionId(), rpt, receiptStatus, rawGeneratedReceipt, ReceiptTypeEnum.OK);
 
         return paaInviaRtPayload;
     }
@@ -514,18 +531,6 @@ public class ReceiptService {
         ctRicevutaTelematica.setDatiPagamento(ctDatiVersamentoRT);
 
         return ctRicevutaTelematica;
-    }
-
-    private IntestazionePPT generateHeader(String creditorInstitutionId, String iuv, String ccp, String brokerId, String stationId) {
-
-        gov.telematici.pagamenti.ws.nodoperpa.ppthead.ObjectFactory objectFactoryHead = new gov.telematici.pagamenti.ws.nodoperpa.ppthead.ObjectFactory();
-        IntestazionePPT header = objectFactoryHead.createIntestazionePPT();
-        header.setIdentificativoDominio(creditorInstitutionId);
-        header.setIdentificativoUnivocoVersamento(iuv);
-        header.setCodiceContestoPagamento(ccp);
-        header.setIdentificativoIntermediarioPA(brokerId);
-        header.setIdentificativoStazioneIntermediarioPA(stationId);
-        return header;
     }
 
     private String generatePayloadAsRawString(IntestazionePPT header, String signatureType, String receiptContent, gov.telematici.pagamenti.ws.papernodo.ObjectFactory objectFactory) {
@@ -741,7 +746,8 @@ public class ReceiptService {
                     rpt,
                     sessionDataDTO.getCommonFields(),
                     objectFactory,
-                    configurations);
+                    configurations,
+                    ReceiptStatusEnum.SENDING);
             StationDto station = stations.get(sessionDataDTO.getCommonFields().getStationId());
             ConnectionDto stationConnection = station.getConnection();
             URI uri = CommonUtility.constructUrl(
