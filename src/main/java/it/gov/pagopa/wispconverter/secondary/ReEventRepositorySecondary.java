@@ -36,6 +36,14 @@ public interface ReEventRepositorySecondary extends CosmosRepository<ReEventEnti
                                                  @Param("status") String status,
                                                  @Param("limit") int limit);
 
+    @Query("SELECT * FROM c " +
+            "WHERE c.partitionKey = @date " +
+            "AND c.sessionId = @sessionId " +
+            "AND c.status = @status ORDER BY c._ts")
+    List<ReEventEntity> findBySessionIdAndStatusAndPartitionKey(@Param("date") String partitionKey,
+                                                 @Param("sessionId") String sessionId,
+                                                 @Param("status") String status);
+
 
     @Query(
             "SELECT wispSession.sessionId " +
@@ -55,14 +63,15 @@ public interface ReEventRepositorySecondary extends CosmosRepository<ReEventEnti
     )
     List<SessionIdEntity> findSessionWithoutRedirect(@Param("dateFrom") String dateFrom, @Param("dateTo") String dateTo);
 
-    @Query("SELECT * FROM c " +
-            "WHERE (c.partitionKey >= @dateFrom AND c.partitionKey <= @dateTo) " +
+        @Query("SELECT * FROM c " +
+            "WHERE c.partitionKey = @date " +
             "AND c.eventCategory = 'INTERFACE' AND c.eventSubcategory = 'REQ' " +
             "AND c.businessProcess = @businessProcess " +
             "AND c.operationId = @operationId " +
             "AND c.status = @status ORDER BY c._ts OFFSET 0 LIMIT 1")
-    Optional<ReEventEntity> findFirstInterfaceRequest(@Param("dateFrom") String dateFrom,
-                                                      @Param("dateTo") String dateTo,
-                                                      @Param("businessProcess") String businessProcess,
-                                                      @Param("operationId") String operationId);
+    Optional<ReEventEntity> findFirstInterfaceRequestByPartitionKey(
+            @Param("date") String partitionKey,
+            @Param("businessProcess") String businessProcess,
+            @Param("operationId") String operationId
+    );
 }
