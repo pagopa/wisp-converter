@@ -5,6 +5,8 @@ import gov.telematici.pagamenti.ws.papernodo.FaultBean;
 import gov.telematici.pagamenti.ws.papernodo.PaaInviaRTRisposta;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
+import it.gov.pagopa.wispconverter.repository.ReceiptDeadLetterRepository;
+import it.gov.pagopa.wispconverter.repository.model.ReceiptDeadLetterEntity;
 import it.gov.pagopa.wispconverter.repository.model.enumz.ClientEnum;
 import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
 import it.gov.pagopa.wispconverter.repository.model.enumz.OutcomeEnum;
@@ -43,8 +45,10 @@ public class PaaInviaRTSenderService {
 
     private final JaxbElementUtil jaxbElementUtil;
 
-    @Value("${wisp-converter.rt-send.avoid-scheduling-on-states}")
-    private Set<String> avoidSchedulingOnStates;
+    private final ReceiptDeadLetterRepository receiptDeadLetterRepository;
+
+    @Value("${wisp-converter.rt-send.no-dead-letter-on-states}")
+    private Set<String> noDeadLetterOnStates;
 
     public void sendToCreditorInstitution(URI uri, InetSocketAddress proxyAddress, List<Pair<String, String>> headers, String payload, String domainId, String iuv, String ccp) {
 
@@ -84,24 +88,38 @@ public class PaaInviaRTSenderService {
 
             // check the response and if the outcome is KO, throw an exception
             EsitoPaaInviaRT esitoPaaInviaRT = body.getPaaInviaRTRisposta();
-            boolean avoidReScheduling = esitoPaaInviaRT.getFault() != null && avoidSchedulingOnStates.contains(esitoPaaInviaRT.getFault().getFaultCode());
+            boolean avoidReScheduling = Constants.KO.equals(esitoPaaInviaRT.getEsito()) || Constants.OK.equals(esitoPaaInviaRT.getEsito());
+
+            boolean isSavedDeadLetter = esitoPaaInviaRT.getFault() == null ||
+                    (esitoPaaInviaRT.getFault() != null && !noDeadLetterOnStates.contains(esitoPaaInviaRT.getFault().getFaultCode()));
 
             // set the correct response regarding the creditor institution response
             if (avoidReScheduling) {
-
-                generateREForAlreadySentRtToCreditorInstitution();
-
-            } else if (Constants.KO.equals(esitoPaaInviaRT.getEsito()) || !Constants.OK.equals(esitoPaaInviaRT.getEsito())) {
-                FaultBean fault = esitoPaaInviaRT.getFault();
-                String faultCode = "ND";
-                String faultString = "ND";
-                String faultDescr = "ND";
-                if (fault != null) {
-                    faultCode = fault.getFaultCode();
-                    faultString = fault.getFaultString();
-                    faultDescr = fault.getDescription();
+                if(Constants.KO.equals(esitoPaaInviaRT.getEsito())) {
+                    rtReceiptCosmosService.updateReceiptStatus(domainId, iuv, ccp, ReceiptStatusEnum.SENT_REJECTED_BY_EC);
+                    if(isSavedDeadLetter) {
+                        receiptDeadLetterRepository.save(
+                                ReceiptDeadLetterEntity.builder()
+                                        .id(domainId + "_" + iuv + "_" + ccp)
+                                        .faultCode(esitoPaaInviaRT.getFault() != null ? esitoPaaInviaRT.getFault().getFaultCode() : "ND")
+                                        .payload(esitoPaaInviaRT.getFault() != null ? esitoPaaInviaRT.getFault().toString() : esitoPaaInviaRT.toString())
+                                        .build()
+                        );
+                    }
+                } else {
+                    rtReceiptCosmosService.updateReceiptStatus(domainId, iuv, ccp, ReceiptStatusEnum.SENT);
                 }
-
+                generateREForAlreadySentRtToCreditorInstitution();
+            } else {
+                    FaultBean fault = esitoPaaInviaRT.getFault();
+                    String faultCode = "ND";
+                    String faultString = "ND";
+                    String faultDescr = "ND";
+                    if (fault != null) {
+                        faultCode = fault.getFaultCode();
+                        faultString = fault.getFaultString();
+                        faultDescr = fault.getDescription();
+                    }
                 throw new AppException(AppErrorCodeMessageEnum.RECEIPT_GENERATION_ERROR_RESPONSE_FROM_CREDITOR_INSTITUTION, faultCode, faultString, faultDescr);
             }
 
@@ -123,16 +141,13 @@ public class PaaInviaRTSenderService {
 
             throw new AppException(AppErrorCodeMessageEnum.RECEIPT_GENERATION_GENERIC_ERROR, e.getMessage());
         }
-
-
-        rtReceiptCosmosService.updateReceiptStatus(domainId, iuv, ccp, ReceiptStatusEnum.SENT);
     }
 
 
     private PaaInviaRTRisposta checkResponseValidity(ResponseEntity<String> response, String rawBody) {
 
         // check the response received and, if is a 4xx or a 5xx HTTP error code throw an exception
-        if (response.getStatusCode().is4xxClientError() || response.getStatusCode().is5xxServerError()) {
+        if (!response.getStatusCode().is2xxSuccessful()) {
             throw new AppException(AppErrorCodeMessageEnum.CLIENT_PAAINVIART, "Error response: " + response.getStatusCode().value());
         }
         // validating the response body and, if something is null, throw an exception
@@ -146,6 +161,16 @@ public class PaaInviaRTSenderService {
         }
 
         return body;
+    }
+
+    private void saveDeadLetter (String id, String faultCode, String payload) {
+        receiptDeadLetterRepository.save(
+                ReceiptDeadLetterEntity.builder()
+                        .id(id)
+                        .faultCode(faultCode)
+                        .payload(payload)
+                        .build()
+        );
     }
 
 
