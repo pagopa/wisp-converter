@@ -101,7 +101,7 @@ public class PaaInviaRTSenderService {
                                 ReceiptDeadLetterEntity.builder()
                                         .id(domainId + "_" + iuv + "_" + ccp)
                                         .faultCode(esitoPaaInviaRT.getFault() != null ? esitoPaaInviaRT.getFault().getFaultCode() : "ND")
-                                        .payload(esitoPaaInviaRT.getFault() != null ? esitoPaaInviaRT.getFault().toString() : esitoPaaInviaRT.toString())
+                                        .payload(esitoPaaInviaRT.getFault() != null ? esitoPaaInviaRT.getFault().getDescription() : "NO_FAULT_FIELDS_PRESENT")
                                         .build()
                         );
                     }
