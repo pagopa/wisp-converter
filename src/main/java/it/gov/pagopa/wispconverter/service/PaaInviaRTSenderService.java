@@ -83,27 +83,24 @@ public class PaaInviaRTSenderService {
 
             // check the response and if the outcome is KO, throw an exception
             EsitoPaaInviaRT esitoPaaInviaRT = body.getPaaInviaRTRisposta();
-            boolean avoidReScheduling = checkIfAvoidRescheduling(esitoPaaInviaRT);
-
             // check the response if the dead letter sending is needed
             boolean isSavedDeadLetter = checkIfSendDeadLetter(esitoPaaInviaRT);
 
             // set the correct response regarding the creditor institution response
-            if (avoidReScheduling) {
-                if(Constants.KO.equals(esitoPaaInviaRT.getEsito())) {
-                    rtReceiptCosmosService.updateReceiptStatus(domainId, iuv, ccp, ReceiptStatusEnum.SENT_REJECTED_BY_EC);
-                    if(isSavedDeadLetter) {
-                        receiptDeadLetterRepository.save(
-                                ReceiptDeadLetterEntity.builder()
-                                        .id(domainId + "_" + iuv + "_" + ccp)
-                                        .faultCode(esitoPaaInviaRT.getFault() != null ? esitoPaaInviaRT.getFault().getFaultCode() : "ND")
-                                        .payload(esitoPaaInviaRT.getFault() != null ? esitoPaaInviaRT.getFault().getDescription() : "NO_FAULT_FIELDS_PRESENT")
-                                        .build()
-                        );
-                    }
-                } else {
-                    rtReceiptCosmosService.updateReceiptStatus(domainId, iuv, ccp, ReceiptStatusEnum.SENT);
+            if (Constants.KO.equals(esitoPaaInviaRT.getEsito())) {
+                rtReceiptCosmosService.updateReceiptStatus(domainId, iuv, ccp, ReceiptStatusEnum.SENT_REJECTED_BY_EC);
+                if (isSavedDeadLetter) {
+                    receiptDeadLetterRepository.save(
+                            ReceiptDeadLetterEntity.builder()
+                                    .id(domainId + "_" + iuv + "_" + ccp)
+                                    .faultCode(esitoPaaInviaRT.getFault() != null ? esitoPaaInviaRT.getFault().getFaultCode() : "ND")
+                                    .payload(esitoPaaInviaRT.getFault() != null ? esitoPaaInviaRT.getFault().getDescription() : "NO_FAULT_FIELDS_PRESENT")
+                                    .build()
+                    );
                 }
+                generateREForAlreadySentRtToCreditorInstitution();
+            } else if (Constants.OK.equals(esitoPaaInviaRT.getEsito())) {
+                rtReceiptCosmosService.updateReceiptStatus(domainId, iuv, ccp, ReceiptStatusEnum.SENT);
                 generateREForAlreadySentRtToCreditorInstitution();
             } else {
                     FaultBean fault = esitoPaaInviaRT.getFault();
@@ -136,10 +133,6 @@ public class PaaInviaRTSenderService {
 
             throw new AppException(AppErrorCodeMessageEnum.RECEIPT_GENERATION_GENERIC_ERROR, e.getMessage());
         }
-    }
-
-    private boolean checkIfAvoidRescheduling (EsitoPaaInviaRT esitoPaaInviaRT) {
-        return Constants.KO.equals(esitoPaaInviaRT.getEsito()) || Constants.OK.equals(esitoPaaInviaRT.getEsito());
     }
 
     private boolean checkIfSendDeadLetter (EsitoPaaInviaRT esitoPaaInviaRT) {
