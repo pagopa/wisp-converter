@@ -20,6 +20,7 @@ import it.gov.pagopa.wispconverter.secondary.ReEventRepositorySecondary;
 import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import it.gov.pagopa.wispconverter.service.model.session.CommonFieldsDTO;
 import it.gov.pagopa.wispconverter.service.model.session.RPTContentDTO;
+import it.gov.pagopa.wispconverter.service.model.session.ReceiptContentDTO;
 import it.gov.pagopa.wispconverter.service.model.session.SessionDataDTO;
 import it.gov.pagopa.wispconverter.util.*;
 import jakarta.xml.soap.SOAPMessage;
@@ -288,7 +289,7 @@ public class RecoveryService {
 
                 // regenerate paaInviaRT payload info
                 // extract data from old paaInviaRT
-                String oldReceipt = rtRequestEntity.getPayload();
+                String oldReceipt = new String(ZipUtil.unzip(AppBase64Util.base64Decode(rtRequestEntity.getPayload())));
 
                 SOAPMessage msg = jaxbElementUtil.getMessage(oldReceipt);
 
@@ -409,7 +410,8 @@ public class RecoveryService {
                             commonFields.getCreditorInstitutionBrokerId(),
                             commonFields.getStationId()
                     );
-                    return receiptService.generateOkRtFromSessionData(rpt, paSendRTV2, intestazionePPT, commonFields, objectFactory, receiptStatus);
+                    ReceiptContentDTO receiptContent = receiptService.generateOkRtFromSessionData(rpt, paSendRTV2, intestazionePPT, commonFields, objectFactory, receiptStatus);
+                    return receiptContent.getPaaInviaRTPayload();
                 }
             }
         }
