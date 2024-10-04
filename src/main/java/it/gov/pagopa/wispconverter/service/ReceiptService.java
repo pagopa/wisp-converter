@@ -53,6 +53,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static it.gov.pagopa.wispconverter.util.Constants.PAA_INVIA_RT;
+import static it.gov.pagopa.wispconverter.util.Constants.PPT_HEAD;
 
 @Service
 @Slf4j
@@ -552,17 +553,17 @@ public class ReceiptService {
         try {
             message.getSOAPPart().getEnvelope().removeNamespaceDeclaration("SOAP-ENV");
             message.getSOAPPart().getEnvelope().setPrefix(Constants.SOAP_ENV);
-            message.getSOAPPart().getEnvelope().addNamespaceDeclaration("ns2", "http://ws.pagamenti.telematici.gov/ppthead"); //
-            message.getSOAPPart().getEnvelope().addNamespaceDeclaration("ns3", "http://ws.pagamenti.telematici.gov/"); //
+            message.getSOAPPart().getEnvelope().addNamespaceDeclaration(Constants.PPT_HEAD, "http://ws.pagamenti.telematici.gov/ppthead"); // ns2
+            message.getSOAPPart().getEnvelope().addNamespaceDeclaration(Constants.PPT, "http://ws.pagamenti.telematici.gov/"); // ns3
 
             message.getSOAPHeader().setPrefix(Constants.SOAP_ENV);
             message.getSOAPBody().setPrefix(Constants.SOAP_ENV);
 
             jaxbElementUtil.addBody(message, paaInviaRTJaxb, PaaInviaRT.class);
-            message.getSOAPPart().getEnvelope().getBody().getFirstChild().setPrefix("ns3");
+            message.getSOAPPart().getEnvelope().getBody().getFirstChild().setPrefix(Constants.PPT);
 
             jaxbElementUtil.addHeader(message, header, IntestazionePPT.class);
-            message.getSOAPPart().getEnvelope().getHeader().getFirstChild().setPrefix("ns2");
+            message.getSOAPPart().getEnvelope().getHeader().getFirstChild().setPrefix(Constants.PPT_HEAD);
 
         } catch (SOAPException e) {
             log.warn("Impossible to set 'soapenv' instead of 'SOAP-ENV' as namespace. ", e);

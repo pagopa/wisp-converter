@@ -313,9 +313,11 @@ public class RecoveryService {
                 // If newly-generated payload is not null, the data in 'receipt-rt' is updated with extracted data
                 String newlyGeneratedPayload = regenerateReceiptPayload(rtRequestEntity.getPartitionKey(), rtRequestEntity.getReceiptType(), sessionData, rpt, objectFactory);
 
+                String payload = newlyGeneratedPayload != null ? newlyGeneratedPayload : oldReceipt;
+
                 // update entity from 'receipt' container with retry 0 and newly-generated payload
                 rtRequestEntity.setRetry(0);
-                rtRequestEntity.setPayload(newlyGeneratedPayload != null ? newlyGeneratedPayload : oldReceipt);
+                rtRequestEntity.setPayload(AppBase64Util.base64Encode(ZipUtil.zip(payload)));
                 rtRetryRepository.save(rtRequestEntity);
 
                 String compositedIdForReceipt = String.format("%s_%s", rtRequestEntity.getPartitionKey(), rtRequestEntity.getId());
