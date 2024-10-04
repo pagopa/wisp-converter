@@ -29,6 +29,8 @@ import org.springframework.web.client.RestClient;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
 
 
@@ -54,13 +56,7 @@ public class PaaInviaRTSenderService {
         try {
 
             // Generating the REST client, setting proxy specification if needed
-            RestClient client;
-            if (proxyAddress != null) {
-                client = RestClient.builder(ProxyUtility.getProxiedClient(proxyAddress))
-                        .build();
-            } else {
-                client = restClientBuilder.build();
-            }
+            RestClient client = generateClient(proxyAddress);
 
             // Send the passed request payload to the passed URL
             RestClient.RequestBodySpec bodySpec = client.post()
@@ -87,10 +83,10 @@ public class PaaInviaRTSenderService {
 
             // check the response and if the outcome is KO, throw an exception
             EsitoPaaInviaRT esitoPaaInviaRT = body.getPaaInviaRTRisposta();
-            boolean avoidReScheduling = Constants.KO.equals(esitoPaaInviaRT.getEsito()) || Constants.OK.equals(esitoPaaInviaRT.getEsito());
+            boolean avoidReScheduling = checkIfAvoidRescheduling(esitoPaaInviaRT);
 
-            boolean isSavedDeadLetter = esitoPaaInviaRT.getFault() == null ||
-                    (esitoPaaInviaRT.getFault() != null && !noDeadLetterOnStates.contains(esitoPaaInviaRT.getFault().getFaultCode()));
+            // check the response if the dead letter sending is needed
+            boolean isSavedDeadLetter = checkIfSendDeadLetter(esitoPaaInviaRT);
 
             // set the correct response regarding the creditor institution response
             if (avoidReScheduling) {
@@ -140,6 +136,27 @@ public class PaaInviaRTSenderService {
 
             throw new AppException(AppErrorCodeMessageEnum.RECEIPT_GENERATION_GENERIC_ERROR, e.getMessage());
         }
+    }
+
+    private boolean checkIfAvoidRescheduling (EsitoPaaInviaRT esitoPaaInviaRT) {
+        return Constants.KO.equals(esitoPaaInviaRT.getEsito()) || Constants.OK.equals(esitoPaaInviaRT.getEsito());
+    }
+
+    private boolean checkIfSendDeadLetter (EsitoPaaInviaRT esitoPaaInviaRT) {
+        return esitoPaaInviaRT.getFault() == null ||
+                (esitoPaaInviaRT.getFault() != null && !noDeadLetterOnStates.contains(esitoPaaInviaRT.getFault().getFaultCode()));
+    }
+
+    private RestClient generateClient(InetSocketAddress proxyAddress) throws NoSuchAlgorithmException, KeyManagementException {
+        // Generating the REST client, setting proxy specification if needed
+        RestClient client;
+        if (proxyAddress != null) {
+            client = RestClient.builder(ProxyUtility.getProxiedClient(proxyAddress))
+                    .build();
+        } else {
+            client = restClientBuilder.build();
+        }
+        return client;
     }
 
 
