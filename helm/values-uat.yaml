@@ -104,7 +104,7 @@ microservice-chart:
     CRON_JOB_SCHEDULE_RECOVERY_RECEIPT_KO_ENABLED: '0 0 * * * *' # top of every hour of every day
     CRON_JOB_SCHEDULE_RECOVERY_FROM_HOURS_AGO: '2' # from 2 hours ago
     CRON_JOB_SCHEDULE_RECOVERY_UNTIL_HOURS_AGO: '1' # until 1 hours ago
-    RPT_TIMEOUT: '60' # 1 minute (set for integration tests)
+    RPT_TIMEOUT: '300' # 5 minutes
     RE_TRACING_INTERFACE_IUVGENERATOR_ENABLED: 'true'
     RE_TRACING_INTERFACE_PAYMENTPOSITIONANALYSIS_ENABLED: 'true'
     RE_TRACING_INTERFACE_DECOUPLERCACHING_ENABLED: 'true'
