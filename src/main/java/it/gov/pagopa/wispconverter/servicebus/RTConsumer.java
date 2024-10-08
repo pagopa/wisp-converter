@@ -63,9 +63,12 @@ public class RTConsumer extends SBConsumer {
     @Autowired
     private JaxbElementUtil jaxbElementUtil;
 
+    @Value("${disable-service-bus}")
+    private boolean disableServiceBus;
+
     @EventListener(ApplicationReadyEvent.class)
     public void initializeClient() {
-        if (receiverClient != null) {
+        if (receiverClient != null && !disableServiceBus) {
             log.info("[Scheduled] Starting RTConsumer {}", ZonedDateTime.now());
             receiverClient.start();
         }
@@ -82,7 +85,6 @@ public class RTConsumer extends SBConsumer {
     }
 
     public void processMessage(ServiceBusReceivedMessageContext context) {
-
         // retrieving content from context of arrived message
         MDCUtil.setSessionDataInfo("resend-rt");
         ServiceBusReceivedMessage message = context.getMessage();
