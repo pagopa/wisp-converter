@@ -33,7 +33,7 @@ import java.util.List;
 @Component
 @Slf4j
 public class RTConsumer extends SBConsumer {
-    @Value("${wisp-converter.rt-send.max-retries:48}")
+    @Value("${wisp-converter.rt-send.max-retries:5}")
     private Integer maxRetries;
 
     @Value("${wisp-converter.rt-send.scheduling-time-in-minutes:60}")
