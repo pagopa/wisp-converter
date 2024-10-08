@@ -8,11 +8,9 @@ import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.model.RTRequestEntity;
 import it.gov.pagopa.wispconverter.repository.model.enumz.IdempotencyStatusEnum;
 import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
+import it.gov.pagopa.wispconverter.repository.model.enumz.ReceiptStatusEnum;
 import it.gov.pagopa.wispconverter.repository.model.enumz.ReceiptTypeEnum;
-import it.gov.pagopa.wispconverter.service.IdempotencyService;
-import it.gov.pagopa.wispconverter.service.PaaInviaRTSenderService;
-import it.gov.pagopa.wispconverter.service.RtRetryComosService;
-import it.gov.pagopa.wispconverter.service.ServiceBusService;
+import it.gov.pagopa.wispconverter.service.*;
 import it.gov.pagopa.wispconverter.util.*;
 import jakarta.xml.soap.SOAPMessage;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +24,8 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.URI;
 import java.time.ZonedDateTime;
 import java.util.LinkedList;
 import java.util.List;
@@ -47,6 +47,9 @@ public class RTConsumer extends SBConsumer {
 
     @Autowired
     private RtRetryComosService rtRetryComosService;
+
+    @Autowired
+    private RtReceiptCosmosService rtReceiptCosmosService;
 
     @Autowired
     private IdempotencyService idempotencyService;
@@ -109,9 +112,9 @@ public class RTConsumer extends SBConsumer {
 
                 // If receipt was found, it must be sent to creditor institution, so it try this operation
                 log.debug("Sending message {}, retry: {}", compositedIdForReceipt, rtRequestEntity.getRetry());
-                resendRTToCreditorInstitution(receiptId, rtRequestEntity, compositedIdForReceipt, idempotencyKey);
+                boolean isSend = resendRTToCreditorInstitution(receiptId, rtRequestEntity, compositedIdForReceipt, idempotencyKey);
 
-                idempotencyStatus = IdempotencyStatusEnum.SUCCESS;
+                idempotencyStatus = isSend ? IdempotencyStatusEnum.SUCCESS : IdempotencyStatusEnum.FAILED;
 
             } else {
 
@@ -138,7 +141,12 @@ public class RTConsumer extends SBConsumer {
         }
     }
 
-    private void resendRTToCreditorInstitution(String receiptId, RTRequestEntity receipt, String compositedIdForReceipt, String idempotencyKey) {
+    private boolean resendRTToCreditorInstitution(String receiptId, RTRequestEntity receipt, String compositedIdForReceipt, String idempotencyKey) {
+
+        boolean isSend = false;
+        String ci = receipt.getDomainId();
+        String iuv = receipt.getIuv();
+        String ccp = receipt.getCcp();
 
         try {
 
@@ -157,13 +165,24 @@ public class RTConsumer extends SBConsumer {
             }
             MDCUtil.setSessionDataInfo(header, noticeNumberFromIdempotencyKey);
 
+            InetSocketAddress proxyAddress = null;
+            if (receipt.getProxyAddress() != null) {
+                String[] proxyComponents = receipt.getProxyAddress().split(":");
+                if (proxyComponents.length != 2) {
+                    throw new AppException(AppErrorCodeMessageEnum.CONFIGURATION_INVALID_STATION_PROXY);
+                }
+                proxyAddress = new InetSocketAddress(proxyComponents[0], Integer.parseInt(proxyComponents[1]));
+            }
+
             String rawPayload = new String(unzippedPayload);
-            paaInviaRTSenderService.sendToCreditorInstitution(receipt.getUrl(), extractHeaders(receipt.getHeaders()), rawPayload);
+
+            paaInviaRTSenderService.sendToCreditorInstitution(URI.create(receipt.getUrl()), proxyAddress, extractHeaders(receipt.getHeaders()), rawPayload, ci, iuv, ccp);
             rtRetryComosService.deleteRTRequestEntity(receipt);
             log.debug("Sent receipt [{}]", receiptId);
 
             // generate a new event in RE for store the successful re-sending of the receipt
             generateREForSentRT();
+            isSend = true;
 
         } catch (AppException e) {
 
@@ -175,8 +194,11 @@ public class RTConsumer extends SBConsumer {
 
         } catch (IOException e) {
 
+            rtReceiptCosmosService.updateReceiptStatus(ci, iuv, ccp, ReceiptStatusEnum.NOT_SENT);
+
             throw new AppException(AppErrorCodeMessageEnum.PARSING_INVALID_ZIPPED_PAYLOAD);
         }
+        return isSend;
     }
 
     private List<Pair<String, String>> extractHeaders(List<String> headers) {
@@ -191,6 +213,9 @@ public class RTConsumer extends SBConsumer {
     }
 
     private void reScheduleReceiptSend(RTRequestEntity receipt, String receiptId, String compositedIdForReceipt) {
+        String ci = receipt.getDomainId();
+        String iuv = receipt.getIuv();
+        String ccp = receipt.getCcp();
 
         // because of the not sent receipt, it is necessary to schedule a retry of the sending process for this receipt
         if (receipt.getRetry() < this.maxRetries - 1) {
@@ -207,16 +232,19 @@ public class RTConsumer extends SBConsumer {
 
                 // generate a new event in RE for store the successful scheduling of the RT send
                 generateREForSuccessfulReschedulingSentRT();
+                rtReceiptCosmosService.updateReceiptStatus(ci, iuv, ccp, ReceiptStatusEnum.SCHEDULED);
 
             } catch (Exception e) {
 
                 // generate a new event in RE for store the unsuccessful scheduling of the RT send
                 generateREForFailedReschedulingSentRT(e);
+                rtReceiptCosmosService.updateReceiptStatus(ci, iuv, ccp, ReceiptStatusEnum.NOT_SENT);
             }
         } else {
 
             // generate a new event in RE for store the unsuccessful scheduling of the RT send
             generateREForMaxRetriesOnReschedulingSentRT(receipt.getRetry());
+            rtReceiptCosmosService.updateReceiptStatus(ci, iuv, ccp, ReceiptStatusEnum.NOT_SENT);
         }
     }
 

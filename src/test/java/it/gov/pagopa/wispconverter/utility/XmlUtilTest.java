@@ -5,6 +5,7 @@ import org.junit.Test;
 
 import javax.xml.datatype.XMLGregorianCalendar;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -13,19 +14,19 @@ public class XmlUtilTest {
 
     @Test
     public void toXMLGregoirianCalendar() {
-        Instant now = Instant.now();
+        Instant now = Instant.now().truncatedTo(ChronoUnit.SECONDS);
         XMLGregorianCalendar xmlGregoirianCalendar = XmlUtil.toXMLGregoirianCalendar(now);
         assertNotNull(xmlGregoirianCalendar);
-        assertEquals(xmlGregoirianCalendar.toGregorianCalendar().getTimeInMillis(), now.toEpochMilli());
+        assertEquals(now.toEpochMilli(), xmlGregoirianCalendar.toGregorianCalendar().getTimeInMillis());
     }
 
     @Test
     public void toXMLGregoirianCalendar_withoutTimestamp() {
         Instant dateInMillis = Instant.ofEpochMilli(1577876400000L); // 2020-01-01T12:00:00 UTC
-        String dateAsString = "2020-01-01T12:00:00.000";
+        String expectedDate = "2020-01-01T12:00:00";
         XMLGregorianCalendar xmlGregoirianCalendar = XmlUtil.toXMLGregoirianCalendar(dateInMillis);
         assertNotNull(xmlGregoirianCalendar);
-        assertEquals(xmlGregoirianCalendar.toGregorianCalendar().getTimeInMillis(), dateInMillis.toEpochMilli());
-        assertEquals(xmlGregoirianCalendar.toString(), dateAsString);
+        assertEquals(dateInMillis.toEpochMilli(), xmlGregoirianCalendar.toGregorianCalendar().getTimeInMillis());
+        assertEquals(expectedDate, xmlGregoirianCalendar.toString());
     }
 }

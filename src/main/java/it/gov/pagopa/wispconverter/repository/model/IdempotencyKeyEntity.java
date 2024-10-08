@@ -27,6 +27,8 @@ public class IdempotencyKeyEntity {
 
     private ReceiptTypeEnum receiptType;
 
+    private String sessionId;
+
     private IdempotencyStatusEnum status;
 
     private Instant lockedAt;

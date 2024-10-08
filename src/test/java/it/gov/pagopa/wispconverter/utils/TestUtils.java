@@ -3,6 +3,7 @@ package it.gov.pagopa.wispconverter.utils;
 
 import io.micrometer.core.instrument.util.IOUtils;
 import it.gov.pagopa.gen.wispconverter.client.cache.model.ConnectionDto;
+import it.gov.pagopa.gen.wispconverter.client.cache.model.ProxyDto;
 import it.gov.pagopa.gen.wispconverter.client.cache.model.ServiceDto;
 import it.gov.pagopa.gen.wispconverter.client.cache.model.StationCreditorInstitutionDto;
 import it.gov.pagopa.gen.wispconverter.client.gpd.model.PaymentOptionModelDto;
@@ -99,6 +100,9 @@ public class TestUtils {
         station.getRedirect().setPort(8888L);
         station.getRedirect().setProtocol(it.gov.pagopa.gen.wispconverter.client.cache.model.RedirectDto.ProtocolEnum.HTTPS);
         station.getRedirect().setQueryString("param=1");
+        station.setProxy(new ProxyDto());
+        station.getProxy().setProxyHost("127.0.0.1");
+        station.getProxy().setProxyPort(8080L);
         configDataV1.getStations().put(station.getStationCode(), station);
 
         configDataV1.setConfigurations(new HashMap<>());

@@ -2,6 +2,7 @@ package it.gov.pagopa.wispconverter.repository.model;
 
 import com.azure.spring.data.cosmos.core.mapping.Container;
 import com.azure.spring.data.cosmos.core.mapping.PartitionKey;
+import it.gov.pagopa.wispconverter.repository.model.enumz.ReceiptStatusEnum;
 import it.gov.pagopa.wispconverter.repository.model.enumz.ReceiptTypeEnum;
 import lombok.*;
 import org.springframework.data.annotation.Id;
@@ -16,16 +17,20 @@ import org.springframework.data.annotation.Id;
 public class RTEntity {
 
     @Id
-    private String id;
+    private String id; // as domainId + iuv + ccp
 
     @PartitionKey
     private String partitionKey;
 
-    private String idDominio;
+    private String domainId;
 
     private String iuv;
 
     private String ccp;
+
+    private String sessionId;
+
+    private ReceiptStatusEnum receiptStatus;
 
     private ReceiptTypeEnum receiptType;
 

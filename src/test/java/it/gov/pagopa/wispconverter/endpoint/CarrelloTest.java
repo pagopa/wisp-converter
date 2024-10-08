@@ -8,6 +8,7 @@ import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
 import it.gov.pagopa.wispconverter.service.ConfigCacheService;
 import it.gov.pagopa.wispconverter.service.ReceiptService;
+import it.gov.pagopa.wispconverter.service.RecoveryService;
 import it.gov.pagopa.wispconverter.utils.TestUtils;
 import org.junit.Assert;
 import org.junit.jupiter.api.Test;
@@ -66,9 +67,8 @@ class CarrelloTest {
     private RedisTemplate<String, Object> redisSimpleTemplate;
     @MockBean
     private ReceiptService receiptService;
-
-
-
+    @MockBean
+    private RecoveryService recoveryService;
 
     @Test
     void success() throws Exception {

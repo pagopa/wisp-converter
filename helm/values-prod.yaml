@@ -4,7 +4,7 @@ microservice-chart:
   fullnameOverride: ""
   image:
     repository: ghcr.io/pagopa/pagopa-wisp-converter
-    tag: "0.3.3-1-PAGOPA-2154-bug-richieste-con-anagrafica-pagatore-blank"
+    tag: "0.4.4"
     pullPolicy: Always
   livenessProbe:
     httpGet:
@@ -96,10 +96,12 @@ microservice-chart:
     OTEL_TRACES_SAMPLER: "always_on"
     REDIS_PORT: "6380"
     COSMOS_URI: "https://pagopa-p-weu-nodo-wispconv-cosmos-account.documents.azure.com:443/"
+    COSMOS_READ_REGION: "North Europe"
     PAAINVIART_SERVICE_BUS_NAME: "nodo_wisp_paainviart_queue"
     RECEIPT_TIMER_QUEUE_NAME: "nodo_wisp_payment_timeout_queue"
     ECOMMERCE_HANG_TIMER_QUEUE_NAME: "nodo_wisp_ecommerce_hang_timeout_queue"
     ECOMMERCE_HANG_TIMEOUT: '1800'
+    APIM_PATH: 'api.platform.pagopa.it'
     CACHED_REQUESTID_MAPPING_TTL_MINUTES: "1440"
     CACHE_REFRESH_CRON: "0 */60 * * * *"
     CLIENT_GPD_READ_TIMEOUT: '5000'
@@ -117,6 +119,10 @@ microservice-chart:
     RT_SEND_SCHEDULING_TIME_IN_MINUTES: '60'
     RT_SEND_AVOID_SCHEDULING_ON_STATES: 'PAA_RT_DUPLICATA'
     RPT_TIMER_QUEUE_NAME: "nodo_wisp_rpt_timeout_queue"
+    CRON_JOB_SCHEDULE_RECOVERY_ENABLED: 'false'
+    CRON_JOB_SCHEDULE_RECOVERY_RECEIPT_KO_ENABLED: '0 0 * * * *' # top of every hour of every day
+    CRON_JOB_SCHEDULE_RECOVERY_FROM_HOURS_AGO: '2' # from 2 hours ago
+    CRON_JOB_SCHEDULE_RECOVERY_UNTIL_HOURS_AGO: '1' # until 1 hours ago
     RPT_TIMEOUT: '300' # 5 minutes
     RE_TRACING_INTERFACE_IUVGENERATOR_ENABLED: 'true'
     RE_TRACING_INTERFACE_PAYMENTPOSITIONANALYSIS_ENABLED: 'true'

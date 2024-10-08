@@ -52,7 +52,7 @@ class RecoveryTest {
                         .queryParam("date_to", dateTo))
                 .andExpect(status().isOk());
 
-        Mockito.verify(recoveryService, times(1)).recoverReceiptKOForCreditorInstitution(eq(ci), any(), any());
+        Mockito.verify(recoveryService, times(1)).recoverReceiptKOByCI(eq(ci), any(), any());
     }
 
     @Test
@@ -61,7 +61,7 @@ class RecoveryTest {
         String dateFrom = "2024-09-03";
         String dateTo = "2024-09-09";
 
-        Mockito.when(recoveryService.recoverReceiptKOForCreditorInstitution(anyString(), any(), any()))
+        Mockito.when(recoveryService.recoverReceiptKOByCI(anyString(), any(), any()))
                 .thenThrow(new RuntimeException("Test exception"));
 
         mockMvc.perform(post("/recovery/{creditor_institution}/receipt-ko", ci)
@@ -69,6 +69,39 @@ class RecoveryTest {
                         .queryParam("date_to", dateTo))
                 .andExpect(status().isInternalServerError());
 
-        Mockito.verify(recoveryService, times(1)).recoverReceiptKOForCreditorInstitution(eq(ci), any(), any());
+        Mockito.verify(recoveryService, times(1)).recoverReceiptKOByCI(eq(ci), any(), any());
+    }
+
+    @Test
+    void testRecoverReceiptKOForCreditorInstitutionAndIUV() throws Exception {
+        String ci = "77777777777";
+        String iuv = "00000000000000000";
+        String dateFrom = "2024-09-03";
+        String dateTo = "2024-09-09";
+
+        mockMvc.perform(post("/recovery/{ci}/rpt/{iuv}/receipt-ko", ci, iuv)
+                                .queryParam("date_from", dateFrom)
+                                .queryParam("date_to", dateTo))
+                .andExpect(status().isBadRequest());
+
+        Mockito.verify(recoveryService, times(1)).recoverReceiptKOByIUV(eq(ci), eq(iuv), any(), any());
+    }
+
+    @Test
+    void testRecoverReceiptKOForCreditorInstitutionAndIUV_500() throws Exception {
+        String ci = "77777777777";
+        String iuv = "00000000000000000";
+        String dateFrom = "2024-09-03";
+        String dateTo = "2024-09-09";
+
+        Mockito.when(recoveryService.recoverReceiptKOByIUV(anyString(), anyString(), any(), any()))
+                .thenThrow(new RuntimeException("Test exception"));
+
+        mockMvc.perform(post("/recovery/{ci}/rpt/{iuv}/receipt-ko", ci, iuv)
+                                .queryParam("date_from", dateFrom)
+                                .queryParam("date_to", dateTo))
+                .andExpect(status().isInternalServerError());
+
+        Mockito.verify(recoveryService, times(1)).recoverReceiptKOByIUV(eq(ci), eq(iuv), any(), any());
     }
 }

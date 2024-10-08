@@ -1,6 +1,5 @@
 package it.gov.pagopa.wispconverter.service;
 
-import com.azure.cosmos.models.PartitionKey;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.IdempotencyKeyRepository;
@@ -26,13 +25,16 @@ public class IdempotencyService {
     @Value("${wisp-converter.idempotency.lock-validity-in-minutes}")
     private Integer lockValidityInMinutes;
 
+    public static String generateIdempotencyKeyId(String sessionId, String iuv, String domainId) {
+        return String.format("%s_%s_%s", sessionId, iuv, domainId);
+    }
+
     public boolean isIdempotencyKeyProcessable(String idempotencyKey, ReceiptTypeEnum receiptType) {
 
         boolean isProcessable = true;
 
         // try to retrieve idempotency key entity from the storage and check if exists
-        PartitionKey partitionKey = extractPartitionKeyFromIdempotencyKey(idempotencyKey);
-        Optional<IdempotencyKeyEntity> optIdempotencyKeyEntity = idempotencyKeyRepository.findById(idempotencyKey, partitionKey);
+        Optional<IdempotencyKeyEntity> optIdempotencyKeyEntity = idempotencyKeyRepository.findById(idempotencyKey);
         if (optIdempotencyKeyEntity.isPresent()) {
 
             /*
@@ -45,7 +47,7 @@ public class IdempotencyService {
             }
 
             // check the processability of the idempotency key
-            isProcessable = isActiveLockExpired(idempotencyKeyEntity) || IdempotencyStatusEnum.FAILED.equals(idempotencyKeyEntity.getStatus());
+            isProcessable = !IdempotencyStatusEnum.SUCCESS.equals(idempotencyKeyEntity.getStatus()) && isActiveLockExpired(idempotencyKeyEntity) || IdempotencyStatusEnum.FAILED.equals(idempotencyKeyEntity.getStatus());
         }
         return isProcessable;
     }
@@ -55,8 +57,7 @@ public class IdempotencyService {
         boolean isSucceeded = false;
 
         // try to retrieve idempotency key entity from the storage and check if exists
-        PartitionKey partitionKey = extractPartitionKeyFromIdempotencyKey(idempotencyKey);
-        Optional<IdempotencyKeyEntity> optIdempotencyKeyEntity = idempotencyKeyRepository.findById(idempotencyKey, partitionKey);
+        Optional<IdempotencyKeyEntity> optIdempotencyKeyEntity = idempotencyKeyRepository.findById(idempotencyKey);
         if (optIdempotencyKeyEntity.isPresent()) {
 
             // check if the idempotency key is in a success status
@@ -71,8 +72,8 @@ public class IdempotencyService {
         IdempotencyKeyEntity idempotencyKeyEntity;
 
         // try to retrieve idempotency key entity from the storage and check if exists
-        PartitionKey partitionKey = extractPartitionKeyFromIdempotencyKey(idempotencyKey);
-        Optional<IdempotencyKeyEntity> optIdempotencyKeyEntity = idempotencyKeyRepository.findById(idempotencyKey, partitionKey);
+        // In this case, no findBy with partition key is set because the search could refers to different days
+        Optional<IdempotencyKeyEntity> optIdempotencyKeyEntity = idempotencyKeyRepository.findById(idempotencyKey);
         if (optIdempotencyKeyEntity.isPresent()) {
 
             // check either if a lock exists and is active and if the status is not failed
@@ -83,15 +84,23 @@ public class IdempotencyService {
 
             } else if (!IdempotencyStatusEnum.FAILED.equals(idempotencyKeyEntity.getStatus())) {
 
-                throw new AppException(AppErrorCodeMessageEnum.RECEIPT_GENERATION_NOT_PROCESSABLE, idempotencyKey);
+                throw new AppException(AppErrorCodeMessageEnum.RECEIPT_GENERATION_NOT_PROCESSABLE, idempotencyKey, idempotencyKeyEntity.getStatus());
             }
 
         } else {
+
+            // extracting sessionId for entity
+            String sessionId = null;
+            String[] idempotencyKeyComponents = idempotencyKey.split("_");
+            if (idempotencyKeyComponents.length > 0) {
+                sessionId = idempotencyKeyComponents[0];
+            }
 
             // it not exists, so it can be created a new idempotency key entity ex novo
             idempotencyKeyEntity = IdempotencyKeyEntity.builder()
                     .id(idempotencyKey)
                     .receiptType(receiptTypeEnum)
+                    .sessionId(sessionId)
                     .build();
         }
 
@@ -106,8 +115,7 @@ public class IdempotencyService {
         IdempotencyKeyEntity idempotencyKeyEntity;
 
         // try to retrieve idempotency key entity from the storage and check if exists
-        PartitionKey partitionKey = extractPartitionKeyFromIdempotencyKey(idempotencyKey);
-        Optional<IdempotencyKeyEntity> optIdempotencyKeyEntity = idempotencyKeyRepository.findById(idempotencyKey, partitionKey);
+        Optional<IdempotencyKeyEntity> optIdempotencyKeyEntity = idempotencyKeyRepository.findById(idempotencyKey);
         if (optIdempotencyKeyEntity.isPresent()) {
 
             // check if it is not in a locked state
@@ -130,12 +138,6 @@ public class IdempotencyService {
         idempotencyKeyEntity.setStatus(status);
         idempotencyKeyEntity.setLockedAt(null);
         idempotencyKeyRepository.save(idempotencyKeyEntity);
-    }
-
-    private PartitionKey extractPartitionKeyFromIdempotencyKey(String idempotencyKey) {
-
-        String[] idempotencyKeySections = idempotencyKey.split("_");
-        return new PartitionKey(idempotencyKeySections[0] + "_" + idempotencyKeySections[1]);
     }
 
     private boolean isActiveLockExpired(IdempotencyKeyEntity idempotencyKeyEntity) {

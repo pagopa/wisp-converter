@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.wispconverter.Application;
 import it.gov.pagopa.wispconverter.controller.model.ConfigurationModel;
 import it.gov.pagopa.wispconverter.service.ConfigurationService;
+import it.gov.pagopa.wispconverter.service.RecoveryService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -23,6 +24,9 @@ class ConfigurationControllerTest {
 
     @MockBean
     private ConfigurationService configurationService;
+
+    @MockBean
+    private RecoveryService recoveryService;
 
     @Autowired
     private MockMvc mvc;

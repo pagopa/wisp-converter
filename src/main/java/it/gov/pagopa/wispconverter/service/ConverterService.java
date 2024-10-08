@@ -4,6 +4,7 @@ import java.net.URISyntaxException;
 
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
+import it.gov.pagopa.wispconverter.repository.model.enumz.ReceiptStatusEnum;
 import org.springframework.stereotype.Service;
 
 import it.gov.pagopa.gen.wispconverter.client.checkout.model.CartRequestDto;
@@ -51,7 +52,7 @@ public class ConverterService {
 			SessionDataDTO sessionData = this.rptExtractorService.extractSessionData(rptRequestEntity.getPrimitive(), rptRequestEntity.getPayload());
 
     		// prepare receipt-rt saving (nodoChiediCopiaRT)
-    		rtReceiptCosmosService.saveRTEntity(sessionData);
+    		rtReceiptCosmosService.saveRTEntity(sessionData, ReceiptStatusEnum.REDIRECT);
 
     		// calling GPD creation API in order to generate the debt position associated to RPTs
     		this.debtPositionService.createDebtPositions(sessionData);
