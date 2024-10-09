@@ -1,5 +1,6 @@
 package it.gov.pagopa.wispconverter.service;
 
+import com.azure.cosmos.models.PartitionKey;
 import com.google.gson.Gson;
 import gov.telematici.pagamenti.ws.nodoperpa.ppthead.IntestazionePPT;
 import gov.telematici.pagamenti.ws.pafornode.PaSendRTV2Request;
@@ -322,7 +323,7 @@ public class RecoveryService {
                     rtRequestEntity.setId(overriddenReceiptId);
                     rtRequestEntity.setDomainId(domainId);
                     rtRequestEntity.setIdempotencyKey(overriddenIdempotencyKey);
-                    rtRequestEntity.setRetry(0);
+                    rtRequestEntity.setRetry(46); // TODO set 0
                     rtRequestEntity.setPayload(AppBase64Util.base64Encode(ZipUtil.zip(payload)));
                     rtRetryRepository.save(rtRequestEntity);
 
@@ -330,11 +331,11 @@ public class RecoveryService {
                     serviceBusService.sendMessage(compositedIdForReceipt, null);
                     generateRE(null, "Success", InternalStepStatus.RT_SEND_RESCHEDULING_SUCCESS,
                             null, null, null, sessionId, String.format("Generated receipt: %s", overriddenReceiptId));
-                    response.getReceiptStatus().add(Pair.of(receiptId, "SCHEDULED"));
+                    response.getReceiptStatus().add(Pair.of(overriddenReceiptId, "SCHEDULED"));
                     overrideId += 1;
                 }
                 // remove old receipt
-                rtRetryRepository.deleteById(receiptId);
+                rtRetryRepository.deleteById(receiptId, new PartitionKey(rtRequestEntity.getPartitionKey()));
 
             } catch (Exception e) {
 
