@@ -100,15 +100,22 @@ public class RPTTimerService {
             OffsetDateTime scheduledExpirationTime = OffsetDateTime.now().plusSeconds(expirationTime);
             Long sequenceNumber = serviceBusSenderClient.scheduleMessage(serviceBusMessage, scheduledExpirationTime);
 
-            // log event
-            log.info("Sent scheduled message_base64 {} to the queue: {}", LogUtils.encodeToBase64(sanitizeInput(message.toString())), queueName);
-            generateRE(InternalStepStatus.RPT_TIMER_CREATED, "Scheduled RPTTimerService: [" + message + "]");
+            try {
+                // insert in Redis cache sequenceNumber of the message
+                cacheRepository.insert(key, sequenceNumber.toString(), expirationTime, ChronoUnit.SECONDS);
 
-            // insert in Redis cache sequenceNumber of the message
-            cacheRepository.insert(key, sequenceNumber.toString(), expirationTime, ChronoUnit.SECONDS);
+                // log event
+                log.info("Sent scheduled message_base64 {} to the queue: {}", LogUtils.encodeToBase64(sanitizeInput(message.toString())), queueName);
+                generateRE(InternalStepStatus.RPT_TIMER_CREATED, "Scheduled RPTTimerService: [" + message + "]");
+            } catch (Exception e) {
+                serviceBusSenderClient.cancelScheduledMessage(sequenceNumber);
+
+                // log event
+                log.debug("Timer not set due to an exception for rpt_timer_key: {} and sessionId: {}", key, sanitizeInput(sessionId));
+                generateRE(InternalStepStatus.RPT_TIMER_NOT_SET, "Exception timer not set: [" + sequenceNumber + "] for sessionId: [" + sessionId + "]");
+            }
         }
     }
-
 
     /**
      * This method deletes a scheduled message from the queue
