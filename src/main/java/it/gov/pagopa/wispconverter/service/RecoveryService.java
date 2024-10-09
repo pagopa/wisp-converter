@@ -263,6 +263,7 @@ public class RecoveryService {
                 }
 
                 sessionId = idempotencyKeyComponents[0];
+                MDC.put(Constants.MDC_SESSION_ID, sessionId);
                 Optional<RPTRequestEntity> rptRequestOpt = rptRequestRepository.findById(sessionId);
                 if (rptRequestOpt.isEmpty()) {
                     throw new AppException(AppErrorCodeMessageEnum.ERROR, String.format("No valid RPT request found with id [%s].", sessionId));
@@ -391,11 +392,12 @@ public class RecoveryService {
         List<ReEventEntity> events = reEventRepository.findBySessionIdAndStatusAndPartitionKey(partitionKey, sessionData.getCommonFields().getSessionId(), InternalStepStatus.POSITIVE_RT_TRY_TO_SEND_TO_CREDITOR_INSTITUTION.toString());
         for(ReEventEntity event : events) {
             // use operationId used to retrieve the related paSendRTV2 primitives
-            Optional<ReEventEntity> interfaceReqEventOpt = reEventRepository.findFirstInterfaceRequestByPartitionKey(partitionKey, ReceiptController.BP_RECEIPT_OK, event.getOperationId());
-            if (interfaceReqEventOpt.isPresent()) {
+            List<ReEventEntity> interfaceReqEventOpt = reEventRepository.findFirstInterfaceRequestByPartitionKey(partitionKey, ReceiptController.BP_RECEIPT_OK, event.getOperationId());
+            if (!interfaceReqEventOpt.isEmpty()) {
 
                 // get the compressed payload from event and decompress it, parsing a well-formed request
-                String unzippedRequest = new String(ZipUtil.unzip(AppBase64Util.base64Decode(interfaceReqEventOpt.get().getCompressedPayload())));
+                ReEventEntity reEvent = interfaceReqEventOpt.get(0);
+                String unzippedRequest = new String(ZipUtil.unzip(AppBase64Util.base64Decode(reEvent.getCompressedPayload())));
                 ReceiptRequest receiptOkRequest = new Gson().fromJson(unzippedRequest, ReceiptRequest.class);
 
                 // now, from request the paSendRTV2 content can be extracted
