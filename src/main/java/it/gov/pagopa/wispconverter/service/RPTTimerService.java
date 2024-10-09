@@ -115,6 +115,7 @@ public class RPTTimerService {
                 generateRE(InternalStepStatus.RPT_TIMER_NOT_SET, "Exception timer not set: [" + sequenceNumber + "] for sessionId: [" + sessionId + "]");
             }
         }
+    }
 
     /**
      * This method deletes a scheduled message from the queue
