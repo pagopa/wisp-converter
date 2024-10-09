@@ -243,6 +243,24 @@ public class RecoveryService {
         reService.addRe(reEvent);
     }
 
+    public RecoveryReceiptReportResponse recoverReceiptToBeReSentByPartition(RecoveryReceiptByPartitionRequest request) {
+
+        List<String> receiptsIds = new ArrayList();
+        for (String partitionKey : request.getPartitionKeys()) {
+            Iterable<RTRequestEntity> receipts = rtRetryRepository.findAll(new PartitionKey(partitionKey));
+
+            for (RTRequestEntity receipt : receipts) {
+                receiptsIds.add(receipt.getId());
+            }
+        }
+
+        RecoveryReceiptRequest req = RecoveryReceiptRequest.builder()
+                .receiptIds(receiptsIds)
+                .build();
+
+        return recoverReceiptToBeReSent(req);
+    }
+
     public RecoveryReceiptReportResponse recoverReceiptToBeReSent(RecoveryReceiptRequest request) {
 
         RecoveryReceiptReportResponse response = RecoveryReceiptReportResponse.builder()
