@@ -2,7 +2,7 @@ package it.gov.pagopa.wispconverter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.wispconverter.controller.model.AppInfoResponse;
-import it.gov.pagopa.wispconverter.service.PaaInviaRTSenderService;
+import it.gov.pagopa.wispconverter.repository.ReceiptDeadLetterRepository;
 import it.gov.pagopa.wispconverter.service.ReceiptService;
 import it.gov.pagopa.wispconverter.service.RecoveryService;
 import org.junit.jupiter.api.Test;
@@ -42,7 +42,7 @@ class HomeTest {
     private RecoveryService recoveryService;
 
     @MockBean
-    private PaaInviaRTSenderService paaInviaRTSenderService;
+    private ReceiptDeadLetterRepository receiptDeadLetterRepository;
 
 
     @Test

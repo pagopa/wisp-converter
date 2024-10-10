@@ -5,6 +5,7 @@ import it.gov.pagopa.gen.wispconverter.client.cache.model.StationCreditorInstitu
 import it.gov.pagopa.gen.wispconverter.client.iuvgenerator.model.IUVGenerationResponseDto;
 import it.gov.pagopa.wispconverter.Application;
 import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
+import it.gov.pagopa.wispconverter.repository.ReceiptDeadLetterRepository;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
 import it.gov.pagopa.wispconverter.service.ConfigCacheService;
 import it.gov.pagopa.wispconverter.service.PaaInviaRTSenderService;
@@ -72,6 +73,8 @@ class CarrelloTest {
     private RecoveryService recoveryService;
     @MockBean
     private PaaInviaRTSenderService paaInviaRTSenderService;
+    @MockBean
+    private ReceiptDeadLetterRepository receiptDeadLetterRepository;
 
     @Test
     void success() throws Exception {

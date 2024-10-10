@@ -2,6 +2,7 @@ package it.gov.pagopa.wispconverter.endpoint;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.wispconverter.Application;
+import it.gov.pagopa.wispconverter.repository.ReceiptDeadLetterRepository;
 import it.gov.pagopa.wispconverter.service.*;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +36,8 @@ public class StaticPagesTest {
     private RecoveryService recoveryService;
     @MockBean
     private ReceiptService receiptService;
+    @MockBean
+    private ReceiptDeadLetterRepository receiptDeadLetterRepository;
 
     /*
      * GET static/error
