@@ -49,7 +49,7 @@ public class ECommerceHangTimeoutConsumer extends SBConsumer {
 
     @PostConstruct
     public void post() {
-        if (StringUtils.isNotBlank(connectionString) && !connectionString.equals("-")) {
+        if (StringUtils.isNotBlank(connectionString) && !connectionString.equals("-") && !disableServiceBus) {
             receiverClient = CommonUtility.getServiceBusProcessorClient(connectionString, queueName, this::processMessage, this::processError);
         }
     }

@@ -117,6 +117,40 @@ public class ReceiptService {
         return header;
     }
 
+    public static List<RPTContentDTO> extractRequiredRPTs(SessionDataDTO sessionData, String iuv, String creditorInstiutionId) {
+        List<RPTContentDTO> rpts;
+        if (Boolean.TRUE.equals(sessionData.getCommonFields().getIsMultibeneficiary())) {
+            rpts = sessionData.getAllRPTs().stream().toList();
+        } else {
+            rpts = sessionData.getAllRPTs().stream()
+                    .filter(rpt -> rpt.getIuv().equals(iuv) && rpt.getRpt().getDomain().getDomainId().equals(creditorInstiutionId))
+                    .toList();
+        }
+        return rpts;
+    }
+
+    public static PaSendRTV2Request extractDataFromPaSendRT(JaxbElementUtil jaxbElementUtil, String payload, RPTContentDTO rpt) {
+        SOAPMessage deepCopyMessage = jaxbElementUtil.getMessage(payload);
+        PaSendRTV2Request deepCopySendRTV2 = jaxbElementUtil.getBody(deepCopyMessage, PaSendRTV2Request.class);
+
+        List<CtTransferPAReceiptV2> transfers = deepCopySendRTV2.getReceipt().getTransferList().getTransfer();
+        transfers = transfers.stream()
+                .filter(transfer -> transfer.getFiscalCodePA().equals(rpt.getRpt().getDomain().getDomainId()))
+                .toList();
+
+        BigDecimal amount = transfers.stream()
+                .map(CtTransferPAReceiptV2::getTransferAmount)
+                .reduce(BigDecimal::add)
+                .orElse(deepCopySendRTV2.getReceipt().getPaymentAmount());
+        deepCopySendRTV2.getReceipt().setPaymentAmount(amount);
+        deepCopySendRTV2.setIdPA(rpt.getRpt().getDomain().getDomainId());
+
+        CtTransferListPAReceiptV2 transferList = new CtTransferListPAReceiptV2();
+        transferList.getTransfer().addAll(transfers);
+        deepCopySendRTV2.getReceipt().setTransferList(transferList);
+        return deepCopySendRTV2;
+    }
+
     /**
      * @param payload a list of {@link ReceiptDto} elements
      * @deprecated use {@code sendKoPaaInviaRtToCreditorInstitution(List<ReceiptDto> receipts)} method instead
@@ -261,7 +295,7 @@ public class ReceiptService {
                 for (RPTContentDTO rpt : rpts) {
 
                     // actualize content for correctly handle multibeneficiary carts
-                    PaSendRTV2Request deepCopySendRTV2 = extractDataFromPaSendRT(payload, rpt);
+                    PaSendRTV2Request deepCopySendRTV2 = extractDataFromPaSendRT(jaxbElementUtil, payload, rpt);
 
                     // generate the header for the paaInviaRT SOAP request. This object is different for each generated request
                     IntestazionePPT intestazionePPT = generateHeader(
@@ -287,28 +321,6 @@ public class ReceiptService {
 
             throw new AppException(AppErrorCodeMessageEnum.RECEIPT_OK_NOT_SENT, e);
         }
-    }
-
-    private PaSendRTV2Request extractDataFromPaSendRT(String payload, RPTContentDTO rpt) {
-        SOAPMessage deepCopyMessage = jaxbElementUtil.getMessage(payload);
-        PaSendRTV2Request deepCopySendRTV2 = jaxbElementUtil.getBody(deepCopyMessage, PaSendRTV2Request.class);
-
-        List<CtTransferPAReceiptV2> transfers = deepCopySendRTV2.getReceipt().getTransferList().getTransfer();
-        transfers = transfers.stream()
-                .filter(transfer -> transfer.getFiscalCodePA().equals(rpt.getRpt().getDomain().getDomainId()))
-                .toList();
-
-        BigDecimal amount = transfers.stream()
-                .map(CtTransferPAReceiptV2::getTransferAmount)
-                .reduce(BigDecimal::add)
-                .orElse(deepCopySendRTV2.getReceipt().getPaymentAmount());
-        deepCopySendRTV2.getReceipt().setPaymentAmount(amount);
-        deepCopySendRTV2.setIdPA(rpt.getRpt().getDomain().getDomainId());
-
-        CtTransferListPAReceiptV2 transferList = new CtTransferListPAReceiptV2();
-        transferList.getTransfer().addAll(transfers);
-        deepCopySendRTV2.getReceipt().setTransferList(transferList);
-        return deepCopySendRTV2;
     }
 
     public String generateKoRtFromSessionData(String creditorInstitutionId, String iuv, RPTContentDTO rpt,
@@ -359,6 +371,7 @@ public class ReceiptService {
         // use the retrieved RPT for generate session data information on which the next execution will operate
         return this.rptExtractorService.extractSessionData(rptRequestEntity.getPrimitive(), rptRequestEntity.getPayload());
     }
+
 
     private SessionDataDTO getSessionDataFromCachedKeys(CachedKeysMapping cachedMapping) {
 
@@ -445,17 +458,6 @@ public class ReceiptService {
         return isSuccessful;
     }
 
-    private List<RPTContentDTO> extractRequiredRPTs(SessionDataDTO sessionData, String iuv, String creditorInstiutionId) {
-        List<RPTContentDTO> rpts;
-        if (Boolean.TRUE.equals(sessionData.getCommonFields().getIsMultibeneficiary())) {
-            rpts = sessionData.getAllRPTs().stream().toList();
-        } else {
-            rpts = sessionData.getAllRPTs().stream()
-                    .filter(rpt -> rpt.getIuv().equals(iuv) && rpt.getRpt().getDomain().getDomainId().equals(creditorInstiutionId))
-                    .toList();
-        }
-        return rpts;
-    }
 
     private CtRicevutaTelematica generateRTContentForKoReceipt(RPTContentDTO rpt, Map<String, ConfigurationKeyDto> configurations, Instant now, String paymentOutcome) {
 

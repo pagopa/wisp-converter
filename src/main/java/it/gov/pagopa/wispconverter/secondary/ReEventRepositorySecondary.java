@@ -68,8 +68,8 @@ public interface ReEventRepositorySecondary extends CosmosRepository<ReEventEnti
             "AND c.eventCategory = 'INTERFACE' AND c.eventSubcategory = 'REQ' " +
             "AND c.businessProcess = @businessProcess " +
             "AND c.operationId = @operationId " +
-            "AND c.status = @status ORDER BY c._ts OFFSET 0 LIMIT 1")
-    Optional<ReEventEntity> findFirstInterfaceRequestByPartitionKey(
+            "AND c.status = null ORDER BY c._ts OFFSET 0 LIMIT 1")
+    List<ReEventEntity> findFirstInterfaceRequestByPartitionKey(
             @Param("date") String partitionKey,
             @Param("businessProcess") String businessProcess,
             @Param("operationId") String operationId

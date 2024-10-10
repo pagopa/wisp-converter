@@ -1,5 +1,6 @@
 package it.gov.pagopa.wispconverter.service;
 
+import com.azure.cosmos.models.PartitionKey;
 import com.google.gson.Gson;
 import gov.telematici.pagamenti.ws.nodoperpa.ppthead.IntestazionePPT;
 import gov.telematici.pagamenti.ws.pafornode.PaSendRTV2Request;
@@ -43,6 +44,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 @Service
 @Slf4j
@@ -222,6 +225,10 @@ public class RecoveryService {
     }
 
     private void generateRE(String primitive, String operationStatus, InternalStepStatus status, String domainId, String iuv, String ccp, String sessionId) {
+        generateRE(primitive, operationStatus, status, domainId, iuv, ccp, sessionId, null);
+    }
+
+    private void generateRE(String primitive, String operationStatus, InternalStepStatus status, String domainId, String iuv, String ccp, String sessionId, String info) {
 
         // setting data in MDC for next use
         ReEventDto reEvent = ReUtil.getREBuilder()
@@ -233,8 +240,24 @@ public class RecoveryService {
                 .iuv(iuv)
                 .ccp(ccp)
                 .noticeNumber(null)
+                .info(info)
                 .build();
         reService.addRe(reEvent);
+    }
+
+    public RecoveryReceiptReportResponse recoverReceiptToBeReSentByPartition(RecoveryReceiptByPartitionRequest request) {
+
+        List<String> receiptsIds = request.getPartitionKeys().stream()
+                .map(PartitionKey::new)
+                .flatMap(partitionKey -> StreamSupport.stream(rtRetryRepository.findAll(partitionKey).spliterator(), false))
+                .map(RTRequestEntity::getId)
+                .toList();
+
+        RecoveryReceiptRequest req = RecoveryReceiptRequest.builder()
+                .receiptIds(receiptsIds)
+                .build();
+
+        return recoverReceiptToBeReSent(req);
     }
 
     public RecoveryReceiptReportResponse recoverReceiptToBeReSent(RecoveryReceiptRequest request) {
@@ -263,6 +286,7 @@ public class RecoveryService {
                 }
 
                 sessionId = idempotencyKeyComponents[0];
+                MDC.put(Constants.MDC_SESSION_ID, sessionId);
                 Optional<RPTRequestEntity> rptRequestOpt = rptRequestRepository.findById(sessionId);
                 if (rptRequestOpt.isEmpty()) {
                     throw new AppException(AppErrorCodeMessageEnum.ERROR, String.format("No valid RPT request found with id [%s].", sessionId));
@@ -297,33 +321,38 @@ public class RecoveryService {
 
                 String domainId = oldReceiptHeader.getIdentificativoDominio();
                 String iuv = oldReceiptHeader.getIdentificativoUnivocoVersamento();
-                String ccp = oldReceiptHeader.getCodiceContestoPagamento();
 
                 // retrieve the needed RPT
-                RPTContentDTO rpt = sessionData.getAllRPTs().stream()
-                        .filter(rptContent ->
-                                domainId.equals(rptContent.getRpt().getDomain().getDomainId()) &&
-                                iuv.equals(rptContent.getIuv()) &&
-                                ccp.equals(rptContent.getCcp())
-                        )
-                        .findFirst()
-                        .orElseThrow(() -> new Exception("No valid RPT found for receipt with id " + receiptId));
+                List<RPTContentDTO> rpts = ReceiptService.extractRequiredRPTs(sessionData, iuv, domainId);
+                int overrideId = 1;
+                for (RPTContentDTO rpt : rpts) {
 
-                // Re-generate the RT payload in order to actualize values and structural errors
-                // If newly-generated payload is not null, the data in 'receipt-rt' is updated with extracted data
-                String newlyGeneratedPayload = regenerateReceiptPayload(rtRequestEntity.getPartitionKey(), rtRequestEntity.getReceiptType(), sessionData, rpt, objectFactory);
+                    // Re-generate the RT payload in order to actualize values and structural errors
+                    // If newly-generated payload is not null, the data in 'receipt-rt' is updated with extracted data
+                    String newlyGeneratedPayload = regenerateReceiptPayload(rtRequestEntity.getPartitionKey(), rtRequestEntity.getReceiptType(), sessionData, rpt, objectFactory);
 
-                String payload = newlyGeneratedPayload != null ? newlyGeneratedPayload : oldReceipt;
+                    String payload = newlyGeneratedPayload != null ? newlyGeneratedPayload : oldReceipt;
 
-                // update entity from 'receipt' container with retry 0 and newly-generated payload
-                rtRequestEntity.setRetry(0);
-                rtRequestEntity.setPayload(AppBase64Util.base64Encode(ZipUtil.zip(payload)));
-                rtRetryRepository.save(rtRequestEntity);
+                    // update entity from 'receipt' container with retry 0 and newly-generated payload
+                    String rptDomainId = rpt.getRpt().getDomain().getDomainId();
+                    String overriddenIdempotencyKey = String.format("%s_%s_%s", idempotencyKeyComponents[0], idempotencyKeyComponents[1], rptDomainId);
+                    String overriddenReceiptId = receiptId + "-" + overrideId;
+                    rtRequestEntity.setId(overriddenReceiptId);
+                    rtRequestEntity.setDomainId(domainId);
+                    rtRequestEntity.setIdempotencyKey(overriddenIdempotencyKey);
+                    rtRequestEntity.setRetry(46); // TODO set 0
+                    rtRequestEntity.setPayload(AppBase64Util.base64Encode(ZipUtil.zip(payload)));
+                    rtRetryRepository.save(rtRequestEntity);
 
-                String compositedIdForReceipt = String.format("%s_%s", rtRequestEntity.getPartitionKey(), rtRequestEntity.getId());
-                serviceBusService.sendMessage(compositedIdForReceipt, null);
-                generateRE(null, "Success", InternalStepStatus.RT_SEND_RESCHEDULING_SUCCESS, null, null, null, sessionId);
-                response.getReceiptStatus().add(Pair.of(receiptId, "SCHEDULED"));
+                    String compositedIdForReceipt = String.format("%s_%s", rtRequestEntity.getPartitionKey(), rtRequestEntity.getId());
+                    serviceBusService.sendMessage(compositedIdForReceipt, null);
+                    generateRE(null, "Success", InternalStepStatus.RT_SEND_RESCHEDULING_SUCCESS,
+                            null, null, null, sessionId, String.format("Generated receipt: %s", overriddenReceiptId));
+                    response.getReceiptStatus().add(Pair.of(overriddenReceiptId, "SCHEDULED"));
+                    overrideId += 1;
+                }
+                // remove old receipt
+                rtRetryRepository.deleteById(receiptId, new PartitionKey(rtRequestEntity.getPartitionKey()));
 
             } catch (Exception e) {
 
@@ -391,16 +420,17 @@ public class RecoveryService {
         List<ReEventEntity> events = reEventRepository.findBySessionIdAndStatusAndPartitionKey(partitionKey, sessionData.getCommonFields().getSessionId(), InternalStepStatus.POSITIVE_RT_TRY_TO_SEND_TO_CREDITOR_INSTITUTION.toString());
         for(ReEventEntity event : events) {
             // use operationId used to retrieve the related paSendRTV2 primitives
-            Optional<ReEventEntity> interfaceReqEventOpt = reEventRepository.findFirstInterfaceRequestByPartitionKey(partitionKey, ReceiptController.BP_RECEIPT_OK, event.getOperationId());
-            if (interfaceReqEventOpt.isPresent()) {
+            List<ReEventEntity> interfaceReqEventOpt = reEventRepository.findFirstInterfaceRequestByPartitionKey(partitionKey, ReceiptController.BP_RECEIPT_OK, event.getOperationId());
+            if (!interfaceReqEventOpt.isEmpty()) {
 
                 // get the compressed payload from event and decompress it, parsing a well-formed request
-                String unzippedRequest = new String(ZipUtil.unzip(AppBase64Util.base64Decode(interfaceReqEventOpt.get().getCompressedPayload())));
+                ReEventEntity reEvent = interfaceReqEventOpt.get(0);
+                String unzippedRequest = new String(ZipUtil.unzip(AppBase64Util.base64Decode(reEvent.getCompressedPayload())));
                 ReceiptRequest receiptOkRequest = new Gson().fromJson(unzippedRequest, ReceiptRequest.class);
 
                 // now, from request the paSendRTV2 content can be extracted
-                SOAPMessage envelopeElement = jaxbElementUtil.getMessage(receiptOkRequest.getContent());
-                PaSendRTV2Request paSendRTV2 = jaxbElementUtil.getBody(envelopeElement, PaSendRTV2Request.class);
+                // actualize content for correctly handle multibeneficiary carts
+                PaSendRTV2Request paSendRTV2 = ReceiptService.extractDataFromPaSendRT(jaxbElementUtil, receiptOkRequest.getContent(), rpt);
 
                 // check if it is the right paSendRTV2
                 if (paSendRTV2.getIdPA().equals(rpt.getRpt().getDomain().getDomainId()) && paSendRTV2.getReceipt().getCreditorReferenceId().equals(rpt.getIuv())) {
