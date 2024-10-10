@@ -6,7 +6,6 @@ import gov.telematici.pagamenti.ws.papernodo.PaaInviaRTRisposta;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.ReceiptDeadLetterRepository;
-import it.gov.pagopa.wispconverter.repository.model.ReceiptDeadLetterEntity;
 import it.gov.pagopa.wispconverter.repository.model.enumz.ClientEnum;
 import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
 import it.gov.pagopa.wispconverter.repository.model.enumz.OutcomeEnum;
@@ -46,8 +45,6 @@ public class PaaInviaRTSenderService {
 
     private final JaxbElementUtil jaxbElementUtil;
 
-    private final ReceiptDeadLetterRepository receiptDeadLetterRepository;
-
     @Value("#{'${wisp-converter.rt-send.no-dead-letter-on-states}'.split(',')}")
     private List<String> noDeadLetterOnStates;
 
@@ -71,7 +68,7 @@ public class PaaInviaRTSenderService {
             // Save an RE event in order to track the communication with creditor institution
             generateREForRequestToCreditorInstitution(uri.toString(), headers, payload);
 
-            // Communicating with creditor institution sending the paaInviaRT request
+            // Retrieving response from creditor institution paaInviaRT response
             ResponseEntity<String> response = bodySpec.retrieve().toEntity(String.class);
             String bodyPayload = response.getBody();
 
@@ -82,36 +79,28 @@ public class PaaInviaRTSenderService {
             PaaInviaRTRisposta body = checkResponseValidity(response, bodyPayload);
 
             // check the response and if the outcome is KO, throw an exception
-            EsitoPaaInviaRT esitoPaaInviaRT = body.getPaaInviaRTRisposta();
+            EsitoPaaInviaRT paaInviaRTRisposta = body.getPaaInviaRTRisposta();
             // check the response if the dead letter sending is needed
-            boolean isSavedDeadLetter = checkIfSendDeadLetter(esitoPaaInviaRT);
+            boolean isSavedDeadLetter = checkIfSendDeadLetter(paaInviaRTRisposta);
 
             // set the correct response regarding the creditor institution response
-            if (Constants.KO.equals(esitoPaaInviaRT.getEsito())) {
-                rtReceiptCosmosService.updateReceiptStatus(domainId, iuv, ccp, ReceiptStatusEnum.SENT_REJECTED_BY_EC);
-                if (isSavedDeadLetter) {
-                    receiptDeadLetterRepository.save(
-                            ReceiptDeadLetterEntity.builder()
-                                    .id(domainId + "_" + iuv + "_" + ccp)
-                                    .faultCode(esitoPaaInviaRT.getFault() != null ? esitoPaaInviaRT.getFault().getFaultCode() : "ND")
-                                    .payload(esitoPaaInviaRT.getFault() != null ? esitoPaaInviaRT.getFault().getDescription() : "NO_FAULT_FIELDS_PRESENT")
-                                    .build()
-                    );
-                }
-                generateREForAlreadySentRtToCreditorInstitution();
-            } else if (Constants.OK.equals(esitoPaaInviaRT.getEsito())) {
+            if (Constants.OK.equals(paaInviaRTRisposta.getEsito())) {
                 rtReceiptCosmosService.updateReceiptStatus(domainId, iuv, ccp, ReceiptStatusEnum.SENT);
                 generateREForAlreadySentRtToCreditorInstitution();
             } else {
-                    FaultBean fault = esitoPaaInviaRT.getFault();
-                    String faultCode = "ND";
-                    String faultString = "ND";
-                    String faultDescr = "ND";
-                    if (fault != null) {
-                        faultCode = fault.getFaultCode();
-                        faultString = fault.getFaultString();
-                        faultDescr = fault.getDescription();
-                    }
+                rtReceiptCosmosService.updateReceiptStatus(domainId, iuv, ccp, ReceiptStatusEnum.SENT_REJECTED_BY_EC);
+                FaultBean fault = paaInviaRTRisposta.getFault();
+                String faultCode = "ND";
+                String faultString = "ND";
+                String faultDescr = "ND";
+                if (fault != null) {
+                    faultCode = fault.getFaultCode();
+                    faultString = fault.getFaultString();
+                    faultDescr = fault.getDescription();
+                }
+                if(isSavedDeadLetter) {
+                    throw new AppException(AppErrorCodeMessageEnum.RECEIPT_GENERATION_ERROR_DEAD_LETTER, paaInviaRTRisposta.getEsito(), faultCode, faultString, faultDescr);
+                }
                 throw new AppException(AppErrorCodeMessageEnum.RECEIPT_GENERATION_ERROR_RESPONSE_FROM_CREDITOR_INSTITUTION, faultCode, faultString, faultDescr);
             }
 
@@ -155,7 +144,7 @@ public class PaaInviaRTSenderService {
 
     private PaaInviaRTRisposta checkResponseValidity(ResponseEntity<String> response, String rawBody) {
 
-        // check the response received and, if is a 4xx or a 5xx HTTP error code throw an exception
+        // check the response received and, if the status code is not a 2xx code, it throws an exception
         if (!response.getStatusCode().is2xxSuccessful()) {
             throw new AppException(AppErrorCodeMessageEnum.CLIENT_PAAINVIART, "Error response: " + response.getStatusCode().value());
         }

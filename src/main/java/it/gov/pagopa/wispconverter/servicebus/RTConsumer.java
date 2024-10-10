@@ -188,6 +188,8 @@ public class RTConsumer extends SBConsumer {
 
         } catch (AppException e) {
 
+            //TODO: in case of dead letter catch custom excpetion and delete the item in the receipt collection like at line 182
+
             // generate a new event in RE for store the unsuccessful re-sending of the receipt
             generateREForNotSentRT(e);
 
