@@ -432,28 +432,30 @@ public class ReceiptService {
                 generateREForSentRT(rpt, iuv, noticeNumber);
                 idempotencyStatus = IdempotencyStatusEnum.SUCCESS;
                 isSuccessful = true;
-
-            } catch (Exception e) {
-
-                String message = e.getMessage();
-                if (e instanceof AppException appException) {
-                    message = appException.getError().getDetail();
-                    if(appException.getError().equals(AppErrorCodeMessageEnum.RECEIPT_GENERATION_ERROR_DEAD_LETTER)) {
-                        try {
-                            RTRequestEntity rtRequestEntity = generateRTRequestEntity(sessionData, uri, proxyAddress, headers, receiptContentDTO.getPaaInviaRTPayload(), station, rpt, idempotencyKey, receiptType);
-                            receiptDeadLetterRepository.save(mapper.convertValue(rtRequestEntity, ReceiptDeadLetterEntity.class));
-                            generateREDeadLetter(rpt, noticeNumber, InternalStepStatus.RT_DEAD_LETTER_SAVED, receipt.toString());
-                        } catch (Exception ex) {
-                            generateREDeadLetter(rpt, noticeNumber, InternalStepStatus.RT_DEAD_LETTER_FAILED, receipt.toString());
-                        }
-                    } else {
-                        // because of the not sent receipt, it is necessary to schedule a retry of the sending process for this receipt
-                        scheduleRTSend(sessionData, uri, proxyAddress, headers, receiptContentDTO.getPaaInviaRTPayload(), station, rpt, noticeNumber, idempotencyKey, receiptType);
+            } catch (AppException e) {
+                String message = e.getError().getDetail();
+                if(e.getError().equals(AppErrorCodeMessageEnum.RECEIPT_GENERATION_ERROR_DEAD_LETTER)) {
+                    try {
+                        RTRequestEntity rtRequestEntity = generateRTRequestEntity(sessionData, uri, proxyAddress, headers, receiptContentDTO.getPaaInviaRTPayload(), station, rpt, idempotencyKey, receiptType);
+                        receiptDeadLetterRepository.save(mapper.convertValue(rtRequestEntity, ReceiptDeadLetterEntity.class));
+                        generateREDeadLetter(rpt, noticeNumber, InternalStepStatus.RT_DEAD_LETTER_SAVED, receipt.toString());
+                    } catch (IOException ex) {
+                        generateREDeadLetter(rpt, noticeNumber, InternalStepStatus.RT_DEAD_LETTER_FAILED, receipt.toString());
                     }
                 } else {
                     // because of the not sent receipt, it is necessary to schedule a retry of the sending process for this receipt
                     scheduleRTSend(sessionData, uri, proxyAddress, headers, receiptContentDTO.getPaaInviaRTPayload(), station, rpt, noticeNumber, idempotencyKey, receiptType);
+                    log.error("Exception: " + AppErrorCodeMessageEnum.RECEIPT_KO_NOT_GENERATED_BUT_MAYBE_RESCHEDULED.getDetail());
+                    generateREForNotSentRT(rpt, iuv, noticeNumber, message);
                 }
+                idempotencyStatus = IdempotencyStatusEnum.FAILED;
+            } catch (Exception e) {
+
+                String message = e.getMessage();
+
+                // because of the not sent receipt, it is necessary to schedule a retry of the sending process for this receipt
+                scheduleRTSend(sessionData, uri, proxyAddress, headers, receiptContentDTO.getPaaInviaRTPayload(), station, rpt, noticeNumber, idempotencyKey, receiptType);
+
                 // generate a new event in RE for store the unsuccessful sending of the receipt
                 log.error("Exception: " + AppErrorCodeMessageEnum.RECEIPT_KO_NOT_GENERATED_BUT_MAYBE_RESCHEDULED.getDetail());
                 generateREForNotSentRT(rpt, iuv, noticeNumber, message);
@@ -776,30 +778,31 @@ public class ReceiptService {
                 // generate a new event in RE for store the successful sending of the receipt
                 generateREForSentRT(rpt, rpt.getIuv(), null);
                 idempotencyStatus = IdempotencyStatusEnum.SUCCESS;
+            } catch (AppException e) {
+                String message = e.getError().getDetail();
+                if(e.getError().equals(AppErrorCodeMessageEnum.RECEIPT_GENERATION_ERROR_DEAD_LETTER)) {
+                    try {
+                        RTRequestEntity rtRequestEntity = generateRTRequestEntity(sessionDataDTO, uri, proxyAddress, headers,rtRawPayload, station, rpt, idempotencyKey, ReceiptTypeEnum.KO);
+                        receiptDeadLetterRepository.save(mapper.convertValue(rtRequestEntity, ReceiptDeadLetterEntity.class));
+                        generateREDeadLetter(rpt, null, InternalStepStatus.RT_DEAD_LETTER_SAVED, null);
+                    } catch (IOException ex) {
+                        generateREDeadLetter(rpt, null, InternalStepStatus.RT_DEAD_LETTER_FAILED, null);
+                    }
+                } else {
+                    // because of the not sent receipt, it is necessary to schedule a retry of the sending process for this receipt
+                    scheduleRTSend(sessionDataDTO, uri, proxyAddress, headers, rtRawPayload, station, rpt, null, idempotencyKey, ReceiptTypeEnum.KO);
+                    log.error("Exception: " + AppErrorCodeMessageEnum.RECEIPT_KO_NOT_GENERATED_BUT_MAYBE_RESCHEDULED.getDetail());
+                    generateREForNotSentRT(rpt, iuv, null, message);
+                }
+                idempotencyStatus = IdempotencyStatusEnum.FAILED;
 
             } catch (Exception e) {
 
                 // generate a new event in RE for store the unsuccessful sending of the receipt
                 String message = e.getMessage();
-                if (e instanceof AppException appException) {
-                    message = appException.getError().getDetail();
-                    if(appException.getError().equals(AppErrorCodeMessageEnum.RECEIPT_GENERATION_ERROR_DEAD_LETTER)) {
-                        try {
-                            // generate element to be put in dead letter container
-                            RTRequestEntity rtRequestEntity = generateRTRequestEntity(sessionDataDTO, uri, proxyAddress, headers, rtRawPayload, station, rpt, idempotencyKey, ReceiptTypeEnum.KO);
-                            receiptDeadLetterRepository.save(mapper.convertValue(rtRequestEntity, ReceiptDeadLetterEntity.class));
-                            generateREDeadLetter(rpt, null, InternalStepStatus.RT_DEAD_LETTER_SAVED, null);
-                        } catch (Exception ex) {
-                            generateREDeadLetter(rpt, null, InternalStepStatus.RT_DEAD_LETTER_FAILED, null);
-                        }
-                    } else {
-                        // because of the not sent receipt, it is necessary to schedule a retry of the sending process for this receipt
-                        scheduleRTSend(sessionDataDTO, uri, proxyAddress, headers, rtRawPayload, station, rpt, null, idempotencyKey, ReceiptTypeEnum.KO);
-                    }
-                } else {
-                    // because of the not sent receipt, it is necessary to schedule a retry of the sending process for this receipt
-                    scheduleRTSend(sessionDataDTO, uri, proxyAddress, headers, rtRawPayload, station, rpt, null, idempotencyKey, ReceiptTypeEnum.KO);
-                }
+
+                // because of the not sent receipt, it is necessary to schedule a retry of the sending process for this receipt
+                scheduleRTSend(sessionDataDTO, uri, proxyAddress, headers, rtRawPayload, station, rpt, null, idempotencyKey, ReceiptTypeEnum.KO);
 
                 log.error("Exception: " + AppErrorCodeMessageEnum.RECEIPT_KO_NOT_GENERATED_BUT_MAYBE_RESCHEDULED.getDetail());
                 generateREForNotSentRT(rpt, rpt.getIuv(), null, message);
