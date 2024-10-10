@@ -93,7 +93,7 @@ public class RecoveryController {
 
     @Operation(summary = "Execute reconciliation for passed receipts.", description = "Execute reconciliation of all receipts in the request, searching by passed identifier", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"Recovery"})
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Reconciliation completed")
+            @ApiResponse(responseCode = "200", description = "Reconciliation scheduled")
     })
     @PostMapping(value = "/receipts")
     public ResponseEntity<RecoveryReceiptReportResponse> recoverReceiptToBeReSent(@RequestBody RecoveryReceiptRequest request) {
@@ -110,9 +110,9 @@ public class RecoveryController {
         }
     }
 
-    @Operation(summary = "Execute reconciliation by partition for passed receipts.", description = "Execute reconciliation of all partition in the request, searching by passed identifier", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"Recovery"})
+    @Operation(summary = "Execute reconciliation for passed receipts by partition.", description = "Execute reconciliation of all receipts contained in the partitions of the request", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"Recovery"})
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Reconciliation completed")
+            @ApiResponse(responseCode = "200", description = "Reconciliation scheduled")
     })
     @PostMapping(value = "/partitions")
     public ResponseEntity<RecoveryReceiptReportResponse> recoverReceiptToBeReSentByPartition(@RequestBody RecoveryReceiptByPartitionRequest request) {
