@@ -3,8 +3,10 @@ package it.gov.pagopa.wispconverter.repository.model;
 import com.azure.spring.data.cosmos.core.mapping.Container;
 import com.azure.spring.data.cosmos.core.mapping.PartitionKey;
 import it.gov.pagopa.wispconverter.repository.model.enumz.ReceiptTypeEnum;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 import org.springframework.data.annotation.Id;
@@ -16,6 +18,8 @@ import java.util.List;
 @ToString(exclude = "payload")
 @EqualsAndHashCode(exclude = "payload")
 @SuperBuilder(toBuilder = true)
+@AllArgsConstructor
+@NoArgsConstructor
 public class RTRequestEntity {
 
     @Id
