@@ -43,8 +43,8 @@ public class RPTTimerService {
     @Value("${wisp-converter.wisp-rpt.timeout.seconds}")
     private Integer expirationTime;
 
-    @Value("${disable-service-bus}")
-    private boolean disableServiceBus;
+    @Value("${disable-service-bus-sender}")
+    private boolean disableServiceBusSender;
 
     private ReService reService;
 
@@ -78,7 +78,7 @@ public class RPTTimerService {
      * @param message the message to send on the queue of the service bus.
      */
     public void sendMessage(RPTTimerRequest message) {
-        if (!disableServiceBus) {
+        if (!disableServiceBusSender) {
             String sessionId = message.getSessionId();
             setRPTTimerInfoInMDC(sessionId);
 
@@ -123,7 +123,7 @@ public class RPTTimerService {
      * @param sessionId use to find the message
      */
     public void cancelScheduledMessage(String sessionId) {
-        if (!disableServiceBus) {
+        if (!disableServiceBusSender) {
             log.debug("Cancel scheduled message for RPTTimer {}", sanitizeInput(sessionId));
             String key = String.format(RPT_TIMER_MESSAGE_KEY_FORMAT, sessionId);
 
@@ -147,7 +147,7 @@ public class RPTTimerService {
     }
 
     private void callCancelScheduledMessage(String sequenceNumberString) {
-        if (!disableServiceBus) {
+        if (!disableServiceBusSender) {
             long sequenceNumber = Long.parseLong(sequenceNumberString);
             try {
                 // delete the message from the queue

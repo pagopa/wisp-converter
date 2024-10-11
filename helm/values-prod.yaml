@@ -221,5 +221,6 @@ cron:
   envConfig:
     !!merge <<: *envConfig
     CRON_JOB_SCHEDULE_RECOVERY_ENABLED: 'false'
+    DISABLE_SERVICE_BUS_RECEIVER: 'true'
   envSecret:
     !!merge <<: *envSecret

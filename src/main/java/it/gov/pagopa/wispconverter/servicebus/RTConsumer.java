@@ -71,12 +71,12 @@ public class RTConsumer extends SBConsumer {
     @Autowired
     private JaxbElementUtil jaxbElementUtil;
 
-    @Value("${disable-service-bus}")
-    private boolean disableServiceBus;
+    @Value("${disable-service-bus-receiver}")
+    private boolean disableServiceBusReceiver;
 
     @EventListener(ApplicationReadyEvent.class)
     public void initializeClient() {
-        if (receiverClient != null && !disableServiceBus) {
+        if (receiverClient != null && !disableServiceBusReceiver) {
             log.info("[Scheduled] Starting RTConsumer {}", ZonedDateTime.now());
             receiverClient.start();
         }
@@ -84,7 +84,7 @@ public class RTConsumer extends SBConsumer {
 
     @PostConstruct
     public void post() {
-        if (StringUtils.isNotBlank(connectionString) && !connectionString.equals("-") && !disableServiceBus) {
+        if (StringUtils.isNotBlank(connectionString) && !connectionString.equals("-") && !disableServiceBusReceiver) {
             receiverClient = CommonUtility
                     .getServiceBusProcessorClient(
                             connectionString, queueName, this::processMessage, this::processError
