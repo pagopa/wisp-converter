@@ -209,11 +209,11 @@ cron:
   resources:
     !!merge <<: *resources
     requests:
-      memory: "256Mi"
-      cpu: "0.15"
+      memory: "640Mi"
+      cpu: "0.20"
     limits:
-      memory: "768Mi"
-      cpu: "0.25"
+      memory: "2048Mi"
+      cpu: "0.50"
     autoscaling:
       enable: true
       minReplica: 1
