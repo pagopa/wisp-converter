@@ -3,6 +3,7 @@ package it.gov.pagopa.wispconverter.repository.model;
 import com.azure.spring.data.cosmos.core.mapping.Container;
 import com.azure.spring.data.cosmos.core.mapping.PartitionKey;
 import it.gov.pagopa.wispconverter.repository.model.enumz.ReceiptTypeEnum;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -18,7 +19,7 @@ import java.util.List;
 @ToString(exclude = "payload")
 @EqualsAndHashCode(exclude = "payload")
 @SuperBuilder(toBuilder = true)
-@AllArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor
 public class RTRequestEntity {
 
