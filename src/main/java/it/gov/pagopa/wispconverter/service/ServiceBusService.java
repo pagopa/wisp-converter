@@ -23,6 +23,7 @@ public class ServiceBusService {
     @Value("${disable-service-bus}")
     private boolean disableServiceBus;
 
+    @Autowired
     private ServiceBusSenderClient serviceBusSenderClient;
 
     /*
