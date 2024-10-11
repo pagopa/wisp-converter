@@ -3,6 +3,7 @@ package it.gov.pagopa.wispconverter.endpoint;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.wispconverter.Application;
 import it.gov.pagopa.wispconverter.controller.model.ConfigurationModel;
+import it.gov.pagopa.wispconverter.repository.ReceiptDeadLetterRepository;
 import it.gov.pagopa.wispconverter.service.ConfigurationService;
 import it.gov.pagopa.wispconverter.service.RecoveryService;
 import org.junit.jupiter.api.Test;
@@ -27,6 +28,9 @@ class ConfigurationControllerTest {
 
     @MockBean
     private RecoveryService recoveryService;
+
+    @MockBean
+    private ReceiptDeadLetterRepository receiptDeadLetterRepository;
 
     @Autowired
     private MockMvc mvc;

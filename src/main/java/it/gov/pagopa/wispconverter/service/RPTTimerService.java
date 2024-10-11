@@ -111,7 +111,7 @@ public class RPTTimerService {
                 serviceBusSenderClient.cancelScheduledMessage(sequenceNumber);
 
                 // log event
-                log.debug("Timer not set due to an exception for rpt_timer_key: {} and sessionId: {}", key, sanitizeInput(sessionId));
+                log.debug("Timer not set due to an exception for rpt_timer_key: {} and sessionId: {}", sanitizeInput(key), sanitizeInput(sessionId));
                 generateRE(InternalStepStatus.RPT_TIMER_NOT_SET, "Exception timer not set: [" + sequenceNumber + "] for sessionId: [" + sessionId + "]");
             }
         }

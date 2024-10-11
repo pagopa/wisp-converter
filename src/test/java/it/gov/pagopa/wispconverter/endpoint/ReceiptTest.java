@@ -8,6 +8,7 @@ import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.CacheRepository;
 import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
+import it.gov.pagopa.wispconverter.repository.ReceiptDeadLetterRepository;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
 import it.gov.pagopa.wispconverter.service.ConfigCacheService;
 import it.gov.pagopa.wispconverter.service.PaaInviaRTSenderService;
@@ -59,6 +60,8 @@ class ReceiptTest {
     private CacheRepository cacheRepository;
     @MockBean
     RecoveryService recoveryService;
+    @MockBean
+    ReceiptDeadLetterRepository receiptDeadLetterRepository;
 
     private String getPaSendRTPayload() {
         return TestUtils.loadFileContent("/requests/paSendRTV2.xml");
