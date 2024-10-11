@@ -438,9 +438,9 @@ public class ReceiptService {
                     try {
                         RTRequestEntity rtRequestEntity = generateRTRequestEntity(sessionData, uri, proxyAddress, headers, receiptContentDTO.getPaaInviaRTPayload(), station, rpt, idempotencyKey, receiptType);
                         receiptDeadLetterRepository.save(mapper.convertValue(rtRequestEntity, ReceiptDeadLetterEntity.class));
-                        generateREDeadLetter(rpt, noticeNumber, InternalStepStatus.RT_DEAD_LETTER_SAVED, receipt.toString());
+                        generateREDeadLetter(rpt, noticeNumber, InternalStepStatus.RT_DEAD_LETTER_SAVED, null);
                     } catch (IOException ex) {
-                        generateREDeadLetter(rpt, noticeNumber, InternalStepStatus.RT_DEAD_LETTER_FAILED, receipt.toString());
+                        generateREDeadLetter(rpt, noticeNumber, InternalStepStatus.RT_DEAD_LETTER_FAILED, ex.getMessage());
                     }
                 } else {
                     // because of the not sent receipt, it is necessary to schedule a retry of the sending process for this receipt
@@ -848,6 +848,7 @@ public class ReceiptService {
                 .retry(0)
                 .idempotencyKey(idempotencyKey)
                 .receiptType(receiptType)
+                .station(station.getStationCode())
                 .build();
     }
 }

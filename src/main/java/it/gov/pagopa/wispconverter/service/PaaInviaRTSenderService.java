@@ -98,6 +98,7 @@ public class PaaInviaRTSenderService {
                     faultDescr = fault.getDescription();
                 }
                 if(isSavedDeadLetter) {
+                    // throw to move receipt to dead letter container
                     throw new AppException(AppErrorCodeMessageEnum.RECEIPT_GENERATION_ERROR_DEAD_LETTER, paaInviaRTRisposta.getEsito(), faultCode, faultString, faultDescr);
                 }
                 throw new AppException(AppErrorCodeMessageEnum.RECEIPT_GENERATION_ERROR_RESPONSE_FROM_CREDITOR_INSTITUTION, faultCode, faultString, faultDescr);
