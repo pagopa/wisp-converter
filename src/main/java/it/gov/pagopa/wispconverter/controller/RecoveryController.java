@@ -24,6 +24,8 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.*;
 
+import static it.gov.pagopa.wispconverter.util.CommonUtility.sanitizeInput;
+
 @RestController
 @RequestMapping("/recovery")
 @Validated
@@ -98,7 +100,7 @@ public class RecoveryController {
     @PostMapping(value = "/receipts")
     public ResponseEntity<RecoveryReceiptReportResponse> recoverReceiptToBeReSent(@RequestBody RecoveryReceiptRequest request) {
         try {
-            log.info("Invoking API operation recoverReceiptToBeReSent - args: {}", request);
+            log.info("Invoking API operation recoverReceiptToBeReSent - args: {}", sanitizeInput(request.toString()));
             return ResponseEntity.ok(recoveryService.recoverReceiptToBeReSent(request));
         } catch (Exception ex) {
             String operationId = MDC.get(Constants.MDC_OPERATION_ID);
@@ -117,7 +119,7 @@ public class RecoveryController {
     @PostMapping(value = "/partitions")
     public ResponseEntity<RecoveryReceiptReportResponse> recoverReceiptToBeReSentByPartition(@RequestBody RecoveryReceiptByPartitionRequest request) {
         try {
-            log.info("Invoking API operation recoverReceiptToBeReSentByPartition - args: {}", request);
+            log.info("Invoking API operation recoverReceiptToBeReSentByPartition - args: {}", sanitizeInput(request.toString()));
             return ResponseEntity.ok(recoveryService.recoverReceiptToBeReSentByPartition(request));
         } catch (Exception ex) {
             String operationId = MDC.get(Constants.MDC_OPERATION_ID);
