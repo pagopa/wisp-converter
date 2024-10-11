@@ -44,6 +44,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 @Service
 @Slf4j
@@ -241,6 +243,21 @@ public class RecoveryService {
                 .info(info)
                 .build();
         reService.addRe(reEvent);
+    }
+
+    public RecoveryReceiptReportResponse recoverReceiptToBeReSentByPartition(RecoveryReceiptByPartitionRequest request) {
+
+        List<String> receiptsIds = request.getPartitionKeys().stream()
+                .map(PartitionKey::new)
+                .flatMap(partitionKey -> StreamSupport.stream(rtRetryRepository.findAll(partitionKey).spliterator(), false))
+                .map(RTRequestEntity::getId)
+                .toList();
+
+        RecoveryReceiptRequest req = RecoveryReceiptRequest.builder()
+                .receiptIds(receiptsIds)
+                .build();
+
+        return recoverReceiptToBeReSent(req);
     }
 
     public RecoveryReceiptReportResponse recoverReceiptToBeReSent(RecoveryReceiptRequest request) {
