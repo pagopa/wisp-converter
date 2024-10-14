@@ -52,6 +52,11 @@ import java.util.stream.StreamSupport;
 @RequiredArgsConstructor
 public class RecoveryService {
 
+    @Value("${wisp-converter.station-in-forwarder.partial-path}")
+    private String stationInForwarderPartialPath;
+
+    @Value("${wisp-converter.forwarder.api-key}")
+    private String forwarderSubscriptionKey;
     private static final String RPT_ACCETTATA_NODO = "RPT_ACCETTATA_NODO";
 
     private static final String STATUS_RT_SEND_SUCCESS = "RT_SEND_SUCCESS";
@@ -306,6 +311,9 @@ public class RecoveryService {
                         stationConnection.getPort().intValue(),
                         station.getService() != null ? station.getService().getPath() : ""
                 );
+                rtRequestEntity.setUrl(uri.toString());
+                rtRequestEntity.setHeaders(generateHeader(uri, station));
+
                 InetSocketAddress proxyAddress = CommonUtility.constructProxyAddress(uri, station, apimPath);
                 if (proxyAddress != null) {
                     rtRequestEntity.setProxyAddress(String.format("%s:%s", proxyAddress.getHostString(), proxyAddress.getPort()));
@@ -340,7 +348,7 @@ public class RecoveryService {
                     rtRequestEntity.setId(overriddenReceiptId);
                     rtRequestEntity.setDomainId(domainId);
                     rtRequestEntity.setIdempotencyKey(overriddenIdempotencyKey);
-                    rtRequestEntity.setRetry(46); // TODO set 0
+                    rtRequestEntity.setRetry(0);
                     rtRequestEntity.setPayload(AppBase64Util.base64Encode(ZipUtil.zip(payload)));
                     rtRetryRepository.save(rtRequestEntity);
 
@@ -364,6 +372,15 @@ public class RecoveryService {
         }
 
         return response;
+    }
+
+    private List<String> generateHeader(URI uri, StationDto station) {
+        List<Pair<String, String>> headers = CommonUtility.constructHeadersForPaaInviaRT(uri, station, stationInForwarderPartialPath, forwarderSubscriptionKey);
+        List<String> formattedHeaders = new LinkedList<>();
+        for (Pair<String, String> header : headers) {
+            formattedHeaders.add(header.getFirst() + ":" + header.getSecond());
+        }
+        return formattedHeaders;
     }
 
     /**

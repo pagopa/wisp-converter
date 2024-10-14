@@ -1,6 +1,5 @@
 package it.gov.pagopa.wispconverter.service;
 
-import com.azure.messaging.servicebus.ServiceBusClientBuilder;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.telematici.pagamenti.ws.nodoperpa.ppthead.IntestazionePPT;
@@ -16,8 +15,10 @@ import it.gov.pagopa.gen.wispconverter.client.cache.model.ConnectionDto;
 import it.gov.pagopa.gen.wispconverter.client.cache.model.StationDto;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
+import it.gov.pagopa.wispconverter.repository.ReceiptDeadLetterRepository;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
 import it.gov.pagopa.wispconverter.repository.model.RTRequestEntity;
+import it.gov.pagopa.wispconverter.repository.model.ReceiptDeadLetterEntity;
 import it.gov.pagopa.wispconverter.repository.model.enumz.IdempotencyStatusEnum;
 import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
 import it.gov.pagopa.wispconverter.repository.model.enumz.ReceiptStatusEnum;
@@ -41,7 +42,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.InetSocketAddress;
 import java.net.URI;
@@ -55,7 +56,6 @@ import java.util.Map;
 import java.util.UUID;
 
 import static it.gov.pagopa.wispconverter.util.Constants.PAA_INVIA_RT;
-import static it.gov.pagopa.wispconverter.util.Constants.PPT_HEAD;
 
 @Service
 @Slf4j
@@ -85,6 +85,8 @@ public class ReceiptService {
     private final PaaInviaRTSenderService paaInviaRTSenderService;
 
     private final ServiceBusService serviceBusService;
+
+    private final ReceiptDeadLetterRepository receiptDeadLetterRepository;
 
     private final it.gov.pagopa.gen.wispconverter.client.decouplercaching.invoker.ApiClient decouplerCachingClient;
 
@@ -430,20 +432,34 @@ public class ReceiptService {
                 generateREForSentRT(rpt, iuv, noticeNumber);
                 idempotencyStatus = IdempotencyStatusEnum.SUCCESS;
                 isSuccessful = true;
-
+            } catch (AppException e) {
+                String message = e.getError().getDetail();
+                if(e.getError().equals(AppErrorCodeMessageEnum.RECEIPT_GENERATION_ERROR_DEAD_LETTER)) {
+                    try {
+                        RTRequestEntity rtRequestEntity = generateRTRequestEntity(sessionData, uri, proxyAddress, headers, receiptContentDTO.getPaaInviaRTPayload(), station, rpt, idempotencyKey, receiptType);
+                        receiptDeadLetterRepository.save(mapper.convertValue(rtRequestEntity, ReceiptDeadLetterEntity.class));
+                        generateREDeadLetter(rpt, noticeNumber, InternalStepStatus.RT_DEAD_LETTER_SAVED, null);
+                    } catch (IOException ex) {
+                        generateREDeadLetter(rpt, noticeNumber, InternalStepStatus.RT_DEAD_LETTER_FAILED, ex.getMessage());
+                    }
+                } else {
+                    // because of the not sent receipt, it is necessary to schedule a retry of the sending process for this receipt
+                    scheduleRTSend(sessionData, uri, proxyAddress, headers, receiptContentDTO.getPaaInviaRTPayload(), station, rpt, noticeNumber, idempotencyKey, receiptType);
+                    log.error("Exception: " + AppErrorCodeMessageEnum.RECEIPT_KO_NOT_GENERATED_BUT_MAYBE_RESCHEDULED.getDetail());
+                    generateREForNotSentRT(rpt, iuv, noticeNumber, message);
+                }
+                idempotencyStatus = IdempotencyStatusEnum.FAILED;
             } catch (Exception e) {
 
-                // generate a new event in RE for store the unsuccessful sending of the receipt
                 String message = e.getMessage();
-                if (e instanceof AppException appException) {
-                    message = appException.getError().getDetail();
-                }
-
-                log.error("Exception: " + AppErrorCodeMessageEnum.RECEIPT_KO_NOT_GENERATED_BUT_MAYBE_RESCHEDULED.getDetail());
-                generateREForNotSentRT(rpt, iuv, noticeNumber, message);
 
                 // because of the not sent receipt, it is necessary to schedule a retry of the sending process for this receipt
                 scheduleRTSend(sessionData, uri, proxyAddress, headers, receiptContentDTO.getPaaInviaRTPayload(), station, rpt, noticeNumber, idempotencyKey, receiptType);
+
+                // generate a new event in RE for store the unsuccessful sending of the receipt
+                log.error("Exception: " + AppErrorCodeMessageEnum.RECEIPT_KO_NOT_GENERATED_BUT_MAYBE_RESCHEDULED.getDetail());
+                generateREForNotSentRT(rpt, iuv, noticeNumber, message);
+
                 idempotencyStatus = IdempotencyStatusEnum.FAILED;
             }
 
@@ -582,34 +598,8 @@ public class ReceiptService {
                                StationDto station, RPTContentDTO rpt, String noticeNumber, String idempotencyKey, ReceiptTypeEnum receiptType) {
 
         try {
-
-            List<String> formattedHeaders = new LinkedList<>();
-            for (Pair<String, String> header : headers) {
-                formattedHeaders.add(header.getFirst() + ":" + header.getSecond());
-            }
-
-            String proxy = null;
-            if (proxyAddress != null) {
-                proxy = String.format("%s:%s", proxyAddress.getHostString(), proxyAddress.getPort());
-            }
-
             // generate the RT to be persisted in storage, then save in the same storage
-            RTRequestEntity rtRequestEntity = RTRequestEntity.builder()
-                    .id(station.getBrokerCode() + "_" + UUID.randomUUID())
-                    .domainId(rpt.getRpt().getDomain().getDomainId())
-                    .iuv(rpt.getIuv())
-                    .ccp(rpt.getCcp())
-                    .sessionId(sessionData.getCommonFields().getSessionId())
-                    .primitive(PAA_INVIA_RT)
-                    .partitionKey(LocalDate.ofInstant(Instant.now(), ZoneId.systemDefault()).toString())
-                    .payload(AppBase64Util.base64Encode(ZipUtil.zip(payload)))
-                    .url(uri.toString())
-                    .proxyAddress(proxy)
-                    .headers(formattedHeaders)
-                    .retry(0)
-                    .idempotencyKey(idempotencyKey)
-                    .receiptType(receiptType)
-                    .build();
+            RTRequestEntity rtRequestEntity = generateRTRequestEntity(sessionData, uri, proxyAddress, headers, payload, station, rpt, idempotencyKey, receiptType);
             rtRetryComosService.saveRTRequestEntity(rtRequestEntity);
 
             // after the RT persist, send a message on the service bus
@@ -702,6 +692,15 @@ public class ReceiptService {
         generateRE(status, iuv, noticeNumber, rptContent.getCcp(), psp, info);
     }
 
+    private void generateREDeadLetter(RPTContentDTO rptContent, String noticeNumber, InternalStepStatus status, String info) {
+
+        // extract psp on which the payment will be sent
+        String psp = rptContent.getRpt().getPayeeInstitution().getSubjectUniqueIdentifier().getCode();
+
+        // creating event to be persisted for RE
+        generateRE(status, rptContent.getIuv(), noticeNumber, rptContent.getCcp(), psp, info);
+    }
+
     private void generateRE(InternalStepStatus status, String iuv, String noticeNumber, String ccp, String psp, String otherInfo) {
 
         // setting data in MDC for next use
@@ -779,20 +778,35 @@ public class ReceiptService {
                 // generate a new event in RE for store the successful sending of the receipt
                 generateREForSentRT(rpt, rpt.getIuv(), null);
                 idempotencyStatus = IdempotencyStatusEnum.SUCCESS;
+            } catch (AppException e) {
+                String message = e.getError().getDetail();
+                if(e.getError().equals(AppErrorCodeMessageEnum.RECEIPT_GENERATION_ERROR_DEAD_LETTER)) {
+                    try {
+                        RTRequestEntity rtRequestEntity = generateRTRequestEntity(sessionDataDTO, uri, proxyAddress, headers,rtRawPayload, station, rpt, idempotencyKey, ReceiptTypeEnum.KO);
+                        receiptDeadLetterRepository.save(mapper.convertValue(rtRequestEntity, ReceiptDeadLetterEntity.class));
+                        generateREDeadLetter(rpt, null, InternalStepStatus.RT_DEAD_LETTER_SAVED, null);
+                    } catch (IOException ex) {
+                        generateREDeadLetter(rpt, null, InternalStepStatus.RT_DEAD_LETTER_FAILED, null);
+                    }
+                } else {
+                    // because of the not sent receipt, it is necessary to schedule a retry of the sending process for this receipt
+                    scheduleRTSend(sessionDataDTO, uri, proxyAddress, headers, rtRawPayload, station, rpt, null, idempotencyKey, ReceiptTypeEnum.KO);
+                    log.error("Exception: " + AppErrorCodeMessageEnum.RECEIPT_KO_NOT_GENERATED_BUT_MAYBE_RESCHEDULED.getDetail());
+                    generateREForNotSentRT(rpt, iuv, null, message);
+                }
+                idempotencyStatus = IdempotencyStatusEnum.FAILED;
 
             } catch (Exception e) {
 
                 // generate a new event in RE for store the unsuccessful sending of the receipt
-                String messageException = e.getMessage();
-                if (e instanceof AppException appException) {
-                    messageException = appException.getError().getDetail();
-                }
-
-                log.error("Exception: " + AppErrorCodeMessageEnum.RECEIPT_KO_NOT_GENERATED_BUT_MAYBE_RESCHEDULED.getDetail());
-                generateREForNotSentRT(rpt, rpt.getIuv(), null, messageException);
+                String message = e.getMessage();
 
                 // because of the not sent receipt, it is necessary to schedule a retry of the sending process for this receipt
                 scheduleRTSend(sessionDataDTO, uri, proxyAddress, headers, rtRawPayload, station, rpt, null, idempotencyKey, ReceiptTypeEnum.KO);
+
+                log.error("Exception: " + AppErrorCodeMessageEnum.RECEIPT_KO_NOT_GENERATED_BUT_MAYBE_RESCHEDULED.getDetail());
+                generateREForNotSentRT(rpt, rpt.getIuv(), null, message);
+
                 idempotencyStatus = IdempotencyStatusEnum.FAILED;
             }
 
@@ -804,5 +818,37 @@ public class ReceiptService {
             }
         }
         MDC.clear();
+    }
+
+    private RTRequestEntity generateRTRequestEntity(SessionDataDTO sessionData, URI uri, InetSocketAddress proxyAddress, List<Pair<String, String>> headers, String payload,
+                                                    StationDto station, RPTContentDTO rpt, String idempotencyKey, ReceiptTypeEnum receiptType) throws IOException {
+        List<String> formattedHeaders = new LinkedList<>();
+        for (Pair<String, String> header : headers) {
+            formattedHeaders.add(header.getFirst() + ":" + header.getSecond());
+        }
+
+        String proxy = null;
+        if (proxyAddress != null) {
+            proxy = String.format("%s:%s", proxyAddress.getHostString(), proxyAddress.getPort());
+        }
+
+        // generate the RT
+        return RTRequestEntity.builder()
+                .id(station.getBrokerCode() + "_" + UUID.randomUUID())
+                .domainId(rpt.getRpt().getDomain().getDomainId())
+                .iuv(rpt.getIuv())
+                .ccp(rpt.getCcp())
+                .sessionId(sessionData.getCommonFields().getSessionId())
+                .primitive(PAA_INVIA_RT)
+                .partitionKey(LocalDate.ofInstant(Instant.now(), ZoneId.systemDefault()).toString())
+                .payload(AppBase64Util.base64Encode(ZipUtil.zip(payload)))
+                .url(uri.toString())
+                .proxyAddress(proxy)
+                .headers(formattedHeaders)
+                .retry(0)
+                .idempotencyKey(idempotencyKey)
+                .receiptType(receiptType)
+                .station(station.getStationCode())
+                .build();
     }
 }
