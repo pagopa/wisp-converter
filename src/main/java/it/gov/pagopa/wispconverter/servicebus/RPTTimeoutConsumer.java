@@ -62,10 +62,12 @@ public class RPTTimeoutConsumer extends SBConsumer {
     @Autowired
     private it.gov.pagopa.gen.wispconverter.client.decouplercaching.invoker.ApiClient decouplerCachingClient;
 
+    @Value("${disable-service-bus-receiver}")
+    private boolean disableServiceBusReceiver;
 
     @PostConstruct
     public void post() {
-        if (StringUtils.isNotBlank(connectionString) && !connectionString.equals("-")) {
+        if (StringUtils.isNotBlank(connectionString) && !connectionString.equals("-") && !disableServiceBusReceiver) {
             receiverClient = CommonUtility.getServiceBusProcessorClient(connectionString, queueName, this::processMessage, this::processError);
         }
     }
@@ -73,7 +75,7 @@ public class RPTTimeoutConsumer extends SBConsumer {
 
     @EventListener(ApplicationReadyEvent.class)
     public void initializeClient() {
-        if (receiverClient != null) {
+        if (receiverClient != null && !disableServiceBusReceiver) {
             log.info("[Scheduled] Starting RPTTimeoutConsumer {}", ZonedDateTime.now());
             receiverClient.start();
         }

@@ -18,6 +18,9 @@ public class ServiceBusService {
     @Value("${azure.sb.paaInviaRT.name}")
     private String queueName;
 
+    @Value("${disable-service-bus-sender}")
+    private boolean disableServiceBusSender;
+
     @Autowired
     private ServiceBusSenderClient serviceBusSenderClient;
 
@@ -25,12 +28,14 @@ public class ServiceBusService {
         Service Bus send message to paainviart Queue
     */
     public void sendMessage(String message, Integer scheduledTimeInMinutes) {
-        ServiceBusMessage serviceBusMessage = new ServiceBusMessage(message);
-        if (scheduledTimeInMinutes != null) {
-            serviceBusMessage.setScheduledEnqueueTime(ZonedDateTime.now().plusMinutes(scheduledTimeInMinutes).toOffsetDateTime());
+        if (!disableServiceBusSender) {
+            ServiceBusMessage serviceBusMessage = new ServiceBusMessage(message);
+            if (scheduledTimeInMinutes != null) {
+                serviceBusMessage.setScheduledEnqueueTime(ZonedDateTime.now().plusMinutes(scheduledTimeInMinutes).toOffsetDateTime());
+            }
+            log.debug("Rescheduling message [{}] at {}", message, serviceBusMessage.getScheduledEnqueueTime());
+            serviceBusSenderClient.sendMessage(serviceBusMessage);
+            log.debug("Rescheduled receipt [{}] at {} to the queue [{}]", message, serviceBusMessage.getScheduledEnqueueTime(), queueName);
         }
-        log.debug("Rescheduling message [{}] at {}", message, serviceBusMessage.getScheduledEnqueueTime());
-        serviceBusSenderClient.sendMessage(serviceBusMessage);
-        log.debug("Rescheduled receipt [{}] at {} to the queue [{}]", message, serviceBusMessage.getScheduledEnqueueTime(), queueName);
     }
 }

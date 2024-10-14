@@ -2,6 +2,7 @@ package it.gov.pagopa.wispconverter.endpoint;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.wispconverter.Application;
+import it.gov.pagopa.wispconverter.repository.ReceiptDeadLetterRepository;
 import it.gov.pagopa.wispconverter.service.*;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
@@ -40,6 +41,8 @@ class RecoveryTest {
     private RecoveryService recoveryService;
     @MockBean
     private ReceiptService receiptService;
+    @MockBean
+    private ReceiptDeadLetterRepository receiptDeadLetterRepository;
 
     @Test
     void testRecoverReceiptKOForCreditorInstitution() throws Exception {
