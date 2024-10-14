@@ -42,8 +42,8 @@ public class ECommerceHangTimerService {
     @Value("${wisp-converter.ecommerce-hang.timeout.seconds}")
     private Integer expirationTime;
 
-    @Value("${disable-service-bus}")
-    private boolean disableServiceBus;
+    @Value("${disable-service-bus-sender}")
+    private boolean disableServiceBusSender;
 
     private ReService reService;
 
@@ -74,7 +74,7 @@ public class ECommerceHangTimerService {
      * @param message the message to send on the queue of the service bus.
      */
     public void sendMessage(ECommerceHangTimeoutMessage message) {
-        if(!disableServiceBus) {
+        if(!disableServiceBusSender) {
             String noticeNumber = message.getNoticeNumber();
             String fiscalCode = message.getFiscalCode();
             setEcommerceHangTimerInfoInMDC(fiscalCode, noticeNumber);
@@ -111,7 +111,7 @@ public class ECommerceHangTimerService {
      * @param fiscalCode   use to find the message
      */
     public void cancelScheduledMessage(String noticeNumber, String fiscalCode) {
-        if(!disableServiceBus) {
+        if(!disableServiceBusSender) {
             log.debug("Cancel scheduled message for eCommerce hang release {} {}", sanitizeInput(noticeNumber), sanitizeInput(fiscalCode));
             String key = String.format(ECOMMERCE_TIMER_MESSAGE_KEY_FORMAT, noticeNumber, fiscalCode);
 
@@ -135,7 +135,7 @@ public class ECommerceHangTimerService {
     }
 
     private void callCancelScheduledMessage(String sequenceNumberString) {
-        if (!disableServiceBus) {
+        if (!disableServiceBusSender) {
             long sequenceNumber = Long.parseLong(sequenceNumberString);
             try {
                 // delete the message from the queue
