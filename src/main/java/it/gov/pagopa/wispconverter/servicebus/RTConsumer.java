@@ -1,5 +1,6 @@
 package it.gov.pagopa.wispconverter.servicebus;
 
+import com.azure.cosmos.models.PartitionKey;
 import com.azure.messaging.servicebus.ServiceBusReceivedMessage;
 import com.azure.messaging.servicebus.ServiceBusReceivedMessageContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -24,6 +25,7 @@ import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.PostConstruct;
 import java.io.IOException;
@@ -200,6 +202,9 @@ public class RTConsumer extends SBConsumer {
                 // Sending dead letter in case of unknown status
                 receiptDeadLetterRepository.save(mapper.convertValue(receipt, ReceiptDeadLetterEntity.class));
                 generateREForDeadLetter(receipt);
+
+                // Remove receipt from receipt collection
+                rtRetryComosService.deleteRTRequestEntity(receipt);
             }
             else {
                 // generate a new event in RE for store the unsuccessful re-sending of the receipt
