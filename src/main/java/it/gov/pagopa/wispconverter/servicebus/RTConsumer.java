@@ -201,12 +201,13 @@ public class RTConsumer extends SBConsumer {
                 receiptDeadLetterRepository.save(mapper.convertValue(receipt, ReceiptDeadLetterEntity.class));
                 generateREForDeadLetter(receipt);
             }
+            else {
+                // generate a new event in RE for store the unsuccessful re-sending of the receipt
+                generateREForNotSentRT(e);
 
-            // generate a new event in RE for store the unsuccessful re-sending of the receipt
-            generateREForNotSentRT(e);
-
-            // Rescheduled due to errors caused by faulty communication with creditor institution
-            reScheduleReceiptSend(receipt, receiptId, compositedIdForReceipt);
+                // Rescheduled due to errors caused by faulty communication with creditor institution
+                reScheduleReceiptSend(receipt, receiptId, compositedIdForReceipt);
+            }
 
         } catch (IOException e) {
 
