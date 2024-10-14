@@ -55,11 +55,12 @@ class ECommerceHangTimerServiceTest {
         ECommerceHangTimeoutMessage message = ECommerceHangTimeoutMessage.builder()
                 .noticeNumber(NOTICE_NUMBER)
                 .fiscalCode(FISCAL_CODE)
+                .sessionId(SESSION_ID)
                 .build();
         eCommerceHangTimerService.sendMessage(message);
-        verify(cacheRepository, times(1)).hasKey(eq("wisp_timer_hang_" + NOTICE_NUMBER + "_" + FISCAL_CODE));
+        verify(cacheRepository, times(1)).hasKey(eq("wisp_timer_hang_" + NOTICE_NUMBER + "_" + FISCAL_CODE + "_" + SESSION_ID));
         verify(serviceBusSenderClient, times(1)).scheduleMessage(messageArgumentCaptor.capture(), any());
-        assertEquals("{\"fiscalCode\":\"" + FISCAL_CODE + "\",\"noticeNumber\":\"" + NOTICE_NUMBER + "\"}",
+        assertEquals("{\"fiscalCode\":\"" + FISCAL_CODE + "\",\"noticeNumber\":\"" + NOTICE_NUMBER + "\",\"sessionId\":\""+ SESSION_ID + "\"}",
                 messageArgumentCaptor.getValue().getBody().toString());
     }
 
@@ -68,15 +69,16 @@ class ECommerceHangTimerServiceTest {
         ECommerceHangTimeoutMessage message = ECommerceHangTimeoutMessage.builder()
                 .noticeNumber(NOTICE_NUMBER)
                 .fiscalCode(FISCAL_CODE)
+                .sessionId(SESSION_ID)
                 .build();
         when(cacheRepository.hasKey(anyString())).thenReturn(Boolean.TRUE);
         when(cacheRepository.read(any(), any())).thenReturn(SEQUENCE_NUMBER.toString());
 
         eCommerceHangTimerService.sendMessage(message);
 
-        verify(cacheRepository, times(1)).delete(eq("wisp_timer_hang_" + NOTICE_NUMBER + "_" + FISCAL_CODE));
+        verify(cacheRepository, times(1)).delete(eq("wisp_timer_hang_" + NOTICE_NUMBER + "_" + FISCAL_CODE + "_" + SESSION_ID));
         verify(serviceBusSenderClient, times(1)).cancelScheduledMessage(SEQUENCE_NUMBER);
-        verify(cacheRepository, times(1)).hasKey(eq("wisp_timer_hang_" + NOTICE_NUMBER + "_" + FISCAL_CODE));
+        verify(cacheRepository, times(1)).hasKey(eq("wisp_timer_hang_" + NOTICE_NUMBER + "_" + FISCAL_CODE + "_" + SESSION_ID));
         verify(serviceBusSenderClient, times(1)).scheduleMessage(messageArgumentCaptor.capture(), any());
     }
 
@@ -86,7 +88,7 @@ class ECommerceHangTimerServiceTest {
 
         eCommerceHangTimerService.cancelScheduledMessage(NOTICE_NUMBER, FISCAL_CODE, SESSION_ID);
 
-        verify(cacheRepository, times(1)).delete(eq("wisp_timer_hang_" + NOTICE_NUMBER + "_" + FISCAL_CODE));
+        verify(cacheRepository, times(1)).delete(eq("wisp_timer_hang_" + NOTICE_NUMBER + "_" + FISCAL_CODE + "_" + SESSION_ID));
         verify(serviceBusSenderClient, times(1)).cancelScheduledMessage(SEQUENCE_NUMBER);
 
     }
