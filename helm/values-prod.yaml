@@ -4,7 +4,7 @@ microservice-chart: &microservice-chart
   fullnameOverride: ""
   image:
     repository: ghcr.io/pagopa/pagopa-wisp-converter
-    tag: "0.4.6-1-PAGOPA-2283-remove-receipt"
+    tag: "0.4.7"
     pullPolicy: Always
   livenessProbe:
     httpGet:
@@ -102,7 +102,7 @@ microservice-chart: &microservice-chart
     ECOMMERCE_HANG_TIMER_QUEUE_NAME: "nodo_wisp_ecommerce_hang_timeout_queue"
     ECOMMERCE_HANG_TIMEOUT: '1800'
     APIM_PATH: 'api.platform.pagopa.it'
-    CACHED_REQUESTID_MAPPING_TTL_MINUTES: "1440"
+    CACHED_REQUESTID_MAPPING_TTL_MINUTES: "2880"
     CACHE_REFRESH_CRON: "0 */60 * * * *"
     CLIENT_GPD_READ_TIMEOUT: '5000'
     CLIENT_IUVGENERATOR_READ_TIMEOUT: '5000'
