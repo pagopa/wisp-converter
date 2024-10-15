@@ -67,6 +67,10 @@ class ReceiptTest {
         return TestUtils.loadFileContent("/requests/paSendRTV2.xml");
     }
 
+    private String getPaSendRTRequestPayload() {
+        return TestUtils.loadFileContent("/requests/paSendRTV2Request.xml");
+    }
+
     private void setConfigCacheStoredData(String servicePath, int primitiveVersion) {
         StationCreditorInstitutionDto stationCreditorInstitutionDto = new StationCreditorInstitutionDto();
         stationCreditorInstitutionDto.setCreditorInstitutionCode("{pa}");
@@ -137,7 +141,7 @@ class ReceiptTest {
         mvc.perform(MockMvcRequestBuilders.post("/receipt/ok")
                         .accept(MediaType.APPLICATION_JSON)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new ReceiptRequest(getPaSendRTPayload()))))
+                        .content(objectMapper.writeValueAsString(new ReceiptRequest(getPaSendRTRequestPayload()))))
                 .andExpect(MockMvcResultMatchers.status().is2xxSuccessful())
                 .andDo(result -> {
                     assertNotNull(result);
@@ -167,7 +171,7 @@ class ReceiptTest {
         mvc.perform(MockMvcRequestBuilders.post("/receipt/ok")
                         .accept(MediaType.APPLICATION_JSON)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new ReceiptRequest(getPaSendRTPayload()))))
+                        .content(objectMapper.writeValueAsString(new ReceiptRequest(getPaSendRTRequestPayload()))))
                 .andExpect(MockMvcResultMatchers.status().is2xxSuccessful())
                 .andDo(result -> {
                     assertNotNull(result);
@@ -198,7 +202,7 @@ class ReceiptTest {
         mvc.perform(MockMvcRequestBuilders.post("/receipt/ok")
                         .accept(MediaType.APPLICATION_JSON)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new ReceiptRequest(getPaSendRTPayload()))))
+                        .content(objectMapper.writeValueAsString(new ReceiptRequest(getPaSendRTRequestPayload()))))
                 .andExpect(MockMvcResultMatchers.status().is4xxClientError())
                 .andDo(result -> {
                     assertNotNull(result);
@@ -295,6 +299,7 @@ class ReceiptTest {
                 .fiscalCode("{pa}")
                 .noticeNumber("3480000000000000")
                 .paymentToken("token01")
+                .sessionId("sessionId01")
                 .build();
         mvc.perform(MockMvcRequestBuilders.post("/receipt/ko")
                         .accept(MediaType.APPLICATION_JSON)
@@ -330,6 +335,7 @@ class ReceiptTest {
                 .fiscalCode("{pa}")
                 .noticeNumber("3480000000000000")
                 .paymentToken("token01")
+                .sessionId("sessionId01")
                 .build();
         mvc.perform(MockMvcRequestBuilders.post("/receipt/ko")
                         .accept(MediaType.APPLICATION_JSON)
@@ -366,6 +372,7 @@ class ReceiptTest {
                 .fiscalCode("{pa}")
                 .noticeNumber("3480000000000000")
                 .paymentToken("token01")
+                .sessionId("sessionId01")
                 .build();
         mvc.perform(MockMvcRequestBuilders.post("/receipt/ko")
                         .accept(MediaType.APPLICATION_JSON)
@@ -431,6 +438,7 @@ class ReceiptTest {
                 .fiscalCode("{pa}")
                 .noticeNumber("3480000000000000")
                 .paymentToken("token01")
+                .sessionId("sessionId01")
                 .build();
         doThrow(new AppException(AppErrorCodeMessageEnum.RECEIPT_GENERATION_ERROR_RESPONSE_FROM_CREDITOR_INSTITUTION, "PAA_ERRORE_RESPONSE", "PAA_ERRORE_RESPONSE", "Errore PA"))
                 .when(paaInviaRTSenderService).sendToCreditorInstitution(any(), any(), any(), anyString(), anyString(), anyString(), anyString());
