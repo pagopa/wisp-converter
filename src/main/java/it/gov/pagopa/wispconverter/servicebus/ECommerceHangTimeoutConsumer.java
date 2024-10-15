@@ -80,6 +80,7 @@ public class ECommerceHangTimeoutConsumer extends SBConsumer {
             var inputPaaInviaRTKo = List.of(ReceiptDto.builder()
                     .fiscalCode(timeoutMessage.getFiscalCode())
                     .noticeNumber(timeoutMessage.getNoticeNumber())
+                    .sessionId(timeoutMessage.getSessionId())
                     .build());
             receiptService.sendKoPaaInviaRtToCreditorInstitution(inputPaaInviaRTKo);
         } catch (IOException e) {

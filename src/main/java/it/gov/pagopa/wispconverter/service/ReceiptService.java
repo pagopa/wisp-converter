@@ -119,13 +119,13 @@ public class ReceiptService {
         return header;
     }
 
-    public static List<RPTContentDTO> extractRequiredRPTs(SessionDataDTO sessionData, String iuv, String creditorInstiutionId) {
+    public static List<RPTContentDTO> extractRequiredRPTs(SessionDataDTO sessionData, String iuv, String creditorInstitutionId) {
         List<RPTContentDTO> rpts;
         if (Boolean.TRUE.equals(sessionData.getCommonFields().getIsMultibeneficiary())) {
             rpts = sessionData.getAllRPTs().stream().toList();
         } else {
             rpts = sessionData.getAllRPTs().stream()
-                    .filter(rpt -> rpt.getIuv().equals(iuv) && rpt.getRpt().getDomain().getDomainId().equals(creditorInstiutionId))
+                    .filter(rpt -> rpt.getIuv().equals(iuv) && rpt.getRpt().getDomain().getDomainId().equals(creditorInstitutionId))
                     .toList();
         }
         return rpts;
@@ -193,7 +193,10 @@ public class ReceiptService {
                 // retrieve the NAV-to-IUV mapping key from Redis, then use the result for retrieve the session data
                 String noticeNumber = receipt.getNoticeNumber();
                 CachedKeysMapping cachedMapping = decouplerService.getCachedMappingFromNavToIuv(receipt.getFiscalCode(), noticeNumber);
-                SessionDataDTO sessionData = getSessionDataFromCachedKeys(cachedMapping);
+                String iuv = cachedMapping.getIuv();
+
+                // use the session-id for generate session data information on which the next execution will operate
+                SessionDataDTO sessionData = getSessionDataFromSessionId(receipt.getSessionId());
                 CommonFieldsDTO commonFields = sessionData.getCommonFields();
 
                 /*
@@ -204,7 +207,7 @@ public class ReceiptService {
                 */
                 if (CommonUtility.isStationOnboardedOnGpd(configCacheService, sessionData, receipt.getFiscalCode(), stationInGpdPartialPath)) {
 
-                    generateREForNotGenerableRT(sessionData, cachedMapping.getIuv(), noticeNumber);
+                    generateREForNotGenerableRT(sessionData, iuv, noticeNumber);
 
                 } else {
 
@@ -212,13 +215,13 @@ public class ReceiptService {
                       For each RPT extracted from session data that is required by paSendRTV2, is necessary to generate a single paaInviaRT SOAP request.
                       Each paaInviaRT generated will be autonomously sent to creditor institution in order to track each RPT.
                      */
-                    List<RPTContentDTO> rpts = extractRequiredRPTs(sessionData, cachedMapping.getIuv(), cachedMapping.getFiscalCode());
+                    List<RPTContentDTO> rpts = extractRequiredRPTs(sessionData, iuv, receipt.getFiscalCode());
                     for (RPTContentDTO rpt : rpts) {
 
                         // generate the header for the paaInviaRT SOAP request. This object is common for each generated request
                         IntestazionePPT header = generateHeader(
                                 rpt.getRpt().getDomain().getDomainId(),
-                                cachedMapping.getIuv(),
+                                iuv,
                                 rpt.getCcp(),
                                 commonFields.getCreditorInstitutionBrokerId(),
                                 commonFields.getStationId());
@@ -270,7 +273,11 @@ public class ReceiptService {
             // retrieve the NAV-to-IUV mapping key from Redis, then use the result for retrieve the session data
             String noticeNumber = paSendRTV2Request.getReceipt().getNoticeNumber();
             CachedKeysMapping cachedMapping = decouplerService.getCachedMappingFromNavToIuv(paSendRTV2Request.getIdPA(), noticeNumber);
-            SessionDataDTO sessionData = getSessionDataFromCachedKeys(cachedMapping);
+
+            // paymentNote is equal to session-id
+            String paymentNote = paSendRTV2Request.getReceipt().getPaymentNote();
+            // use session-id for generate session data information on which the next execution will operate
+            SessionDataDTO sessionData = getSessionDataFromSessionId(paymentNote);
             CommonFieldsDTO commonFields = sessionData.getCommonFields();
 
             // retrieve station from cache and extract receipt from request
@@ -372,16 +379,6 @@ public class ReceiptService {
 
         // use the retrieved RPT for generate session data information on which the next execution will operate
         return this.rptExtractorService.extractSessionData(rptRequestEntity.getPrimitive(), rptRequestEntity.getPayload());
-    }
-
-
-    private SessionDataDTO getSessionDataFromCachedKeys(CachedKeysMapping cachedMapping) {
-
-        // retrieve cached session identifier form
-        String cachedSessionId = decouplerService.getCachedSessionId(cachedMapping.getFiscalCode(), cachedMapping.getIuv());
-
-        // use the retrieved RPT for generate session data information on which the next execution will operate
-        return getSessionDataFromSessionId(cachedSessionId);
     }
 
     private boolean sendReceiptToCreditorInstitution(SessionDataDTO sessionData, RPTContentDTO rpt,

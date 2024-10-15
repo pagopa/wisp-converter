@@ -99,7 +99,8 @@ public class ECommerceHangTimerService {
 
             // log event
             log.debug("Sent scheduled message_base64 {} to the queue: {}", LogUtils.encodeToBase64(message.toString()), queueName);
-            generateRE(InternalStepStatus.ECOMMERCE_HANG_TIMER_CREATED, "Scheduled eCommerce hang release: [" + message + "]");
+            generateRE(InternalStepStatus.ECOMMERCE_HANG_TIMER_CREATED, "Scheduled eCommerce hang release: [" + message + "] " +
+                                                                                "and will be triggered at " + scheduledExpirationTime);
 
             // insert in Redis cache sequenceNumber of the message
             cacheRepository.insert(key, sequenceNumber.toString(), expirationTime, ChronoUnit.SECONDS);

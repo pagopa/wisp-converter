@@ -84,16 +84,6 @@ public class DecouplerService {
         }
     }
 
-    public String getCachedSessionId(String creditorInstitutionId, String iuv) {
-
-        String cachedKey = String.format(CACHING_KEY_TEMPLATE, creditorInstitutionId, iuv);
-        String sessionId = this.cacheRepository.read(cachedKey, String.class);
-        if (sessionId == null) {
-            throw new AppException(AppErrorCodeMessageEnum.PERSISTENCE_REQUESTID_CACHING_ERROR, cachedKey);
-        }
-        return sessionId;
-    }
-
     public CachedKeysMapping getCachedMappingFromNavToIuv(String creditorInstitutionId, String nav) {
 
         String mappingKey = String.format(MAP_CACHING_KEY_TEMPLATE, creditorInstitutionId, nav);
@@ -116,7 +106,6 @@ public class DecouplerService {
                 .iuv(splitKey[2])
                 .build();
     }
-
 
     //TODO duplicate method but pass only sessionId recovered from service bus
     private void saveMappedKeyForDecoupler(SessionDataDTO sessionData) {
@@ -141,13 +130,23 @@ public class DecouplerService {
         generateREForSavedMappingForDecoupler(sessionData, decouplerCachingKeys);
     }
 
-    public void saveMappedKeyForReceiptGeneration(String sessionId, SessionDataDTO sessionData) {
+  /**
+   * this method creates 2 mapping:
+   * @deprecated wisp_<fiscal-code>_<iuv> = <session-id> because it isn't IDEMPOTENT
+   * wisp_nav2iuv_<fiscal-code>_<nav> = wisp_<fiscal-code>_<iuv>
+   *
+   *  todo    * wisp_nav2iuv_<fiscal-code>_<nav> = <iuv>
+   *
+   * @param sessionId
+   * @param sessionData
+   */
+  public void saveMappedKeyForReceiptGeneration(String sessionId, SessionDataDTO sessionData) {
 
         for (PaymentNoticeContentDTO paymentNoticeContentDTO : sessionData.getAllPaymentNotices()) {
 
             // save the IUV-based key that contains the session identifier
             String requestIDForRTHandling = String.format(CACHING_KEY_TEMPLATE, paymentNoticeContentDTO.getFiscalCode(), paymentNoticeContentDTO.getIuv());
-            this.cacheRepository.insert(requestIDForRTHandling, sessionId, this.requestIDMappingTTL);
+//            this.cacheRepository.insert(requestIDForRTHandling, sessionId, this.requestIDMappingTTL);
 
             // save the mapping that permits to convert a NAV-based key in a IUV-based one
             String navToIuvMappingForRTHandling = String.format(MAP_CACHING_KEY_TEMPLATE, paymentNoticeContentDTO.getFiscalCode(), paymentNoticeContentDTO.getNoticeNumber());

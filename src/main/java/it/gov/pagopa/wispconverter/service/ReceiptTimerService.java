@@ -71,6 +71,7 @@ public class ReceiptTimerService {
                                             .paymentToken(paymentToken)
                                             .fiscalCode(fiscalCode)
                                             .noticeNumber(noticeNumber)
+                                            .sessionId(sessionId)
                                             .build();
             ServiceBusMessage serviceBusMessage = new ServiceBusMessage(receiptDto.toString());
             log.debug("Sending scheduled message {} to the queue: {}", message, queueName);
@@ -84,10 +85,11 @@ public class ReceiptTimerService {
             // insert {wisp_timer_<paymentToken>, sequenceNumber} for Duplicate Prevention Logic and for call cancelScheduledMessage(sequenceNumber)
             cacheRepository.insert(sequenceNumberKey, String.valueOf(sequenceNumber), message.getExpirationTime(), ChronoUnit.MILLIS);
             log.debug("Cache sequence number {} for payment-token: {}", sequenceNumber, sequenceNumberKey);
-            generateRE(InternalStepStatus.RECEIPT_TIMER_GENERATION_CACHED_SEQUENCE_NUMBER, "Cached sequence number: [" + sequenceNumber + "] for payment token: [" + sequenceNumberKey + "]");
 
             // delete ecommerce hang timer: we delete the scheduled message from the queue
             eCommerceHangTimerService.cancelScheduledMessage(noticeNumber, fiscalCode, sessionId);
+
+            generateRE(InternalStepStatus.RECEIPT_TIMER_GENERATION_CACHED_SEQUENCE_NUMBER, "Cached sequence number: [" + sequenceNumber + "] for payment token: [" + sequenceNumberKey + "]");
         }
     }
 
