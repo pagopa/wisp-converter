@@ -85,7 +85,7 @@ public class PaaInviaRTSenderService {
             // set the correct response regarding the creditor institution response
             if (Constants.OK.equals(paaInviaRTRisposta.getEsito())) {
                 rtReceiptCosmosService.updateReceiptStatus(domainId, iuv, ccp, ReceiptStatusEnum.SENT);
-                generateREForAlreadySentRtToCreditorInstitution();
+                reService.addRe(ReUtil.getREBuilder().status(InternalStepStatus.RT_SENT_OK).build());
             } else {
                 rtReceiptCosmosService.updateReceiptStatus(domainId, iuv, ccp, ReceiptStatusEnum.SENT_REJECTED_BY_EC);
                 FaultBean fault = paaInviaRTRisposta.getFault();
@@ -187,5 +187,4 @@ public class PaaInviaRTSenderService {
                 .build();
         reService.addRe(reEvent);
     }
-
 }
