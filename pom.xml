@@ -13,7 +13,7 @@
 
     <groupId>it.gov.pagopa</groupId>
     <artifactId>wisp-converter</artifactId>
-    <version>0.4.10</version>
+    <version>0.4.10-1-PAGOPA-2284</version>
     <name>pagoPA WISP Converter</name>
     <description>A service that permits to handle nodoInviaRPT and nodoInviaCarrelloRPT request from WISP, converting them in NMU payments.</description>
 
