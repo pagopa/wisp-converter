@@ -15,6 +15,7 @@ import it.gov.pagopa.wispconverter.util.*;
 import jakarta.xml.soap.SOAPMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -23,6 +24,11 @@ import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+
+import static it.gov.pagopa.wispconverter.util.SchedulerUtils.updateMDCError;
+import static it.gov.pagopa.wispconverter.util.SchedulerUtils.updateMDCForEndExecution;
+import static it.gov.pagopa.wispconverter.util.SchedulerUtils.updateMDCForStartExecution;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
@@ -66,7 +72,7 @@ public class RTConsumer extends SBConsumer {
     @EventListener(ApplicationReadyEvent.class)
     public void initializeClient() {
         if (receiverClient != null) {
-            log.info("[Scheduled] Starting RTConsumer {}", ZonedDateTime.now());
+        	updateMDCForStartExecution("initializeClient", "[Scheduled] Starting RTConsumer " + ZonedDateTime.now());
             receiverClient.start();
         }
     }
@@ -126,6 +132,7 @@ public class RTConsumer extends SBConsumer {
 
         } catch (Exception e) {
 
+        	updateMDCError(e, "RTConsumer error: Re-scheduled send operation");
             // Generate a new event in RE for store the unsuccessful re-sending of the receipt
             generateREForNotSentRT(e);
 
@@ -139,6 +146,9 @@ public class RTConsumer extends SBConsumer {
                 log.error("AppException: ", e);
             }
         }
+        
+        updateMDCForEndExecution();
+        MDC.clear();
     }
 
     private boolean resendRTToCreditorInstitution(String receiptId, RTRequestEntity receipt, String compositedIdForReceipt, String idempotencyKey) {
@@ -185,6 +195,8 @@ public class RTConsumer extends SBConsumer {
             isSend = true;
 
         } catch (AppException e) {
+        	
+        	updateMDCError(e, e.getError().getTitle());
 
             // generate a new event in RE for store the unsuccessful re-sending of the receipt
             generateREForNotSentRT(e);
@@ -193,6 +205,8 @@ public class RTConsumer extends SBConsumer {
             reScheduleReceiptSend(receipt, receiptId, compositedIdForReceipt);
 
         } catch (IOException e) {
+        	
+        	updateMDCError(e, "RTConsumer error");
 
             rtReceiptCosmosService.updateReceiptStatus(ci, iuv, ccp, ReceiptStatusEnum.NOT_SENT);
 
@@ -235,7 +249,7 @@ public class RTConsumer extends SBConsumer {
                 rtReceiptCosmosService.updateReceiptStatus(ci, iuv, ccp, ReceiptStatusEnum.SCHEDULED);
 
             } catch (Exception e) {
-
+            	updateMDCError(e, "RTConsumer error");
                 // generate a new event in RE for store the unsuccessful scheduling of the RT send
                 generateREForFailedReschedulingSentRT(e);
                 rtReceiptCosmosService.updateReceiptStatus(ci, iuv, ccp, ReceiptStatusEnum.NOT_SENT);

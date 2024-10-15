@@ -5,9 +5,6 @@ import com.azure.messaging.servicebus.ServiceBusReceivedMessageContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.wispconverter.controller.model.RPTTimerRequest;
 import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
-import it.gov.pagopa.wispconverter.service.ConfigCacheService;
-import it.gov.pagopa.wispconverter.service.IdempotencyService;
-import it.gov.pagopa.wispconverter.service.PaaInviaRTSenderService;
 import it.gov.pagopa.wispconverter.service.ReceiptService;
 import it.gov.pagopa.wispconverter.util.CommonUtility;
 import it.gov.pagopa.wispconverter.util.MDCUtil;
@@ -21,6 +18,11 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+
+import static it.gov.pagopa.wispconverter.util.SchedulerUtils.updateMDCError;
+import static it.gov.pagopa.wispconverter.util.SchedulerUtils.updateMDCForEndExecution;
+import static it.gov.pagopa.wispconverter.util.SchedulerUtils.updateMDCForStartExecution;
+
 import java.io.IOException;
 import java.time.ZonedDateTime;
 
@@ -50,18 +52,6 @@ public class RPTTimeoutConsumer extends SBConsumer {
     @Autowired
     private ReceiptService receiptService;
 
-    @Autowired
-    private PaaInviaRTSenderService paaInviaRTSenderService;
-
-    @Autowired
-    private ConfigCacheService configCacheService;
-
-    @Autowired
-    private IdempotencyService idempotencyService;
-
-    @Autowired
-    private it.gov.pagopa.gen.wispconverter.client.decouplercaching.invoker.ApiClient decouplerCachingClient;
-
 
     @PostConstruct
     public void post() {
@@ -74,7 +64,7 @@ public class RPTTimeoutConsumer extends SBConsumer {
     @EventListener(ApplicationReadyEvent.class)
     public void initializeClient() {
         if (receiverClient != null) {
-            log.info("[Scheduled] Starting RPTTimeoutConsumer {}", ZonedDateTime.now());
+        	updateMDCForStartExecution("initializeClient", "[Scheduled] Starting RPTTimeoutConsumer " + ZonedDateTime.now());
             receiverClient.start();
         }
     }
@@ -90,8 +80,9 @@ public class RPTTimeoutConsumer extends SBConsumer {
             // sending rt- from session id
             receiptService.sendRTKoFromSessionId(timeoutMessage.getSessionId(), InternalStepStatus.RPT_TIMER_TRIGGER);
         } catch (IOException e) {
-            log.error("Error when read rpt timer request value from message: '{}'. Body: '{}'", message.getMessageId(), message.getBody());
+            updateMDCError(e, "Error when read rpt timer request value from message: '"+message.getMessageId()+"'. Body: '"+message.getBody()+"'");
         }
+        updateMDCForEndExecution();
         MDC.clear();
     }
 }
