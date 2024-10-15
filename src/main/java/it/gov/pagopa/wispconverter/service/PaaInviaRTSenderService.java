@@ -178,13 +178,4 @@ public class PaaInviaRTSenderService {
         reEvent.setInfo(otherInfo);
         reService.addRe(reEvent);
     }
-
-    private void generateREForAlreadySentRtToCreditorInstitution() {
-
-        // setting data in MDC for next use
-        ReEventDto reEvent = ReUtil.getREBuilder()
-                .status(InternalStepStatus.RT_ALREADY_SENT)
-                .build();
-        reService.addRe(reEvent);
-    }
 }

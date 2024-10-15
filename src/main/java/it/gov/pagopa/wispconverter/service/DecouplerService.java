@@ -130,23 +130,19 @@ public class DecouplerService {
         generateREForSavedMappingForDecoupler(sessionData, decouplerCachingKeys);
     }
 
-  /**
-   * this method creates 2 mapping:
-   * @deprecated wisp_<fiscal-code>_<iuv> = <session-id> because it isn't IDEMPOTENT
-   * wisp_nav2iuv_<fiscal-code>_<nav> = wisp_<fiscal-code>_<iuv>
-   *
-   *  todo    * wisp_nav2iuv_<fiscal-code>_<nav> = <iuv>
-   *
-   * @param sessionId
-   * @param sessionData
-   */
-  public void saveMappedKeyForReceiptGeneration(String sessionId, SessionDataDTO sessionData) {
+    /**
+    * this method creates 2 mapping:
+    * wisp_nav2iuv_<fiscal-code>_<nav> = wisp_<fiscal-code>_<iuv>
+    *
+    * @param sessionId
+    * @param sessionData
+    */
+    public void saveMappedKeyForReceiptGeneration(String sessionId, SessionDataDTO sessionData) {
 
         for (PaymentNoticeContentDTO paymentNoticeContentDTO : sessionData.getAllPaymentNotices()) {
 
             // save the IUV-based key that contains the session identifier
             String requestIDForRTHandling = String.format(CACHING_KEY_TEMPLATE, paymentNoticeContentDTO.getFiscalCode(), paymentNoticeContentDTO.getIuv());
-//            this.cacheRepository.insert(requestIDForRTHandling, sessionId, this.requestIDMappingTTL);
 
             // save the mapping that permits to convert a NAV-based key in a IUV-based one
             String navToIuvMappingForRTHandling = String.format(MAP_CACHING_KEY_TEMPLATE, paymentNoticeContentDTO.getFiscalCode(), paymentNoticeContentDTO.getNoticeNumber());
