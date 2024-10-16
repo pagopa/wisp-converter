@@ -23,7 +23,7 @@ on:
         options:
           - daily
           - weekly
-          - weekly
+          - monthly
         default: daily
       report_date:
         required: false
