@@ -50,9 +50,9 @@ import static it.gov.pagopa.wispconverter.util.CommonUtility.sanitizeInput;
 @Slf4j
 public class ReceiptController {
 
-    private static final String BP_RECEIPT_OK = "receipt-ok";
-    private static final String BP_RECEIPT_KO = "receipt-ko";
-    private static final String BP_RECEIPT_RETRIEVE = "receipt-retrieve";
+	public static final String BP_RECEIPT_OK = "receipt-ok";
+	public static final String BP_RECEIPT_KO = "receipt-ko";
+	public static final String BP_RECEIPT_RETRIEVE = "receipt-retrieve";
 
     private final ReceiptService receiptService;
 

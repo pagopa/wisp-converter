@@ -37,9 +37,12 @@ public class PaymentTimeoutConsumer extends SBConsumer {
     @Autowired
     private ReceiptService receiptService;
 
+    @Value("${disable-service-bus-receiver}")
+    private boolean disableServiceBusReceiver;
+
     @EventListener(ApplicationReadyEvent.class)
     public void initializeClient() {
-        if (receiverClient != null) {
+        if (receiverClient != null && !disableServiceBusReceiver) {
         	updateMDCForStartExecution("initializeClient", "[Scheduled] Starting PaymentTimeoutConsumer " + ZonedDateTime.now());
             receiverClient.start();
         }
@@ -47,7 +50,7 @@ public class PaymentTimeoutConsumer extends SBConsumer {
 
     @PostConstruct
     public void post() {
-        if (StringUtils.isNotBlank(connectionString) && !connectionString.equals("-")) {
+        if (StringUtils.isNotBlank(connectionString) && !connectionString.equals("-") && !disableServiceBusReceiver) {
             receiverClient = CommonUtility.getServiceBusProcessorClient(connectionString, queueName, this::processMessage, this::processError);
         }
     }

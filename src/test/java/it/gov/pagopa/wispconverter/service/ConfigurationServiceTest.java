@@ -2,6 +2,7 @@ package it.gov.pagopa.wispconverter.service;
 
 import it.gov.pagopa.wispconverter.controller.model.ConfigurationModel;
 import it.gov.pagopa.wispconverter.repository.ConfigurationRepository;
+import it.gov.pagopa.wispconverter.repository.ReceiptDeadLetterRepository;
 import it.gov.pagopa.wispconverter.repository.model.ConfigurationEntity;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -28,6 +29,8 @@ class ConfigurationServiceTest {
     ConfigurationRepository configurationRepository;
     @MockBean
     private RecoveryService recoveryService;
+    @MockBean
+    private ReceiptDeadLetterRepository receiptDeadLetterRepository;
 
     @Autowired
     @InjectMocks

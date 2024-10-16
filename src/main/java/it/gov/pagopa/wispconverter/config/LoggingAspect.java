@@ -158,29 +158,6 @@ public class LoggingAspect {
     MDC.remove(START_TIME);
     return result;
   }
-
-  /*
-  @AfterReturning(value = "execution(ErrorResponse *..advice.GlobalExceptionHandler.*(..))", returning = "result")
-  public void trowingApiInvocation(JoinPoint joinPoint, ErrorResponse result) {
-    MDC.put(STATUS, "KO");
-    MDC.put(CODE, String.valueOf(result.getStatusCode().value()));
-    MDC.put(RESPONSE_TIME, getExecutionTime());
-    MDC.put(FAULT_CODE, result.getTitleMessageCode());
-    MDC.put(FAULT_DETAIL, result.getDetailMessageCode());
-    log.info("Failed API operation {} - error: {}", MDC.get(METHOD), result);
-    MDC.clear();
-  }
-  
-  @AfterReturning(value = "execution(ResponseEntity *..advice.GlobalExceptionHandler.*(..))", returning = "result")
-  public void trowingApiInvocation(JoinPoint joinPoint, ResponseEntity<Object> result) {
-    MDC.put(STATUS, "KO");
-    MDC.put(CODE, String.valueOf(result.getStatusCode().value()));
-    MDC.put(RESPONSE_TIME, getExecutionTime());
-    MDC.put(FAULT_CODE, getTitle(result));
-    MDC.put(FAULT_DETAIL, getDetail(result));
-    log.info("Failed API operation {} - error: {}", MDC.get(METHOD), result);
-    MDC.clear();
-  }*/
   
   @AfterReturning(value = "execution(* *..advice.GlobalExceptionHandler.handleAppException(..)) || execution(* *..advice.GlobalExceptionHandler.handleGenericException(..))", returning = "result")
   public void trowingApiInvocation(JoinPoint joinPoint, ErrorResponse result) {
