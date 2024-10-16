@@ -38,7 +38,7 @@ permissions:
 
 
 jobs:
-    create_runner:
+  create_runner:
     name: Create Runner
     runs-on: ubuntu-22.04
     environment:
