@@ -41,7 +41,8 @@ jobs:
   create_runner:
     name: Create Runner
     runs-on: ubuntu-22.04
-    environment: ${{(github.event.inputs == null && 'prod') || inputs.environment }}
+    environment: 
+      name: ${{(github.event.inputs == null && 'prod') || inputs.environment }}
     outputs:
       runner_name: ${{ steps.create_github_runner.outputs.runner_name }}
     steps:
@@ -62,7 +63,8 @@ jobs:
     needs: [ create_runner ]
     name: Generate and persist report
     runs-on: ubuntu-22.04
-    environment: ${{(github.event.inputs == null && 'prod') || inputs.environment }}
+    environment: 
+      name: ${{(github.event.inputs == null && 'prod') || inputs.environment }}
     steps:
 
       - name: Generating daily report
@@ -135,7 +137,8 @@ jobs:
     needs: [ create_runner, report_generation ]
     if: ${{ success() || failure() && inputs.target == inputs.environment || inputs.target == 'all' }}
     runs-on: ubuntu-22.04
-    environment: ${{(github.event.inputs == null && 'prod') || inputs.environment }}
+    environment: 
+      name: ${{(github.event.inputs == null && 'prod') || inputs.environment }}
     steps:
       - name: Cleanup GitHub Runner
         id: cleanup_github_runner
