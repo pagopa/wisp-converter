@@ -37,6 +37,8 @@ public class ReceiptTimerService {
     private String connectionString;
     @Value("${azure.sb.queue.receiptTimer.name}")
     private String queueName;
+    @Value("${disable-service-bus-sender}")
+    private boolean disableServiceBusSender;
     private ServiceBusSenderClient serviceBusSenderClient;
 
     @Autowired
@@ -52,47 +54,52 @@ public class ReceiptTimerService {
     }
 
     public void sendMessage(ReceiptTimerRequest message) {
+        if (!disableServiceBusSender) {
+            String paymentToken = message.getPaymentToken();
+            String fiscalCode = message.getFiscalCode();
+            String noticeNumber = message.getNoticeNumber();
+            String sessionId = message.getSessionId();
+            MDCUtil.setReceiptTimerInfoInMDC(fiscalCode, noticeNumber, paymentToken);
 
-        String paymentToken = message.getPaymentToken();
-        String fiscalCode = message.getFiscalCode();
-        String noticeNumber = message.getNoticeNumber();
-        MDCUtil.setReceiptTimerInfoInMDC(fiscalCode, noticeNumber, paymentToken);
+            // Duplicate Prevention Logic
+            String sequenceNumberKey = String.format(CACHING_KEY_TEMPLATE, message.getPaymentToken());
+            String value = cacheRepository.read(sequenceNumberKey, String.class);
+            if (value != null) return; // already exists
 
-        // Duplicate Prevention Logic
-        String sequenceNumberKey = String.format(CACHING_KEY_TEMPLATE, message.getPaymentToken());
-        String value = cacheRepository.read(sequenceNumberKey, String.class);
-        if (value != null) return; // already exists
+            // Create Message with paaInviaRT- receipt generation info
+            ReceiptDto receiptDto = ReceiptDto.builder()
+                                            .paymentToken(paymentToken)
+                                            .fiscalCode(fiscalCode)
+                                            .noticeNumber(noticeNumber)
+                                            .sessionId(sessionId)
+                                            .build();
+            ServiceBusMessage serviceBusMessage = new ServiceBusMessage(receiptDto.toString());
+            log.debug("Sending scheduled message {} to the queue: {}", message, queueName);
 
-        // Create Message with paaInviaRT- receipt generation info
-        ReceiptDto receiptDto = ReceiptDto.builder()
-                .paymentToken(paymentToken)
-                .fiscalCode(fiscalCode)
-                .noticeNumber(noticeNumber)
-                .build();
-        ServiceBusMessage serviceBusMessage = new ServiceBusMessage(receiptDto.toString());
-        log.debug("Sending scheduled message {} to the queue: {}", message, queueName);
+            // compute time and schedule message for consumer trigger
+            OffsetDateTime scheduledExpirationTime = OffsetDateTime.now().plus(message.getExpirationTime(), ChronoUnit.MILLIS);
+            Long sequenceNumber = serviceBusSenderClient.scheduleMessage(serviceBusMessage, scheduledExpirationTime);
+            log.debug("Sent scheduled message_base64 {} to the queue: {}", LogUtils.encodeToBase64(message.toString()), queueName);
+            generateRE(InternalStepStatus.RECEIPT_TIMER_GENERATION_CREATED_SCHEDULED_SEND, "Scheduled receipt: [" + message + "]");
 
-        // compute time and schedule message for consumer trigger
-        OffsetDateTime scheduledExpirationTime = OffsetDateTime.now().plus(message.getExpirationTime(), ChronoUnit.MILLIS);
-        Long sequenceNumber = serviceBusSenderClient.scheduleMessage(serviceBusMessage, scheduledExpirationTime);
-        log.debug("Sent scheduled message_base64 {} to the queue: {}", LogUtils.encodeToBase64(message.toString()), queueName);
-        generateRE(InternalStepStatus.RECEIPT_TIMER_GENERATION_CREATED_SCHEDULED_SEND, "Scheduled receipt: [" + message + "]");
+            // insert {wisp_timer_<paymentToken>, sequenceNumber} for Duplicate Prevention Logic and for call cancelScheduledMessage(sequenceNumber)
+            cacheRepository.insert(sequenceNumberKey, String.valueOf(sequenceNumber), message.getExpirationTime(), ChronoUnit.MILLIS);
+            log.debug("Cache sequence number {} for payment-token: {}", sequenceNumber, sequenceNumberKey);
 
-        // insert {wisp_timer_<paymentToken>, sequenceNumber} for Duplicate Prevention Logic and for call cancelScheduledMessage(sequenceNumber)
-        cacheRepository.insert(sequenceNumberKey, String.valueOf(sequenceNumber), message.getExpirationTime(), ChronoUnit.MILLIS);
-        log.debug("Cache sequence number {} for payment-token: {}", sequenceNumber, sequenceNumberKey);
-        generateRE(InternalStepStatus.RECEIPT_TIMER_GENERATION_CACHED_SEQUENCE_NUMBER, "Cached sequence number: [" + sequenceNumber + "] for payment token: [" + sequenceNumberKey + "]");
+            // delete ecommerce hang timer: we delete the scheduled message from the queue
+            eCommerceHangTimerService.cancelScheduledMessage(noticeNumber, fiscalCode, sessionId);
 
-        // delete ecommerce hang timer: we delete the scheduled message from the queue
-        eCommerceHangTimerService.cancelScheduledMessage(noticeNumber, fiscalCode);
+            generateRE(InternalStepStatus.RECEIPT_TIMER_GENERATION_CACHED_SEQUENCE_NUMBER, "Cached sequence number: [" + sequenceNumber + "] for payment token: [" + sequenceNumberKey + "]");
+        }
     }
 
     public void cancelScheduledMessage(List<String> paymentTokens) {
-        paymentTokens.forEach(this::cancelScheduledMessage);
+        if (!disableServiceBusSender) {
+            paymentTokens.forEach(this::cancelScheduledMessage);
+        }
     }
 
     private void cancelScheduledMessage(String paymentToken) {
-
         MDCUtil.setReceiptTimerInfoInMDC(null, null, paymentToken);
 
         log.debug("Cancel scheduled message for payment-token {}", paymentToken);

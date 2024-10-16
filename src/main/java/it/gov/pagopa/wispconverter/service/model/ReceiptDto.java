@@ -1,10 +1,8 @@
 package it.gov.pagopa.wispconverter.service.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.google.gson.Gson;
+import lombok.*;
 
 @Data
 @Builder
@@ -16,9 +14,10 @@ public class ReceiptDto {
     private String paymentToken;
     private String fiscalCode;
     private String noticeNumber;
+    private String sessionId;
 
     @Override
     public String toString() {
-        return "{\"paymentToken\": \"" + paymentToken + "\", \"fiscalCode\": \"" + fiscalCode + "\", \"noticeNumber\": \"" + noticeNumber + "\"}";
+        return new Gson().toJson(this);
     }
 }

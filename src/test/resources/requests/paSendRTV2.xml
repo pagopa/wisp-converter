@@ -80,6 +80,7 @@
                 <idBundle>1</idBundle>
                 <idCiBundle>2</idCiBundle>
                 <paymentDateTime>2021-10-01T17:48:22</paymentDateTime>
+                <paymentNote>734b9b88-6186-4034-a79e-813efacf36a0</paymentNote>
                 <applicationDate>2021-10-01</applicationDate>
                 <transferDate>2021-10-02</transferDate>
                 <metadata>

@@ -50,6 +50,9 @@ class OpenApiGenerationTest {
     @MockBean
     private RecoveryService recoveryService;
 
+    @MockBean
+    private ReceiptDeadLetterRepository receiptDeadLetterRepository;
+
     @Test
     void swaggerSpringPlugin() throws Exception {
         saveOpenAPI("/v3/api-docs", "openapi.json");
