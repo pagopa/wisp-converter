@@ -1,10 +1,14 @@
-name: Generate report
+name: Generate and send report
 
 on:
   schedule:
-    - cron: '00 05 * * *' # generate last day report
-    - cron: '00 10 * * 1' # generate last week report on monday
-    - cron: '00 10 1 * *' # generate last month report on first day of the month
+    - cron: '00 05 * * *' # (05:00AM) generate last day report 
+    - cron: '00 09 * * 1' # (09:00AM) generate last week report on monday
+    - cron: '00 09 1 * *' # (09:00AM) generate last month report on first day of the month
+    #
+    - cron: '00 07 * * *' # (07:00AM) send last day report
+    - cron: '30 09 * * 1' # (09:30AM) send last week report on monday
+    - cron: '35 09 1 * *' # (09:35AM) send last month report on first day of the month
 
   workflow_dispatch:
     inputs:
@@ -69,23 +73,53 @@ jobs:
       name: ${{(github.event.inputs == null && 'prod') || inputs.environment }}
     steps:
 
-      - name: Generating daily report
+      - name: Generating daily report via scheduling
         if: github.event.schedule == '00 05 * * *'
         run: |
           echo "Generating a daily report"          
           echo "report_type=daily" >> $GITHUB_ENV
+          echo "operation=generate" >> $GITHUB_ENV
 
-      - name: Generating weekly report
+      - name: Generating weekly report via scheduling
         if: github.event.schedule == '00 10 * * 1'
         run: |
           echo "Generating a weekly report"
           echo "report_type=weekly" >> $GITHUB_ENV
+          echo "operation=generate" >> $GITHUB_ENV
 
-      - name: Generating monthly report
+      - name: Generating monthly report via scheduling
         if: github.event.schedule == '00 10 1 * *'
         run: |
           echo "Generating a monthly report"          
           echo "report_type=monthly" >> $GITHUB_ENV
+          echo "operation=generate" >> $GITHUB_ENV
+
+      - name: Sending daily report via scheduling
+        if: github.event.schedule == '00 07 * * *'
+        run: |
+          echo "Generating a daily report"          
+          echo "report_type=daily" >> $GITHUB_ENV
+          echo "operation=send" >> $GITHUB_ENV
+
+      - name: Sending weekly report via scheduling
+        if: github.event.schedule == '30 09 * * 1'
+        run: |
+          echo "Generating a weekly report"
+          echo "report_type=weekly" >> $GITHUB_ENV
+          echo "operation=send" >> $GITHUB_ENV
+
+      - name: Sending monthly report via scheduling
+        if: github.event.schedule == '35 09 1 * *'
+        run: |
+          echo "Sending a monthly report"          
+          echo "report_type=monthly" >> $GITHUB_ENV
+          echo "operation=send" >> $GITHUB_ENV
+
+      - name: Generating and sending report via manual trigger
+        if: github.event_name != 'schedule'
+        run: |
+          echo "Generating and sending a report via manual trigger"
+          echo "operation=both" >> $GITHUB_ENV
 
       - name: Generate variables
         id: generate_vars
@@ -118,6 +152,7 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
       - name: Generate report
+        if: ${{ env.operation == 'both' || env.operation == 'generate' }}
         run: |
           cd ./scripts/report-generation
           export REPORT_ENV="${{ env.environment }}" \
@@ -134,6 +169,23 @@ jobs:
             REPORT_APICONFIG_CACHE_SUBKEY="${{ secrets.REPORT_APICONFIG_CACHE_SUBKEY }}"
           python run_extraction.py  
 
+      - name: Send report
+        if: ${{ env.operation == 'both' || env.operation == 'send' }}
+        run: |
+          cd ./scripts/report-generation
+          export REPORT_ENV="${{ env.environment }}" \
+            REPORT_TYPE="${{ env.report_type }}" \
+            REPORT_DATE="${{ env.report_date }}" \
+            REPORT_SLACK_WEBHOOK_URL="${{ secrets.REPORT_SLACK_WEBHOOK_URL }}" \
+            REPORT_DATAEXPLORER_URL="${{ vars.REPORT_DATAEXPLORER_URL }}" \
+            REPORT_DATAEXPLORER_CLIENT_ID="${{ secrets.REPORT_DATAEXPLORER_CLIENT_ID }}" \
+            REPORT_DATAEXPLORER_CLIENT_SECRET="${{ secrets.REPORT_DATAEXPLORER_CLIENT_SECRET }}" \
+            REPORT_DATAEXPLORER_TENANT_ID="${{ secrets.TENANT_ID }}" \
+            REPORT_DATABASE_URL="${{ vars.REPORT_DATABASE_URL }}" \
+            REPORT_DATABASE_KEY="${{ secrets.REPORT_DATABASE_KEY }}" \
+            REPORT_DATABASE_REGION="${{ vars.REPORT_DATABASE_REGION }}" \
+            REPORT_APICONFIG_CACHE_SUBKEY="${{ secrets.REPORT_APICONFIG_CACHE_SUBKEY }}"
+          python run_send.py 
 
   cleanup_runner:
     name: Cleanup Runner
