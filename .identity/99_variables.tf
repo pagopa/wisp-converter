@@ -28,9 +28,9 @@ locals {
   }
 
   report_generation = {
-    dataexplorer_url  = "${local.prefix}${var.env_short}dataexplorer.westeurope.kusto.windows.net/"
+    dataexplorer_url  = "https://${local.prefix}${var.env_short}dataexplorer.westeurope.kusto.windows.net/"
     database_url      = "https://${local.prefix}-${var.env_short}-${local.location_short}-nodo-wispconv-cosmos-account.documents.azure.com:443/"
-    database_region   = var.env_short != "p" ? "North Europe" : "West Europe"
+    database_region   = var.env_short == "p" ? "North Europe" : "West Europe"
   }
 }
 
