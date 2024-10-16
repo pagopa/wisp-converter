@@ -51,7 +51,7 @@ public class RPTTimerController {
     @Trace(businessProcess = RPT_BP_TIMER_SET, reEnabled = true)
     public void createTimer(@RequestBody RPTTimerRequest request) {
         try {
-            log.debug("Invoking API operation createRPTTimer - args: {}", sanitizeInput(request.toString()));
+            log.debug("Invoking API operation createRPTTimer - args: {}", request.toString());
             rptTimerService.sendMessage(request);
             log.debug("Successful API operation createRPTTimer");
         } catch (Exception ex) {

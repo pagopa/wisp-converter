@@ -54,7 +54,7 @@ public class ReceiptTimerController {
     @Trace(businessProcess = BP_TIMER_SET, reEnabled = true)
     public void createTimer(@RequestBody ReceiptTimerRequest request) {
         try {
-            log.debug("Invoking API operation createTimer - args: {}", sanitizeInput(request.toString()));
+            log.debug("Invoking API operation createTimer - args: {}", request.toString());
             receiptTimerService.sendMessage(request);
             log.debug("Successful API operation createTimer");
         } catch (Exception ex) {

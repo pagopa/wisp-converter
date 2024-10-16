@@ -106,7 +106,7 @@ public class ReceiptController {
     public void receiptKo(@RequestBody String request) throws Exception {
 
         try {
-            log.debug("Invoking API operation receiptKo - args: {}", sanitizeInput(request));
+            log.debug("Invoking API operation receiptKo - args: {}", request);
             receiptService.sendKoPaaInviaRtToCreditorInstitution(List.of(mapper.readValue(request, ReceiptDto.class)).toString());
             log.debug("Successful API operation receiptKo");
         } catch (Exception ex) {
