@@ -62,6 +62,7 @@ jobs:
 
 
   report_send:
+    needs: [ create_runner ]
     name: Send report to Slack channel
     runs-on: [ self-hosted, "${{ needs.create_runner.outputs.runner_name }}" ]
     environment: 
