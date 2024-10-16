@@ -62,7 +62,7 @@ jobs:
   report_generation:
     needs: [ create_runner ]
     name: Generate and persist report
-    runs-on: ubuntu-22.04
+    runs-on: [ self-hosted, "${{ needs.create_runner.outputs.runner_name }}" ]
     environment: 
       name: ${{(github.event.inputs == null && 'prod') || inputs.environment }}
     steps:
