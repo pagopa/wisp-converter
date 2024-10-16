@@ -131,7 +131,6 @@ jobs:
             REPORT_APICONFIG_CACHE_SUBKEY="${{ secrets.REPORT_APICONFIG_CACHE_SUBKEY }}"
           python run_extraction.py  
 
-
   cleanup_runner:
     name: Cleanup Runner
     needs: [ create_runner, report_generation ]
