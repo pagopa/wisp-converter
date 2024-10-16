@@ -38,9 +38,31 @@ permissions:
 
 
 jobs:
+    create_runner:
+    name: Create Runner
+    runs-on: ubuntu-22.04
+    environment:
+      environment: ${{(github.event.inputs == null && 'prod') || inputs.environment }}
+    outputs:
+      runner_name: ${{ steps.create_github_runner.outputs.runner_name }}
+    steps:
+      - name: Create GitHub Runner
+        id: create_github_runner
+        # from https://github.com/pagopa/eng-github-actions-iac-template/tree/main/azure/github-self-hosted-runner-azure-create-action
+        uses: pagopa/eng-github-actions-iac-template/azure/github-self-hosted-runner-azure-create-action@main
+        with:
+          client_id: ${{ secrets.CD_CLIENT_ID }}
+          tenant_id: ${{ secrets.TENANT_ID }}
+          subscription_id: ${{ secrets.SUBSCRIPTION_ID }}
+          container_app_environment_name: ${{ vars.CONTAINER_APP_ENVIRONMENT_NAME }}
+          resource_group_name: ${{ vars.CONTAINER_APP_ENVIRONMENT_RESOURCE_GROUP_NAME }} # RG of the runner
+          pat_token: ${{ secrets.BOT_TOKEN_GITHUB }}
+          self_hosted_runner_image_tag: "latest"
+
   report_generation:
+    needs: [ create_runner ]
     name: Generate and persist report
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     environment: ${{(github.event.inputs == null && 'prod') || inputs.environment }}
     steps:
 
@@ -103,8 +125,28 @@ jobs:
             REPORT_DATAEXPLORER_CLIENT_ID="${{ secrets.REPORT_DATAEXPLORER_CLIENT_ID }}" \
             REPORT_DATAEXPLORER_CLIENT_SECRET="${{ secrets.REPORT_DATAEXPLORER_CLIENT_SECRET }}" \
             REPORT_DATAEXPLORER_TENANT_ID="${{ secrets.TENANT_ID }}" \
-            REPORT_DATABASE_URL="${{ secrets.REPORT_DATABASE_URL }}" \
+            REPORT_DATABASE_URL="${{ vars.REPORT_DATABASE_URL }}" \
             REPORT_DATABASE_KEY="${{ secrets.REPORT_DATABASE_KEY }}" \
             REPORT_DATABASE_REGION="${{ vars.REPORT_DATABASE_REGION }}" \
             REPORT_APICONFIG_CACHE_SUBKEY="${{ secrets.REPORT_APICONFIG_CACHE_SUBKEY }}"
           python run_extraction.py  
+
+
+  cleanup_runner:
+    name: Cleanup Runner
+    needs: [ create_runner, report_generation ]
+    if: ${{ success() || failure() && inputs.target == inputs.environment || inputs.target == 'all' }}
+    runs-on: ubuntu-22.04
+    environment: ${{(github.event.inputs == null && 'prod') || inputs.environment }}
+    steps:
+      - name: Cleanup GitHub Runner
+        id: cleanup_github_runner
+        # from https://github.com/pagopa/eng-github-actions-iac-template/tree/main/azure/github-self-hosted-runner-azure-cleanup-action
+        uses: pagopa/eng-github-actions-iac-template/azure/github-self-hosted-runner-azure-cleanup-action@0ee2f58fd46d10ac7f00bce4304b98db3dbdbe9a
+        with:
+          client_id: ${{ secrets.CD_CLIENT_ID }}
+          tenant_id: ${{ secrets.TENANT_ID }}
+          subscription_id: ${{ secrets.SUBSCRIPTION_ID }}
+          resource_group_name: ${{ vars.CONTAINER_APP_ENVIRONMENT_RESOURCE_GROUP_NAME }}
+          runner_name: ${{ needs.create_runner.outputs.runner_name }}
+          pat_token: ${{ secrets.BOT_TOKEN_GITHUB }}
