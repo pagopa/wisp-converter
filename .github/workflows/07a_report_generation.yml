@@ -1,10 +1,10 @@
 name: Generate report
 
 on:
-  #schedule:
-    #- cron: '00 05 * * *' # generate last day report
-    #- cron: '00 10 * * 1' # generate last week report on monday
-    #- cron: '00 10 1 * *' # generate last month report on first day of the month
+  schedule:
+    - cron: '00 05 * * *' # generate last day report
+    - cron: '00 10 * * 1' # generate last week report on monday
+    - cron: '00 10 1 * *' # generate last month report on first day of the month
 
   workflow_dispatch:
     inputs:
@@ -28,7 +28,7 @@ on:
       report_date:
         required: false
         type: string
-        description: Define the specific date (in format yyyy-MM-dd)
+        description: Define a specific date in yyyy-MM-dd
 
 
 permissions:
@@ -46,6 +46,7 @@ jobs:
     outputs:
       runner_name: ${{ steps.create_github_runner.outputs.runner_name }}
     steps:
+
       - name: Create GitHub Runner
         id: create_github_runner
         # from https://github.com/pagopa/eng-github-actions-iac-template/tree/main/azure/github-self-hosted-runner-azure-create-action
@@ -58,6 +59,7 @@ jobs:
           resource_group_name: ${{ vars.CONTAINER_APP_ENVIRONMENT_RESOURCE_GROUP_NAME }} # RG of the runner
           pat_token: ${{ secrets.BOT_TOKEN_GITHUB }}
           self_hosted_runner_image_tag: "latest"
+
 
   report_generation:
     needs: [ create_runner ]
@@ -132,6 +134,7 @@ jobs:
             REPORT_APICONFIG_CACHE_SUBKEY="${{ secrets.REPORT_APICONFIG_CACHE_SUBKEY }}"
           python run_extraction.py  
 
+
   cleanup_runner:
     name: Cleanup Runner
     needs: [ create_runner, report_generation ]
@@ -140,6 +143,7 @@ jobs:
     environment: 
       name: ${{(github.event.inputs == null && 'prod') || inputs.environment }}
     steps:
+
       - name: Cleanup GitHub Runner
         id: cleanup_github_runner
         # from https://github.com/pagopa/eng-github-actions-iac-template/tree/main/azure/github-self-hosted-runner-azure-cleanup-action
