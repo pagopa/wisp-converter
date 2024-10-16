@@ -136,7 +136,7 @@ jobs:
 
   cleanup_runner:
     name: Cleanup Runner
-    needs: [ create_runner, report_generation ]
+    needs: [ create_runner, report_send ]
     if: ${{ success() || failure() && inputs.target == inputs.environment || inputs.target == 'all' }}
     runs-on: ubuntu-22.04
     environment: 
