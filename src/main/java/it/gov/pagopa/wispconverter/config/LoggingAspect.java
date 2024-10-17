@@ -2,13 +2,18 @@ package it.gov.pagopa.wispconverter.config;
 
 import static it.gov.pagopa.wispconverter.util.CommonUtility.deNull;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.xml.bind.JAXBElement;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-
 import javax.annotation.PostConstruct;
-
+import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.AfterReturning;
@@ -22,16 +27,6 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.ErrorResponse;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.xml.bind.JAXBElement;
-import lombok.extern.slf4j.Slf4j;
-
 
 @Aspect
 @Component
@@ -144,7 +139,7 @@ public class LoggingAspect {
     Map<String, String> params = getParams(joinPoint);
     MDC.put(ARGS, params.toString());
 
-    log.info("Invoking API operation {} - args: {}", joinPoint.getSignature().getName(), params);
+    log.info("Invoking API operation{} - args: {}", joinPoint.getSignature().getName(), params);
 
     Object result = joinPoint.proceed();
 

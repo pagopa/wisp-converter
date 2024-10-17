@@ -4,7 +4,7 @@
     "level": "INFO"
   },
   "sampling": {
-    "percentage": 5,
+    "percentage": 0,
     "overrides": [
       {
         "telemetryType": "dependency",
@@ -20,17 +20,6 @@
           }
         ],
         "percentage": 100
-      },
-      {
-        "telemetryType": "trace",
-        "attributes": [
-          {
-            "key": "message",
-            "value": "^(?!Invoking API operation).*",
-            "matchType": "regexp"
-          }
-        ],
-        "percentage": 0
       },
       {
         "telemetryType": "exception",

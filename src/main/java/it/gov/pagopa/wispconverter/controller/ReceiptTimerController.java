@@ -54,7 +54,7 @@ public class ReceiptTimerController {
     @Trace(businessProcess = BP_TIMER_SET, reEnabled = true)
     public void createTimer(@RequestBody ReceiptTimerRequest request) {
         try {
-            log.info("Invoking API operation createTimer - args: {}", request.toString());
+            log.debug("Invoking API operationcreateTimer - args: {}", request.toString());
             receiptTimerService.sendMessage(request);
             log.debug("Successful API operation createTimer");
         } catch (Exception ex) {
@@ -79,7 +79,7 @@ public class ReceiptTimerController {
     @Trace(businessProcess = BP_TIMER_DELETE, reEnabled = true)
     public void deleteTimer(@RequestParam() String paymentTokens) {
         try {
-            log.info("Invoking API operation deleteTimer - args: {}", sanitizeInput(paymentTokens));
+            log.debug("Invoking API operationdeleteTimer - args: {}", sanitizeInput(paymentTokens));
             List<String> tokens = Arrays.asList(paymentTokens.split(","));
             receiptTimerService.cancelScheduledMessage(tokens);
             log.debug("Successful API operation deleteTimer");
