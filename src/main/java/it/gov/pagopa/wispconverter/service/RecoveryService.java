@@ -264,7 +264,8 @@ public class RecoveryService {
                 // extract rpt from re
                 List<ReEventEntity> reItems = reEventRepository.findRptAccettataNodoBySessionId(sessionId);
                 for(ReEventEntity reItem : reItems) {
-                    String receiptId = reItem.getStation() + "_" + UUID.randomUUID();
+                    String[] brokerEC = reItem.getStation().split("_");
+                    String receiptId = brokerEC[0] + "_" + UUID.randomUUID();
                     IdempotencyKeyEntity idempotencyKey = IdempotencyKeyEntity.builder()
                             .id(String.format("%s_%s_%s", reItem.getSessionId(), reItem.getIuv(), reItem.getDomainId()))
                             .partitionKey(reItem.getPartitionKey())
@@ -414,7 +415,7 @@ public class RecoveryService {
                     rtRequestEntity.setPayload(AppBase64Util.base64Encode(ZipUtil.zip(payload)));
                     rtRetryRepository.save(rtRequestEntity);
 
-                    String compositedIdForReceipt = String.format("%s_%s", rtRequestEntity.getPartitionKey(), rtRequestEntity.getId());
+                    String compositedIdForReceipt = String.format("%s_%s", rtRequestEntity.getPartitionKey(), overriddenReceiptId);
                     serviceBusService.sendMessage(compositedIdForReceipt, null);
                     generateRE(null, "Success", InternalStepStatus.RT_SEND_RESCHEDULING_SUCCESS,
                             null, null, null, sessionId, String.format("Generated receipt: %s", overriddenReceiptId));
