@@ -171,15 +171,20 @@ class Extractor:
         numeric_data = ReportNumericData()
 
         # Retrieve data about the total number of payments in Nodo for the passed date
+        logging.info(f"\t[INFO ][Extractor      ] Executing event count from Data Explorer for NdP...")
         numeric_data.total_payments_on_ndp = db_client.read_ndp_payments_by_date(self.date)
+        logging.info(f"\t[INFO ][Extractor      ] Executed event count from Data Explorer for NdP! Retrieved count: [{numeric_data.total_payments_on_ndp}]")
 
         # Generate statistics about creditor institutions
         (cis_on_wisp, total_cis) = self._extract_number_of_creditor_institution_on_wisp(db=db_client, apiconfig_client=apiconfig_client)    
         numeric_data.creditor_institutions = CIsReportInfo(total_cis, cis_on_wisp)    
 
         # Generate statistics about triggered primitives
+        logging.info(f"\t[INFO ][Extractor      ] Executing read for trigger primitives from D-WISP...")
         grouped_trigger_requests = self._extract_trigger_request_from_wisp(db=db_client)
+        logging.info(f"\t[INFO ][Extractor      ] Retrieved {len(grouped_trigger_requests.carts) + len(grouped_trigger_requests.carts)} primitives! Executing read for statistics about payments and receipts...")
         (completed_payments, not_completed_payments, completed_carts, completed_no_carts) = self._extract_payment_status_tracking_by_session_id(grouped_trigger_requests, db_client)
+        logging.info(f"\t[INFO ][Extractor      ] Retrieved statistics about payments and receipts! Finalizing report persistence...")
 
         # Generate statistics about trigger primitives
         numeric_data.trigger_primitives = TriggerPrimitiveReportInfo(carts_completed=completed_carts,
