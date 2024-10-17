@@ -30,7 +30,7 @@
             "matchType": "regexp"
           }
         ],
-        "percentage": 5
+        "percentage": 0
       },
       {
         "telemetryType": "exception",
