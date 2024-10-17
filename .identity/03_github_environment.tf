@@ -22,7 +22,7 @@ resource "github_repository_environment" "github_repository_environment" {
 locals {
   env_secrets = {
     "CD_CLIENT_ID" : data.azurerm_user_assigned_identity.identity_cd.client_id,
-    "CI_CLIENT_ID" : var.env_short != "p" ? data.azurerm_user_assigned_identity.identity_ci.client_id : "",
+    "CI_CLIENT_ID" : var.env_short != "p" ? data.azurerm_user_assigned_identity.identity_ci.client_id[0].value : "",
     "TENANT_ID" : data.azurerm_client_config.current.tenant_id,
     "SUBSCRIPTION_ID" : data.azurerm_subscription.current.subscription_id
     "INTEGRATION_TEST_GPD_SUBSCRIPTION_KEY" : var.env_short != "p" ? data.azurerm_key_vault_secret.integration_test_gpd_subscription_key[0].value : ""
