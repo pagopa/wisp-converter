@@ -411,6 +411,7 @@ public class RecoveryService {
                     rtRequestEntity.setId(overriddenReceiptId);
                     rtRequestEntity.setDomainId(domainId);
                     rtRequestEntity.setIdempotencyKey(overriddenIdempotencyKey);
+                    rtRequestEntity.setSessionId(sessionId);
                     rtRequestEntity.setRetry(0);
                     rtRequestEntity.setPayload(AppBase64Util.base64Encode(ZipUtil.zip(payload)));
                     rtRetryRepository.save(rtRequestEntity);
