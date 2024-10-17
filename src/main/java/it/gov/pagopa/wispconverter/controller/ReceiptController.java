@@ -76,7 +76,7 @@ public class ReceiptController {
     @Trace(businessProcess = BP_RECEIPT_RETRIEVE, reEnabled = true)
     public ResponseEntity<String> receiptRetrieve(@QueryParam("ci") String ci, @QueryParam("ccp") String ccp, @QueryParam("iuv") String iuv) {
         try {
-            log.debug("Invoking API operation receiptRetrieve - ci: {}, ccp: {}, iuv: {}", sanitizeInput(ci), sanitizeInput(ccp), sanitizeInput(iuv));
+            log.info("Invoking API operation receiptRetrieve - ci: {}, ccp: {}, iuv: {}", sanitizeInput(ci), sanitizeInput(ccp), sanitizeInput(iuv));
             if(rtReceiptCosmosService.receiptRtExist(ci, iuv, ccp))
                 return ResponseEntity.ok("");
             else return ResponseEntity.notFound().build();
@@ -106,7 +106,7 @@ public class ReceiptController {
     public void receiptKo(@RequestBody String request) throws Exception {
 
         try {
-            log.debug("Invoking API operation receiptKo - args: {}", request);
+            log.info("Invoking API operation receiptKo - args: {}", request);
             receiptService.sendKoPaaInviaRtToCreditorInstitution(List.of(mapper.readValue(request, ReceiptDto.class)).toString());
             log.debug("Successful API operation receiptKo");
         } catch (Exception ex) {
@@ -133,7 +133,7 @@ public class ReceiptController {
     public void receiptOk(@RequestBody ReceiptRequest request) throws IOException {
 
         try {
-            log.debug("Invoking API operation receiptOk - args: {}", this.getReceiptRequestInfoToLog(request.getContent()));
+            log.info("Invoking API operation receiptOk - args: {}", this.getReceiptRequestInfoToLog(request.getContent()));
             receiptService.sendOkPaaInviaRtToCreditorInstitution(request.getContent());
             log.debug("Successful API operation receiptOk");
         } catch (Exception ex) {

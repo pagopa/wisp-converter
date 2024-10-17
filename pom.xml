@@ -80,6 +80,13 @@
             <artifactId>spring-aspects</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>com.microsoft.azure</groupId>
+            <artifactId>applicationinsights-core</artifactId>
+            <version>3.6.1</version>
+        </dependency>
+
+
         <!-- Spring utils-->
         <dependency>
             <groupId>org.springframework.boot</groupId>

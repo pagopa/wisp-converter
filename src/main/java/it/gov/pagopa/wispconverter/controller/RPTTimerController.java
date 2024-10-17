@@ -1,5 +1,7 @@
 package it.gov.pagopa.wispconverter.controller;
 
+import static it.gov.pagopa.wispconverter.util.CommonUtility.sanitizeInput;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -21,8 +23,6 @@ import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.*;
-
-import static it.gov.pagopa.wispconverter.util.CommonUtility.sanitizeInput;
 
 @RestController
 @RequestMapping("/rpt")
@@ -51,7 +51,7 @@ public class RPTTimerController {
     @Trace(businessProcess = RPT_BP_TIMER_SET, reEnabled = true)
     public void createTimer(@RequestBody RPTTimerRequest request) {
         try {
-            log.debug("Invoking API operation createRPTTimer - args: {}", request.toString());
+            log.info("Invoking API operation createRPTTimer - args: {}", request.toString());
             rptTimerService.sendMessage(request);
             log.debug("Successful API operation createRPTTimer");
         } catch (Exception ex) {
@@ -77,7 +77,7 @@ public class RPTTimerController {
     @Trace(businessProcess = RPT_BP_TIMER_DELETE, reEnabled = true)
     public void deleteTimer(@RequestParam() String sessionId) {
         try {
-            log.debug("Invoking API operation deleteRPTTimer - args: {}", sanitizeInput(sessionId));
+            log.info("Invoking API operation deleteRPTTimer - args: {}", sanitizeInput(sessionId));
             rptTimerService.cancelScheduledMessage(sessionId);
             log.debug("Successful API operation deleteRPTTimer");
         } catch (Exception ex) {
