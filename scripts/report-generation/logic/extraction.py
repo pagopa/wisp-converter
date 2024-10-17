@@ -182,7 +182,7 @@ class Extractor:
         # Generate statistics about triggered primitives
         logging.info(f"\t[INFO ][Extractor      ] Executing read for trigger primitives from D-WISP...")
         grouped_trigger_requests = self._extract_trigger_request_from_wisp(db=db_client)
-        logging.info(f"\t[INFO ][Extractor      ] Retrieved {len(grouped_trigger_requests.carts) + len(grouped_trigger_requests.carts)} primitives! Executing read for statistics about payments and receipts...")
+        logging.info(f"\t[INFO ][Extractor      ] Retrieved {len(grouped_trigger_requests.carts.count) + len(grouped_trigger_requests.carts.count)} primitives! Executing read for statistics about payments and receipts...")
         (completed_payments, not_completed_payments, completed_carts, completed_no_carts) = self._extract_payment_status_tracking_by_session_id(grouped_trigger_requests, db_client)
         logging.info(f"\t[INFO ][Extractor      ] Retrieved statistics about payments and receipts! Finalizing report persistence...")
 
