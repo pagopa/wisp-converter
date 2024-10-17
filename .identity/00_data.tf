@@ -136,6 +136,7 @@ data "azurerm_user_assigned_identity" "identity_cd" {
 }
 
 data "azurerm_user_assigned_identity" "identity_ci" {
+  count               = var.env_short == "p" ? 0 : 1
   name                = "${local.product}-${local.domain}-01-github-ci-identity"
   resource_group_name = "${local.product}-identity-rg"
 }
