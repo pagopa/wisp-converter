@@ -42,11 +42,24 @@ permissions:
 
 
 jobs:
+  setup:
+    name: Setup
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.get_env.outputs.environment }}
+    steps:
+
+      - id: get_env
+        name: Set Output
+        run: |
+          raw_env=${{ env.environment || github.event.inputs.environment }}" 
+          echo "environment="${raw_env#report-}" >> $GITHUB_OUTPUT
+
   create_runner:
     name: Create Runner
     runs-on: ubuntu-22.04
     environment: 
-      name: ${{(github.event.inputs == null && 'prod') || inputs.environment }}
+      name: ${{ needs.setup.outputs.environment }}
     outputs:
       runner_name: ${{ steps.create_github_runner.outputs.runner_name }}
     steps:
@@ -70,7 +83,7 @@ jobs:
     name: Generate and/or send report
     runs-on: [ self-hosted, "${{ needs.create_runner.outputs.runner_name }}" ]
     environment: 
-      name: ${{(github.event.inputs == null && 'prod') || inputs.environment }}
+      name: ${{ needs.setup.outputs.environment }}
     steps:
 
       - name: Generating daily report via scheduling
@@ -124,8 +137,7 @@ jobs:
       - name: Generate variables
         id: generate_vars
         run: |
-          raw_env="${{ env.environment || github.event.inputs.environment }}"
-          echo "environment=${raw_env#report-}" >> $GITHUB_ENV
+          echo "environment=${{ needs.setup.outputs.environment }}" >> $GITHUB_ENV
           echo "report_date=${{ env.report_date || github.event.inputs.report_date }}" >> $GITHUB_ENV
           echo "report_type=${{ env.report_type || github.event.inputs.report_type }}" >> $GITHUB_ENV
 
@@ -191,10 +203,10 @@ jobs:
   cleanup_runner:
     name: Cleanup Runner
     needs: [ create_runner, report_generation ]
-    if: ${{ success() || failure() && inputs.target == inputs.environment || inputs.target == 'all' }}
+    if: ${{ success() }}
     runs-on: ubuntu-22.04
     environment: 
-      name: ${{(github.event.inputs == null && 'prod') || inputs.environment }}
+      name: ${{ needs.setup.outputs.environment }}
     steps:
 
       - name: Cleanup GitHub Runner
