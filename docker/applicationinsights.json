@@ -22,6 +22,10 @@
         "percentage": 100
       },
       {
+        "telemetryType": "trace",
+        "percentage": 0
+      },
+      {
         "telemetryType": "exception",
         "percentage": 100
       },
