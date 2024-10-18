@@ -2,10 +2,11 @@ name: Generate and send report
 
 on:
   schedule:
+    # scheduled generation cron
     - cron: '00 05 * * *' # (05:00AM) generate last day report 
     - cron: '00 09 * * 1' # (09:00AM) generate last week report on monday
     - cron: '00 09 1 * *' # (09:00AM) generate last month report on first day of the month
-    #
+    # scheduled send cron
     - cron: '00 07 * * *' # (07:00AM) send last day report
     - cron: '30 09 * * 1' # (09:30AM) send last week report on monday
     - cron: '35 09 1 * *' # (09:35AM) send last month report on first day of the month
@@ -49,7 +50,7 @@ jobs:
       name: ${{ github.event.inputs == null || github.event.inputs == 'prod' }}
     steps:
       - name: Auto approve
-        uses: andrea-deri/auto-approve@v1.0.0
+        uses: andrea-deri/auto-approve@042a1e58fa51acef74997dc9cebb1c665677d2ac
         with:
           pat_token: ${{ secrets.BOT_TOKEN_GITHUB }}
           environment: ${{ inputs.environment }}
@@ -86,7 +87,7 @@ jobs:
       name: ${{ github.event.inputs == null || github.event.inputs == 'prod' }}
     steps:
       - name: Auto approve
-        uses: andrea-deri/auto-approve@v1.0.0
+        uses: andrea-deri/auto-approve@042a1e58fa51acef74997dc9cebb1c665677d2ac
         with:
           pat_token: ${{ secrets.BOT_TOKEN_GITHUB }}
           environment: ${{ inputs.environment }}
@@ -223,7 +224,7 @@ jobs:
       name: ${{ github.event.inputs == null || github.event.inputs == 'prod' }}
     steps:
       - name: Auto approve
-        uses: andrea-deri/auto-approve@v1.0.0
+        uses: andrea-deri/auto-approve@042a1e58fa51acef74997dc9cebb1c665677d2ac
         with:
           pat_token: ${{ secrets.BOT_TOKEN_GITHUB }}
           environment: ${{ inputs.environment }}
