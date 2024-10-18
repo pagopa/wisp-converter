@@ -12,13 +12,17 @@ import java.util.List;
 @Repository
 @Qualifier("secondaryCosmosTemplate")
 public interface RTRepositorySecondary extends CosmosRepository<RTEntity, String> {
-    // these queries check whether the receipt submission has been in an intermediate state (If it has been for more than an hour, it is stuck)
+  // these queries check whether the receipt submission has been in an intermediate state
+  // (If it has been for more than an hour, it is stuck)
+
+    @Query("SELECT * FROM c WHERE c.receiptStatus in ('SENDING', 'REDIRECT') "
+          + "AND c.receiptType in (null, 'KO') "
+          + "AND c._ts >= DateTimeToTimestamp(@dateFrom) / 1000 AND c._ts <= DateTimeToTimestamp(@dateTo) / 1000")
+    List<RTEntity> findByMidReceiptStatusInAndTimestampBetween(@Param("dateFrom") String dateFrom,
+                                                               @Param("dateTo") String dateTo);
 
     @Query("SELECT * FROM c WHERE c.receiptStatus in ('SENDING', 'REDIRECT') " +
-                   "AND c._ts >= DateTimeToTimestamp(@dateFrom) / 1000 AND c._ts <= DateTimeToTimestamp(@dateTo) / 1000")
-    List<RTEntity> findByMidReceiptStatusInAndTimestampBetween(@Param("dateFrom") String dateFrom, @Param("dateTo") String dateTo);
-
-    @Query("SELECT * FROM c WHERE c.receiptStatus in ('SENDING', 'REDIRECT') " +
+                   "AND c.receiptType in (null, 'KO') " +
                    "AND c._ts >= DateTimeToTimestamp(@dateFrom) / 1000 AND c._ts <= DateTimeToTimestamp(@dateTo) / 1000 " +
                    "AND c.domainId = @domainId")
     List<RTEntity> findByMidReceiptStatusInAndTimestampBetween(@Param("dateFrom") String dateFrom,
@@ -27,6 +31,7 @@ public interface RTRepositorySecondary extends CosmosRepository<RTEntity, String
 
 
     @Query("SELECT * FROM c WHERE c.receiptStatus in ('SENDING', 'REDIRECT') " +
+                   "AND c.receiptType in (null, 'KO') " +
                    "AND c._ts >= DateTimeToTimestamp(@dateFrom) / 1000 AND c._ts <= DateTimeToTimestamp(@dateTo) / 1000 " +
                    "AND c.iuv = @iuv AND c.domainId = @domainId")
     List<RTEntity> findByMidReceiptStatusInAndTimestampBetween(@Param("dateFrom") String dateFrom,
