@@ -68,29 +68,29 @@ class CompletedPaymentsReportInfo:
     def __init__(self, 
                  closed_as_ok=0, 
                  closed_as_ko=0, 
-                 ok_receipt_sent_by_retry=0,
-                 ko_receipt_sent_by_retry=0):
+                 with_ok_receipts_only_sent_after_retry=0,
+                 with_ko_receipts_only_sent_after_retry=0):
         self.closed_as_ok = closed_as_ok
         self.closed_as_ko = closed_as_ko
-        self.ok_receipt_sent_by_retry = ok_receipt_sent_by_retry
-        self.ko_receipt_sent_by_retry = ko_receipt_sent_by_retry
+        self.with_ok_receipts_only_sent_after_retry = with_ok_receipts_only_sent_after_retry
+        self.with_ko_receipts_only_sent_after_retry = with_ko_receipts_only_sent_after_retry
 
 
     def merge(self, report_info):
         self.closed_as_ok += report_info.closed_as_ok
         self.closed_as_ko += report_info.closed_as_ko
-        self.ok_receipt_sent_by_retry += report_info.ok_receipt_sent_by_retry
-        self.ko_receipt_sent_by_retry += report_info.ko_receipt_sent_by_retry
+        self.with_ok_receipts_only_sent_after_retry += report_info.with_ok_receipts_only_sent_after_retry
+        self.with_ko_receipts_only_sent_after_retry += report_info.with_ko_receipts_only_sent_after_retry
 
 
     def extract_from_report_entity(report_entity):
         report_data = report_entity.get_map()
         payments_info = report_data["payments"]
-        completed_payments_info = payments_info["completed"]
-        return CompletedPaymentsReportInfo(closed_as_ok=completed_payments_info["ok_receipts"],
-                                    closed_as_ko=completed_payments_info["ko_receipts"],
-                                    ok_receipt_sent_by_retry=completed_payments_info["ok_receipt_sent_by_retry"],
-                                    ko_receipt_sent_by_retry=completed_payments_info["ok_receipt_sent_by_retry"])
+        completed_payments_info = payments_info[Constants.COMPLETED_MACROTAG]
+        return CompletedPaymentsReportInfo(closed_as_ok=completed_payments_info[Constants.COMPLETED_OK_RECEIPT_TOTAL],
+                                           closed_as_ko=completed_payments_info[Constants.COMPLETED_KO_RECEIPT_TOTAL],
+                                           with_ok_receipts_only_sent_after_retry=completed_payments_info[Constants.COMPLETED_OK_RECEIPT_SENT_BY_RETRY],
+                                           with_ko_receipts_only_sent_after_retry=completed_payments_info[Constants.COMPLETED_KO_RECEIPT_SENT_BY_RETRY])
 
 
 # ============================================================================
@@ -99,38 +99,38 @@ class NotCompletedPaymentsReportInfo:
 
     def __init__(self,
                  rejected: ReceiptDetailStatistics = ReceiptDetailStatistics(),
-                 never_sent: ReceiptDetailStatistics = ReceiptDetailStatistics(),
+                 not_sent_end_retry: ReceiptDetailStatistics = ReceiptDetailStatistics(),
                  scheduled: ReceiptDetailStatistics = ReceiptDetailStatistics(),
-                 blocked: ReceiptDetailStatistics = ReceiptDetailStatistics()):
+                 never_sent: ReceiptDetailStatistics = ReceiptDetailStatistics()):
         self.rejected = rejected
-        self.never_sent = never_sent
+        self.not_sent_end_retry = not_sent_end_retry
         self.scheduled = scheduled
-        self.blocked = blocked
+        self.never_sent = never_sent
 
 
     def merge(self, report_info):
         self.rejected.merge(report_info.rejected)
-        self.never_sent.merge(report_info.never_sent)
+        self.not_sent_end_retry.merge(report_info.not_sent_end_retry)
         self.scheduled.merge(report_info.scheduled)
-        self.blocked.merge(report_info.blocked)
+        self.never_sent.merge(report_info.never_sent)
 
 
     def extract_from_report_entity(report_entity):
         report_data = report_entity.get_map()
         payments_info = report_data["payments"]
-        not_completed_payments_info = payments_info["not_completed"]
-        rejected_payments_info = not_completed_payments_info["rejected"]
-        never_sent_payments_info = not_completed_payments_info["never_sent"]
-        scheduled_payments_info = not_completed_payments_info["scheduled"]
-        blocked_payments_info = not_completed_payments_info["blocked"]
-        return NotCompletedPaymentsReportInfo(rejected=ReceiptDetailStatistics(count_ok=rejected_payments_info["count_ok"],
-                                                                               count_ko=rejected_payments_info["count_ko"]),
-                                              never_sent=ReceiptDetailStatistics(count_ok=never_sent_payments_info["count_ok"],
-                                                                                 count_ko=never_sent_payments_info["count_ko"]),
-                                              scheduled=ReceiptDetailStatistics(count_ok=scheduled_payments_info["count_ok"],
-                                                                                count_ko=scheduled_payments_info["count_ko"]),
-                                              blocked=ReceiptDetailStatistics(count_ok=blocked_payments_info["count_ok"],
-                                                                              count_ko=blocked_payments_info["count_ko"]))
+        not_completed_payments_info = payments_info[Constants.NOT_COMPLETED_MACROTAG]
+        rejected_payments_info = not_completed_payments_info[Constants.NOT_COMPLETED_REJECTED]
+        never_sent_payments_info = not_completed_payments_info[Constants.NOT_COMPLETED_NOT_SENT_END_RETRY]
+        scheduled_payments_info = not_completed_payments_info[Constants.NOT_COMPLETED_SCHEDULED]
+        _never_sent__payments_info = not_completed_payments_info[Constants.NOT_COMPLETED_NEVER_SENT]
+        return NotCompletedPaymentsReportInfo(rejected=ReceiptDetailStatistics(receipt_ok_count=rejected_payments_info[Constants.RECEIPT_OK_COUNT],
+                                                                               receipt_ko_count=rejected_payments_info[Constants.RECEIPT_KO_COUNT]),
+                                              not_sent_end_retry=ReceiptDetailStatistics(receipt_ok_count=never_sent_payments_info[Constants.RECEIPT_OK_COUNT],
+                                                                                 receipt_ko_count=never_sent_payments_info[Constants.RECEIPT_KO_COUNT]),
+                                              scheduled=ReceiptDetailStatistics(receipt_ok_count=scheduled_payments_info[Constants.RECEIPT_OK_COUNT],
+                                                                                receipt_ko_count=scheduled_payments_info[Constants.RECEIPT_KO_COUNT]),
+                                              never_sent=ReceiptDetailStatistics(receipt_ok_count=_never_sent__payments_info[Constants.RECEIPT_OK_COUNT],
+                                                                              receipt_ko_count=_never_sent__payments_info[Constants.RECEIPT_KO_COUNT]))
 
 
 
@@ -211,29 +211,29 @@ class ReportNotificationDetail:
         percentage_completed_ko_receipts = Utility.safe_divide(completed_ko_receipts * 100, total_completed_receipts)
 
         #
-        refused_ok_receipts = not_completed_payments_info.rejected.count_ok
-        refused_ko_receipts = not_completed_payments_info.rejected.count_ko
+        refused_ok_receipts = not_completed_payments_info.rejected.receipt_ok_count
+        refused_ko_receipts = not_completed_payments_info.rejected.receipt_ko_count
         total_refused_receipts = refused_ok_receipts + refused_ko_receipts
         percentage_refused_ok_receipts = Utility.safe_divide(refused_ok_receipts * 100, total_refused_receipts)
         percentage_refused_ko_receipts = Utility.safe_divide(refused_ko_receipts * 100, total_refused_receipts)
 
         #
-        rescheduled_ok_receipts = not_completed_payments_info.scheduled.count_ok
-        rescheduled_ko_receipts = not_completed_payments_info.scheduled.count_ko
+        rescheduled_ok_receipts = not_completed_payments_info.scheduled.receipt_ok_count
+        rescheduled_ko_receipts = not_completed_payments_info.scheduled.receipt_ko_count
         total_rescheduled_receipts = rescheduled_ok_receipts + rescheduled_ko_receipts
         percentage_rescheduled_ok_receipts = Utility.safe_divide(rescheduled_ok_receipts * 100, total_rescheduled_receipts)
         percentage_rescheduled_ko_receipts = Utility.safe_divide(rescheduled_ko_receipts * 100, total_rescheduled_receipts)
 
         #
-        end_schedule_ok_receipts = not_completed_payments_info.never_sent.count_ok
-        end_schedule_ko_receipts = not_completed_payments_info.never_sent.count_ko
+        end_schedule_ok_receipts = not_completed_payments_info.not_sent_end_retry.receipt_ok_count
+        end_schedule_ko_receipts = not_completed_payments_info.not_sent_end_retry.receipt_ko_count
         total_end_schedule_receipts = end_schedule_ok_receipts + end_schedule_ko_receipts
         percentage_end_schedule_ok_receipts = Utility.safe_divide(end_schedule_ok_receipts * 100, total_end_schedule_receipts)
         percentage_end_schedule_ko_receipts = Utility.safe_divide(end_schedule_ko_receipts * 100, total_end_schedule_receipts)
 
         #
-        error_ok_receipts = not_completed_payments_info.blocked.count_ok
-        error_ko_receipts = not_completed_payments_info.blocked.count_ko
+        error_ok_receipts = not_completed_payments_info.never_sent.receipt_ok_count
+        error_ko_receipts = not_completed_payments_info.never_sent.receipt_ko_count
         total_error_receipts = error_ok_receipts + error_ko_receipts
         percentage_error_ok_receipts = Utility.safe_divide(error_ok_receipts * 100, total_error_receipts)
         percentage_error_ko_receipts = Utility.safe_divide(error_ko_receipts * 100, total_error_receipts)
@@ -272,17 +272,17 @@ class ReportNotificationDetail:
     def _extract_details_for_not_completed_payments(self, total_payments_on_wisp, not_completed_payments_info: NotCompletedPaymentsReportInfo):
 
         rejected = not_completed_payments_info.rejected.count
-        never_sent = not_completed_payments_info.never_sent.count
+        not_sent_end_retry = not_completed_payments_info.not_sent_end_retry.count
         scheduled = not_completed_payments_info.scheduled.count
-        blocked = not_completed_payments_info.blocked.count
+        never_sent = not_completed_payments_info.never_sent.count
 
-        total_not_closed = rejected + never_sent + scheduled + blocked
+        total_not_closed = rejected + not_sent_end_retry + scheduled + never_sent
         percentage_not_closed_on_total = (total_not_closed * 100) / total_payments_on_wisp
 
         percentage_rejected = rejected * 100 / total_payments_on_wisp
-        percentage_never_sent = never_sent * 100 / total_payments_on_wisp
+        percentage_never_sent = not_sent_end_retry * 100 / total_payments_on_wisp
         percentage_scheduled = scheduled * 100 / total_payments_on_wisp
-        percentage_blocked = blocked * 100 / total_payments_on_wisp
+        percentage__never_sent_ = never_sent * 100 / total_payments_on_wisp
 
-        return f'''\n>- Numero totale di pagamenti senza ricevuta: `{total_not_closed} ({percentage_not_closed_on_total:.2f}%)` \n>- Numero di pagamenti senza ricevuta per rifiuto dell'Ente: `{rejected} ({percentage_rejected:.2f}%)` \n>- Numero di pagamenti con invio ricevuta schedulata per retry: `{scheduled} ({percentage_scheduled:.2f}%)` \n>- Numero di pagamenti senza ricevuta per fine tentativi retry: `{never_sent} ({percentage_never_sent:.2f}%)` \n>- Numero di pagamenti conclusi senza ricevuta per errore imprevisto: `{blocked} ({percentage_blocked:.2f}%)`'''
+        return f'''\n>- Numero totale di pagamenti senza ricevuta: `{total_not_closed} ({percentage_not_closed_on_total:.2f}%)` \n>- Numero di pagamenti senza ricevuta per rifiuto dell'Ente: `{rejected} ({percentage_rejected:.2f}%)` \n>- Numero di pagamenti con invio ricevuta schedulata per retry: `{scheduled} ({percentage_scheduled:.2f}%)` \n>- Numero di pagamenti senza ricevuta per fine tentativi retry: `{not_sent_end_retry} ({percentage_never_sent:.2f}%)` \n>- Numero di pagamenti conclusi senza ricevuta per errore imprevisto: `{never_sent} ({percentage__never_sent_:.2f}%)`'''
     

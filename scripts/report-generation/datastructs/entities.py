@@ -1,5 +1,5 @@
 from datastructs.report import CIsReportInfo, CompletedPaymentsReportInfo, NotCompletedPaymentsReportInfo, ReceiptDetailStatistics, TriggerPrimitiveReportInfo
-
+from utility.constants import Constants
 
 class ReportEntity:
 
@@ -28,17 +28,17 @@ class ReportEntity:
                     "carts_completed": trigger_primitive.carts_completed,
                     "no_carts_completed": trigger_primitive.no_carts_completed,
                 },
-                "completed": {
-                    "ok_receipts": completed_payments.closed_as_ok,
-                    "ko_receipts": completed_payments.closed_as_ko,
-                    "ok_receipt_sent_by_retry": completed_payments.ok_receipt_sent_by_retry,
-                    "ko_receipt_sent_by_retry": completed_payments.ko_receipt_sent_by_retry,
+                Constants.COMPLETED_MACROTAG: {
+                    Constants.COMPLETED_OK_RECEIPT_TOTAL: completed_payments.closed_as_ok,
+                    Constants.COMPLETED_KO_RECEIPT_TOTAL: completed_payments.closed_as_ko,
+                    Constants.COMPLETED_OK_RECEIPT_SENT_BY_RETRY: completed_payments.with_ok_receipts_only_sent_after_retry,
+                    Constants.COMPLETED_KO_RECEIPT_SENT_BY_RETRY: completed_payments.with_ko_receipts_only_sent_after_retry,
                 },
-                "not_completed": {
-                    "rejected": not_completed_payments.rejected.to_dict(),
-                    "never_sent": not_completed_payments.never_sent.to_dict(),
-                    "scheduled": not_completed_payments.scheduled.to_dict(),
-                    "blocked": not_completed_payments.blocked.to_dict()
+                Constants.NOT_COMPLETED_MACROTAG: {
+                    Constants.NOT_COMPLETED_REJECTED: not_completed_payments.rejected.to_dict(),
+                    Constants.NOT_COMPLETED_NOT_SENT_END_RETRY: not_completed_payments.not_sent_end_retry.to_dict(),
+                    Constants.NOT_COMPLETED_SCHEDULED: not_completed_payments.scheduled.to_dict(),
+                    Constants.NOT_COMPLETED_NEVER_SENT: not_completed_payments.never_sent.to_dict()
                 }
             }
         }
@@ -54,12 +54,12 @@ class ReportEntity:
         item_ci_info = item["creditor_institution_info"]
         payments_info = item["payments"]
         trigger_primitive_info = payments_info["trigger_primitives"]
-        completed_payment_info = payments_info["completed"]
-        not_completed_payment_info = payments_info["not_completed"]
-        rejected_payments_info = not_completed_payment_info["rejected"]
-        never_sent_payments_info = not_completed_payment_info["never_sent"]
-        scheduled_payments_info = not_completed_payment_info["scheduled"]
-        blocked_payments_info = not_completed_payment_info["blocked"]
+        completed_payment_info = payments_info[Constants.COMPLETED_MACROTAG]
+        not_completed_payment_info = payments_info[Constants.NOT_COMPLETED_MACROTAG]
+        rejected_payments_info = not_completed_payment_info[Constants.NOT_COMPLETED_REJECTED]
+        never_sent_payments_info = not_completed_payment_info[Constants.NOT_COMPLETED_NOT_SENT_END_RETRY]
+        scheduled_payments_info = not_completed_payment_info[Constants.NOT_COMPLETED_SCHEDULED]
+        _never_sent__payments_info = not_completed_payment_info[Constants.NOT_COMPLETED_NEVER_SENT]
         
         # generate complex objects
         creditor_institutions = CIsReportInfo(cis_total=item_ci_info["total"], 
@@ -68,18 +68,18 @@ class ReportEntity:
                                                         no_carts_total=trigger_primitive_info["total_no_carts"],
                                                         carts_completed=trigger_primitive_info["carts_completed"],
                                                         no_carts_completed=trigger_primitive_info["no_carts_completed"])
-        completed_payment_info = CompletedPaymentsReportInfo(closed_as_ok=completed_payment_info["ok_receipts"],
-                                                            closed_as_ko=completed_payment_info["ko_receipts"],
-                                                            ok_receipt_sent_by_retry=completed_payment_info["ok_receipt_sent_by_retry"],
-                                                            ko_receipt_sent_by_retry=completed_payment_info["ko_receipt_sent_by_retry"])
-        not_completed_payment_info = NotCompletedPaymentsReportInfo(rejected=ReceiptDetailStatistics(count_ok=rejected_payments_info["count_ok"],
-                                                                                                     count_ko=rejected_payments_info["count_ko"]), 
-                                                                    never_sent=ReceiptDetailStatistics(count_ok=never_sent_payments_info["count_ok"],
-                                                                                                       count_ko=never_sent_payments_info["count_ko"]), 
-                                                                    scheduled=ReceiptDetailStatistics(count_ok=scheduled_payments_info["count_ok"],
-                                                                                                      count_ko=scheduled_payments_info["count_ko"]), 
-                                                                    blocked=ReceiptDetailStatistics(count_ok=blocked_payments_info["count_ok"],
-                                                                                                    count_ko=blocked_payments_info["count_ko"]))
+        completed_payment_info = CompletedPaymentsReportInfo(closed_as_ok=completed_payment_info[Constants.COMPLETED_OK_RECEIPT_TOTAL],
+                                                            closed_as_ko=completed_payment_info[Constants.COMPLETED_KO_RECEIPT_TOTAL],
+                                                            with_ok_receipts_only_sent_after_retry=completed_payment_info[Constants.COMPLETED_OK_RECEIPT_SENT_BY_RETRY],
+                                                            with_ko_receipts_only_sent_after_retry=completed_payment_info[Constants.COMPLETED_KO_RECEIPT_SENT_BY_RETRY])
+        not_completed_payment_info = NotCompletedPaymentsReportInfo(rejected=ReceiptDetailStatistics(receipt_ok_count=rejected_payments_info[Constants.RECEIPT_OK_COUNT],
+                                                                                                     receipt_ko_count=rejected_payments_info[Constants.RECEIPT_KO_COUNT]), 
+                                                                    not_sent_end_retry=ReceiptDetailStatistics(receipt_ok_count=never_sent_payments_info[Constants.RECEIPT_OK_COUNT],
+                                                                                                       receipt_ko_count=never_sent_payments_info[Constants.RECEIPT_KO_COUNT]), 
+                                                                    scheduled=ReceiptDetailStatistics(receipt_ok_count=scheduled_payments_info[Constants.RECEIPT_OK_COUNT],
+                                                                                                      receipt_ko_count=scheduled_payments_info[Constants.RECEIPT_KO_COUNT]), 
+                                                                    never_sent=ReceiptDetailStatistics(receipt_ok_count=_never_sent__payments_info[Constants.RECEIPT_OK_COUNT],
+                                                                                                    receipt_ko_count=_never_sent__payments_info[Constants.RECEIPT_KO_COUNT]))
 
         # generate report entity 
         return ReportEntity(id=item["id"],

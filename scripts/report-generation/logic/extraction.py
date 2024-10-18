@@ -89,11 +89,12 @@ class Extractor:
                     receipt_id = receipt.id
 
                     if receipt_status == 'SENT':
-                        completed_payments.ok_receipt_sent_by_retry += 1
                         if receipt.type == 'OK':
                             completed_payments.add_as_ok()
+                            completed_payments.with_ok_receipts_only_sent_after_retry += 1
                         else:
                             completed_payments.add_as_ko()
+                            completed_payments.with_ko_receipts_only_sent_after_retry += 1
                         
                     elif receipt_status == 'SENT_REJECTED_BY_EC':
                         if receipt.type == 'OK':
@@ -103,9 +104,9 @@ class Extractor:
 
                     elif receipt_status == 'NOT_SENT':
                         if receipt.type == 'OK':
-                            not_completed_payments.never_sent.add_as_ok(receipt_id)
+                            not_completed_payments.not_sent_end_retry.add_as_ok(receipt_id)
                         else:
-                            not_completed_payments.never_sent.add_as_ko(receipt_id)
+                            not_completed_payments.not_sent_end_retry.add_as_ko(receipt_id)
 
                     elif receipt_status == 'SCHEDULED' or receipt_status == 'SENDING':
                         if receipt.type == 'OK':
@@ -115,9 +116,9 @@ class Extractor:
 
                     else:
                         if receipt.type == 'OK':
-                            not_completed_payments.blocked.add_as_ok(receipt_id)
+                            not_completed_payments.never_sent.add_as_ok(receipt_id)
                         else:
-                            not_completed_payments.blocked.add_as_ko(receipt_id)
+                            not_completed_payments.never_sent.add_as_ko(receipt_id)
 
             else:
                 re_event_to_check = re_events[0]
@@ -193,16 +194,16 @@ class Extractor:
                                                                      no_carts_total=grouped_trigger_requests.no_carts.count)
             
         # Generate statistics about completed payments
-        numeric_data.completed_payments = CompletedPaymentsReportInfo(closed_as_ok=completed_payments.sent_ok_receipts,
-                                                                      closed_as_ko=completed_payments.sent_ko_receipts,
-                                                                      ok_receipt_sent_by_retry=completed_payments.ok_receipt_sent_by_retry,
-                                                                      ko_receipt_sent_by_retry=completed_payments.ko_receipt_sent_by_retry)
+        numeric_data.completed_payments = CompletedPaymentsReportInfo(closed_as_ok=completed_payments.with_ok_receipts_all_sent,
+                                                                      closed_as_ko=completed_payments.with_ko_receipts_all_sent,
+                                                                      with_ok_receipts_only_sent_after_retry=completed_payments.with_ok_receipts_only_sent_after_retry,
+                                                                      with_ko_receipts_only_sent_after_retry=completed_payments.with_ko_receipts_only_sent_after_retry)
             
         # Generate statistics about not completed payments
-        numeric_data.not_completed_payments = NotCompletedPaymentsReportInfo(never_sent=not_completed_payments.never_sent,
+        numeric_data.not_completed_payments = NotCompletedPaymentsReportInfo(not_sent_end_retry=not_completed_payments.not_sent_end_retry,
                                                                              rejected=not_completed_payments.rejected,
                                                                              scheduled=not_completed_payments.sending_or_scheduled,
-                                                                             blocked=not_completed_payments.blocked)
+                                                                             never_sent=not_completed_payments.never_sent)
         return numeric_data
     
 
