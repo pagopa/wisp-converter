@@ -53,8 +53,8 @@ jobs:
         name: Set Output
         run: |
           raw_env=${{ env.environment || github.event.inputs.environment }}
-          echo "environment=${raw_env#report-}" >> $GITHUB_OUTPUT
-          
+          echo "environment=${raw_env}" >> $GITHUB_OUTPUT
+
 
   create_runner:
     needs: [ setup_environment ]
@@ -65,9 +65,6 @@ jobs:
     outputs:
       runner_name: ${{ steps.create_github_runner.outputs.runner_name }}
     steps:
-
-      - name: Echo
-        run: echo "${{needs.setup_environment.outputs.environment}}"
 
       - name: Create GitHub Runner
         id: create_github_runner
