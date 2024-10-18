@@ -24,8 +24,10 @@ class CIsReportInfo:
  
 
     def merge(self, report_info):
-        self.cis_total += report_info.cis_total
-        self.cis_on_wisp += report_info.cis_on_wisp
+        if report_info.cis_total > self.cis_total:
+            self.cis_total += report_info.cis_total
+        if report_info.cis_on_wisp > cis_on_wisp:
+            self.cis_on_wisp += report_info.cis_on_wisp
     
     def extract_from_report_entity(report_entity):
         report_data = report_entity.get_map()
