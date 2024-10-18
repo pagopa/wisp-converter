@@ -220,7 +220,7 @@ cron:
       maxReplica: 1
   envConfig:
     !!merge <<: *envConfig
-    CRON_JOB_SCHEDULE_RECOVERY_ENABLED: 'false'
+    CRON_JOB_SCHEDULE_RECOVERY_ENABLED: 'true'
     DISABLE_SERVICE_BUS_RECEIVER: 'true'
   envSecret:
     !!merge <<: *envSecret
