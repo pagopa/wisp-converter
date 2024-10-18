@@ -124,6 +124,7 @@ class WispDismantlingDatabase:
             raise ex
 
         return result
+    
 
     def get_trigger_primitive_by_date(self, date):
         query = f"SELECT * FROM data WHERE data.PartitionKey = '{date}'"
@@ -140,6 +141,7 @@ class WispDismantlingDatabase:
             raise ex
 
         return result
+    
 
     def get_payment_status_by_re_events(self, session_id):
         query = f"SELECT * FROM re WHERE re.sessionId = '{session_id}' AND re.status IN ('RT_SEND_SUCCESS', 'RT_SEND_FAILURE')"
@@ -156,6 +158,7 @@ class WispDismantlingDatabase:
             raise ex
 
         return result
+    
 
     def get_receipts_by_session_id(self, session_id):
         query = f"SELECT * FROM receiptrt WHERE receiptrt.sessionId = '{session_id}'"

@@ -1,12 +1,6 @@
 import logging
 import os
 
-#from logic.clients import APIConfigCacheClient, WispDismantlingDatabase
-#from utility.constants import Constants
-#from utility.utility import Utility
-#from datastructs.configuration import Configuration
-#from logic.extraction import Extractor
-
 from logic.clients import APIConfigCacheClient, WispDismantlingDatabase
 from utility.constants import Constants
 from utility.utility import Utility
@@ -22,6 +16,10 @@ date = os.getenv("REPORT_DATE", "")
 if date == "":
     date = Utility.get_yesterday_date()
     logging.info(f"\t[INFO ][ExtractReport  ] No date passed. Using yesterday date [{date}] as starting date.")
+environment = os.getenv("REPORT_ENV", "prod")
+if environment == "":
+    env = "prod"
+    logging.info(f"\t[INFO ][ExtractReport  ] No environment passed. Using [{env}] environment as default.")
 logging.info(f"\t[INFO ][ExtractReport  ] Starting report extraction for date [{date}] for type [{report_type}].")
 
 # initialize parameters
@@ -30,7 +28,7 @@ parameters = Utility.load_parameters()
 # initialize configuration
 configuration = Configuration(
     parameters=parameters,
-    env=os.getenv("REPORT_ENV", "prod"),
+    env=environment,
     slack_webhook_url=os.getenv("REPORT_SLACK_WEBHOOK_URL"),
     dataexplorer_url=os.getenv("REPORT_DATAEXPLORER_URL"),
     dataexplorer_clientid=os.getenv("REPORT_DATAEXPLORER_CLIENT_ID"),
