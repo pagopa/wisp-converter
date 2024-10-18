@@ -56,7 +56,7 @@ jobs:
   #         echo "environment=${raw_env}" >> $GITHUB_OUTPUT
 
   create_runner:
-    needs: [ setup_environment ]
+    #needs: [ setup_environment ]
     name: Create Runner
     runs-on: ubuntu-22.04
     environment: 
