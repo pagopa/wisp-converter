@@ -66,7 +66,7 @@ jobs:
     steps:
 
       - name: Auto approve
-        uses: andrea-deri/auto-approve@b724333f7560ae64d8977cec2e930b7b9c1c43ff
+        uses: andrea-deri/auto-approve@main
         with:
           GITHUB_TOKEN: ${{ secrets.BOT_TOKEN_GITHUB }}
           environment: ${{ inputs.environment }}
