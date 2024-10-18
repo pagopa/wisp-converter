@@ -60,14 +60,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Auto approve
-        uses: andrea-deri/auto-approve@main
+        uses: andrea-deri/auto-approve@eb814ddea4c6812c329576494b3cca629e0d462f
         with:
           pat_token: ${{ secrets.BOT_TOKEN_GITHUB }}
           environment: ${{ inputs.environment }}
 
 
   create_runner:
-    needs: [ setup_environment ]
+    #needs: [ setup_environment ]
     name: Create Runner
     runs-on: ubuntu-22.04
     environment: 
@@ -76,11 +76,11 @@ jobs:
       runner_name: ${{ steps.create_github_runner.outputs.runner_name }}
     steps:
 
-      # - name: Auto approve
-      #   uses: andrea-deri/auto-approve@main
-      #   with:
-      #     pat_token: ${{ secrets.BOT_TOKEN_GITHUB }}
-      #     environment: ${{ inputs.environment }}
+      - name: Auto approve
+        uses: andrea-deri/auto-approve@eb814ddea4c6812c329576494b3cca629e0d462f
+        with:
+          pat_token: ${{ secrets.BOT_TOKEN_GITHUB }}
+          environment: ${{ inputs.environment }}
 
       - name: Create GitHub Runner
         id: create_github_runner
