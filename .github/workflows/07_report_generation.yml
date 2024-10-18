@@ -156,7 +156,7 @@ jobs:
         if: github.event_name != 'schedule'
         run: |
           echo "Generating and sending a report via manual trigger"
-          echo "operation=${{ github.event.inputs.report_operation }} >> $GITHUB_ENV
+          echo "operation=${{ github.event.inputs.report_operation }}" >> $GITHUB_ENV
 
       - name: Generate variables
         id: generate_vars
