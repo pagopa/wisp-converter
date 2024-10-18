@@ -60,7 +60,7 @@ jobs:
     name: Create Runner
     runs-on: ubuntu-22.04
     environment: 
-      name: ${{ needs.setup_environment.outputs.environment }}
+      name: ${{(github.event.inputs == null && 'prod') || inputs.environment }}
     outputs:
       runner_name: ${{ steps.create_github_runner.outputs.runner_name }}
     steps:
@@ -90,7 +90,7 @@ jobs:
     name: Generate and/or send report
     runs-on: [ self-hosted, "${{ needs.create_runner.outputs.runner_name }}" ]
     environment: 
-      name: ${{ needs.setup_environment.outputs.environment }}
+      name: ${{(github.event.inputs == null && 'prod') || inputs.environment }}
     steps:
 
       - name: Auto approve
@@ -219,7 +219,7 @@ jobs:
     if: ${{ success() }}
     runs-on: ubuntu-22.04
     environment: 
-      name: ${{ needs.setup_environment.outputs.environment }}
+      name: ${{(github.event.inputs == null && 'prod') || inputs.environment }}
     steps:
 
       - name: Auto approve
