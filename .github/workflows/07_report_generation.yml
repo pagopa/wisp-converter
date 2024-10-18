@@ -18,7 +18,7 @@ on:
         type: choice
         description: Select the environment
         options:
-          - report-uat
+          - uat
           - prod
         default: prod
       report_type:
@@ -152,7 +152,7 @@ jobs:
       - name: Generate variables
         id: generate_vars
         run: |
-          echo "environment=${{ needs.setup_environment.outputs.environment }}" >> $GITHUB_ENV
+          echo "environment=${{ env.environment || github.event.inputs.environment }}" >> $GITHUB_ENV
           echo "report_date=${{ env.report_date || github.event.inputs.report_date }}" >> $GITHUB_ENV
           echo "report_type=${{ env.report_type || github.event.inputs.report_type }}" >> $GITHUB_ENV
 
