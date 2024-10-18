@@ -196,7 +196,7 @@ cron:
       memory: "768Mi"
       cpu: "0.25"
     autoscaling:
-      enable: true
+      enable: false
       minReplica: 1
       maxReplica: 1
   envConfig:
