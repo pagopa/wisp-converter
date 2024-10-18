@@ -42,8 +42,8 @@ permissions:
 
 
 jobs:
-  setup:
-    name: Setup
+  setup_environment:
+    name: Setup environment
     runs-on: ubuntu-latest
     outputs:
       environment: ${{ steps.get_env.outputs.environment }}
@@ -52,21 +52,22 @@ jobs:
       - id: get_env
         name: Set Output
         run: |
-          raw_env=${{ env.environment || github.event.inputs.environment }}" 
-          echo "environment=${raw_env#report-} >> $GITHUB_OUTPUT
+          raw_env=${{ env.environment || github.event.inputs.environment }}
+          echo "environment=${raw_env#report-}" >> $GITHUB_OUTPUT
+          
 
   create_runner:
-    needs: [ setup ]
+    needs: [ setup_environment ]
     name: Create Runner
     runs-on: ubuntu-22.04
     environment: 
-      name: ${{ needs.setup.outputs.environment }}
+      name: ${{ needs.setup_environment.outputs.environment }}
     outputs:
       runner_name: ${{ steps.create_github_runner.outputs.runner_name }}
     steps:
 
       - name: Echo
-        run: echo "${{needs.setup.outputs.environment}}"
+        run: echo "${{needs.setup_environment.outputs.environment}}"
 
       - name: Create GitHub Runner
         id: create_github_runner
@@ -87,7 +88,7 @@ jobs:
     name: Generate and/or send report
     runs-on: [ self-hosted, "${{ needs.create_runner.outputs.runner_name }}" ]
     environment: 
-      name: ${{ needs.setup.outputs.environment }}
+      name: ${{ needs.setup_environment.outputs.environment }}
     steps:
 
       - name: Generating daily report via scheduling
@@ -141,7 +142,7 @@ jobs:
       - name: Generate variables
         id: generate_vars
         run: |
-          echo "environment=${{ needs.setup.outputs.environment }}" >> $GITHUB_ENV
+          echo "environment=${{ needs.setup_environment.outputs.environment }}" >> $GITHUB_ENV
           echo "report_date=${{ env.report_date || github.event.inputs.report_date }}" >> $GITHUB_ENV
           echo "report_type=${{ env.report_type || github.event.inputs.report_type }}" >> $GITHUB_ENV
 
@@ -210,7 +211,7 @@ jobs:
     if: ${{ success() }}
     runs-on: ubuntu-22.04
     environment: 
-      name: ${{ needs.setup.outputs.environment }}
+      name: ${{ needs.setup_environment.outputs.environment }}
     steps:
 
       - name: Cleanup GitHub Runner
