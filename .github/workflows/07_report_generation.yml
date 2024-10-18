@@ -67,7 +67,7 @@ jobs:
 
 
   create_runner:
-    needs: [ approve_create_runner ]
+    #needs: [ approve_create_runner ]
     name: Create Runner
     runs-on: ubuntu-22.04
     environment: 
@@ -103,7 +103,7 @@ jobs:
 
 
   report_generation:
-    needs: [ create_runner, approve_report_generation ]
+    needs: [ create_runner ] #, approve_report_generation ]
     name: Generate and/or send report
     runs-on: [ self-hosted, "${{ needs.create_runner.outputs.runner_name }}" ]
     environment: 
@@ -245,7 +245,7 @@ jobs:
 
   cleanup_runner:
     name: Cleanup Runner
-    needs: [ create_runner, report_generation, approve_cleanup_runner ]
+    needs: [ create_runner, report_generation ] #, approve_cleanup_runner ]
     if: ${{ success() }}
     runs-on: ubuntu-22.04
     environment: 
