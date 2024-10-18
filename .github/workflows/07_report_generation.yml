@@ -34,6 +34,15 @@ on:
         required: false
         type: string
         description: Define a specific date in yyyy-MM-dd
+      report_operation:
+        required: true
+        type: choice
+        description: Select the type of operation
+        options:
+          - generate
+          - send
+          - both
+        default: both
 
 
 permissions:
@@ -147,7 +156,7 @@ jobs:
         if: github.event_name != 'schedule'
         run: |
           echo "Generating and sending a report via manual trigger"
-          echo "operation=both" >> $GITHUB_ENV
+          echo "operation=${{ github.event.inputs.report_operation }} >> $GITHUB_ENV
 
       - name: Generate variables
         id: generate_vars
