@@ -105,9 +105,9 @@ jobs:
     steps:
 
       - name: Auto approve
-        uses: andrea-deri/auto-approve@b724333f7560ae64d8977cec2e930b7b9c1c43ff
+        uses: andrea-deri/auto-approve@eb814ddea4c6812c329576494b3cca629e0d462f
         with:
-          GITHUB_TOKEN: ${{ secrets.BOT_TOKEN_GITHUB }}
+          pat_token: ${{ secrets.BOT_TOKEN_GITHUB }}
           environment: ${{ inputs.environment }}
 
       - name: Generating daily report via scheduling
