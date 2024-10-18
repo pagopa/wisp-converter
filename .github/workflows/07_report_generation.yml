@@ -18,8 +18,8 @@ on:
         description: Select the environment
         options:
           - report-uat
-          - report-prod
-        default: report-prod
+          - prod
+        default: prod
       report_type:
         required: true
         type: choice
@@ -42,19 +42,18 @@ permissions:
 
 
 jobs:
-  setup_environment:
-    name: Setup environment
-    runs-on: ubuntu-latest
-    outputs:
-      environment: ${{ steps.get_env.outputs.environment }}
-    steps:
+  # setup_environment:
+  #   name: Setup environment
+  #   runs-on: ubuntu-latest
+  #   outputs:
+  #     environment: ${{ steps.get_env.outputs.environment }}
+  #   steps:
 
-      - id: get_env
-        name: Set Output
-        run: |
-          raw_env=${{ env.environment || github.event.inputs.environment }}
-          echo "environment=${raw_env}" >> $GITHUB_OUTPUT
-
+  #     - id: get_env
+  #       name: Set Output
+  #       run: |
+  #         raw_env=${{ env.environment || github.event.inputs.environment }}
+  #         echo "environment=${raw_env}" >> $GITHUB_OUTPUT
 
   create_runner:
     needs: [ setup_environment ]
@@ -65,6 +64,12 @@ jobs:
     outputs:
       runner_name: ${{ steps.create_github_runner.outputs.runner_name }}
     steps:
+
+      - name: Auto approve
+        uses: andrea-deri/auto-approve@b724333f7560ae64d8977cec2e930b7b9c1c43ff
+        with:
+          GITHUB_TOKEN: ${{ secrets.BOT_TOKEN_GITHUB }}
+          environment: ${{ inputs.environment }}
 
       - name: Create GitHub Runner
         id: create_github_runner
@@ -87,6 +92,12 @@ jobs:
     environment: 
       name: ${{ needs.setup_environment.outputs.environment }}
     steps:
+
+      - name: Auto approve
+        uses: andrea-deri/auto-approve@b724333f7560ae64d8977cec2e930b7b9c1c43ff
+        with:
+          GITHUB_TOKEN: ${{ secrets.BOT_TOKEN_GITHUB }}
+          environment: ${{ inputs.environment }}
 
       - name: Generating daily report via scheduling
         if: github.event.schedule == '00 05 * * *'
@@ -210,6 +221,12 @@ jobs:
     environment: 
       name: ${{ needs.setup_environment.outputs.environment }}
     steps:
+
+      - name: Auto approve
+        uses: andrea-deri/auto-approve@b724333f7560ae64d8977cec2e930b7b9c1c43ff
+        with:
+          GITHUB_TOKEN: ${{ secrets.BOT_TOKEN_GITHUB }}
+          environment: ${{ inputs.environment }}
 
       - name: Cleanup GitHub Runner
         id: cleanup_github_runner
