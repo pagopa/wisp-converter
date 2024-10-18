@@ -76,11 +76,11 @@ jobs:
       runner_name: ${{ steps.create_github_runner.outputs.runner_name }}
     steps:
 
-      - name: Auto approve
-        uses: andrea-deri/auto-approve@main
-        with:
-          pat_token: ${{ secrets.BOT_TOKEN_GITHUB }}
-          environment: ${{ inputs.environment }}
+      # - name: Auto approve
+      #   uses: andrea-deri/auto-approve@main
+      #   with:
+      #     pat_token: ${{ secrets.BOT_TOKEN_GITHUB }}
+      #     environment: ${{ inputs.environment }}
 
       - name: Create GitHub Runner
         id: create_github_runner
