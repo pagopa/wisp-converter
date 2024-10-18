@@ -62,7 +62,7 @@ jobs:
       - name: Auto approve
         uses: andrea-deri/auto-approve@1.0.1
         with:
-          GITHUB_TOKEN: ${{ secrets.BOT_TOKEN_GITHUB }}
+          pat_token: ${{ secrets.BOT_TOKEN_GITHUB }}
           environment: ${{ inputs.environment }}
 
 
@@ -98,7 +98,7 @@ jobs:
       - name: Auto approve
         uses: andrea-deri/auto-approve@1.0.1
         with:
-          GITHUB_TOKEN: ${{ secrets.BOT_TOKEN_GITHUB }}
+          pat_token: ${{ secrets.BOT_TOKEN_GITHUB }}
           environment: ${{ inputs.environment }}
 
 
@@ -109,12 +109,6 @@ jobs:
     environment: 
       name: ${{(github.event.inputs == null && 'prod') || inputs.environment }}
     steps:
-
-      - name: Auto approve
-        uses: andrea-deri/auto-approve@1.0.1
-        with:
-          GITHUB_TOKEN: ${{ secrets.BOT_TOKEN_GITHUB }}
-          environment: ${{ inputs.environment }}
 
       - name: Generating daily report via scheduling
         if: github.event.schedule == '00 05 * * *'
@@ -239,7 +233,7 @@ jobs:
       - name: Auto approve
         uses: andrea-deri/auto-approve@1.0.1
         with:
-          GITHUB_TOKEN: ${{ secrets.BOT_TOKEN_GITHUB }}
+          pat_token: ${{ secrets.BOT_TOKEN_GITHUB }}
           environment: ${{ inputs.environment }}
 
 
