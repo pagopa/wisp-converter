@@ -3,13 +3,13 @@ name: Generate and send report
 on:
   schedule:
     # scheduled generation cron
-    - cron: '00 05 * * *' # (05:00AM) generate last day report 
-    - cron: '00 09 * * 1' # (09:00AM) generate last week report on monday
-    - cron: '00 09 1 * *' # (09:00AM) generate last month report on first day of the month
+    - cron: '00 03 * * *' # (03:00AM GTM) generate last day report 
+    - cron: '00 06 * * 1' # (07:00AM GTM) generate last week report on monday
+    - cron: '30 06 1 * *' # (07:00AM GTM) generate last month report on first day of the month
     # scheduled send cron
-    - cron: '00 07 * * *' # (07:00AM) send last day report
-    - cron: '30 09 * * 1' # (09:30AM) send last week report on monday
-    - cron: '35 09 1 * *' # (09:35AM) send last month report on first day of the month
+    - cron: '00 07 * * *' # (07:00AM GTM) send last day report
+    - cron: '30 07 * * 1' # (07:30AM GTM) send last week report on monday
+    - cron: '35 07 1 * *' # (07:35AM GTM) send last month report on first day of the month
 
   workflow_dispatch:
     inputs:
@@ -58,11 +58,12 @@ jobs:
     environment: 
       name: ${{ github.event.inputs == null || github.event.inputs == 'prod' }}
     steps:
+    
       - name: Auto approve
         uses: andrea-deri/auto-approve@042a1e58fa51acef74997dc9cebb1c665677d2ac
         with:
           pat_token: ${{ secrets.BOT_TOKEN_GITHUB }}
-          environment: ${{ inputs.environment }}
+          environment: ${{ inputs.environment || 'prod' }}
 
 
   create_runner:
@@ -95,11 +96,12 @@ jobs:
     environment: 
       name: ${{ github.event.inputs == null || github.event.inputs == 'prod' }}
     steps:
+
       - name: Auto approve
         uses: andrea-deri/auto-approve@042a1e58fa51acef74997dc9cebb1c665677d2ac
         with:
           pat_token: ${{ secrets.BOT_TOKEN_GITHUB }}
-          environment: ${{ inputs.environment }}
+          environment: ${{ inputs.environment || 'prod' }}
 
 
   report_generation:
@@ -111,25 +113,28 @@ jobs:
     steps:
 
       - name: Generating daily report via scheduling
-        if: github.event.schedule == '00 05 * * *'
+        if: github.event.schedule == '00 03 * * *'
         run: |
           echo "Generating a daily report"          
           echo "report_type=daily" >> $GITHUB_ENV
           echo "operation=generate" >> $GITHUB_ENV
+          echo "environment=prod" >> $GITHUB_ENV
 
       - name: Generating weekly report via scheduling
-        if: github.event.schedule == '00 10 * * 1'
+        if: github.event.schedule == '00 06 * * 1'
         run: |
           echo "Generating a weekly report"
           echo "report_type=weekly" >> $GITHUB_ENV
           echo "operation=generate" >> $GITHUB_ENV
+          echo "environment=prod" >> $GITHUB_ENV
 
       - name: Generating monthly report via scheduling
-        if: github.event.schedule == '00 10 1 * *'
+        if: github.event.schedule == '30 06 1 * *'
         run: |
           echo "Generating a monthly report"          
           echo "report_type=monthly" >> $GITHUB_ENV
           echo "operation=generate" >> $GITHUB_ENV
+          echo "environment=prod" >> $GITHUB_ENV
 
       - name: Sending daily report via scheduling
         if: github.event.schedule == '00 07 * * *'
@@ -137,20 +142,23 @@ jobs:
           echo "Generating a daily report"          
           echo "report_type=daily" >> $GITHUB_ENV
           echo "operation=send" >> $GITHUB_ENV
+          echo "environment=prod" >> $GITHUB_ENV
 
       - name: Sending weekly report via scheduling
-        if: github.event.schedule == '30 09 * * 1'
+        if: github.event.schedule == '30 07 * * 1'
         run: |
           echo "Generating a weekly report"
           echo "report_type=weekly" >> $GITHUB_ENV
           echo "operation=send" >> $GITHUB_ENV
+          echo "environment=prod" >> $GITHUB_ENV
 
       - name: Sending monthly report via scheduling
-        if: github.event.schedule == '35 09 1 * *'
+        if: github.event.schedule == '35 07 1 * *'
         run: |
           echo "Sending a monthly report"          
           echo "report_type=monthly" >> $GITHUB_ENV
           echo "operation=send" >> $GITHUB_ENV
+          echo "environment=prod" >> $GITHUB_ENV
 
       - name: Generating and sending report via manual trigger
         if: github.event_name != 'schedule'
@@ -232,11 +240,12 @@ jobs:
     environment: 
       name: ${{ github.event.inputs == null || github.event.inputs == 'prod' }}
     steps:
+
       - name: Auto approve
         uses: andrea-deri/auto-approve@042a1e58fa51acef74997dc9cebb1c665677d2ac
         with:
           pat_token: ${{ secrets.BOT_TOKEN_GITHUB }}
-          environment: ${{ inputs.environment }}
+          environment: ${{ inputs.environment || 'prod' }}
 
 
   cleanup_runner:
