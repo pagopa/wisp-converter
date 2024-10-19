@@ -17,9 +17,9 @@ if date == "":
     date = Utility.get_yesterday_date()
     logging.info(f"\t[INFO ][ExtractReport  ] No date passed. Using yesterday date [{date}] as starting date.")
 environment = os.getenv("REPORT_ENV", "prod")
-if environment == "":
-    env = "prod"
-    logging.info(f"\t[INFO ][ExtractReport  ] No environment passed. Using [{env}] environment as default.")
+if environment.strip() == "":
+    environment = "prod"
+    logging.info(f"\t[INFO ][ExtractReport  ] No environment passed. Using [{environment}] environment as default.")
 logging.info(f"\t[INFO ][ExtractReport  ] Starting report extraction for date [{date}] for type [{report_type}].")
 
 # initialize parameters
