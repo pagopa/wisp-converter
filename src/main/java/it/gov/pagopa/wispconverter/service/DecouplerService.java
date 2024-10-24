@@ -18,7 +18,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -96,14 +98,14 @@ public class DecouplerService {
 
         // trying to split key on underscore character
         String[] splitKey = keyWithIUV.split("_");
-        if (splitKey.length != 3) {
+        if (splitKey.length < 3) {
             throw new AppException(AppErrorCodeMessageEnum.PERSISTENCE_MAPPING_NAV_TO_IUV_ERROR, mappingKey);
         }
 
         // returning the key, correctly split
         return CachedKeysMapping.builder()
                 .fiscalCode(splitKey[1])
-                .iuv(splitKey[2])
+                .iuv(Arrays.stream(splitKey).skip(2).collect(Collectors.joining("_")))
                 .build();
     }
 
