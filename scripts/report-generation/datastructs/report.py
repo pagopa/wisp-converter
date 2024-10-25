@@ -40,11 +40,27 @@ class CIsReportInfo:
    
 class TriggerPrimitiveReportInfo:
 
-    def __init__(self, carts_completed=0, carts_total=0, no_carts_completed=0, no_carts_total=0):
+    def __init__(self, 
+                 carts_completed=0, 
+                 carts_total=0, 
+                 no_carts_completed=0, 
+                 no_carts_total=0,
+                 not_completed_rpt_timeout=0,
+                 not_completed_redirect=0,
+                 not_completed_receipt_ko=0,
+                 not_completed_paymenttoken_timeout=0,
+                 not_completed_ecommerce_timeout=0,
+                 not_completed_no_state=0):
         self.carts_completed = carts_completed
         self.carts_total = carts_total
         self.no_carts_completed = no_carts_completed
         self.no_carts_total = no_carts_total
+        self.not_completed_rpt_timeout = not_completed_rpt_timeout
+        self.not_completed_redirect = not_completed_redirect
+        self.not_completed_receipt_ko = not_completed_receipt_ko
+        self.not_completed_paymenttoken_timeout = not_completed_paymenttoken_timeout
+        self.not_completed_ecommerce_timeout = not_completed_ecommerce_timeout
+        self.not_completed_no_state = not_completed_no_state
 
 
     def merge(self, report_info):
@@ -52,16 +68,29 @@ class TriggerPrimitiveReportInfo:
         self.carts_total += report_info.carts_total
         self.no_carts_completed += report_info.no_carts_completed
         self.no_carts_total += report_info.no_carts_total
+        self.not_completed_rpt_timeout += report_info.not_completed_rpt_timeout
+        self.not_completed_redirect += report_info.not_completed_redirect
+        self.not_completed_receipt_ko += report_info.not_completed_receipt_ko
+        self.not_completed_paymenttoken_timeout += report_info.not_completed_paymenttoken_timeout
+        self.not_completed_ecommerce_timeout += report_info.not_completed_ecommerce_timeout
+        self.not_completed_no_state += report_info.not_completed_no_state
 
 
     def extract_from_report_entity(report_entity):
         report_data = report_entity.get_map()
         payments_info = report_data["payments"]
         trigger_primitive_info = payments_info["trigger_primitives"]
+        trigger_primitive_not_completed_info = trigger_primitive_info[Constants.TRIGGER_PRIMITIVE_NOT_COMPLETED_MACROTAG]
         return TriggerPrimitiveReportInfo(carts_total=trigger_primitive_info["total_carts"],
                                           no_carts_total=trigger_primitive_info["total_no_carts"],
                                           carts_completed=trigger_primitive_info["carts_completed"],
-                                          no_carts_completed=trigger_primitive_info["no_carts_completed"])
+                                          no_carts_completed=trigger_primitive_info["no_carts_completed"],
+                                          not_completed_rpt_timeout=trigger_primitive_not_completed_info[Constants.TRIGGER_PRIMITIVE_NOT_COMPLETED_RPT_TIMEOUT],
+                                          not_completed_redirect=trigger_primitive_not_completed_info[Constants.TRIGGER_PRIMITIVE_NOT_COMPLETED_REDIRECT],
+                                          not_completed_receipt_ko=trigger_primitive_not_completed_info[Constants.TRIGGER_PRIMITIVE_NOT_COMPLETED_RECEIPT_KO],
+                                          not_completed_paymenttoken_timeout=trigger_primitive_not_completed_info[Constants.TRIGGER_PRIMITIVE_NOT_COMPLETED_PAYMENTTOKEN_TIMEOUT],
+                                          not_completed_ecommerce_timeout=trigger_primitive_not_completed_info[Constants.TRIGGER_PRIMITIVE_NOT_COMPLETED_ECOMMERCE_TIMEOUT],
+                                          not_completed_no_state=trigger_primitive_not_completed_info[Constants.TRIGGER_PRIMITIVE_NOT_COMPLETED_NO_STATE])
 
 # ============================================================================
 
@@ -196,6 +225,22 @@ class ReportNotificationDetail:
         total_triggered = carts_triggered + no_carts_triggered
         percentage_carts_triggered = Utility.safe_divide(carts_triggered * 100, total_triggered)
         percentage_no_carts_triggered = Utility.safe_divide(no_carts_triggered * 100, total_triggered)
+                
+        # Divided by trigger primitives not completed on D-WISP
+        triggered_error_rpt_timeout = trigger_primitive_info.not_completed_rpt_timeout
+        triggered_error_redirect = trigger_primitive_info.not_completed_redirect
+        triggered_error_receipt_ko = trigger_primitive_info.not_completed_receipt_ko
+        triggered_error_ecommerce_timeout = trigger_primitive_info.not_completed_ecommerce_timeout
+        triggered_error_paymenttoken_timeout = trigger_primitive_info.not_completed_paymenttoken_timeout
+        triggered_error_nostate = trigger_primitive_info.not_completed_no_state        
+        total_non_completed_triggered = triggered_error_rpt_timeout + triggered_error_redirect + triggered_error_receipt_ko + triggered_error_ecommerce_timeout + triggered_error_paymenttoken_timeout + triggered_error_nostate
+        percentage_error_rpt_timeout = Utility.safe_divide(triggered_error_rpt_timeout * 100, total_triggered)
+        percentage_error_redirect = Utility.safe_divide(triggered_error_redirect * 100, total_triggered)
+        percentage_error_receipt_ko = Utility.safe_divide(triggered_error_receipt_ko * 100, total_triggered)
+        percentage_error_ecommerce_timeout = Utility.safe_divide(triggered_error_ecommerce_timeout * 100, total_triggered)
+        percentage_error_paymenttoken_timeout = Utility.safe_divide(triggered_error_paymenttoken_timeout * 100, total_triggered)
+        percentage_error_nostate = Utility.safe_divide(triggered_error_nostate * 100, total_triggered)
+        percentage_total_non_completed_triggered = Utility.safe_divide(total_non_completed_triggered * 100, total_triggered)
 
         #
         completed_carts_triggered = trigger_primitive_info.carts_completed
@@ -250,7 +295,8 @@ class ReportNotificationDetail:
 
         self.payments = f'''
         \n*:zap: Numero totale di pagamenti innescati:* `{total_triggered}` \n   di cui _nodoInviaRPT_: `{no_carts_triggered}` (`{percentage_no_carts_triggered:.2f}%`) \n   di cui _nodoInviaCarrelloRPT_: `{carts_triggered}` (`{percentage_carts_triggered:.2f}%`)
-        \n*:moneybag: Numero totale di pagamenti completati:* `{total_completed_triggered}/{total_triggered}` (`{percentage_total_completed_triggered:.2f}%`) \n   di cui _nodoInviaRPT_: `{completed_no_carts_triggered}` (`{percentage_completed_no_carts_triggered:.2f}%`) \n   di cui _nodoInviaCarrelloRPT_: `{completed_carts_triggered}` (`{percentage_completed_carts_triggered:.2f}%`)
+        \n*:moneybag::done: Numero totale di pagamenti completati:* `{total_completed_triggered}/{total_triggered}` (`{percentage_total_completed_triggered:.2f}%`) \n   di cui _nodoInviaRPT_: `{completed_no_carts_triggered}` (`{percentage_completed_no_carts_triggered:.2f}%`) \n   di cui _nodoInviaCarrelloRPT_: `{completed_carts_triggered}` (`{percentage_completed_carts_triggered:.2f}%`)
+        \n*:moneybag::no_entry_sign: Numero totale di pagamenti non completati:* `{total_non_completed_triggered}/{total_triggered}` (`{percentage_total_non_completed_triggered:.2f}%`) \n   di cui _KO nel flusso del Nodo dei Pagamenti_: `{triggered_error_receipt_ko}/{total_non_completed_triggered}` (`{percentage_error_receipt_ko:.2f}%`) \n   di cui _timeout per mancata redirect da primitiva di innesco_: `{triggered_error_rpt_timeout}/{total_non_completed_triggered}` (`{percentage_error_rpt_timeout:.2f}%`) \n   di cui _problema di conversione in NMU_: `{triggered_error_redirect}/{total_non_completed_triggered}` (`{percentage_error_redirect:.2f}%`) \n   di cui _timeout per mancata chiusura esito pagamento_: `{triggered_error_paymenttoken_timeout}/{total_non_completed_triggered}` (`{percentage_error_paymenttoken_timeout:.2f}%`) \n   di cui _timeout per abbandono o attesa da Checkout_: `{triggered_error_ecommerce_timeout}/{total_non_completed_triggered}` (`{percentage_error_ecommerce_timeout:.2f}%`) \n   di cui _per errore imprevisto (nessuna ricevuta inviata)_: `{triggered_error_nostate}/{total_non_completed_triggered}` (`{percentage_error_nostate:.2f}%`)        
         \n*:envelope::done: Numero totale di ricevute inviate ed accettate dall'ente:* `{total_completed_receipts}/{total_receipts}` (`{percentage_total_completed_receipt:.2f}%`) \n   di cui per esito pagamento _OK_: `{completed_ok_receipts}` (`{percentage_completed_ok_receipts:.2f}%`) \n   di cui per esito pagamento _KO_: `{completed_ko_receipts}` (`{percentage_completed_ko_receipts:.2f}%`)
         \n*:envelope::no_entry_sign: Numero totale di ricevute inviate e rifiutate dall'ente:* `{total_refused_receipts}/{total_receipts}` (`{percentage_total_refused_receipts:.2f}%`) \n   di cui per esito pagamento _OK_: `{refused_ok_receipts}` (`{percentage_refused_ok_receipts:.2f}%`) \n   di cui per esito pagamento _KO_: `{refused_ko_receipts}` (`{percentage_refused_ko_receipts:.2f}%`)
         \n*:envelope::repeat: Numero totale di ricevute con invio rischedulato:* `{total_rescheduled_receipts}/{total_receipts}` (`{percentage_total_rescheduled_receipts:.2f}%`) \n   di cui per esito pagamento _OK_: `{rescheduled_ok_receipts}` (`{percentage_rescheduled_ok_receipts:.2f}%`) \n   di cui per esito pagamento _KO_: `{rescheduled_ko_receipts}` (`{percentage_rescheduled_ko_receipts:.2f}%`)

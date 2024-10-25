@@ -53,6 +53,12 @@ class Utility:
         first_day_last_month = last_day_last_month.replace(day=1)
         return [(first_day_last_month + timedelta(days=i)).strftime('%Y-%m-%d') for i in range((last_day_last_month - first_day_last_month).days + 1)]
     
+
+    def get_dates_on_range(start, end):
+        start_date = datetime.strptime(start, "%Y-%m-%d")
+        end_date = datetime.strptime(end, "%Y-%m-%d")
+        dates = [(start_date + timedelta(days=i)).strftime("%Y-%m-%d") for i in range((end_date - start_date).days + 1)]
+        return dates
     
     
     def safe_divide(numerator, denominator):

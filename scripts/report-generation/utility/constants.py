@@ -72,6 +72,9 @@ class Constants:
 
     # constant for field 'not_completed'
     NOT_COMPLETED_MACROTAG = "not_completed" 
+
+    # constant for field 'not_completed' in 'trigger_pritives' section
+    TRIGGER_PRIMITIVE_NOT_COMPLETED_MACROTAG = "all_not_completed"
     
     # constant for field 'with_ok_receipts_all_sent'
     COMPLETED_OK_RECEIPT_TOTAL = "with_ok_receipts_all_sent"
@@ -103,6 +106,23 @@ class Constants:
     # constant for field 'receipt_ko_count'
     RECEIPT_KO_COUNT = "receipt_ko_count"
 
+    # constant for field 'rpt_timeout' in 'not_completed' section
+    TRIGGER_PRIMITIVE_NOT_COMPLETED_RPT_TIMEOUT = 'rpt_timeout_trigger'
+
+    # constant for field 'redirect' in 'not_completed' section
+    TRIGGER_PRIMITIVE_NOT_COMPLETED_REDIRECT = 'redirect'
+
+    # constant for field 'receipt_ko' in 'not_completed' section
+    TRIGGER_PRIMITIVE_NOT_COMPLETED_RECEIPT_KO = 'receipt_ko'
+
+    # constant for field 'paymenttoken_timeout' in 'not_completed' section
+    TRIGGER_PRIMITIVE_NOT_COMPLETED_PAYMENTTOKEN_TIMEOUT = 'payment_token_timeout_trigger'
+
+    # constant for field 'ecommerce_timeout' in 'not_completed' section
+    TRIGGER_PRIMITIVE_NOT_COMPLETED_ECOMMERCE_TIMEOUT = 'ecommerce_hang_timeout_trigger'
+
+    # constant for field 'no_state' in 'not_completed' section
+    TRIGGER_PRIMITIVE_NOT_COMPLETED_NO_STATE = 'no_state'
 
     # ================================================
     # Other constants
