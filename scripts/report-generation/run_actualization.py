@@ -48,8 +48,9 @@ logging.info(f"\t[INFO ][ActualizeReport] Actualization of report type [{report_
 
 # execute report actualization for the passed date
 extractor = Extractor(date, parameters, report_type)
-entity = db_client.retrieve_report(date=date, type=Constants.DAILY)
-entity.get_map()["creditor_institution_info"]["on_wisp"] = 5230
+entity = db_client.retrieve_report(date=date, type=report_type)
+entity.get_map()["creditor_institution_info"]["on_wisp"] = 9961
+entity.get_map()["creditor_institution_info"]["total"] = 21389
 db_client.persist_report(entity)
 
 logging.info(f"\t[INFO ][ActualizeReport] Actualization of report type [{report_type}] for date [{date}] ended!")
