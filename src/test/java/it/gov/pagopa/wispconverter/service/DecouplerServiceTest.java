@@ -18,7 +18,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
 
-import static it.gov.pagopa.wispconverter.service.DecouplerService.MAP_CACHING_KEY_TEMPLATE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
@@ -46,9 +45,9 @@ class DecouplerServiceTest {
     @MockBean
     private IdempotencyKeyRepositorySecondary idempotencyKeyRepositorySecondary;
 
-    private static final String domainId = "12345678910";
+    private static final String DOMAIN_ID = "12345678910";
 
-    private static final String nav = "350000000000000000";
+    private static final String NAV = "350000000000000000";
 
     @ParameterizedTest
     @CsvSource({"wisp_nav2iuv_123456IUVMOCK1,123456IUVMOCK1", "wisp_nav2iuv_123456IUVMOCK1_123456IUVMOCK2,123456IUVMOCK1_123456IUVMOCK2"})
@@ -58,7 +57,7 @@ class DecouplerServiceTest {
         // mocking decoupler cached keys
         when(cacheRepository.read(anyString(), any())).thenReturn(nav2iuv);
 
-        CachedKeysMapping result = decouplerService.getCachedMappingFromNavToIuv(domainId, nav);
+        CachedKeysMapping result = decouplerService.getCachedMappingFromNavToIuv(DOMAIN_ID, NAV);
         Assertions.assertEquals(iuv, result.getIuv());
 
     }
@@ -67,16 +66,14 @@ class DecouplerServiceTest {
     @SneakyThrows
     void getCachedMappingFromNavToIuvTestKONullKey() {
 
-        String mappingKey = String.format(MAP_CACHING_KEY_TEMPLATE, domainId, nav);
-
         // mocking decoupler cached keys
         when(cacheRepository.read(anyString(), any())).thenReturn(null);
 
         try {
-            decouplerService.getCachedMappingFromNavToIuv(domainId, nav);
+            decouplerService.getCachedMappingFromNavToIuv(DOMAIN_ID, NAV);
             fail();
         } catch (AppException e) {
-            assertEquals(e.getError(), AppErrorCodeMessageEnum.PERSISTENCE_REQUESTID_CACHING_ERROR);
+            assertEquals(AppErrorCodeMessageEnum.PERSISTENCE_REQUESTID_CACHING_ERROR, e.getError());
         }
     }
 
@@ -88,10 +85,10 @@ class DecouplerServiceTest {
         when(cacheRepository.read(anyString(), any())).thenReturn("wrong_string");
 
         try {
-            decouplerService.getCachedMappingFromNavToIuv(domainId, nav);
+            decouplerService.getCachedMappingFromNavToIuv(DOMAIN_ID, NAV);
             fail();
         } catch (AppException e) {
-            assertEquals(e.getError(), AppErrorCodeMessageEnum.PERSISTENCE_MAPPING_NAV_TO_IUV_ERROR);
+            assertEquals(AppErrorCodeMessageEnum.PERSISTENCE_MAPPING_NAV_TO_IUV_ERROR, e.getError());
         }
     }
 }
