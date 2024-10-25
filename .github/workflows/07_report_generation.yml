@@ -215,7 +215,7 @@ jobs:
             REPORT_APICONFIG_CACHE_SUBKEY="${{ secrets.REPORT_APICONFIG_CACHE_SUBKEY }}"
           python run_extraction.py  
 
-      - name: Massively generates reports, up to 5 days after a date
+      - name: Massively generates reports, up to 5 days after the date
         if: ${{ env.operation == 'massive_generation' }}
         run: |
           cd ./scripts/report-generation

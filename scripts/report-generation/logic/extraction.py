@@ -256,7 +256,7 @@ class Extractor:
 
     # Generate numeric values to be set on weekly report 
     def _generate_numeric_data_for_weekly_report(self, db_client: WispDismantlingDatabase):
-        week_days = Utility.get_week_before_date(self.date)
+        week_days = Utility.get_week_in_date(self.date)
         logging.info(f"\t[INFO ][Extractor      ] Generating merged weekly report for dates {week_days}.")
         return self._generate_numeric_data_for_multiple_days_report(db_client, week_days)
         
