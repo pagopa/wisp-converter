@@ -97,7 +97,7 @@ public class DecouplerService {
         }
 
         // trying to split key on underscore character
-        String[] splitKey = keyWithIUV.split("_");
+        String[] splitKey = keyWithIUV.split("_", 3);
         if (splitKey.length < 3) {
             throw new AppException(AppErrorCodeMessageEnum.PERSISTENCE_MAPPING_NAV_TO_IUV_ERROR, mappingKey);
         }
@@ -105,7 +105,7 @@ public class DecouplerService {
         // returning the key, correctly split
         return CachedKeysMapping.builder()
                 .fiscalCode(splitKey[1])
-                .iuv(Arrays.stream(splitKey).skip(2).collect(Collectors.joining("_")))
+                .iuv(splitKey[2])
                 .build();
     }
 
