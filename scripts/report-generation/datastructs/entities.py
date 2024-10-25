@@ -27,6 +27,14 @@ class ReportEntity:
                     "total_no_carts": trigger_primitive.no_carts_total,
                     "carts_completed": trigger_primitive.carts_completed,
                     "no_carts_completed": trigger_primitive.no_carts_completed,
+                    Constants.TRIGGER_PRIMITIVE_NOT_COMPLETED_MACROTAG: {
+                        Constants.TRIGGER_PRIMITIVE_NOT_COMPLETED_RPT_TIMEOUT: trigger_primitive.not_completed_rpt_timeout,
+                        Constants.TRIGGER_PRIMITIVE_NOT_COMPLETED_REDIRECT: trigger_primitive.not_completed_redirect,
+                        Constants.TRIGGER_PRIMITIVE_NOT_COMPLETED_RECEIPT_KO: trigger_primitive.not_completed_receipt_ko,
+                        Constants.TRIGGER_PRIMITIVE_NOT_COMPLETED_PAYMENTTOKEN_TIMEOUT: trigger_primitive.not_completed_paymenttoken_timeout,
+                        Constants.TRIGGER_PRIMITIVE_NOT_COMPLETED_ECOMMERCE_TIMEOUT: trigger_primitive.not_completed_ecommerce_timeout,
+                        Constants.TRIGGER_PRIMITIVE_NOT_COMPLETED_NO_STATE:  trigger_primitive.not_completed_no_state,
+                    }
                 },
                 Constants.COMPLETED_MACROTAG: {
                     Constants.COMPLETED_OK_RECEIPT_TOTAL: completed_payments.closed_as_ok,
@@ -54,6 +62,7 @@ class ReportEntity:
         item_ci_info = item["creditor_institution_info"]
         payments_info = item["payments"]
         trigger_primitive_info = payments_info["trigger_primitives"]
+        trigger_primitive_not_completed = trigger_primitive_info[Constants.TRIGGER_PRIMITIVE_NOT_COMPLETED_MACROTAG]
         completed_payment_info = payments_info[Constants.COMPLETED_MACROTAG]
         not_completed_payment_info = payments_info[Constants.NOT_COMPLETED_MACROTAG]
         rejected_payments_info = not_completed_payment_info[Constants.NOT_COMPLETED_REJECTED]
@@ -67,7 +76,13 @@ class ReportEntity:
         trigger_primitives = TriggerPrimitiveReportInfo(carts_total=trigger_primitive_info["total_carts"], 
                                                         no_carts_total=trigger_primitive_info["total_no_carts"],
                                                         carts_completed=trigger_primitive_info["carts_completed"],
-                                                        no_carts_completed=trigger_primitive_info["no_carts_completed"])
+                                                        no_carts_completed=trigger_primitive_info["no_carts_completed"],
+                                                        not_completed_rpt_timeout=trigger_primitive_not_completed[Constants.TRIGGER_PRIMITIVE_NOT_COMPLETED_RPT_TIMEOUT],
+                                                        not_completed_redirect=trigger_primitive_not_completed[Constants.TRIGGER_PRIMITIVE_NOT_COMPLETED_REDIRECT],
+                                                        not_completed_receipt_ko=trigger_primitive_not_completed[Constants.TRIGGER_PRIMITIVE_NOT_COMPLETED_RECEIPT_KO],
+                                                        not_completed_ecommerce_timeout=trigger_primitive_not_completed[Constants.TRIGGER_PRIMITIVE_NOT_COMPLETED_ECOMMERCE_TIMEOUT],
+                                                        not_completed_paymenttoken_timeout=trigger_primitive_not_completed[Constants.TRIGGER_PRIMITIVE_NOT_COMPLETED_PAYMENTTOKEN_TIMEOUT],
+                                                        not_completed_no_state=trigger_primitive_not_completed[Constants.TRIGGER_PRIMITIVE_NOT_COMPLETED_NO_STATE])
         completed_payment_info = CompletedPaymentsReportInfo(closed_as_ok=completed_payment_info[Constants.COMPLETED_OK_RECEIPT_TOTAL],
                                                             closed_as_ko=completed_payment_info[Constants.COMPLETED_KO_RECEIPT_TOTAL],
                                                             with_ok_receipts_only_sent_after_retry=completed_payment_info[Constants.COMPLETED_OK_RECEIPT_SENT_BY_RETRY],
