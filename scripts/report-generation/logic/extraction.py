@@ -65,8 +65,15 @@ class Extractor:
 
         completed_carts = set()
         completed_no_carts = set()
+        already_analyzed_count = 0
 
         for session_id in all_session_ids:
+
+            already_analyzed_count += 1
+            if already_analyzed_count % 100 == 0:
+                number_of_primitives = len(all_session_ids)
+                percentage_analyzed = Utility.safe_divide(already_analyzed_count * 100, number_of_primitives)
+                logging.info(f"\t[INFO ][Extractor      ] At [{Utility.get_now_datetime()}] report details were generated on [{already_analyzed_count}/{number_of_primitives}] triggered primitives ({percentage_analyzed:.03f}%)...")
 
             re_events = db.get_payment_status_by_re_events(session_id)
             
@@ -153,6 +160,7 @@ class Extractor:
                 if number_of_events == 0:
                     not_completed_triggers.append(Constants.TRIGGER_PRIMITIVE_NOT_COMPLETED_NO_STATE)
 
+        logging.info(f"\t[INFO ][Extractor      ] At [{Utility.get_now_datetime()}] report details were generated all on [{number_of_primitives}] triggered primitives!")
 
         not_completed_triggers_map = {
             Constants.TRIGGER_PRIMITIVE_NOT_COMPLETED_RPT_TIMEOUT: 0,

@@ -37,6 +37,18 @@ class Utility:
         today = datetime.today()
         yesterday = today - timedelta(days=1)
         return yesterday.strftime('%Y-%m-%d')
+
+
+    def get_now_datetime():
+        today = datetime.today()
+        return today.strftime('%Y-%m-%d %H:%M:%S')
+    
+
+    def get_days_before_date(date, number_of_days_before):
+        passed_date = datetime.strptime(date, "%Y-%m-%d")
+        current_week_start = passed_date - timedelta(days=passed_date.weekday())
+        last_week_start = current_week_start - timedelta(days=number_of_days_before)
+        return [(last_week_start + timedelta(days=i)).strftime('%Y-%m-%d') for i in range(number_of_days_before)]
     
 
     def get_week_before_date(date):

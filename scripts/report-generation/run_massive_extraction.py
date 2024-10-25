@@ -12,8 +12,12 @@ logging.basicConfig(level=logging.INFO)
 
 # retrieving passed environment variables
 report_type = os.getenv("REPORT_TYPE", Constants.DAILY).lower()
-start_date = '2024-10-01'
-end_date = '2024-10-24'
+start_date = os.getenv("REPORT_DATE", "")
+if start_date == "":
+    date = Utility.get_yesterday_date()
+    logging.info(f"\t[INFO ][ExtractReport  ] No date passed. Using yesterday date [{date}] as starting date.")
+end_date = Utility.get_days_before_date(start_date, 5)
+logging.info(f"\t[INFO ][ExtractReport  ] Using date [{end_date}] as end date.")
 environment = os.getenv("REPORT_ENV", "prod")
 if environment.strip() == "":
     environment = "prod"
