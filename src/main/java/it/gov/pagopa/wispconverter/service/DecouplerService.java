@@ -95,8 +95,8 @@ public class DecouplerService {
         }
 
         // trying to split key on underscore character
-        String[] splitKey = keyWithIUV.split("_");
-        if (splitKey.length != 3) {
+        String[] splitKey = keyWithIUV.split("_", 3);
+        if (splitKey.length < 3) {
             throw new AppException(AppErrorCodeMessageEnum.PERSISTENCE_MAPPING_NAV_TO_IUV_ERROR, mappingKey);
         }
 
