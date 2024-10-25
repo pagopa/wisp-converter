@@ -22,7 +22,7 @@ resource "github_repository_environment" "github_repository_environment" {
 locals {
   env_secrets = {
     "CD_CLIENT_ID" : data.azurerm_user_assigned_identity.identity_cd.client_id,
-    "CI_CLIENT_ID" : data.azurerm_user_assigned_identity.identity_ci.client_id,
+    "CI_CLIENT_ID" : var.env_short != "p" ? data.azurerm_user_assigned_identity.identity_ci[0].client_id : "",
     "TENANT_ID" : data.azurerm_client_config.current.tenant_id,
     "SUBSCRIPTION_ID" : data.azurerm_subscription.current.subscription_id
     "INTEGRATION_TEST_GPD_SUBSCRIPTION_KEY" : var.env_short != "p" ? data.azurerm_key_vault_secret.integration_test_gpd_subscription_key[0].value : ""
@@ -34,6 +34,11 @@ locals {
     "INTEGRATION_TEST_CHANNEL_CHECKOUT_PASSWORD" : var.env_short != "p" ? data.azurerm_key_vault_secret.integration_test_channel_checkout_password[0].value : ""
     "INTEGRATION_TEST_CHANNEL_PAYMENT_PASSWORD" : var.env_short != "p" ? data.azurerm_key_vault_secret.integration_test_channel_payment_password[0].value : ""
     "INTEGRATION_TEST_STATION_WISP_PASSWORD" : var.env_short != "p" ? data.azurerm_key_vault_secret.integration_test_station_wisp_password[0].value : ""
+    "REPORT_SLACK_WEBHOOK_URL" : data.azurerm_key_vault_secret.report_generation_slack_webhook_url.value,
+    "REPORT_DATAEXPLORER_CLIENT_ID" : data.azurerm_key_vault_secret.report_generation_dataexplorer_clientid.value,
+    "REPORT_DATAEXPLORER_CLIENT_SECRET" : data.azurerm_key_vault_secret.report_generation_dataexplorer_clientsecret.value,
+    "REPORT_DATABASE_KEY" : data.azurerm_key_vault_secret.report_generation_database_key.value,
+    "REPORT_APICONFIG_CACHE_SUBKEY" : data.azurerm_key_vault_secret.report_generation_apiconfigcache_subkey.value,
   }
   env_variables = {
     "CONTAINER_APP_ENVIRONMENT_NAME" : local.container_app_environment.name,
@@ -44,6 +49,9 @@ locals {
     "NAMESPACE" : local.domain,
     "INTEGRATION_TEST_STORAGE_ACCOUNT_NAME" : local.integration_test.storage_account_name
     "INTEGRATION_TEST_REPORTS_FOLDER" : local.integration_test.reports_folder
+    "REPORT_DATAEXPLORER_URL": local.report_generation.dataexplorer_url,
+    "REPORT_DATABASE_URL": local.report_generation.database_url,
+    "REPORT_DATABASE_REGION": local.report_generation.database_region,
   }
   repo_secrets = {
     "SONAR_TOKEN" : data.azurerm_key_vault_secret.key_vault_sonar.value,

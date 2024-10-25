@@ -17,6 +17,7 @@ import it.gov.pagopa.wispconverter.util.Trace;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.ErrorResponse;
@@ -38,6 +39,9 @@ public class ReceiptTimerController {
     private final ReceiptTimerService receiptTimerService;
 
     private final ErrorUtil errorUtil;
+    
+    @Value("${wisp-converter.receipttimer-delta-activate.expirationtime.ms}")
+    private Long deltaExpirationTime;
 
 
     @Operation(summary = "createTimer", description = "Create a timer linked with paymentToken and receipt data", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"ReceiptTimer"})
@@ -53,6 +57,8 @@ public class ReceiptTimerController {
     public void createTimer(@RequestBody ReceiptTimerRequest request) {
         try {
             log.info("Invoking API operation createTimer - args: {}", request.toString());
+            // PAGOPA-2300 - the expiration time is increased by a configurable delta
+            request.setExpirationTime(request.getExpirationTime()+deltaExpirationTime);
             receiptTimerService.sendMessage(request);
             log.info("Successful API operation createTimer");
         } catch (Exception ex) {
