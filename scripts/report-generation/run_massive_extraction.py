@@ -14,15 +14,14 @@ logging.basicConfig(level=logging.INFO)
 report_type = os.getenv("REPORT_TYPE", Constants.DAILY).lower()
 start_date = os.getenv("REPORT_DATE", "")
 if start_date == "":
-    date = Utility.get_yesterday_date()
-    logging.info(f"\t[INFO ][ExtractReport  ] No date passed. Using yesterday date [{date}] as starting date.")
-end_date = Utility.get_days_before_date(start_date, 5)
-logging.info(f"\t[INFO ][ExtractReport  ] Using date [{end_date}] as end date.")
+    start_date = Utility.get_yesterday_date()
+    logging.info(f"\t[INFO ][ExtractReport  ] No date passed. Using yesterday date [{start_date}] as starting date.")
+days = Utility.get_days_after_date(start_date, 4)
 environment = os.getenv("REPORT_ENV", "prod")
 if environment.strip() == "":
     environment = "prod"
     logging.info(f"\t[INFO ][ExtractReport  ] No environment passed. Using [{environment}] environment as default.")
-logging.info(f"\t[INFO ][ExtractReport  ] Starting report extraction for date in section [{start_date} - {end_date}] for type [{report_type}].")
+logging.info(f"\t[INFO ][ExtractReport  ] Starting report extraction for date in section {days} for type [{report_type}].")
 
 # initialize parameters
 parameters = Utility.load_parameters()
@@ -47,7 +46,7 @@ db_client = WispDismantlingDatabase(configuration=configuration)
 apiconfig_client = APIConfigCacheClient(configuration=configuration)
 
 # generate report for the passed date
-for date in Utility.get_dates_on_range(start_date, end_date):
+for date in days:
     logging.info(f"\t[INFO ][ExtractReport  ] Generation of report type [{report_type}] for date [{date}] started! Please wait until process ends.")
     extractor = Extractor(date, parameters, report_type)
     extractor.generate_report_data(db_client=db_client, apiconfig_client=apiconfig_client)

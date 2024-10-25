@@ -44,11 +44,13 @@ class Utility:
         return today.strftime('%Y-%m-%d %H:%M:%S')
     
 
-    def get_days_before_date(date, number_of_days_before):
+    def get_days_after_date(date, number_of_days_before):
         passed_date = datetime.strptime(date, "%Y-%m-%d")
-        current_week_start = passed_date - timedelta(days=passed_date.weekday())
-        last_week_start = current_week_start - timedelta(days=number_of_days_before)
-        return [(last_week_start + timedelta(days=i)).strftime('%Y-%m-%d') for i in range(number_of_days_before)]
+        days_after_date = passed_date + timedelta(days=1)
+        days = []
+        days.append(date)
+        days.extend([(days_after_date + timedelta(days=i)).strftime('%Y-%m-%d') for i in range(number_of_days_before)])
+        return days
     
 
     def get_week_before_date(date):
@@ -65,14 +67,7 @@ class Utility:
         first_day_last_month = last_day_last_month.replace(day=1)
         return [(first_day_last_month + timedelta(days=i)).strftime('%Y-%m-%d') for i in range((last_day_last_month - first_day_last_month).days + 1)]
     
-
-    def get_dates_on_range(start, end):
-        start_date = datetime.strptime(start, "%Y-%m-%d")
-        end_date = datetime.strptime(end, "%Y-%m-%d")
-        dates = [(start_date + timedelta(days=i)).strftime("%Y-%m-%d") for i in range((end_date - start_date).days + 1)]
-        return dates
-    
-    
+     
     def safe_divide(numerator, denominator):
         value = 0
         if denominator != 0:
