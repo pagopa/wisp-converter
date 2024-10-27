@@ -76,22 +76,23 @@ class WispDismantlingDatabase:
         if numeric_data is None:
             logging.info(f"\t[WARN ][WispDismantDB  ] No numeric data generated. No data will be persisted for report [{type}] of date [{report.date}]")
         else:
-            try:
-                entity = ReportEntity(id=Utility.get_report_id(report.date, type),
-                                      date=Utility.get_report_date(report.date, type),
-                                      total_payments_on_ndp=numeric_data.total_payments_on_ndp,
-                                      creditor_institutions=numeric_data.creditor_institutions,
-                                      trigger_primitive=numeric_data.trigger_primitives,
-                                      completed_payments=numeric_data.completed_payments,
-                                      not_completed_payments=numeric_data.not_completed_payments)
-
-                self.__report_container.upsert_item(body=entity.get_map())
-
-            except exceptions.CosmosHttpResponseError as ex:
-                logging.error(f"\t[ERROR][WispDismantDB  ] Error during persisting report in '{Constants.REPORTS_CONTAINER_NAME}' container. {ex.message}")
-                raise ex
+            entity = ReportEntity(id=Utility.get_report_id(report.date, type),
+                                  date=Utility.get_report_date(report.date, type),
+                                  total_payments_on_ndp=numeric_data.total_payments_on_ndp,
+                                  creditor_institutions=numeric_data.creditor_institutions,
+                                  trigger_primitive=numeric_data.trigger_primitives,
+                                  completed_payments=numeric_data.completed_payments,
+                                  not_completed_payments=numeric_data.not_completed_payments)
+            self.persist_report(entity)
+            
+    
+    def persist_report(self, entity):
+        try:
+            self.__report_container.upsert_item(body=entity.get_map())
+        except exceptions.CosmosHttpResponseError as ex:
+            logging.error(f"\t[ERROR][WispDismantDB  ] Error during persisting report in '{Constants.REPORTS_CONTAINER_NAME}' container. {ex.message}")
+            raise ex
         
-
 
     def retrieve_report(self, date, type) -> ReportEntity:
         report_id = Utility.get_report_id(date, type)

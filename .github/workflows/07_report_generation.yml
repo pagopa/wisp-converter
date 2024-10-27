@@ -42,6 +42,7 @@ on:
           - generate
           - send
           - both
+          - massive_generation
         default: both
 
 
@@ -187,7 +188,7 @@ jobs:
           subscription-id: ${{ secrets.SUBSCRIPTION_ID }}
 
       - name: Setup Python environment
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@65d7f2d534ac1bc67fcd62888c5f4f3d2cb2b236 # v4
         with:
           python-version: '3.11'
 
@@ -213,6 +214,24 @@ jobs:
             REPORT_DATABASE_REGION="${{ vars.REPORT_DATABASE_REGION }}" \
             REPORT_APICONFIG_CACHE_SUBKEY="${{ secrets.REPORT_APICONFIG_CACHE_SUBKEY }}"
           python run_extraction.py  
+
+      - name: Massively generates reports, up to 5 days after the date
+        if: ${{ env.operation == 'massive_generation' }}
+        run: |
+          cd ./scripts/report-generation
+          export REPORT_ENV="${{ env.environment }}" \
+            REPORT_TYPE="${{ env.report_type }}" \
+            REPORT_DATE="${{ env.report_date }}" \
+            REPORT_SLACK_WEBHOOK_URL="${{ secrets.REPORT_SLACK_WEBHOOK_URL }}" \
+            REPORT_DATAEXPLORER_URL="${{ vars.REPORT_DATAEXPLORER_URL }}" \
+            REPORT_DATAEXPLORER_CLIENT_ID="${{ secrets.REPORT_DATAEXPLORER_CLIENT_ID }}" \
+            REPORT_DATAEXPLORER_CLIENT_SECRET="${{ secrets.REPORT_DATAEXPLORER_CLIENT_SECRET }}" \
+            REPORT_DATAEXPLORER_TENANT_ID="${{ secrets.TENANT_ID }}" \
+            REPORT_DATABASE_URL="${{ vars.REPORT_DATABASE_URL }}" \
+            REPORT_DATABASE_KEY="${{ secrets.REPORT_DATABASE_KEY }}" \
+            REPORT_DATABASE_REGION="${{ vars.REPORT_DATABASE_REGION }}" \
+            REPORT_APICONFIG_CACHE_SUBKEY="${{ secrets.REPORT_APICONFIG_CACHE_SUBKEY }}"
+          python run_massive_extraction.py  
 
       - name: Send report
         if: ${{ env.operation == 'both' || env.operation == 'send' }}

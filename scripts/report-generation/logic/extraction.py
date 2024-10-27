@@ -61,11 +61,19 @@ class Extractor:
         
         completed_payments = CompletedReceiptStatistics()
         not_completed_payments = NotCompletedReceiptStatistics()
+        not_completed_triggers = []
 
         completed_carts = set()
         completed_no_carts = set()
+        already_analyzed_count = 0
 
         for session_id in all_session_ids:
+
+            already_analyzed_count += 1
+            if already_analyzed_count % 100 == 0:
+                number_of_primitives = len(all_session_ids)
+                percentage_analyzed = Utility.safe_divide(already_analyzed_count * 100, number_of_primitives)
+                logging.info(f"\t[INFO ][Extractor      ] At [{Utility.get_now_datetime()}] report details were generated on [{already_analyzed_count}/{number_of_primitives}] triggered primitives ({percentage_analyzed:.03f}%)...")
 
             re_events = db.get_payment_status_by_re_events(session_id)
             
@@ -80,7 +88,36 @@ class Extractor:
                 if status == 'RT_SEND_FAILURE':
                     rts_not_sent += 1
 
-            if number_of_events == 0 or rts_not_sent == number_of_events or rts_sent != number_of_events:
+            #
+            if number_of_events != 0:
+                business_processes = set(event.business_process.replace('-', '_') for event in re_events)
+                if len(business_processes) == 1:
+
+                    business_process = business_processes.pop()
+                    
+                    #
+                    if business_process == 'receipt_ok':
+                        if session_id in carts_session_ids:
+                            completed_carts.add(session_id)
+                        else:
+                            completed_no_carts.add(session_id)
+                        
+                        if rts_sent == number_of_events:
+                            completed_payments.add_as_ok()
+                        else:
+                            completed_payments.add_as_ko()
+                            #not_completed_triggers.append(Constants.TRIGGER_PRIMITIVE_NOT_COMPLETED_NO_STATE) 
+
+                    #                            
+                    else:
+                        not_completed_triggers.append(business_process)    
+
+                else:
+                    not_completed_triggers.append(Constants.TRIGGER_PRIMITIVE_NOT_COMPLETED_NO_STATE)
+            
+            #
+            elif number_of_events == 0 or rts_not_sent == number_of_events or rts_sent != number_of_events:
+                
                 
                 receipts = db.get_receipts_by_session_id(session_id)
                 for receipt in receipts:
@@ -119,23 +156,27 @@ class Extractor:
                             not_completed_payments.never_sent.add_as_ok(receipt_id)
                         else:
                             not_completed_payments.never_sent.add_as_ko(receipt_id)
+                
+                if number_of_events == 0:
+                    not_completed_triggers.append(Constants.TRIGGER_PRIMITIVE_NOT_COMPLETED_NO_STATE)
 
-            else:
-                re_event_to_check = re_events[0]
-                if re_event_to_check.business_process == 'receipt-ok':
-                    completed_payments.add_as_ok()
-                    if session_id in carts_session_ids: 
-                        completed_carts.add(session_id)
-                    else:
-                        completed_no_carts.add(session_id)
-                else:
-                    completed_payments.add_as_ko()
+        logging.info(f"\t[INFO ][Extractor      ] At [{Utility.get_now_datetime()}] report details were generated all on [{number_of_primitives}] triggered primitives!")
 
-        return (completed_payments, not_completed_payments, len(completed_carts), len(completed_no_carts))
+        not_completed_triggers_map = {
+            Constants.TRIGGER_PRIMITIVE_NOT_COMPLETED_RPT_TIMEOUT: 0,
+            Constants.TRIGGER_PRIMITIVE_NOT_COMPLETED_REDIRECT: 0,
+            Constants.TRIGGER_PRIMITIVE_NOT_COMPLETED_RECEIPT_KO: 0,
+            Constants.TRIGGER_PRIMITIVE_NOT_COMPLETED_ECOMMERCE_TIMEOUT: 0,
+            Constants.TRIGGER_PRIMITIVE_NOT_COMPLETED_PAYMENTTOKEN_TIMEOUT: 0,
+            Constants.TRIGGER_PRIMITIVE_NOT_COMPLETED_NO_STATE: 0,
+        }
+        for business_process in not_completed_triggers:
+            if business_process in not_completed_triggers_map:
+                not_completed_triggers_map[business_process] += 1
+
+        return (completed_payments, not_completed_payments, not_completed_triggers_map, len(completed_carts), len(completed_no_carts))
 
             
-
-
     def generate_report_data(self, db_client: WispDismantlingDatabase, apiconfig_client = APIConfigCacheClient):
         
         report = Report(self.date, self.parameters)
@@ -183,15 +224,21 @@ class Extractor:
         # Generate statistics about triggered primitives
         logging.info(f"\t[INFO ][Extractor      ] Executing read for trigger primitives from D-WISP...")
         grouped_trigger_requests = self._extract_trigger_request_from_wisp(db=db_client)
-        logging.info(f"\t[INFO ][Extractor      ] Retrieved {grouped_trigger_requests.carts.count + grouped_trigger_requests.carts.count} primitives! Executing read for statistics about payments and receipts...")
-        (completed_payments, not_completed_payments, completed_carts, completed_no_carts) = self._extract_payment_status_tracking_by_session_id(grouped_trigger_requests, db_client)
+        logging.info(f"\t[INFO ][Extractor      ] Retrieved {grouped_trigger_requests.carts.count + grouped_trigger_requests.no_carts.count} primitives! Executing read for statistics about payments and receipts...")
+        (completed_payments, not_completed_payments, not_completed_trigger_primitives, completed_carts, completed_no_carts) = self._extract_payment_status_tracking_by_session_id(grouped_trigger_requests, db_client)
         logging.info(f"\t[INFO ][Extractor      ] Retrieved statistics about payments and receipts! Finalizing report persistence...")
 
         # Generate statistics about trigger primitives
         numeric_data.trigger_primitives = TriggerPrimitiveReportInfo(carts_completed=completed_carts,
                                                                      carts_total=grouped_trigger_requests.carts.count, 
                                                                      no_carts_completed=completed_no_carts,
-                                                                     no_carts_total=grouped_trigger_requests.no_carts.count)
+                                                                     no_carts_total=grouped_trigger_requests.no_carts.count,
+                                                                     not_completed_rpt_timeout=not_completed_trigger_primitives[Constants.TRIGGER_PRIMITIVE_NOT_COMPLETED_RPT_TIMEOUT],
+                                                                     not_completed_redirect=not_completed_trigger_primitives[Constants.TRIGGER_PRIMITIVE_NOT_COMPLETED_REDIRECT],
+                                                                     not_completed_receipt_ko=not_completed_trigger_primitives[Constants.TRIGGER_PRIMITIVE_NOT_COMPLETED_RECEIPT_KO],
+                                                                     not_completed_ecommerce_timeout=not_completed_trigger_primitives[Constants.TRIGGER_PRIMITIVE_NOT_COMPLETED_ECOMMERCE_TIMEOUT],
+                                                                     not_completed_paymenttoken_timeout=not_completed_trigger_primitives[Constants.TRIGGER_PRIMITIVE_NOT_COMPLETED_PAYMENTTOKEN_TIMEOUT],
+                                                                     not_completed_no_state=not_completed_trigger_primitives[Constants.TRIGGER_PRIMITIVE_NOT_COMPLETED_NO_STATE])
             
         # Generate statistics about completed payments
         numeric_data.completed_payments = CompletedPaymentsReportInfo(closed_as_ok=completed_payments.with_ok_receipts_all_sent,
@@ -209,7 +256,7 @@ class Extractor:
 
     # Generate numeric values to be set on weekly report 
     def _generate_numeric_data_for_weekly_report(self, db_client: WispDismantlingDatabase):
-        week_days = Utility.get_week_before_date(self.date)
+        week_days = Utility.get_week_in_date(self.date)
         logging.info(f"\t[INFO ][Extractor      ] Generating merged weekly report for dates {week_days}.")
         return self._generate_numeric_data_for_multiple_days_report(db_client, week_days)
         
