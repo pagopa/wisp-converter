@@ -10,14 +10,10 @@ import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
 import it.gov.pagopa.wispconverter.service.mapper.DebtPositionMapper;
 import it.gov.pagopa.wispconverter.service.mapper.DebtPositionUpdateMapper;
 import it.gov.pagopa.wispconverter.service.model.DigitalStampDTO;
-import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
 import it.gov.pagopa.wispconverter.service.model.TransferDTO;
 import it.gov.pagopa.wispconverter.service.model.paymentrequest.PaymentRequestDTO;
 import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
-import it.gov.pagopa.wispconverter.service.model.session.PaymentNoticeContentDTO;
-import it.gov.pagopa.wispconverter.service.model.session.PaymentPositionExistence;
-import it.gov.pagopa.wispconverter.service.model.session.RPTContentDTO;
-import it.gov.pagopa.wispconverter.service.model.session.SessionDataDTO;
+import it.gov.pagopa.wispconverter.service.model.session.*;
 import it.gov.pagopa.wispconverter.util.CommonUtility;
 import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.ReUtil;
@@ -157,7 +153,7 @@ public class DebtPositionService {
             for (TransferDTO transfer : paymentExtractedFromRPT.getTransferData().getTransfer()) {
 
                 String domainId = paymentExtractedFromRPT.getDomain().getDomainId();
-                transfers.add(extractTransferForPaymentOption(transfer, domainId, transferIdCounter));
+                transfers.add(extractTransferForPaymentOption(transfer, domainId, transferIdCounter, sessionData.getCommonFields()));
                 transferIdCounter++;
             }
         }
@@ -177,9 +173,10 @@ public class DebtPositionService {
         paymentOption.setDescription(firstRPTContent.getRpt().getTransferData().getTransfer().get(0).getRemittanceInformation());
 
         // finally, generate the payment position and add the payment option
+        String creditorInstitutionId = sessionData.getCommonFields().getCreditorInstitutionId();
         PaymentPositionModelDto paymentPosition = mapper.toPaymentPosition(sessionData);
-        paymentPosition.setIupd(generateIUPD(sessionData.getCommonFields().getCreditorInstitutionId()));
-        paymentPosition.setCompanyName(configCacheService.getCreditorInstitutionNameFromCache(sessionData.getCommonFields().getCreditorInstitutionId()));
+        paymentPosition.setIupd(generateIUPD(creditorInstitutionId));
+        paymentPosition.setCompanyName(configCacheService.getCreditorInstitutionNameFromCache(creditorInstitutionId));
         paymentPosition.setPaymentOption(List.of(paymentOption));
 
         // update payment notices to be used for communication with Checkout
@@ -215,7 +212,7 @@ public class DebtPositionService {
             for (TransferDTO transfer : paymentExtractedFromRPT.getTransferData().getTransfer()) {
 
                 String domainId = paymentExtractedFromRPT.getDomain().getDomainId();
-                transfers.add(extractTransferForPaymentOption(transfer, domainId, transferIdCounter));
+                transfers.add(extractTransferForPaymentOption(transfer, domainId, transferIdCounter, sessionData.getCommonFields()));
                 transferIdCounter++;
             }
 
@@ -247,12 +244,23 @@ public class DebtPositionService {
         return paymentPositions;
     }
 
-    private TransferModelDto extractTransferForPaymentOption(TransferDTO transferDTO, String creditorInstitutionId, int transferIdCounter) {
+    private TransferModelDto extractTransferForPaymentOption(TransferDTO transferDTO, String creditorInstitutionId, int transferIdCounter, CommonFieldsDTO commonFields) {
 
         // setting the default metadata for this transfer
-        TransferMetadataModelDto transferMetadata = new TransferMetadataModelDto();
-        transferMetadata.setKey("DatiSpecificiRiscossione");
-        transferMetadata.setValue(transferDTO.getCategory());
+        List<TransferMetadataModelDto> transferMetadata = new ArrayList<>();
+        TransferMetadataModelDto transferPaymentReasonMetadata = new TransferMetadataModelDto();
+        transferPaymentReasonMetadata.setKey("DatiSpecificiRiscossione");
+        transferPaymentReasonMetadata.setValue(transferDTO.getCategory());
+        transferMetadata.add(transferPaymentReasonMetadata);
+
+        // if old-style fee code from Catalogo Dati Informativi is set, pass it as metadata
+        String feeCode = commonFields.getFeeCode();
+        if (feeCode != null) {
+            TransferMetadataModelDto feeCodeMetadata = new TransferMetadataModelDto();
+            feeCodeMetadata.setKey("codiceConvenzione");
+            feeCodeMetadata.setValue(feeCode);
+            transferMetadata.add(feeCodeMetadata);
+        }
 
         // populating the transfer with the data extracted from RPT
         TransferModelDto transfer = new TransferModelDto();
@@ -260,7 +268,7 @@ public class DebtPositionService {
         transfer.setAmount((long) (transferDTO.getAmount().multiply(Constants.AMOUNT_SCALE_INCREMENT).doubleValue()));
         transfer.setRemittanceInformation(transferDTO.getRemittanceInformation());
         transfer.setCategory(getTaxonomy(transferDTO));
-        transfer.setTransferMetadata(List.of(transferMetadata));
+        transfer.setTransferMetadata(transferMetadata);
 
         // If digital stamp exists, it is a special transfer that does not require IBANs.
         DigitalStampDTO digitalStampDTO = transferDTO.getDigitalStamp();
@@ -374,7 +382,7 @@ public class DebtPositionService {
     }
 
     private void handleValidPaymentPosition(DebtPositionsApiApi gpdClientInstance, SessionDataDTO sessionData, PaymentPositionModelDto extractedPaymentPosition, PaymentPositionModelBaseResponseDto paymentPositionFromGPD, String iuv, String creditorInstitutionId) {
-    	
+
         try {
             // validate the station, checking if exists one with the required segregation code and, if is onboarded on GPD, has the correct primitive version
             CommonUtility.checkStationValidity(configCacheService, sessionData, creditorInstitutionId, CommonUtility.getSinglePaymentOption(paymentPositionFromGPD).getNav(), stationInGpdPartialPath);
