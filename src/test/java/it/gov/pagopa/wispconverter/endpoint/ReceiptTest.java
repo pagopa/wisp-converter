@@ -7,6 +7,7 @@ import it.gov.pagopa.wispconverter.controller.model.ReceiptRequest;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.CacheRepository;
+import it.gov.pagopa.wispconverter.repository.NavToIuvMappingRepository;
 import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.ReceiptDeadLetterRepository;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
@@ -48,6 +49,10 @@ class ReceiptTest {
     ObjectMapper objectMapper;
     @MockBean
     RtReceiptCosmosService rtReceiptCosmosService;
+    @MockBean
+    RecoveryService recoveryService;
+    @MockBean
+    ReceiptDeadLetterRepository receiptDeadLetterRepository;
     @Autowired
     private MockMvc mvc;
     @Autowired
@@ -59,9 +64,7 @@ class ReceiptTest {
     @MockBean
     private CacheRepository cacheRepository;
     @MockBean
-    RecoveryService recoveryService;
-    @MockBean
-    ReceiptDeadLetterRepository receiptDeadLetterRepository;
+    private NavToIuvMappingRepository navToIuvMappingRepository;
 
     private String getPaSendRTPayload() {
         return TestUtils.loadFileContent("/requests/paSendRTV2.xml");
