@@ -153,7 +153,7 @@ public class DebtPositionService {
             for (TransferDTO transfer : paymentExtractedFromRPT.getTransferData().getTransfer()) {
 
                 String domainId = paymentExtractedFromRPT.getDomain().getDomainId();
-                transfers.add(extractTransferForPaymentOption(transfer, domainId, transferIdCounter, sessionData.getCommonFields()));
+                transfers.add(extractTransferForPaymentOption(transfer, domainId, transferIdCounter));
                 transferIdCounter++;
             }
         }
@@ -171,6 +171,7 @@ public class DebtPositionService {
         paymentOption.setAmount(amount);
         paymentOption.setTransfer(transfers);
         paymentOption.setDescription(firstRPTContent.getRpt().getTransferData().getTransfer().get(0).getRemittanceInformation());
+        paymentOption.setPaymentOptionMetadata(extractPaymentOptionMetadata(sessionData.getCommonFields()));
 
         // finally, generate the payment position and add the payment option
         String creditorInstitutionId = sessionData.getCommonFields().getCreditorInstitutionId();
@@ -212,7 +213,7 @@ public class DebtPositionService {
             for (TransferDTO transfer : paymentExtractedFromRPT.getTransferData().getTransfer()) {
 
                 String domainId = paymentExtractedFromRPT.getDomain().getDomainId();
-                transfers.add(extractTransferForPaymentOption(transfer, domainId, transferIdCounter, sessionData.getCommonFields()));
+                transfers.add(extractTransferForPaymentOption(transfer, domainId, transferIdCounter));
                 transferIdCounter++;
             }
 
@@ -222,6 +223,7 @@ public class DebtPositionService {
             paymentOption.setAmount(amount);
             paymentOption.setTransfer(transfers);
             paymentOption.setDescription(paymentExtractedFromRPT.getTransferData().getTransfer().get(0).getRemittanceInformation());
+            paymentOption.setPaymentOptionMetadata(extractPaymentOptionMetadata(sessionData.getCommonFields()));
 
             // finally, generate the payment position and add the payment option
             String creditorInstitutionId = paymentExtractedFromRPT.getDomain().getDomainId();
@@ -244,7 +246,7 @@ public class DebtPositionService {
         return paymentPositions;
     }
 
-    private TransferModelDto extractTransferForPaymentOption(TransferDTO transferDTO, String creditorInstitutionId, int transferIdCounter, CommonFieldsDTO commonFields) {
+    private TransferModelDto extractTransferForPaymentOption(TransferDTO transferDTO, String creditorInstitutionId, int transferIdCounter) {
 
         // setting the default metadata for this transfer
         List<TransferMetadataModelDto> transferMetadata = new ArrayList<>();
@@ -252,15 +254,6 @@ public class DebtPositionService {
         transferPaymentReasonMetadata.setKey("DatiSpecificiRiscossione");
         transferPaymentReasonMetadata.setValue(transferDTO.getCategory());
         transferMetadata.add(transferPaymentReasonMetadata);
-
-        // if old-style fee code from Catalogo Dati Informativi is set, pass it as metadata
-        String feeCode = commonFields.getFeeCode();
-        if (feeCode != null) {
-            TransferMetadataModelDto feeCodeMetadata = new TransferMetadataModelDto();
-            feeCodeMetadata.setKey("codiceConvenzione");
-            feeCodeMetadata.setValue(feeCode);
-            transferMetadata.add(feeCodeMetadata);
-        }
 
         // populating the transfer with the data extracted from RPT
         TransferModelDto transfer = new TransferModelDto();
@@ -449,6 +442,19 @@ public class DebtPositionService {
         }
 
         return updatedPaymentPosition;
+    }
+
+    private List<PaymentOptionMetadataModelDto> extractPaymentOptionMetadata(CommonFieldsDTO commonFields) {
+        // if old-style fee code from Catalogo Dati Informativi is set, pass it as metadata
+        List<PaymentOptionMetadataModelDto> metadata = new ArrayList<>();
+        String feeCode = commonFields.getFeeCode();
+        if (feeCode != null) {
+            PaymentOptionMetadataModelDto feeCodeMetadata = new PaymentOptionMetadataModelDto();
+            feeCodeMetadata.setKey("codiceConvenzione");
+            feeCodeMetadata.setValue(feeCode);
+            metadata.add(feeCodeMetadata);
+        }
+        return metadata;
     }
 
     private void handleNewPaymentPosition(SessionDataDTO sessionData, PaymentPositionModelDto extractedPaymentPosition, List<String> iuvToSaveInBulkOperation, String iuv, String creditorInstitutionId) {
