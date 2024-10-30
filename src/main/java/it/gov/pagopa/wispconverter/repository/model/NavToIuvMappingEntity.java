@@ -15,9 +15,11 @@ import org.springframework.data.annotation.Id;
 @Builder(toBuilder = true)
 public class NavToIuvMappingEntity {
 
+    // Notice number
     @Id
     private String id;
 
+    // Fiscal code
     @PartitionKey
     private String partitionKey;
 
