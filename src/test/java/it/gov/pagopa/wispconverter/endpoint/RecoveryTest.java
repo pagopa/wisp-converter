@@ -42,6 +42,8 @@ class RecoveryTest {
     @MockBean
     private ReceiptService receiptService;
     @MockBean
+    private DecouplerService decouplerService;
+    @MockBean
     private ReceiptDeadLetterRepository receiptDeadLetterRepository;
 
     @Test
@@ -83,8 +85,8 @@ class RecoveryTest {
         String dateTo = "2024-09-09";
 
         mockMvc.perform(post("/recovery/{ci}/rpt/{iuv}/receipt-ko", ci, iuv)
-                                .queryParam("date_from", dateFrom)
-                                .queryParam("date_to", dateTo))
+                        .queryParam("date_from", dateFrom)
+                        .queryParam("date_to", dateTo))
                 .andExpect(status().isBadRequest());
 
         Mockito.verify(recoveryService, times(1)).recoverReceiptKOByIUV(eq(ci), eq(iuv), any(), any());
@@ -101,8 +103,8 @@ class RecoveryTest {
                 .thenThrow(new RuntimeException("Test exception"));
 
         mockMvc.perform(post("/recovery/{ci}/rpt/{iuv}/receipt-ko", ci, iuv)
-                                .queryParam("date_from", dateFrom)
-                                .queryParam("date_to", dateTo))
+                        .queryParam("date_from", dateFrom)
+                        .queryParam("date_to", dateTo))
                 .andExpect(status().isInternalServerError());
 
         Mockito.verify(recoveryService, times(1)).recoverReceiptKOByIUV(eq(ci), eq(iuv), any(), any());

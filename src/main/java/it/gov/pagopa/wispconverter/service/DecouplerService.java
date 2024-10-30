@@ -1,9 +1,12 @@
 package it.gov.pagopa.wispconverter.service;
 
+import com.azure.cosmos.models.PartitionKey;
 import it.gov.pagopa.gen.wispconverter.client.decouplercaching.model.DecouplerCachingKeysDto;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.CacheRepository;
+import it.gov.pagopa.wispconverter.repository.NavToIuvMappingRepository;
+import it.gov.pagopa.wispconverter.repository.model.NavToIuvMappingEntity;
 import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
 import it.gov.pagopa.wispconverter.service.model.CachedKeysMapping;
 import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
@@ -19,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -26,15 +30,15 @@ import java.util.List;
 public class DecouplerService {
 
     public static final String CACHING_KEY_TEMPLATE = "wisp_%s_%s";
-    private static final String CARTSESSION_CACHING_KEY_TEMPLATE = "%s_%s_%s";
-
     public static final String MAP_CACHING_KEY_TEMPLATE = "wisp_nav2iuv_%s_%s";
-
+    private static final String CARTSESSION_CACHING_KEY_TEMPLATE = "%s_%s_%s";
     private final ReService reService;
 
     private final it.gov.pagopa.gen.wispconverter.client.decouplercaching.invoker.ApiClient decouplerCachingClient;
 
     private final CacheRepository cacheRepository;
+
+    private final NavToIuvMappingRepository navToIuvMappingRepository;
 
     @Value("${wisp-converter.cached-requestid-mapping.ttl.minutes}")
     private Long requestIDMappingTTL;
@@ -87,27 +91,40 @@ public class DecouplerService {
     public CachedKeysMapping getCachedMappingFromNavToIuv(String creditorInstitutionId, String nav) {
 
         String mappingKey = String.format(MAP_CACHING_KEY_TEMPLATE, creditorInstitutionId, nav);
+        String cachedFiscalCode;
+        String cachedIUV;
 
         // retrieving mapped key from Redis cache
         String keyWithIUV = this.cacheRepository.read(mappingKey, String.class);
-        if (keyWithIUV == null) {
-            throw new AppException(AppErrorCodeMessageEnum.PERSISTENCE_REQUESTID_CACHING_ERROR, mappingKey);
+        if (keyWithIUV != null) {
+
+            // trying to split key on underscore character
+            String[] splitKey = keyWithIUV.split("_", 3);
+            if (splitKey.length < 3) {
+                throw new AppException(AppErrorCodeMessageEnum.PERSISTENCE_MAPPING_NAV_TO_IUV_ERROR, mappingKey);
+            }
+            cachedFiscalCode = splitKey[1];
+            cachedIUV = splitKey[2];
+
+        } else {
+
+            // if no mapping is found, retrieve it from DB and try to bypass short TTL in Redis
+            Optional<NavToIuvMappingEntity> optNavToIuvMapping = this.navToIuvMappingRepository.findById(nav, new PartitionKey(creditorInstitutionId));
+            if (optNavToIuvMapping.isEmpty()) {
+                throw new AppException(AppErrorCodeMessageEnum.PERSISTENCE_REQUESTID_CACHING_ERROR, mappingKey);
+            }
+            NavToIuvMappingEntity navToIuvMappingEntity = optNavToIuvMapping.get();
+            cachedFiscalCode = navToIuvMappingEntity.getPartitionKey();
+            cachedIUV = navToIuvMappingEntity.getIuv();
         }
 
-        // trying to split key on underscore character
-        String[] splitKey = keyWithIUV.split("_", 3);
-        if (splitKey.length < 3) {
-            throw new AppException(AppErrorCodeMessageEnum.PERSISTENCE_MAPPING_NAV_TO_IUV_ERROR, mappingKey);
-        }
-
-        // returning the key, correctly split
+        // returning the key, correctly extracted
         return CachedKeysMapping.builder()
-                .fiscalCode(splitKey[1])
-                .iuv(splitKey[2])
+                .fiscalCode(cachedFiscalCode)
+                .iuv(cachedIUV)
                 .build();
     }
 
-    //TODO duplicate method but pass only sessionId recovered from service bus
     private void saveMappedKeyForDecoupler(SessionDataDTO sessionData) {
 
         // generate client instance for APIM endpoint
@@ -131,12 +148,12 @@ public class DecouplerService {
     }
 
     /**
-    * this method creates 2 mapping:
-    * wisp_nav2iuv_<fiscal-code>_<nav> = wisp_<fiscal-code>_<iuv>
-    *
-    * @param sessionId
-    * @param sessionData
-    */
+     * this method creates 2 mapping:
+     * wisp_nav2iuv_<fiscal-code>_<nav> = wisp_<fiscal-code>_<iuv>
+     *
+     * @param sessionId
+     * @param sessionData
+     */
     public void saveMappedKeyForReceiptGeneration(String sessionId, SessionDataDTO sessionData) {
 
         for (PaymentNoticeContentDTO paymentNoticeContentDTO : sessionData.getAllPaymentNotices()) {
@@ -147,6 +164,14 @@ public class DecouplerService {
             // save the mapping that permits to convert a NAV-based key in a IUV-based one
             String navToIuvMappingForRTHandling = String.format(MAP_CACHING_KEY_TEMPLATE, paymentNoticeContentDTO.getFiscalCode(), paymentNoticeContentDTO.getNoticeNumber());
             this.cacheRepository.insert(navToIuvMappingForRTHandling, requestIDForRTHandling, this.requestIDMappingTTL);
+
+            // save the previous mapping in DB as long-duration data
+            NavToIuvMappingEntity navToIuvMappingEntity = NavToIuvMappingEntity.builder()
+                    .id(paymentNoticeContentDTO.getNoticeNumber())
+                    .partitionKey(paymentNoticeContentDTO.getFiscalCode())
+                    .iuv(paymentNoticeContentDTO.getIuv())
+                    .build();
+            this.navToIuvMappingRepository.save(navToIuvMappingEntity);
 
             // generate and save re events internal for change status
             String infoAboutCachedKey = "Main key = [(key:" + requestIDForRTHandling + "; value:" + sessionId + ")], Mapping key = [(key:" + navToIuvMappingForRTHandling + "; value:" + requestIDForRTHandling + ")]";

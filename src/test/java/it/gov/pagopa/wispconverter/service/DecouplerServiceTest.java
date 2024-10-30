@@ -3,6 +3,7 @@ package it.gov.pagopa.wispconverter.service;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.CacheRepository;
+import it.gov.pagopa.wispconverter.repository.NavToIuvMappingRepository;
 import it.gov.pagopa.wispconverter.repository.ReceiptDeadLetterRepository;
 import it.gov.pagopa.wispconverter.secondary.IdempotencyKeyRepositorySecondary;
 import it.gov.pagopa.wispconverter.secondary.RTRepositorySecondary;
@@ -21,33 +22,29 @@ import org.springframework.test.context.ActiveProfiles;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.when;
 
 @ActiveProfiles(profiles = "test")
 @SpringBootTest
 class DecouplerServiceTest {
 
+    private static final String DOMAIN_ID = "12345678910";
+    private static final String NAV = "350000000000000000";
     @Autowired
     private DecouplerService decouplerService;
-
     @MockBean
     private CacheRepository cacheRepository;
-
+    @MockBean
+    private NavToIuvMappingRepository navToIuvMappingRepository;
     @MockBean
     private ReceiptDeadLetterRepository receiptDeadLetterRepository;
-
     @MockBean
     private RTRepositorySecondary rtRepositorySecondary;
-
     @MockBean
     private ReEventRepositorySecondary reEventRepositorySecondary;
-
     @MockBean
     private IdempotencyKeyRepositorySecondary idempotencyKeyRepositorySecondary;
-
-    private static final String DOMAIN_ID = "12345678910";
-
-    private static final String NAV = "350000000000000000";
 
     @ParameterizedTest
     @CsvSource({"wisp_nav2iuv_123456IUVMOCK1,123456IUVMOCK1", "wisp_nav2iuv_123456IUVMOCK1_123456IUVMOCK2,123456IUVMOCK1_123456IUVMOCK2"})
