@@ -37,6 +37,8 @@ public class StaticPagesTest {
     @MockBean
     private ReceiptService receiptService;
     @MockBean
+    private DecouplerService decouplerService;
+    @MockBean
     private ReceiptDeadLetterRepository receiptDeadLetterRepository;
 
     /*

@@ -3,7 +3,9 @@ package it.gov.pagopa.wispconverter;
 import com.azure.cosmos.CosmosAsyncClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.wispconverter.controller.RedirectController;
-import it.gov.pagopa.wispconverter.repository.*;
+import it.gov.pagopa.wispconverter.repository.ConfigurationRepository;
+import it.gov.pagopa.wispconverter.repository.ReceiptDeadLetterRepository;
+import it.gov.pagopa.wispconverter.service.DecouplerService;
 import it.gov.pagopa.wispconverter.service.ReceiptService;
 import it.gov.pagopa.wispconverter.service.RecoveryService;
 import org.junit.jupiter.api.Test;
@@ -49,6 +51,9 @@ class OpenApiGenerationTest {
 
     @MockBean
     private RecoveryService recoveryService;
+
+    @MockBean
+    private DecouplerService decouplerService;
 
     @MockBean
     private ReceiptDeadLetterRepository receiptDeadLetterRepository;

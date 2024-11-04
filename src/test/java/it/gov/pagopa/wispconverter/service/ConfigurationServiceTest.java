@@ -17,9 +17,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ActiveProfiles(profiles = "test")
 @SpringBootTest
@@ -27,19 +25,17 @@ class ConfigurationServiceTest {
 
     @MockBean
     ConfigurationRepository configurationRepository;
-    @MockBean
-    private RecoveryService recoveryService;
-    @MockBean
-    private ReceiptDeadLetterRepository receiptDeadLetterRepository;
-
     @Autowired
     @InjectMocks
     ConfigurationService configurationService;
-
-
     @Captor
     ArgumentCaptor<ConfigurationEntity> argumentCaptor;
-
+    @MockBean
+    private RecoveryService recoveryService;
+    @MockBean
+    private DecouplerService decouplerService;
+    @MockBean
+    private ReceiptDeadLetterRepository receiptDeadLetterRepository;
 
     @Test
     void getCreditorInstitutionsConfiguration() {

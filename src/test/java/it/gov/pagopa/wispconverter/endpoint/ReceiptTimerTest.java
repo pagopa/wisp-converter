@@ -48,6 +48,8 @@ public class ReceiptTimerTest {
     @MockBean
     private RecoveryService recoveryService;
     @MockBean
+    private DecouplerService decouplerService;
+    @MockBean
     private ReceiptDeadLetterRepository receiptDeadLetterRepository;
 
     /*

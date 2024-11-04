@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.gen.wispconverter.client.cache.model.StationCreditorInstitutionDto;
 import it.gov.pagopa.gen.wispconverter.client.iuvgenerator.model.IUVGenerationResponseDto;
 import it.gov.pagopa.wispconverter.Application;
+import it.gov.pagopa.wispconverter.repository.NavToIuvMappingRepository;
 import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.ReceiptDeadLetterRepository;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
@@ -73,6 +74,8 @@ class CarrelloTest {
     private RecoveryService recoveryService;
     @MockBean
     private PaaInviaRTSenderService paaInviaRTSenderService;
+    @MockBean
+    private NavToIuvMappingRepository navToIuvMappingRepository;
     @MockBean
     private ReceiptDeadLetterRepository receiptDeadLetterRepository;
 

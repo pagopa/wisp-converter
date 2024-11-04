@@ -5,6 +5,7 @@ import it.gov.pagopa.wispconverter.Application;
 import it.gov.pagopa.wispconverter.controller.model.ConfigurationModel;
 import it.gov.pagopa.wispconverter.repository.ReceiptDeadLetterRepository;
 import it.gov.pagopa.wispconverter.service.ConfigurationService;
+import it.gov.pagopa.wispconverter.service.DecouplerService;
 import it.gov.pagopa.wispconverter.service.RecoveryService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +29,9 @@ class ConfigurationControllerTest {
 
     @MockBean
     private RecoveryService recoveryService;
+    
+    @MockBean
+    private DecouplerService decouplerService;
 
     @MockBean
     private ReceiptDeadLetterRepository receiptDeadLetterRepository;
