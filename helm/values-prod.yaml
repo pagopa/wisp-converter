@@ -101,7 +101,7 @@ microservice-chart: &microservice-chart
     RECEIPT_TIMER_QUEUE_NAME: "nodo_wisp_payment_timeout_queue"
     RECEIPT_TIMER_DELTA_ACTIVATE_EXPTIME_MS: '60000'
     ECOMMERCE_HANG_TIMER_QUEUE_NAME: "nodo_wisp_ecommerce_hang_timeout_queue"
-    ECOMMERCE_HANG_TIMEOUT: '1800'
+    ECOMMERCE_HANG_TIMEOUT: '600'
     APIM_PATH: 'api.platform.pagopa.it'
     CACHED_REQUESTID_MAPPING_TTL_MINUTES: "2880"
     CACHE_REFRESH_CRON: "0 */60 * * * *"
