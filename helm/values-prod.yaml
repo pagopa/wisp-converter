@@ -4,7 +4,7 @@ microservice-chart: &microservice-chart
   fullnameOverride: ""
   image:
     repository: ghcr.io/pagopa/pagopa-wisp-converter
-    tag: "0.4.20"
+    tag: "0.4.22"
     pullPolicy: Always
   livenessProbe:
     httpGet:
@@ -51,7 +51,7 @@ microservice-chart: &microservice-chart
       cpu: "1000m"
   autoscaling: &autoscaling
     enable: true
-    minReplica: 1
+    minReplica: 2
     maxReplica: 10
     pollingInterval: 10 # seconds
     cooldownPeriod: 50 # seconds
@@ -171,6 +171,15 @@ microservice-chart: &microservice-chart
                 operator: In
                 values:
                   - user
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchLabels:
+                app.kubernetes.io/instance: pagopawispconverter
+            namespaces: ["nodo"]
+            topologyKey: topology.kubernetes.io/zone
   canaryDelivery:
     create: false
     ingress:
