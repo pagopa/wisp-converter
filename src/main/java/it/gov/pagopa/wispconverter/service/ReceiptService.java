@@ -173,8 +173,12 @@ public class ReceiptService {
      *
      * @param receipts a list of receipts
      */
+    // TODO review, no dead-letter functionalities
     public void sendKoPaaInviaRtToCreditorInstitution(List<ReceiptDto> receipts) {
         try {
+
+            it.gov.pagopa.gen.wispconverter.client.decouplercaching.api.DefaultApi apiInstance = new it.gov.pagopa.gen.wispconverter.client.decouplercaching.api.DefaultApi(decouplerCachingClient);
+            it.gov.pagopa.gen.wispconverter.client.decouplercaching.model.SessionIdDto sessionIdDto = new it.gov.pagopa.gen.wispconverter.client.decouplercaching.model.SessionIdDto();
 
             // map the received payload as a list of receipts that will be lately evaluated
             gov.telematici.pagamenti.ws.papernodo.ObjectFactory objectFactory = new gov.telematici.pagamenti.ws.papernodo.ObjectFactory();
@@ -184,9 +188,13 @@ public class ReceiptService {
             Map<String, ConfigurationKeyDto> configurations = configData.getConfigurations();
             Map<String, StationDto> stations = configData.getStations();
 
-
             // generate and send a KO RT for each receipt received in the payload
             for (ReceiptDto receipt : receipts) {
+                // workaround to reuse endpoint service. in this case sessionId = sessionId_fiscalCode_noticeNumber
+                sessionIdDto.setSessionId(String.format("%s_%s_%s", receipt.getSessionId(), receipt.getFiscalCode(), receipt.getNoticeNumber()));
+
+                // necessary to block activatePaymentNoticeV2
+                apiInstance.deleteSessionId(sessionIdDto, MDC.get(Constants.MDC_REQUEST_ID));
 
                 MDCUtil.setReceiptTimerInfoInMDC(receipt.getFiscalCode(), receipt.getNoticeNumber(), null);
 

@@ -77,15 +77,12 @@ public class ECommerceHangTimeoutConsumer extends SBConsumer {
             generateRE(InternalStepStatus.ECOMMERCE_HANG_TIMER_TRIGGER, "Expired eCommerce hang timer. A Negative sendRT will be sent: " + timeoutMessage);
 
             // transform to string list
-//            var inputPaaInviaRTKo = List.of(ReceiptDto.builder()
-//                    .fiscalCode(timeoutMessage.getFiscalCode())
-//                    .noticeNumber(timeoutMessage.getNoticeNumber())
-//                    .sessionId(timeoutMessage.getSessionId())
-//                    .build());
-//            receiptService.sendKoPaaInviaRtToCreditorInstitution(inputPaaInviaRTKo);
-
-            // sending rt- from session id
-            receiptService.sendRTKoFromSessionId(timeoutMessage.getSessionId(), InternalStepStatus.ECOMMERCE_HANG_TIMER_TRIGGER);
+            var inputPaaInviaRTKo = List.of(ReceiptDto.builder()
+                    .fiscalCode(timeoutMessage.getFiscalCode())
+                    .noticeNumber(timeoutMessage.getNoticeNumber())
+                    .sessionId(timeoutMessage.getSessionId())
+                    .build());
+            receiptService.sendKoPaaInviaRtToCreditorInstitution(inputPaaInviaRTKo);
         } catch (IOException e) {
             log.error("Error when read ECommerceHangTimeoutDto value from message: '{}'. Body: '{}'", message.getMessageId(), message.getBody());
         }
