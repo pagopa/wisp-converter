@@ -515,6 +515,7 @@ public class ReceiptService {
         ctRicevutaTelematica.setDominio(ctDominio);
         ctRicevutaTelematica.setIstitutoAttestante(ctIstitutoAttestante);
         ctRicevutaTelematica.setEnteBeneficiario(ctEnteBeneficiario);
+        ctRicevutaTelematica.setSoggettoVersante(ctSoggettoVersante);
         ctRicevutaTelematica.setSoggettoPagatore(ctSoggettoPagatore);
         ctRicevutaTelematica.setDatiPagamento(ctDatiVersamentoRT);
 
@@ -543,7 +544,8 @@ public class ReceiptService {
 
         // populate ctSoggettoVersante tag
         CtSoggettoVersante ctSoggettoVersante = objectFactory.createCtSoggettoVersante();
-        this.rtMapper.toCtSoggettoVersante(ctSoggettoVersante, paSendRTV2Request.getReceipt().getPayer());
+//        this.rtMapper.toCtSoggettoVersante(ctSoggettoVersante, paSendRTV2Request.getReceipt().getPayer());
+        this.rtMapper.toCtSoggettoVersante(ctSoggettoVersante, rpt.getRpt().getPayerDelegate());
         if (ctSoggettoVersante.getIdentificativoUnivocoVersante() == null) {
             ctSoggettoVersante = null;
         }
