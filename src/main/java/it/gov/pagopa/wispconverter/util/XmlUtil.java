@@ -2,7 +2,6 @@ package it.gov.pagopa.wispconverter.util;
 
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
-import org.springframework.beans.factory.annotation.Value;
 
 import javax.xml.datatype.DatatypeConfigurationException;
 import javax.xml.datatype.DatatypeConstants;
@@ -16,12 +15,9 @@ import java.util.TimeZone;
 
 public class XmlUtil {
 
-    @Value("${timezone}")
-    private static String timezone;
-
     public static XMLGregorianCalendar toXMLGregorianCalendar(Instant instant) {
         GregorianCalendar gregorianCalendar = new GregorianCalendar();
-        gregorianCalendar.setTimeZone(TimeZone.getTimeZone(timezone));
+        gregorianCalendar.setTimeZone(TimeZone.getTimeZone("Europe/Rome"));
         gregorianCalendar.setTimeInMillis(instant.toEpochMilli());
         try {
             XMLGregorianCalendar xmlGregorianCalendar = DatatypeFactory.newInstance().newXMLGregorianCalendar(gregorianCalendar);

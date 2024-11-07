@@ -19,7 +19,6 @@ public class XmlUtilTest {
         assertNotNull(xmlGregoirianCalendar);
         assertEquals(now.toEpochMilli(), xmlGregoirianCalendar.toGregorianCalendar().getTimeInMillis());
     }
-
     @Test
     public void toXMLGregoirianCalendar_withoutTimestamp() {
         Instant dateInMillis = Instant.ofEpochMilli(1577876400000L); // 2020-01-01T12:00:00 UTC
