@@ -15,7 +15,7 @@ public class XmlUtilTest {
     @Test
     public void toXMLGregoirianCalendar() {
         Instant now = Instant.now().truncatedTo(ChronoUnit.SECONDS);
-        XMLGregorianCalendar xmlGregoirianCalendar = XmlUtil.toXMLGregoirianCalendar(now);
+        XMLGregorianCalendar xmlGregoirianCalendar = XmlUtil.toXMLGregorianCalendar(now);
         assertNotNull(xmlGregoirianCalendar);
         assertEquals(now.toEpochMilli(), xmlGregoirianCalendar.toGregorianCalendar().getTimeInMillis());
     }
@@ -24,7 +24,7 @@ public class XmlUtilTest {
     public void toXMLGregoirianCalendar_withoutTimestamp() {
         Instant dateInMillis = Instant.ofEpochMilli(1577876400000L); // 2020-01-01T12:00:00 UTC
         String expectedDate = "2020-01-01T12:00:00";
-        XMLGregorianCalendar xmlGregoirianCalendar = XmlUtil.toXMLGregoirianCalendar(dateInMillis);
+        XMLGregorianCalendar xmlGregoirianCalendar = XmlUtil.toXMLGregorianCalendar(dateInMillis);
         assertNotNull(xmlGregoirianCalendar);
         assertEquals(dateInMillis.toEpochMilli(), xmlGregoirianCalendar.toGregorianCalendar().getTimeInMillis());
         assertEquals(expectedDate, xmlGregoirianCalendar.toString());
