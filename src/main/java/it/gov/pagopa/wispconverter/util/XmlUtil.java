@@ -29,6 +29,12 @@ public class XmlUtil {
         }
     }
 
+    public static XMLGregorianCalendar toXMLGregorianCalendar(XMLGregorianCalendar xmlGregorianCalendar) {
+        xmlGregorianCalendar.setMillisecond(DatatypeConstants.FIELD_UNDEFINED); // removing info about milliseconds
+        xmlGregorianCalendar.setTimezone(DatatypeConstants.FIELD_UNDEFINED); // removing all references about timezone
+        return xmlGregorianCalendar;
+    }
+
     public static BigDecimal toBigDecimalWithScale(BigDecimal target, int scale) {
         return target.setScale(scale, RoundingMode.UNNECESSARY);
     }
