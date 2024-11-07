@@ -548,7 +548,7 @@ public class ReceiptService {
         // populate ctSoggettoVersante tag
         CtSoggettoVersante ctSoggettoVersante = objectFactory.createCtSoggettoVersante();
         this.rtMapper.toCtSoggettoVersante(ctSoggettoVersante, rpt.getRpt().getPayerDelegate());
-        ifD (ctSoggettoVersante.getIdentificativoUnivocoVersante() == null || ctSoggettoVersante.getAnagraficaVersante() == null) {
+        if (ctSoggettoVersante.getIdentificativoUnivocoVersante() == null || ctSoggettoVersante.getAnagraficaVersante() == null) {
             ctSoggettoVersante = null;
         }
 
