@@ -56,16 +56,16 @@ public abstract class RTMapper {
 
     @Mapping(target = "versioneOggetto", expression = "java(this.versioneOggetto)")
     @Mapping(target = "identificativoMessaggioRicevuta", expression = "java(java.util.UUID.randomUUID().toString().replaceAll(\"-\", \"\"))")
-    @Mapping(target = "dataOraMessaggioRicevuta", expression = "java(it.gov.pagopa.wispconverter.util.XmlUtil.toXMLGregoirianCalendar(instant))")
+    @Mapping(target = "dataOraMessaggioRicevuta", expression = "java(it.gov.pagopa.wispconverter.util.XmlUtil.toXMLGregorianCalendar(instant))")
     @Mapping(source = "rpt.messageRequestId", target = "riferimentoMessaggioRichiesta")
-    @Mapping(source = "rpt.messageRequestDatetime", target = "riferimentoDataRichiesta")
+    @Mapping(target= "riferimentoDataRichiesta", expression = "java(it.gov.pagopa.wispconverter.util.XmlUtil.toXMLGregorianCalendar(rpt.getMessageRequestDatetime()))")
     public abstract void toCtRicevutaTelematicaNegativa(@MappingTarget CtRicevutaTelematica ctRicevutaTelematica, PaymentRequestDTO rpt, Instant instant);
 
     @Mapping(target = "versioneOggetto", expression = "java(this.versioneOggetto)")
     @Mapping(target = "identificativoMessaggioRicevuta", expression = "java(java.util.UUID.randomUUID().toString().replaceAll(\"-\", \"\"))")
     @Mapping(source = "paSendRTV2Request.receipt.paymentDateTime", target = "dataOraMessaggioRicevuta")
     @Mapping(source = "rpt.messageRequestId", target = "riferimentoMessaggioRichiesta")
-    @Mapping(source = "rpt.messageRequestDatetime", target = "riferimentoDataRichiesta")
+    @Mapping(target= "riferimentoDataRichiesta", expression = "java(it.gov.pagopa.wispconverter.util.XmlUtil.toXMLGregorianCalendar(rpt.getMessageRequestDatetime()))")
     public abstract void toCtRicevutaTelematicaPositiva(@MappingTarget CtRicevutaTelematica ctRicevutaTelematica, PaymentRequestDTO rpt, PaSendRTV2Request paSendRTV2Request);
 
     @Mapping(source = "domainId", target = "identificativoDominio")
@@ -172,7 +172,7 @@ public abstract class RTMapper {
 
     @Mapping(target = "singoloImportoPagato", expression = "java(it.gov.pagopa.wispconverter.util.XmlUtil.toBigDecimalWithScale(java.math.BigDecimal.ZERO, 2))")
     @Mapping(source = "paymentOutcome", target = "esitoSingoloPagamento")
-    @Mapping(target = "dataEsitoSingoloPagamento", expression = "java(it.gov.pagopa.wispconverter.util.XmlUtil.toXMLGregoirianCalendar(instant))")
+    @Mapping(target = "dataEsitoSingoloPagamento", expression = "java(it.gov.pagopa.wispconverter.util.XmlUtil.toXMLGregorianCalendar(instant))")
     @Mapping(target = "identificativoUnivocoRiscossione", constant = "0")
     @Mapping(source = "transferDTO.remittanceInformation", target = "causaleVersamento")
     @Mapping(source = "transferDTO.category", target = "datiSpecificiRiscossione")
