@@ -174,7 +174,6 @@ public class ReceiptService {
      *
      * @param receipts a list of receipts
      */
-    // TODO review, no dead-letter functionalities
     public void sendKoPaaInviaRtToCreditorInstitution(List<ReceiptDto> receipts) {
         try {
 
@@ -549,7 +548,7 @@ public class ReceiptService {
         // populate ctSoggettoVersante tag
         CtSoggettoVersante ctSoggettoVersante = objectFactory.createCtSoggettoVersante();
         this.rtMapper.toCtSoggettoVersante(ctSoggettoVersante, rpt.getRpt().getPayerDelegate());
-        if (ctSoggettoVersante.getIdentificativoUnivocoVersante() == null || ctSoggettoVersante.getAnagraficaVersante() == null) {
+        ifD (ctSoggettoVersante.getIdentificativoUnivocoVersante() == null || ctSoggettoVersante.getAnagraficaVersante() == null) {
             ctSoggettoVersante = null;
         }
 
