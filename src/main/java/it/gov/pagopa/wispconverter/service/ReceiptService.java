@@ -25,6 +25,7 @@ import it.gov.pagopa.wispconverter.repository.model.enumz.ReceiptStatusEnum;
 import it.gov.pagopa.wispconverter.repository.model.enumz.ReceiptTypeEnum;
 import it.gov.pagopa.wispconverter.service.mapper.RTMapper;
 import it.gov.pagopa.wispconverter.service.model.CachedKeysMapping;
+import it.gov.pagopa.wispconverter.service.model.PaymentSubjectDTO;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
 import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import it.gov.pagopa.wispconverter.service.model.session.CommonFieldsDTO;
@@ -173,7 +174,6 @@ public class ReceiptService {
      *
      * @param receipts a list of receipts
      */
-    // TODO review, no dead-letter functionalities
     public void sendKoPaaInviaRtToCreditorInstitution(List<ReceiptDto> receipts) {
         try {
 
@@ -504,6 +504,9 @@ public class ReceiptService {
         // populate ctSoggettoVersante tag
         CtSoggettoVersante ctSoggettoVersante = objectFactory.createCtSoggettoVersante();
         this.rtMapper.toCtSoggettoVersante(ctSoggettoVersante, rpt.getRpt().getPayerDelegate());
+        if (ctSoggettoVersante.getIdentificativoUnivocoVersante() == null || ctSoggettoVersante.getAnagraficaVersante() == null) {
+            ctSoggettoVersante = null;
+        }
 
         // populate ctDatiVersamentoRT tag
         CtDatiVersamentoRT ctDatiVersamentoRT = objectFactory.createCtDatiVersamentoRT();
@@ -544,9 +547,8 @@ public class ReceiptService {
 
         // populate ctSoggettoVersante tag
         CtSoggettoVersante ctSoggettoVersante = objectFactory.createCtSoggettoVersante();
-//        this.rtMapper.toCtSoggettoVersante(ctSoggettoVersante, paSendRTV2Request.getReceipt().getPayer());
         this.rtMapper.toCtSoggettoVersante(ctSoggettoVersante, rpt.getRpt().getPayerDelegate());
-        if (ctSoggettoVersante.getIdentificativoUnivocoVersante() == null) {
+        ifD (ctSoggettoVersante.getIdentificativoUnivocoVersante() == null || ctSoggettoVersante.getAnagraficaVersante() == null) {
             ctSoggettoVersante = null;
         }
 
