@@ -112,7 +112,7 @@ public class RPTTimerService {
 
                 // log event
                 log.debug("Timer not set due to an exception for rpt_timer_key: {} and sessionId: {}", sanitizeInput(key), sanitizeInput(sessionId));
-                generateRE(InternalStepStatus.RPT_TIMER_NOT_SET, "Exception timer not set: [" + sequenceNumber + "] for sessionId: [" + sessionId + "]");
+                generateRE(InternalStepStatus.RPT_TIMER_CREATION_FAILED, "Exception timer not set: [" + sequenceNumber + "] for sessionId: [" + sessionId + "]");
             }
         }
     }
@@ -141,7 +141,6 @@ public class RPTTimerService {
 
                 // log event
                 log.debug("Deleted sequence number {} for rpt_timer_base64-token: {} from cache", sequenceNumber, sanitizeInput(sessionId));
-                generateRE(InternalStepStatus.RPT_TIMER_DELETED, "Deleted sequence number: [" + sequenceNumber + "] for sessionId: [" + sessionId + "]");
             }
         }
     }

@@ -5,12 +5,10 @@ import com.azure.spring.data.cosmos.repository.CosmosRepository;
 import com.azure.spring.data.cosmos.repository.Query;
 import it.gov.pagopa.wispconverter.repository.model.ReEventEntity;
 import it.gov.pagopa.wispconverter.repository.model.SessionIdEntity;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-
-import java.util.List;
-import java.util.Optional;
 
 @Repository
 @Qualifier("secondaryCosmosTemplate")
@@ -47,7 +45,7 @@ public interface ReEventRepositorySecondary extends CosmosRepository<ReEventEnti
     @Query("SELECT * FROM c " +
             "WHERE c.sessionId = @sessionId " +
             "AND c.component = 'WISP_SOAP_CONVERTER' " +
-            "AND c.status = 'RPT_ACCETTATA_NODO' ORDER BY c._ts")
+            "AND c.status = 'SEMANTIC_CHECK_PASSED' ORDER BY c._ts")
     List<ReEventEntity> findRptAccettataNodoBySessionId(@Param("sessionId") String sessionId);
 
     @Query(
@@ -60,7 +58,7 @@ public interface ReEventRepositorySecondary extends CosmosRepository<ReEventEnti
                     "AND ( " +
                     "(c.component = 'WISP_SOAP_CONVERTER' AND c.eventCategory = 'INTERFACE' AND c.eventSubcategory = 'RESP' AND c.primitive != 'nodoChiediCopiaRT') " +
                     "OR " +
-                    "(c.component = 'WISP_CONVERTER' AND c.businessProcess = 'redirect' AND c.status = 'FOUND_RPT_IN_STORAGE')" +
+                    "(c.component = 'WISP_CONVERTER' AND c.businessProcess = 'redirect' AND c.status = 'RPTS_EXTRACTED')" +
                     " ) " +
                     "GROUP BY c.sessionId " +
                     ") AS wispSession " +

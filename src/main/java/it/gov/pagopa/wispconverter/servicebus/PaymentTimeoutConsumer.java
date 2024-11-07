@@ -76,6 +76,6 @@ public class PaymentTimeoutConsumer extends SBConsumer {
         MDC.put(Constants.MDC_PAYMENT_TOKEN, receipt.getPaymentToken());
         MDC.put(Constants.MDC_DOMAIN_ID, receipt.getFiscalCode());
         MDC.put(Constants.MDC_NOTICE_NUMBER, receipt.getNoticeNumber());
-        generateRE(InternalStepStatus.RECEIPT_TIMER_PAYMENT_TOKEN_TIMEOUT_TRIGGER, "Expired payment token. A KO receipt will be sent: " + receipt);
+        generateRE(InternalStepStatus.PAYMENT_TOKEN_TIMER_IN_TIMEOUT, "Expired payment token. A KO receipt will be sent: " + receipt);
     }
 }

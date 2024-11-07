@@ -96,7 +96,6 @@ public class RecoveryServiceTest {
                                                         .domainId("idDominio")
                                                         .build());
         List<ReEventEntity> mockReEventEntities = List.of(ReEventEntity.builder()
-                                                                  .status("GENERATED_CACHE_ABOUT_RPT_FOR_RT_GENERATION")
                                                                   .ccp("ccp2")
                                                                   .insertedTimestamp(Instant.now())
                                                                   .build());

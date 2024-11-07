@@ -188,7 +188,6 @@ public class DecouplerService {
                 if (splitKey.length == 3) {
                     PaymentNoticeContentDTO paymentNotice = sessionData.getPaymentNoticeByNoticeNumber(splitKey[2]);
                     String infoAboutCachedKey = "Decoupler key = [(key:" + key + "; value:<baseNodeId>)]";
-                    generateRE(InternalStepStatus.GENERATED_CACHE_ABOUT_RPT_FOR_DECOUPLER, paymentNotice.getFiscalCode(), paymentNotice.getIuv(), paymentNotice.getNoticeNumber(), paymentNotice.getCcp(), infoAboutCachedKey);
                 }
             }
         }
@@ -203,7 +202,6 @@ public class DecouplerService {
                 if (splitKey.length == 3) {
                     PaymentNoticeContentDTO paymentNotice = sessionData.getPaymentNoticeByNoticeNumber(splitKey[2]);
                     String infoAboutCachedKey = "Cart mapping key = [(key:" + key + "; value:<baseNodeId>)]";
-                    generateRE(InternalStepStatus.GENERATED_CACHE_ABOUT_RPT_FOR_CARTSESSION_CACHING, paymentNotice.getFiscalCode(), paymentNotice.getIuv(), paymentNotice.getNoticeNumber(), paymentNotice.getCcp(), infoAboutCachedKey);
                 }
             }
         }
@@ -213,7 +211,6 @@ public class DecouplerService {
 
         // creating event to be persisted for RE
         if (Boolean.TRUE.equals(isTracingOnREEnabled)) {
-            generateRE(InternalStepStatus.GENERATED_CACHE_ABOUT_RPT_FOR_RT_GENERATION, paymentNotice.getFiscalCode(), paymentNotice.getIuv(), paymentNotice.getNoticeNumber(), paymentNotice.getCcp(), infoAboutCachedKey);
         }
     }
 

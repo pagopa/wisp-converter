@@ -90,7 +90,7 @@ public class RPTTimeoutConsumer extends SBConsumer {
             RPTTimerRequest timeoutMessage = mapper.readValue(message.getBody().toStream(), RPTTimerRequest.class);
 
             // sending rt- from session id
-            receiptService.sendRTKoFromSessionId(timeoutMessage.getSessionId(), InternalStepStatus.RPT_TIMER_TRIGGER);
+            receiptService.sendRTKoFromSessionId(timeoutMessage.getSessionId(), InternalStepStatus.RPT_TIMER_IN_TIMEOUT);
         } catch (IOException e) {
             log.error("Error when read rpt timer request value from message: '{}'. Body: '{}'", message.getMessageId(), message.getBody());
         }

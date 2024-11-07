@@ -45,7 +45,7 @@ public class RptCosmosService {
         // creating event to be persisted for RE
         if (Boolean.TRUE.equals(isTracingOnREEnabled)) {
             ReEventDto reEvent = ReUtil.getREBuilder()
-                    .status(InternalStepStatus.FOUND_RPT_IN_STORAGE)
+                    .status(InternalStepStatus.RPTS_EXTRACTED)
                     .compressedPayload(payload)
                     .compressedPayload(String.valueOf(payload != null ? payload.length() : 0))
                     .build();

@@ -80,7 +80,6 @@ public class ReceiptTimerService {
             OffsetDateTime scheduledExpirationTime = OffsetDateTime.now().plus(message.getExpirationTime(), ChronoUnit.MILLIS);
             Long sequenceNumber = serviceBusSenderClient.scheduleMessage(serviceBusMessage, scheduledExpirationTime);
             log.debug("Sent scheduled message_base64 {} to the queue: {}", LogUtils.encodeToBase64(message.toString()), queueName);
-            generateRE(InternalStepStatus.RECEIPT_TIMER_GENERATION_CREATED_SCHEDULED_SEND, "Scheduled receipt: [" + message + "]");
 
             // insert {wisp_timer_<paymentToken>, sequenceNumber} for Duplicate Prevention Logic and for call cancelScheduledMessage(sequenceNumber)
             cacheRepository.insert(sequenceNumberKey, String.valueOf(sequenceNumber), message.getExpirationTime(), ChronoUnit.MILLIS);
@@ -89,7 +88,7 @@ public class ReceiptTimerService {
             // delete ecommerce hang timer: we delete the scheduled message from the queue
             eCommerceHangTimerService.cancelScheduledMessage(noticeNumber, fiscalCode, sessionId);
 
-            generateRE(InternalStepStatus.RECEIPT_TIMER_GENERATION_CACHED_SEQUENCE_NUMBER, "Cached sequence number: [" + sequenceNumber + "] for payment token: [" + sequenceNumberKey + "]");
+            generateRE(InternalStepStatus.PAYMENT_TOKEN_TIMER_CREATED, "Cached sequence number: [" + sequenceNumber + "] for payment token: [" + sequenceNumberKey + "]");
         }
     }
 
@@ -116,12 +115,10 @@ public class ReceiptTimerService {
             if (deletedScheduledMessage && isDeleted) {
                 log.debug("Canceled scheduled message for payment-token_base64 {}", LogUtils.encodeToBase64(paymentToken));
                 log.debug("Deleted sequence number {} for payment-token: {} from cache", sequenceNumberString, sequenceNumberKey);
-                generateRE(InternalStepStatus.RECEIPT_TIMER_GENERATION_DELETED_SCHEDULED_SEND, "Deleted sequence number: [" + sequenceNumberString + "] for payment token: [" + sequenceNumberKey + "]");
+                generateRE(InternalStepStatus.PAYMENT_TOKEN_TIMER_DELETED_SCHEDULING, "Deleted sequence number: [" + sequenceNumberString + "] for payment token: [" + sequenceNumberKey + "]");
             } else {
-                generateRE(InternalStepStatus.RECEIPT_TIMER_GENERATION_SKIP_DELETE_SCHEDULED_SEND, "No element found in queue for sequence number: [" + sequenceNumberString + "]. Skipping delete for payment token [" + sequenceNumberKey + "]");
             }
         } else {
-            generateRE(InternalStepStatus.RECEIPT_TIMER_GENERATION_SKIP_DELETE_SCHEDULED_SEND, "No element found in queue for payment token: [" + sequenceNumberKey + "]. The element was already deleted.");
         }
     }
 

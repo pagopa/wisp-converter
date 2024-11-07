@@ -686,8 +686,8 @@ public class ReceiptService {
         } else {
             receiptContent.append(" [KO]: ").append(receipt.toString());
         }
-        InternalStepStatus status = mustSendNegativeRT ? InternalStepStatus.NEGATIVE_RT_TRY_TO_SEND_TO_CREDITOR_INSTITUTION : InternalStepStatus.POSITIVE_RT_TRY_TO_SEND_TO_CREDITOR_INSTITUTION;
-        generateREForSendRTProcess(rpt, iuv, noticeNumber, status, receiptContent.toString());
+//        InternalStepStatus status = mustSendNegativeRT ? InternalStepStatus.NEGATIVE_RT_TRY_TO_SEND_TO_CREDITOR_INSTITUTION : InternalStepStatus.POSITIVE_RT_TRY_TO_SEND_TO_CREDITOR_INSTITUTION;
+//        generateREForSendRTProcess(rpt, iuv, noticeNumber, status, receiptContent.toString());
     }
 
     private void generateREForSendRTProcess(RPTContentDTO rptContent, String iuv, String noticeNumber, InternalStepStatus status, String info) {

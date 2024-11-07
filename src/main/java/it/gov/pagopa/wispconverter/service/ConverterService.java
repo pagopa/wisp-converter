@@ -71,11 +71,11 @@ public class ConverterService {
 
         } catch (AppException ex) {
             log.error("An appException error occurred during convert operations: " + ex.getMessage());
-            receiptService.sendRTKoFromSessionId(sessionId, InternalStepStatus.GENERATING_RT_FOR_REDIRECT_ERROR);
+            receiptService.sendRTKoFromSessionId(sessionId, InternalStepStatus.CONVERSION_ERROR_SENDING_RT);
             throw ex;
         } catch (Exception ex) {
             log.error("A generic error occurred during convert operations: " + ex.getMessage());
-            receiptService.sendRTKoFromSessionId(sessionId, InternalStepStatus.GENERATING_RT_FOR_REDIRECT_ERROR);
+            receiptService.sendRTKoFromSessionId(sessionId, InternalStepStatus.CONVERSION_ERROR_SENDING_RT);
             throw ex;
         }
         return checkoutResponse;

@@ -244,7 +244,7 @@ public class RPTExtractorService {
         if (Boolean.TRUE.equals(isTracingOnREEnabled)) {
             for (RPTContentDTO rpt : sessionData.getAllRPTs()) {
                 ReEventDto reEventFromRPT = ReUtil.getREBuilder()
-                        .status(InternalStepStatus.EXTRACTED_DATA_FROM_RPT)
+                        .status(InternalStepStatus.RPTS_EXTRACTED)
                         .domainId(rpt.getRpt().getDomain().getDomainId())
                         .iuv(rpt.getIuv())
                         .ccp(rpt.getCcp())

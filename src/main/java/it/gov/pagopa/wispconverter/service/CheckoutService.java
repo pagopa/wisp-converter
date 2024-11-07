@@ -6,22 +6,18 @@ import it.gov.pagopa.gen.wispconverter.client.checkout.model.CartResponseDto;
 import it.gov.pagopa.gen.wispconverter.client.checkout.model.PaymentNoticeDto;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
-import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
 import it.gov.pagopa.wispconverter.service.mapper.CartMapper;
-import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import it.gov.pagopa.wispconverter.service.model.session.PaymentNoticeContentDTO;
 import it.gov.pagopa.wispconverter.service.model.session.SessionDataDTO;
-import it.gov.pagopa.wispconverter.util.ReUtil;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
-
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -129,15 +125,7 @@ public class CheckoutService {
         if (Boolean.TRUE.equals(isTracingOnREEnabled)) {
             for (PaymentNoticeDto paymentNoticeFromCart : cartRequest.getPaymentNotices()) {
                 PaymentNoticeContentDTO paymentNotice = sessionData.getPaymentNoticeByNoticeNumber(paymentNoticeFromCart.getNoticeNumber());
-                ReEventDto reEvent = ReUtil.getREBuilder()
-                        .status(InternalStepStatus.SAVED_RPT_IN_CART_RECEIVED_REDIRECT_URL_FROM_CHECKOUT)
-                        .domainId(paymentNotice.getFiscalCode())
-                        .iuv(paymentNotice.getIuv())
-                        .noticeNumber(paymentNotice.getNoticeNumber())
-                        .ccp(paymentNotice.getCcp())
-                        .info(String.format("Redirect URL = [%s]", redirectUrl))
-                        .build();
-                reService.addRe(reEvent);
+               
             }
         }
     }
