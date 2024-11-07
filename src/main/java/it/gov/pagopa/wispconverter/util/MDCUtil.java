@@ -30,8 +30,6 @@ public class MDCUtil {
 
             if (primitive != null) {
 
-                MDC.put(Constants.MDC_PRIMITIVE, primitive);
-
                 // if the primitive is nodoInviaCarrelloRPT, it means that a cart was extracted, so set cartId in MDC. Otherwise, set IUV and CCP in MDC
                 if (Constants.NODO_INVIA_CARRELLO_RPT.equals(primitive)) {
                     MDC.put(Constants.MDC_CART_ID, commonFields.getCartId());
@@ -45,8 +43,6 @@ public class MDCUtil {
     }
 
     public static void setSessionDataInfo(IntestazionePPT header, String noticeNumber) {
-
-        MDC.put(Constants.MDC_PRIMITIVE, Constants.PAA_INVIA_RT);
         MDC.put(Constants.MDC_DOMAIN_ID, header.getIdentificativoDominio());
         MDC.put(Constants.MDC_STATION_ID, header.getIdentificativoStazioneIntermediarioPA());
         MDC.put(Constants.MDC_IUV, header.getIdentificativoUnivocoVersamento());
@@ -55,9 +51,7 @@ public class MDCUtil {
     }
 
     public static void setMDCError(ProblemDetail problemDetail) {
-        MDC.put(Constants.MDC_ERROR_TITLE, problemDetail.getTitle());
         MDC.put(Constants.MDC_ERROR_DETAIL, problemDetail.getDetail());
-
         Map<String, Object> properties = problemDetail.getProperties();
         if (properties != null) {
             String errorCode = (String) properties.get(ErrorUtil.EXTRA_FIELD_ERROR_CODE);
@@ -69,7 +63,6 @@ public class MDCUtil {
         String operationId = UUID.randomUUID().toString();
         MDC.put(Constants.MDC_START_TIME, String.valueOf(System.currentTimeMillis()));
         MDC.put(Constants.MDC_OPERATION_ID, operationId);
-        MDC.put(Constants.MDC_REQUEST_ID, operationId);
         MDC.put(Constants.MDC_BUSINESS_PROCESS, businessProcess);
     }
 

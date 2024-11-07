@@ -1,16 +1,12 @@
 package it.gov.pagopa.wispconverter.util.client.decouplercaching;
 
-import it.gov.pagopa.wispconverter.repository.model.enumz.ClientEnum;
+import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
 import it.gov.pagopa.wispconverter.service.ReService;
-import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.client.AbstractAppClientLoggingInterceptor;
 import it.gov.pagopa.wispconverter.util.client.ClientServiceEnum;
 import it.gov.pagopa.wispconverter.util.client.RequestResponseLoggingProperties;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.MDC;
-import org.springframework.http.HttpRequest;
-import org.springframework.http.client.ClientHttpResponse;
+import org.springframework.http.HttpMethod;
 
 @Slf4j
 public class DecouplerCachingClientLoggingInterceptor extends AbstractAppClientLoggingInterceptor {
@@ -25,19 +21,13 @@ public class DecouplerCachingClientLoggingInterceptor extends AbstractAppClientL
     }
 
     @Override
-    protected void request(String clientOperationId, String operationId, HttpRequest request, byte[] reqBody) {
-        if (log.isDebugEnabled()) {
-            log.debug(createRequestMessage(clientOperationId, operationId, request, reqBody));
+    protected InternalStepStatus getOperationStatus(String url, HttpMethod httpMethod) {
+        InternalStepStatus status = null;
+        if (url.contains("/save-mapping")) {
+            status = InternalStepStatus.COMMUNICATION_WITH_APIM_FOR_CACHING_RPT_MAPPING_PROCESSED;
+        } else if (url.contains("/save-cart-mapping")) {
+            status = InternalStepStatus.COMMUNICATION_WITH_APIM_FOR_CACHING_SESSION_MAPPING_PROCESSED;
         }
-        MDC.put(Constants.MDC_CLIENT_TYPE, ClientEnum.DECOUPLER_CACHING.toString());
-    }
-
-    @SneakyThrows
-    @Override
-    protected void response(String clientOperationId, String operationId, String clientExecutionTime, HttpRequest request, ClientHttpResponse response) {
-        if (log.isDebugEnabled()) {
-            log.debug(createResponseMessage(clientOperationId, operationId, clientExecutionTime, request, response));
-        }
-        MDC.put(Constants.MDC_CLIENT_TYPE, ClientEnum.DECOUPLER_CACHING.toString());
+        return status;
     }
 }

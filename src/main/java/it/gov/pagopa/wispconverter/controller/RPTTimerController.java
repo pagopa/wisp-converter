@@ -10,10 +10,11 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import it.gov.pagopa.wispconverter.controller.model.RPTTimerRequest;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
+import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
 import it.gov.pagopa.wispconverter.service.RPTTimerService;
 import it.gov.pagopa.wispconverter.util.Constants;
+import it.gov.pagopa.wispconverter.util.EndpointRETrace;
 import it.gov.pagopa.wispconverter.util.ErrorUtil;
-import it.gov.pagopa.wispconverter.util.Trace;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
@@ -48,14 +49,14 @@ public class RPTTimerController {
             produces = MediaType.APPLICATION_JSON_VALUE,
             consumes = MediaType.APPLICATION_JSON_VALUE
     )
-    @Trace(businessProcess = RPT_BP_TIMER_SET, reEnabled = true)
+    @EndpointRETrace(status = InternalStepStatus.RPT_TIMER_CREATION_PROCESSED, businessProcess = RPT_BP_TIMER_SET, reEnabled = true)
     public void createTimer(@RequestBody RPTTimerRequest request) {
         try {
             log.info("Invoking API operation createRPTTimer - args: {}", sanitizeInput(request.toString()));
             rptTimerService.sendMessage(request);
             log.info("Successful API operation createRPTTimer");
         } catch (Exception ex) {
-            if(!(ex instanceof AppException)) {
+            if (!(ex instanceof AppException)) {
                 String operationId = MDC.get(Constants.MDC_OPERATION_ID);
                 log.error(String.format("GenericException: operation-id=[%s]", operationId != null ? operationId : "n/a"), ex);
                 AppException appException = new AppException(ex, AppErrorCodeMessageEnum.ERROR, ex.getMessage());
@@ -74,7 +75,7 @@ public class RPTTimerController {
             value = "/timer",
             produces = MediaType.APPLICATION_JSON_VALUE
     )
-    @Trace(businessProcess = RPT_BP_TIMER_DELETE, reEnabled = true)
+    @EndpointRETrace(status = InternalStepStatus.RPT_TIMER_DELETION_PROCESSED, businessProcess = RPT_BP_TIMER_DELETE, reEnabled = true)
     public void deleteTimer(@RequestParam() String sessionId) {
         try {
             log.info("Invoking API operation deleteRPTTimer - args: {}", sanitizeInput(sessionId));

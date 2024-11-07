@@ -12,14 +12,15 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import it.gov.pagopa.wispconverter.controller.model.ReceiptRequest;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
+import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
 import it.gov.pagopa.wispconverter.service.ReceiptService;
 import it.gov.pagopa.wispconverter.service.RtReceiptCosmosService;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
 import it.gov.pagopa.wispconverter.util.Constants;
+import it.gov.pagopa.wispconverter.util.EndpointRETrace;
 import it.gov.pagopa.wispconverter.util.ErrorUtil;
 import it.gov.pagopa.wispconverter.util.ReceiptRequestHandler;
 import it.gov.pagopa.wispconverter.util.ReceiptRequestHandler.PaSendRTV2Request;
-import it.gov.pagopa.wispconverter.util.Trace;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -48,7 +49,6 @@ public class ReceiptController {
 
     public static final String BP_RECEIPT_OK = "receipt-ok";
     public static final String BP_RECEIPT_KO = "receipt-ko";
-    public static final String BP_RECEIPT_RETRIEVE = "receipt-retrieve";
 
     private final ReceiptService receiptService;
 
@@ -66,10 +66,7 @@ public class ReceiptController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Receipt exists")
     })
-    @GetMapping(
-            value = ""
-    )
-    @Trace(businessProcess = BP_RECEIPT_RETRIEVE, reEnabled = true)
+    @GetMapping(value = "")
     public ResponseEntity<String> receiptRetrieve(@QueryParam("ci") String ci, @QueryParam("ccp") String ccp, @QueryParam("iuv") String iuv) {
         try {
             log.info("Invoking API operation receiptRetrieve - args: {}", ci, ccp, iuv);
@@ -98,7 +95,7 @@ public class ReceiptController {
             produces = MediaType.APPLICATION_JSON_VALUE,
             consumes = MediaType.APPLICATION_JSON_VALUE
     )
-    @Trace(businessProcess = BP_RECEIPT_KO, reEnabled = true)
+    @EndpointRETrace(status = InternalStepStatus.RECEIPT_SEND_PROCESSED, businessProcess = BP_RECEIPT_KO, reEnabled = true)
     public void receiptKo(@RequestBody String request) throws Exception {
 
         try {
@@ -125,7 +122,7 @@ public class ReceiptController {
             produces = MediaType.APPLICATION_JSON_VALUE,
             consumes = MediaType.APPLICATION_JSON_VALUE
     )
-    @Trace(businessProcess = BP_RECEIPT_OK, reEnabled = true)
+    @EndpointRETrace(status = InternalStepStatus.RECEIPT_SEND_PROCESSED, businessProcess = BP_RECEIPT_OK, reEnabled = true)
     public void receiptOk(@RequestBody ReceiptRequest request) throws IOException {
 
         try {

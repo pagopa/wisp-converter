@@ -141,7 +141,7 @@ public class DecouplerService {
             PaymentNoticeContentDTO paymentNotice = sessionData.getPaymentNoticeByNoticeNumber(noticeNumber);
             decouplerCachingKeys.addKeysItem(String.format(CACHING_KEY_TEMPLATE, paymentNotice.getFiscalCode(), noticeNumber));
         }
-        apiInstance.saveMapping(decouplerCachingKeys, MDC.get(Constants.MDC_REQUEST_ID));
+        apiInstance.saveMapping(decouplerCachingKeys, MDC.get(Constants.MDC_OPERATION_ID));
 
         // generate and save re events internal for change status
         generateREForSavedMappingForDecoupler(sessionData, decouplerCachingKeys);

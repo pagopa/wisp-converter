@@ -1,6 +1,8 @@
 package it.gov.pagopa.wispconverter.util;
 
-import it.gov.pagopa.wispconverter.repository.model.enumz.*;
+import it.gov.pagopa.wispconverter.repository.model.enumz.EventCategoryEnum;
+import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
+import it.gov.pagopa.wispconverter.repository.model.enumz.OutcomeEnum;
 import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import it.gov.pagopa.wispconverter.util.filter.RepeatableContentCachingRequestWrapper;
 import jakarta.servlet.http.HttpServletRequest;
@@ -8,8 +10,10 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.MDC;
+import org.springframework.data.util.Pair;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpRequest;
+import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.util.StreamUtils;
 import org.springframework.web.util.ContentCachingResponseWrapper;
@@ -18,11 +22,11 @@ import org.springframework.web.util.WebUtils;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.util.Enumeration;
-import java.util.Iterator;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static it.gov.pagopa.wispconverter.util.Constants.MDC_STATUS;
 
 @Slf4j
 public class ReUtil {
@@ -30,226 +34,159 @@ public class ReUtil {
     private static final String UNZIP_ERROR = "Unzip error";
 
 
+    @Deprecated
     public static ReEventDto.ReEventDtoBuilder getREBuilder() {
         return createBaseRE()
-                .eventCategory(EventCategoryEnum.INTERNAL)
-                .eventSubcategory(EventSubcategoryEnum.INTERN);
+                .eventCategory(EventCategoryEnum.INTERNAL);
+        //.eventSubcategory(EventSubcategoryEnum.INTERN);
     }
 
-
-    public static ReEventDto createREForServerInterfaceInRequestEvent(HttpServletRequest request) {
+    public static ReEventDto createEventForEndpoint(HttpServletRequest request, HttpServletResponse response) {
         String httpMethod = request.getMethod();
 
-        StringBuilder msg = new StringBuilder(request.getRequestURI());
+        StringBuilder requestUriBuilder = new StringBuilder(request.getRequestURI());
         String queryString = request.getQueryString();
         if (queryString != null) {
-            msg.append('?').append(queryString);
+            requestUriBuilder.append('?').append(queryString);
         }
-        String httpUri = msg.toString();
-        String httpHeaders = formatServerRequestHeaders(request);
-        String httpCallRemoteAddress = request.getRemoteAddr();
+        String httpUri = requestUriBuilder.toString();
 
-        String compressedPayload = null;
-        Integer compressedPayloadLength = null;
+        String requestHeaders = formatServerRequestHeaders(request);
+        String responseHeaders = formatServerResponseHeaders(response);
+        int httpStatusCode = response.getStatus();
+        String executionTimeMs = MDC.get(Constants.MDC_EXECUTION_TIME);
+
+        String requestPayload = null;
+        String responsePayload = null;
         try {
-            String payload = getRequestMessagePayload(request);
-            if (payload != null) {
-                compressedPayload = AppBase64Util.base64Encode(ZipUtil.zip(payload));
-                compressedPayloadLength = compressedPayload.length();
+            String plainRequestPayload = getRequestMessagePayload(request);
+            if (plainRequestPayload != null) {
+                requestPayload = AppBase64Util.base64Encode(ZipUtil.zip(plainRequestPayload));
+            }
+            String plainResponsePayload = getResponseMessagePayload(response);
+            if (plainResponsePayload != null) {
+                responsePayload = AppBase64Util.base64Encode(ZipUtil.zip(plainResponsePayload));
             }
         } catch (IOException e) {
             log.error(UNZIP_ERROR, e);
         }
 
-        ReEventDto.ReEventDtoBuilder builder = createBaseREForInterfaceEvent(EventSubcategoryEnum.REQ, CallTypeEnum.SERVER, compressedPayload, compressedPayloadLength);
-        builder.outcome(OutcomeEnum.RECEIVED)
-                .httpMethod(httpMethod)
-                .httpUri(httpUri)
-                .httpHeaders(httpHeaders)
-                .httpCallRemoteAddress(httpCallRemoteAddress);
-        return builder.build();
-    }
-
-    public static ReEventDto createREForServerInterfaceInResponseEvent(HttpServletRequest request, HttpServletResponse response) {
-
-        String httpHeaders = formatServerResponseHeaders(response);
-        String compressedPayload = null;
-        Integer compressedPayloadLength = null;
-        try {
-            String payload = getResponseMessagePayload(response);
-            if (payload != null) {
-                compressedPayload = AppBase64Util.base64Encode(ZipUtil.zip(payload));
-                compressedPayloadLength = compressedPayload.length();
-            }
-        } catch (IOException e) {
-            log.error(UNZIP_ERROR, e);
-        }
-
-        int status = response.getStatus();
-        String executionTime = MDC.get(Constants.MDC_EXECUTION_TIME);
-
-        String httpMethod = request.getMethod();
-
-        StringBuilder msg = new StringBuilder(request.getRequestURI());
-        String queryString = request.getQueryString();
-        if (queryString != null) {
-            msg.append('?').append(queryString);
-        }
-        String httpUri = msg.toString();
-
-
-        ReEventDto.ReEventDtoBuilder builder = createBaseREForInterfaceEvent(EventSubcategoryEnum.RESP, CallTypeEnum.SERVER, compressedPayload, compressedPayloadLength);
-        builder.outcome(OutcomeEnum.SEND)
-                .httpMethod(httpMethod)
-                .httpUri(httpUri)
-                .httpHeaders(httpHeaders)
-                .httpStatusCode(status)
-                .executionTimeMs(Long.parseLong(executionTime))
-                .operationStatus(MDC.get(Constants.MDC_STATUS))
-                .operationErrorTitle(MDC.get(Constants.MDC_ERROR_TITLE))
-                .operationErrorDetail(MDC.get(Constants.MDC_ERROR_DETAIL))
-                .operationErrorCode(MDC.get(Constants.MDC_ERROR_CODE));
-        return builder.build();
-    }
-
-    public static ReEventDto createREForClientInterfaceInRequestEvent(HttpRequest request, byte[] reqBody, ClientEnum clientType, OutcomeEnum outcome) {
-        String httpMethod = request.getMethod().toString();
-        String httpUri = request.getURI().toString();
-        String httpHeaders = formatClientHeaders(request.getHeaders());
-
-        String compressedPayload = null;
-        Integer compressedPayloadPayloadLength = null;
-        try {
-            String payload = new String(reqBody, StandardCharsets.UTF_8);
-            if (!payload.isBlank()) {
-                compressedPayload = AppBase64Util.base64Encode(ZipUtil.zip(payload));
-                compressedPayloadPayloadLength = compressedPayload.length();
-            }
-        } catch (IOException e) {
-            log.error(UNZIP_ERROR, e);
-        }
-
-        ReEventDto.ReEventDtoBuilder builder = createBaseREForInterfaceEvent(EventSubcategoryEnum.REQ, CallTypeEnum.CLIENT, compressedPayload, compressedPayloadPayloadLength);
-        builder.outcome(outcome)
-                .httpMethod(httpMethod)
-                .httpUri(httpUri)
-                .httpHeaders(httpHeaders)
-                .status(InternalStepStatus.getStatusFromClientCommunication(clientType, EventSubcategoryEnum.REQ));
-
-        return builder.build();
-    }
-
-    public static ReEventDto createREForClientInterfaceInRequestEvent(String httpMethod, String uri, String headers, String reqBody, ClientEnum clientType, OutcomeEnum outcome) {
-
-        String compressedPayload = null;
-        Integer compressedPayloadPayloadLength = null;
-        try {
-            if (reqBody != null && !reqBody.isBlank()) {
-                compressedPayload = AppBase64Util.base64Encode(ZipUtil.zip(reqBody));
-                compressedPayloadPayloadLength = compressedPayload.length();
-            }
-        } catch (IOException e) {
-            log.error(UNZIP_ERROR, e);
-        }
-
-        ReEventDto.ReEventDtoBuilder builder = createBaseREForInterfaceEvent(EventSubcategoryEnum.REQ, CallTypeEnum.CLIENT, compressedPayload, compressedPayloadPayloadLength);
-        builder.outcome(outcome)
-                .httpMethod(httpMethod)
-                .httpUri(uri)
-                .httpHeaders(headers)
-                .status(InternalStepStatus.getStatusFromClientCommunication(clientType, EventSubcategoryEnum.REQ));
-
-        return builder.build();
-    }
-
-    public static ReEventDto createREForClientInterfaceInResponseEvent(HttpRequest request, ClientHttpResponse response, ClientEnum clientType, OutcomeEnum outcome) {
-        String httpHeaders = null;
-        String compressedPayload = null;
-        Integer compressedPayloadPayloadLength = null;
-        Integer status = null;
-        if (response != null) {
-            httpHeaders = formatClientHeaders(response.getHeaders());
-            try {
-                String payload = bodyToString(response.getBody());
-                if (!payload.isBlank()) {
-                    compressedPayload = AppBase64Util.base64Encode(ZipUtil.zip(payload));
-                    compressedPayloadPayloadLength = compressedPayload.length();
-                }
-            } catch (IOException e) {
-                log.error(UNZIP_ERROR, e);
-            }
-            try {
-                status = response.getStatusCode().value();
-            } catch (IOException e) {
-                log.error("Retrieve status code error", e);
-            }
-        }
-
-        String executionTime = MDC.get(Constants.MDC_CLIENT_EXECUTION_TIME);
-
-        String httpMethod = request.getMethod().toString();
-        String httpUri = request.getURI().toString();
-
-        ReEventDto.ReEventDtoBuilder builder = createBaseREForInterfaceEvent(EventSubcategoryEnum.RESP, CallTypeEnum.CLIENT, compressedPayload, compressedPayloadPayloadLength);
-        builder.outcome(outcome)
-                .httpMethod(httpMethod)
-                .httpUri(httpUri)
-                .httpHeaders(httpHeaders)
-                .httpStatusCode(status)
-                .executionTimeMs(Long.parseLong(executionTime))
-                .status(InternalStepStatus.getStatusFromClientCommunication(clientType, EventSubcategoryEnum.RESP));
-        return builder.build();
-    }
-
-    public static ReEventDto createREForClientInterfaceInResponseEvent(String httpMethod, String uri, HttpHeaders headers, int status, String payload, ClientEnum clientType, OutcomeEnum outcome) {
-
-        String compressedPayload = null;
-        Integer compressedPayloadPayloadLength = null;
-
-        try {
-            if (payload != null && !payload.isBlank()) {
-                compressedPayload = AppBase64Util.base64Encode(ZipUtil.zip(payload));
-                compressedPayloadPayloadLength = compressedPayload.length();
-            }
-        } catch (IOException e) {
-            log.error(UNZIP_ERROR, e);
-        }
-
-        String executionTime = MDC.get(Constants.MDC_CLIENT_EXECUTION_TIME);
-
-        ReEventDto.ReEventDtoBuilder builder = createBaseREForInterfaceEvent(EventSubcategoryEnum.RESP, CallTypeEnum.CLIENT, compressedPayload, compressedPayloadPayloadLength);
-        builder.outcome(outcome)
-                .httpMethod(httpMethod)
-                .httpUri(uri)
-                .httpHeaders(headers != null ? formatClientHeaders(headers) : null)
-                .httpStatusCode(status)
-                .executionTimeMs(executionTime != null ? Long.parseLong(executionTime) : null)
-                .status(InternalStepStatus.getStatusFromClientCommunication(clientType, EventSubcategoryEnum.RESP));
-        return builder.build();
-    }
-
-    private static ReEventDto.ReEventDtoBuilder createBaseREForInterfaceEvent(EventSubcategoryEnum eventSubcategory, CallTypeEnum callTypeEnum,
-                                                                              String compressedPayload, Integer compressedPayloadLength) {
         return createBaseRE()
                 .eventCategory(EventCategoryEnum.INTERFACE)
-                .eventSubcategory(eventSubcategory)
-                .callType(callTypeEnum)
-                .compressedPayload(compressedPayload)
-                .compressedPayloadLength(compressedPayloadLength);
+                .status(MDC.get(MDC_STATUS))
+                .requestPayload(requestPayload)
+                .responsePayload(responsePayload)
+                .requestHeaders(requestHeaders)
+                .responseHeaders(responseHeaders)
+                .outcome(httpStatusCode > 399 ? "KO" : OutcomeEnum.OK.name())
+                .httpMethod(httpMethod)
+                .httpUri(httpUri)
+                .httpStatusCode(httpStatusCode)
+                .executionTimeMs(Long.parseLong(executionTimeMs))
+                .operationErrorDetail(MDC.get(Constants.MDC_ERROR_DETAIL))
+                .operationErrorCode(MDC.get(Constants.MDC_ERROR_CODE))
+                .build();
+    }
+
+    public static ReEventDto createEventForClientCommunication(HttpRequest request, ClientHttpResponse response, byte[] reqBody, InternalStepStatus status, OutcomeEnum outcome) {
+        String httpMethod = request.getMethod().toString();
+        String httpUri = request.getURI().toString();
+        String requestHeaders = formatClientHeaders(request.getHeaders());
+
+        String responseHeaders = null;
+        String requestPayload = null;
+        String responsePayload = null;
+        int httpStatusCode = 0;
+        try {
+            String plainRequestPayload = new String(reqBody, StandardCharsets.UTF_8);
+            if (!plainRequestPayload.isBlank()) {
+                requestPayload = AppBase64Util.base64Encode(ZipUtil.zip(plainRequestPayload));
+            }
+            if (response != null) {
+                responseHeaders = formatClientHeaders(response.getHeaders());
+                httpStatusCode = response.getStatusCode().value();
+                String plainResponsePayload = bodyToString(response.getBody());
+                if (!plainResponsePayload.isBlank()) {
+                    responsePayload = AppBase64Util.base64Encode(ZipUtil.zip(plainResponsePayload));
+                }
+            }
+
+        } catch (IOException e) {
+            log.error(UNZIP_ERROR, e);
+        }
+
+        String executionTimeMs = MDC.get(Constants.MDC_CLIENT_EXECUTION_TIME);
+        return createBaseRE()
+                .status(status.name())
+                .requestPayload(requestPayload)
+                .responsePayload(responsePayload)
+                .requestHeaders(requestHeaders)
+                .responseHeaders(responseHeaders)
+                .outcome(outcome.name())
+                .httpMethod(httpMethod)
+                .httpUri(httpUri)
+                .httpStatusCode(httpStatusCode)
+                .executionTimeMs(Long.parseLong(executionTimeMs))
+                .build();
+    }
+
+    public static ReEventDto createEventForCommunicationWithCI(String httpUri, List<Pair<String, String>> headers, String plainRequestPayload, ResponseEntity<String> response, OutcomeEnum outcome) {
+        String httpMethod = "POST";
+        String requestHeaders = formatRawHeaders(headers);
+
+        String requestPayload = null;
+        String responseHeaders = null;
+        String responsePayload = null;
+        int httpStatusCode = 0;
+        try {
+            if (!plainRequestPayload.isBlank()) {
+                requestPayload = AppBase64Util.base64Encode(ZipUtil.zip(plainRequestPayload));
+            }
+            if (response != null) {
+                responseHeaders = formatClientHeaders(response.getHeaders());
+                httpStatusCode = response.getStatusCode().value();
+                String plainResponsePayload = response.getBody();
+                if (plainResponsePayload != null && !plainResponsePayload.isBlank()) {
+                    responsePayload = AppBase64Util.base64Encode(ZipUtil.zip(plainResponsePayload));
+                }
+            }
+
+        } catch (IOException e) {
+            log.error(UNZIP_ERROR, e);
+        }
+
+        String executionTimeMs = MDC.get(Constants.MDC_CLIENT_EXECUTION_TIME);
+        return createBaseRE()
+                .status(InternalStepStatus.COMMUNICATION_WITH_CREDITOR_INSTITUTION_PROCESSED.name())
+                .requestPayload(requestPayload)
+                .responsePayload(responsePayload)
+                .requestHeaders(requestHeaders)
+                .responseHeaders(responseHeaders)
+                .outcome(outcome.name())
+                .httpMethod(httpMethod)
+                .httpUri(httpUri)
+                .httpStatusCode(httpStatusCode)
+                .executionTimeMs(Long.parseLong(executionTimeMs))
+                .build();
+    }
+
+    public static ReEventDto createEventForInternalState(InternalStepStatus status, String outcome, String info) {
+        return createBaseRE()
+                .status(status.name())
+                .outcome(outcome)
+                .info(info)
+                .build();
+
     }
 
     private static ReEventDto.ReEventDtoBuilder createBaseRE() {
         Instant mdcStartTime = MDC.get(Constants.MDC_START_TIME) == null ? null : Instant.ofEpochMilli(Long.parseLong(MDC.get(Constants.MDC_START_TIME)));
         return ReEventDto.builder()
                 .id(UUID.randomUUID().toString())
-                .requestId(MDC.get(Constants.MDC_REQUEST_ID))
                 .operationId(MDC.get(Constants.MDC_OPERATION_ID))
-                .clientOperationId(MDC.get(Constants.MDC_CLIENT_OPERATION_ID))
-                .component(ComponentEnum.WISP_CONVERTER)
                 .insertedTimestamp(mdcStartTime)
                 .businessProcess(MDC.get(Constants.MDC_BUSINESS_PROCESS))
                 .sessionId(MDC.get(Constants.MDC_SESSION_ID))
-                .primitive(MDC.get(Constants.MDC_PRIMITIVE))
                 .cartId(MDC.get(Constants.MDC_CART_ID))
                 .iuv(MDC.get(Constants.MDC_IUV))
                 .noticeNumber(MDC.get(Constants.MDC_NOTICE_NUMBER))
@@ -266,6 +203,27 @@ public class ReUtil {
             headers.forEach((s, h) -> {
                 headers.add(s, StringUtils.join(h, ","));
             });
+        } catch (UnsupportedOperationException e) {
+            log.debug("Impossible to add formatted header to existing Headers object:", e);
+        }
+
+        return formatHeaders(headers);
+    }
+
+    private static String formatRawHeaders(List<Pair<String, String>> headersList) {
+        HttpHeaders headers = new HttpHeaders();
+
+        try {
+            // Group headers by key and join values with commas
+            Map<String, String> formattedHeaders = headersList.stream()
+                    .collect(Collectors.groupingBy(
+                            Pair::getFirst,
+                            Collectors.mapping(Pair::getSecond, Collectors.joining(","))
+                    ));
+
+            // Add each grouped header to HttpHeaders object
+            formattedHeaders.forEach(headers::add);
+
         } catch (UnsupportedOperationException e) {
             log.debug("Impossible to add formatted header to existing Headers object:", e);
         }

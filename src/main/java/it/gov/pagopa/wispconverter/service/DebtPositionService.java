@@ -20,12 +20,6 @@ import it.gov.pagopa.wispconverter.service.model.session.SessionDataDTO;
 import it.gov.pagopa.wispconverter.util.CommonUtility;
 import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.ReUtil;
-import java.math.BigDecimal;
-import java.time.OffsetDateTime;
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
@@ -34,6 +28,13 @@ import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClientException;
+
+import java.math.BigDecimal;
+import java.time.OffsetDateTime;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -293,7 +294,7 @@ public class DebtPositionService {
         try {
 
             // communicate with GPD in order to retrieve the debt position
-            PaymentPositionModelBaseResponseDto debtPosition = gpdClientInstance.getDebtPositionByIUV(creditorInstitutionId, iuv, MDC.get(Constants.MDC_REQUEST_ID));
+            PaymentPositionModelBaseResponseDto debtPosition = gpdClientInstance.getDebtPositionByIUV(creditorInstitutionId, iuv, MDC.get(Constants.MDC_OPERATION_ID));
 
             /*
               If status code is 200, a check on payment position status is required in order to choose the next step.
@@ -372,7 +373,7 @@ public class DebtPositionService {
     }
 
     private void handleValidPaymentPosition(DebtPositionsApiApi gpdClientInstance, SessionDataDTO sessionData, PaymentPositionModelDto extractedPaymentPosition, PaymentPositionModelBaseResponseDto paymentPositionFromGPD, String iuv, String creditorInstitutionId) {
-    	
+
         try {
             // validate the station, checking if exists one with the required segregation code and, if is onboarded on GPD, has the correct primitive version
             CommonUtility.checkStationValidity(configCacheService, sessionData, creditorInstitutionId, CommonUtility.getSinglePaymentOption(paymentPositionFromGPD).getNav(), stationInGpdPartialPath);

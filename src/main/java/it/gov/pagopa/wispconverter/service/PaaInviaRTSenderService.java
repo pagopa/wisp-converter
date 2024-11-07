@@ -5,11 +5,8 @@ import gov.telematici.pagamenti.ws.papernodo.FaultBean;
 import gov.telematici.pagamenti.ws.papernodo.PaaInviaRTRisposta;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
-import it.gov.pagopa.wispconverter.repository.model.enumz.ClientEnum;
-import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
 import it.gov.pagopa.wispconverter.repository.model.enumz.OutcomeEnum;
 import it.gov.pagopa.wispconverter.repository.model.enumz.ReceiptStatusEnum;
-import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.JaxbElementUtil;
 import it.gov.pagopa.wispconverter.util.ProxyUtility;
@@ -18,7 +15,6 @@ import jakarta.xml.soap.SOAPMessage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.util.Pair;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
@@ -64,15 +60,9 @@ public class PaaInviaRTSenderService {
 
             rtReceiptCosmosService.updateReceiptStatus(domainId, iuv, ccp, ReceiptStatusEnum.SENDING);
 
-            // Save an RE event in order to track the communication with creditor institution
-            generateREForRequestToCreditorInstitution(uri.toString(), headers, payload);
-
             // Retrieving response from creditor institution paaInviaRT response
             ResponseEntity<String> response = bodySpec.retrieve().toEntity(String.class);
             String bodyPayload = response.getBody();
-
-            // Save an RE event in order to track the response from creditor institution
-            generateREForResponseFromCreditorInstitution(uri.toString(), response.getStatusCode().value(), response.getHeaders(), bodyPayload, OutcomeEnum.RECEIVED, null);
 
             // check SOAP response and extract body if it is valid
             PaaInviaRTRisposta body = checkResponseValidity(response, bodyPayload);
@@ -85,9 +75,10 @@ public class PaaInviaRTSenderService {
             // set the correct response regarding the creditor institution response
             if (Constants.OK.equals(paaInviaRTRisposta.getEsito())) {
                 rtReceiptCosmosService.updateReceiptStatus(domainId, iuv, ccp, ReceiptStatusEnum.SENT);
-                reService.addRe(ReUtil.getREBuilder().status(InternalStepStatus.RT_SENT_OK).build());
+                reService.addRe(ReUtil.createEventForCommunicationWithCI(uri.toString(), headers, payload, response, OutcomeEnum.OK));
             } else {
                 rtReceiptCosmosService.updateReceiptStatus(domainId, iuv, ccp, ReceiptStatusEnum.SENT_REJECTED_BY_EC);
+                ReUtil.createEventForCommunicationWithCI(uri.toString(), headers, payload, response, OutcomeEnum.COMMUNICATION_RECEIVED_FAILURE);
                 FaultBean fault = paaInviaRTRisposta.getFault();
                 String faultCode = "ND";
                 String faultString = "ND";
@@ -97,7 +88,7 @@ public class PaaInviaRTSenderService {
                     faultString = fault.getFaultString();
                     faultDescr = fault.getDescription();
                 }
-                if(isSavedDeadLetter) {
+                if (isSavedDeadLetter) {
                     // throw to move receipt to dead letter container
                     throw new AppException(AppErrorCodeMessageEnum.RECEIPT_GENERATION_ERROR_DEAD_LETTER, paaInviaRTRisposta.getEsito(), faultCode, faultString, faultDescr);
                 }
@@ -106,6 +97,7 @@ public class PaaInviaRTSenderService {
 
         } catch (AppException e) {
 
+            ReUtil.createEventForCommunicationWithCI(uri.toString(), headers, payload, null, OutcomeEnum.COMMUNICATION_RECEIVED_FAILURE);
             throw e;
 
         } catch (Exception e) {
@@ -113,18 +105,15 @@ public class PaaInviaRTSenderService {
             // Save an RE event in order to track the response from creditor institution
             if (e instanceof HttpStatusCodeException error) {
 
-                int statusCode = error.getStatusCode().value();
-                String responseBody = error.getResponseBodyAsString();
-                String otherInfo = error.getStatusText();
-                generateREForResponseFromCreditorInstitution(uri.toString(), statusCode, error.getResponseHeaders(), responseBody, OutcomeEnum.RECEIVED_FAILURE, otherInfo);
+                ResponseEntity<String> response = new ResponseEntity<>(error.getResponseBodyAsString(), error.getResponseHeaders(), error.getStatusCode().value());
+                ReUtil.createEventForCommunicationWithCI(uri.toString(), headers, payload, response, OutcomeEnum.COMMUNICATION_RECEIVED_FAILURE);
             }
-
 
             throw new AppException(AppErrorCodeMessageEnum.RECEIPT_GENERATION_GENERIC_ERROR, e.getMessage());
         }
     }
 
-    private boolean checkIfSendDeadLetter (EsitoPaaInviaRT esitoPaaInviaRT) {
+    private boolean checkIfSendDeadLetter(EsitoPaaInviaRT esitoPaaInviaRT) {
         return esitoPaaInviaRT.getFault() == null ||
                 (esitoPaaInviaRT.getFault() != null && !noDeadLetterOnStates.contains(esitoPaaInviaRT.getFault().getFaultCode()));
     }
@@ -133,8 +122,7 @@ public class PaaInviaRTSenderService {
         // Generating the REST client, setting proxy specification if needed
         RestClient client;
         if (proxyAddress != null) {
-            client = RestClient.builder(ProxyUtility.getProxiedClient(proxyAddress))
-                    .build();
+            client = RestClient.builder(ProxyUtility.getProxiedClient(proxyAddress)).build();
         } else {
             client = restClientBuilder.build();
         }
@@ -159,23 +147,5 @@ public class PaaInviaRTSenderService {
         }
 
         return body;
-    }
-
-    private void generateREForRequestToCreditorInstitution(String uri, List<Pair<String, String>> headers, String body) {
-
-        StringBuilder headerBuilder = new StringBuilder();
-        headers.forEach(header -> headerBuilder.append(", ").append(header.getFirst()).append(": [\"").append(header.getSecond()).append("\"]"));
-
-        // setting data in MDC for next use
-        ReEventDto reEvent = ReUtil.createREForClientInterfaceInRequestEvent("POST", uri, headerBuilder.toString(), body, ClientEnum.CREDITOR_INSTITUTION_ENDPOINT, OutcomeEnum.SEND);
-        reService.addRe(reEvent);
-    }
-
-    private void generateREForResponseFromCreditorInstitution(String uri, int httpStatus, HttpHeaders headers, String body, OutcomeEnum outcome, String otherInfo) {
-
-        // setting data in MDC for next use
-        ReEventDto reEvent = ReUtil.createREForClientInterfaceInResponseEvent("POST", uri, headers, httpStatus, body, ClientEnum.CREDITOR_INSTITUTION_ENDPOINT, outcome);
-        reEvent.setInfo(otherInfo);
-        reService.addRe(reEvent);
     }
 }

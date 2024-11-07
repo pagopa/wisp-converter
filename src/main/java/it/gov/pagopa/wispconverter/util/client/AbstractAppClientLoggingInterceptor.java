@@ -1,15 +1,18 @@
 package it.gov.pagopa.wispconverter.util.client;
 
-import it.gov.pagopa.wispconverter.repository.model.enumz.*;
+import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
+import it.gov.pagopa.wispconverter.repository.model.enumz.OutcomeEnum;
 import it.gov.pagopa.wispconverter.service.ReService;
 import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import it.gov.pagopa.wispconverter.util.CommonUtility;
 import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.ReUtil;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.MDC;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpRequest;
 import org.springframework.http.client.ClientHttpRequestExecution;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
@@ -80,76 +83,44 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
 
         String startClient = String.valueOf(System.currentTimeMillis());
         String clientOperationId = UUID.randomUUID().toString();
-        MDC.put(Constants.MDC_CLIENT_OPERATION_ID, clientOperationId);
-        MDC.put(Constants.MDC_CLIENT_SERVICE_ID, clientServiceEnum.label);
         String operationId = MDC.get(Constants.MDC_OPERATION_ID);
-        request(clientOperationId, operationId, request, body);
+        logRequest(clientOperationId, operationId, request, body);
+        OutcomeEnum outcome;
+        InternalStepStatus status = getOperationStatus(request.getURI().toString(), request.getMethod());
 
-        String invokedClient = MDC.get(Constants.MDC_CLIENT_TYPE);
-        ClientEnum clientType = ClientEnum.valueOf(invokedClient != null ? invokedClient : "UNDEFINED");
-
-        ClientHttpResponse response;
+        ClientHttpResponse response = null;
         try {
+
             response = execution.execute(request, body);
 
             String executionClientTime = CommonUtility.getExecutionTime(startClient);
             MDC.put(Constants.MDC_CLIENT_EXECUTION_TIME, executionClientTime);
-
-            MDC.put(Constants.MDC_STATUS_CODE, String.valueOf(response.getStatusCode().value()));
-            MDC.put(Constants.MDC_CALL_TYPE, CallTypeEnum.CLIENT.name());
-            MDC.put(Constants.MDC_EVENT_CATEGORY, EventCategoryEnum.INTERFACE.name());
-
-            MDC.put(Constants.MDC_EVENT_SUB_CATEGORY, EventSubcategoryEnum.REQ.name());
-            log.debug("[intercept] add RE CLIENT OUT - Sent");
-            ReEventDto reEventDtoClientIN = ReUtil.createREForClientInterfaceInRequestEvent(request, body, clientType, OutcomeEnum.SEND);
-            persistInterfaceEventInRE(reEventDtoClientIN);
-
             if (response.getStatusCode().is2xxSuccessful()) {
-                MDC.put(Constants.MDC_EVENT_SUB_CATEGORY, EventSubcategoryEnum.RESP.name());
-                log.debug("[intercept] add RE CLIENT IN - Sent - RECEIVED");
-                ReEventDto reEventDtoClientOUT = ReUtil.createREForClientInterfaceInResponseEvent(request, response, clientType, OutcomeEnum.RECEIVED);
-                persistInterfaceEventInRE(reEventDtoClientOUT);
+                outcome = OutcomeEnum.OK;
             } else {
-                MDC.put(Constants.MDC_EVENT_SUB_CATEGORY, EventSubcategoryEnum.RESP.name());
-                log.debug("[intercept] add RE CLIENT IN - Sent - RECEIVED_FAILURE");
-                ReEventDto reEventDtoClientOUT = ReUtil.createREForClientInterfaceInResponseEvent(request, response, clientType, OutcomeEnum.RECEIVED_FAILURE);
-                persistInterfaceEventInRE(reEventDtoClientOUT);
+                outcome = OutcomeEnum.COMMUNICATION_RECEIVED_FAILURE;
             }
-
-
-            response(clientOperationId, operationId, executionClientTime, request, response);
+            logResponse(clientOperationId, operationId, executionClientTime, request, response);
+            persistInterfaceEventInRE(ReUtil.createEventForClientCommunication(request, response, body, status, outcome));
 
         } catch (Exception e) {
+
+            outcome = OutcomeEnum.COMMUNICATION_NEVER_RECEIVED;
             String executionClientTime = CommonUtility.getExecutionTime(startClient);
             MDC.put(Constants.MDC_CLIENT_EXECUTION_TIME, executionClientTime);
-
-            MDC.put(Constants.MDC_EVENT_SUB_CATEGORY, EventSubcategoryEnum.REQ.name());
-            log.debug("[intercept] add RE CLIENT OUT - NOT Sent");
-            ReEventDto reEventDtoClientIN = ReUtil.createREForClientInterfaceInRequestEvent(request, body, clientType, OutcomeEnum.SEND_FAILURE);
-            persistInterfaceEventInRE(reEventDtoClientIN);
-
-            MDC.put(Constants.MDC_EVENT_SUB_CATEGORY, EventSubcategoryEnum.RESP.name());
-            log.debug("[intercept] add RE CLIENT IN - NOT Sent - NEVER_RECEIVED");
-            ReEventDto reEventDtoClientOUT = ReUtil.createREForClientInterfaceInResponseEvent(request, null, clientType, OutcomeEnum.NEVER_RECEIVED);
-            persistInterfaceEventInRE(reEventDtoClientOUT);
-
-            response(clientOperationId, operationId, executionClientTime, request, null);
-
+            logResponse(clientOperationId, operationId, executionClientTime, request, null);
+            persistInterfaceEventInRE(ReUtil.createEventForClientCommunication(request, response, body, status, outcome));
             throw e;
+
         } finally {
-            MDC.remove(Constants.MDC_CLIENT_OPERATION_ID);
+
             MDC.remove(Constants.MDC_CLIENT_EXECUTION_TIME);
-            MDC.remove(Constants.MDC_EVENT_SUB_CATEGORY);
-            MDC.remove(Constants.MDC_CALL_TYPE);
-            MDC.remove(Constants.MDC_EVENT_CATEGORY);
-            MDC.remove(Constants.MDC_STATUS_CODE);
-            MDC.remove(Constants.MDC_CLIENT_TYPE);
         }
 
         return response;
     }
 
-    public String createRequestMessage(String clientOperationId, String operationId, HttpRequest request, byte[] reqBody) {
+    protected String createRequestMessage(String clientOperationId, String operationId, HttpRequest request, byte[] reqBody) {
         StringBuilder msg = new StringBuilder();
         msg.append(String.format(REQUEST_DEFAULT_MESSAGE_PREFIX, operationId, clientOperationId));
         if (this.requestPretty) {
@@ -201,7 +172,7 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
         return msg.toString();
     }
 
-    public String createResponseMessage(String clientOperationId, String operationId, String clientExecutionTime, HttpRequest request, ClientHttpResponse response)
+    protected String createResponseMessage(String clientOperationId, String operationId, String clientExecutionTime, HttpRequest request, ClientHttpResponse response)
             throws IOException {
         StringBuilder msg = new StringBuilder();
         msg.append(String.format(RESPONSE_DEFAULT_MESSAGE_PREFIX, operationId, clientOperationId));
@@ -274,10 +245,18 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
     }
 
 
-    protected abstract void request(String clientOperationId, String operationId, HttpRequest request, byte[] reqBody);
+    protected void logRequest(String clientOperationId, String operationId, HttpRequest request, byte[] reqBody) {
+        if (log.isDebugEnabled()) {
+            log.debug(createRequestMessage(clientOperationId, operationId, request, reqBody));
+        }
+    }
 
-    protected abstract void response(String clientOperationId, String operationId, String clientExecutionTime, HttpRequest request, ClientHttpResponse response);
-
+    @SneakyThrows
+    protected void logResponse(String clientOperationId, String operationId, String clientExecutionTime, HttpRequest request, ClientHttpResponse response) {
+        if (log.isDebugEnabled()) {
+            log.debug(createResponseMessage(clientOperationId, operationId, clientExecutionTime, request, response));
+        }
+    }
 
     private String formatRequestHeaders(MultiValueMap<String, String> headers) {
         Stream<String> stream = headers.entrySet().stream()
@@ -328,4 +307,6 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
     protected void avoidEventPersistenceOnRE() {
         this.mustPersistEventOnRE = false;
     }
+
+    protected abstract InternalStepStatus getOperationStatus(String url, HttpMethod httpMethod);
 }

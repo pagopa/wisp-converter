@@ -65,8 +65,8 @@ public class RtRetryComosService {
         if (Boolean.TRUE.equals(isTracingOnREEnabled)) {
             ReEventDto reEvent = ReUtil.getREBuilder()
                     .status(InternalStepStatus.FOUND_RT_IN_STORAGE)
-                    .compressedPayload(payload)
-                    .compressedPayload(String.valueOf(payload != null ? payload.length() : 0))
+                    .requestPayload(payload)
+                    .requestPayload(String.valueOf(payload != null ? payload.length() : 0))
                     .build();
             reService.addRe(reEvent);
         }
