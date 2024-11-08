@@ -1,7 +1,6 @@
 package it.gov.pagopa.wispconverter.util.interceptor;
 
 import static it.gov.pagopa.wispconverter.util.Constants.MDC_STATUS;
-import static it.gov.pagopa.wispconverter.util.ReUtil.getRequestMessagePayload;
 
 import it.gov.pagopa.wispconverter.repository.model.enumz.OutcomeEnum;
 import it.gov.pagopa.wispconverter.repository.model.enumz.WorkflowStatus;
@@ -11,18 +10,22 @@ import it.gov.pagopa.wispconverter.service.model.re.ReResponseContext;
 import it.gov.pagopa.wispconverter.util.CommonUtility;
 import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.EndpointRETrace;
+import it.gov.pagopa.wispconverter.util.filter.RepeatableContentCachingRequestWrapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
+import javax.annotation.Nullable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.util.StreamUtils;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.util.ContentCachingResponseWrapper;
@@ -109,5 +112,35 @@ public class ReInterceptor implements HandlerInterceptor {
       }
     }
     return null;
+  }
+
+  public static String getRequestMessagePayload(@Nullable HttpServletRequest request) {
+
+    if (request != null) {
+      RepeatableContentCachingRequestWrapper wrapper =
+              WebUtils.getNativeRequest(request, RepeatableContentCachingRequestWrapper.class);
+      try {
+        byte[] buf = StreamUtils.copyToByteArray(wrapper.getInputStream());
+        if (buf.length > 0) {
+          return safelyEncodePayload(buf, wrapper);
+        } else {
+          return null;
+        }
+      } catch (IOException e) {
+        log.error("Error 'unknown-read'", e);
+        return "[unknown-read]";
+      }
+    }
+    return null;
+  }
+
+  private static String safelyEncodePayload(
+          byte[] buf, RepeatableContentCachingRequestWrapper wrapper) {
+    try {
+      return new String(buf, wrapper.getCharacterEncoding());
+    } catch (UnsupportedEncodingException e) {
+      log.error("Error 'unknown-encoding'", e);
+      return "[unknown-encoding]";
+    }
   }
 }

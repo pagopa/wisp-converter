@@ -60,6 +60,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class ReceiptService {
 
+  public static final String EXCEPTION = "Exception: ";
   private final RTMapper rtMapper;
 
   private final JaxbElementUtil jaxbElementUtil;
@@ -271,7 +272,6 @@ public class ReceiptService {
                 sessionData,
                 rpt,
                 receiptContent,
-                receipt,
                 rpt.getIuv(),
                 noticeNumber,
                 station,
@@ -370,7 +370,6 @@ public class ReceiptService {
               sessionData,
               rpt,
               receiptContent,
-              receipt,
               rpt.getIuv(),
               noticeNumber,
               station,
@@ -462,7 +461,6 @@ public class ReceiptService {
       SessionDataDTO sessionData,
       RPTContentDTO rpt,
       ReceiptContentDTO receiptContentDTO,
-      Object receipt,
       String iuv,
       String noticeNumber,
       StationDto station,
@@ -561,7 +559,7 @@ public class ReceiptService {
               idempotencyKey,
               receiptType);
           log.error(
-              "Exception: "
+              EXCEPTION
                   + AppErrorCodeMessageEnum.RECEIPT_KO_NOT_GENERATED_BUT_MAYBE_RESCHEDULED
                       .getDetail());
           generateREForNotSentRT(rpt, iuv, noticeNumber, message);
@@ -587,7 +585,7 @@ public class ReceiptService {
 
         // generate a new event in RE for store the unsuccessful sending of the receipt
         log.error(
-            "Exception: "
+            EXCEPTION
                 + AppErrorCodeMessageEnum.RECEIPT_KO_NOT_GENERATED_BUT_MAYBE_RESCHEDULED
                     .getDetail());
         generateREForNotSentRT(rpt, iuv, noticeNumber, message);
@@ -847,7 +845,7 @@ public class ReceiptService {
             .noticeNumber(noticeNumber)
             .ccp(rptContent.getCcp())
             .pspId(psp)
-            .build());
+            .build(), otherInfo);
   }
 
   private void generateREForSuccessfulSchedulingSentRT(
@@ -1014,7 +1012,7 @@ public class ReceiptService {
               idempotencyKey,
               ReceiptTypeEnum.KO);
           log.error(
-              "Exception: "
+              EXCEPTION
                   + AppErrorCodeMessageEnum.RECEIPT_KO_NOT_GENERATED_BUT_MAYBE_RESCHEDULED
                       .getDetail());
           generateREForNotSentRT(rpt, iuv, null, message);
@@ -1041,7 +1039,7 @@ public class ReceiptService {
             ReceiptTypeEnum.KO);
 
         log.error(
-            "Exception: "
+            EXCEPTION
                 + AppErrorCodeMessageEnum.RECEIPT_KO_NOT_GENERATED_BUT_MAYBE_RESCHEDULED
                     .getDetail());
         generateREForNotSentRT(rpt, rpt.getIuv(), null, message);

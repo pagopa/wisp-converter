@@ -87,10 +87,10 @@ public class RPTTimerService {
       setRPTTimerInfoInMDC(sessionId);
 
       // checking if sessionId is present in container data
-      this.rptRequestRepository
-          .findById(sessionId)
-          .orElseThrow(
-              () -> new AppException(AppErrorCodeMessageEnum.PERSISTENCE_RPT_NOT_FOUND, sessionId));
+      var rpt = this.rptRequestRepository.findById(sessionId);
+      if (rpt.isEmpty()) {
+        throw new AppException(AppErrorCodeMessageEnum.PERSISTENCE_RPT_NOT_FOUND, sessionId);
+      }
 
       String key = String.format(RPT_TIMER_MESSAGE_KEY_FORMAT, sessionId);
 

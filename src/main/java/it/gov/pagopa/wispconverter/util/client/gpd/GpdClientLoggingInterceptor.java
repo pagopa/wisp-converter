@@ -24,7 +24,7 @@ public class GpdClientLoggingInterceptor extends AbstractAppClientLoggingInterce
         }
 
         // defining pattern for retrieve operational status
-        getDebtPositionPattern = Pattern.compile("organizations/.+/paymentoptions/.+/debtposition");
+        getDebtPositionPattern = Pattern.compile("organizations/[^/]+/paymentoptions/[^/]+/debtposition");
     }
 
     @Override

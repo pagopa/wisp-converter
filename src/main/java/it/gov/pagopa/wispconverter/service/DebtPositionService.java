@@ -57,7 +57,7 @@ public class DebtPositionService {
 
     private final DebtPositionUpdateMapper mapperForUpdate;
 
-    private final Pattern taxonomyPattern = Pattern.compile("([^/]++/[^/]++)/?");
+    private final Pattern taxonomyPattern = Pattern.compile("^([^/]++/[^/]++)/?$");
 
     @Value("${wisp-converter.poste-italiane.abi-code}")
     private String posteItalianeABICode;
@@ -511,8 +511,6 @@ public class DebtPositionService {
                     // communicating with GPD service in order to update the existing payment position
                     gpdClientInstance.createMultiplePositions(creditorInstitutionId, multiplePaymentPositions, MDC.get(Constants.MDC_REQUEST_ID), true);
 
-                    // generate and save events in RE for trace the bulk insertion of payment positions
-                    generateREForBulkInsert(paymentPositionsToCreateForCreditorInstitution, creditorInstitutionId);
                 }
 
             } catch (RestClientException e) {
@@ -538,19 +536,6 @@ public class DebtPositionService {
         return iban != null && iban.substring(5, 10).equals(posteItalianeABICode);
     }
 
-
-    private void generateREForBulkInsert(List<PaymentPositionModelDto> paymentPositions, String domainId) {
-
-        for (PaymentPositionModelDto paymentPosition : paymentPositions) {
-
-            // creating event to be persisted for RE
-            List<PaymentOptionModelDto> paymentOptions = paymentPosition.getPaymentOption();
-            if (paymentOptions != null && !paymentOptions.isEmpty()) {
-                PaymentOptionModelDto paymentOption = paymentOptions.get(0);
-            }
-
-        }
-    }
 
     private void generateREForInvalidPaymentPosition(SessionDataDTO sessionDataDTO, String iuv) {
 

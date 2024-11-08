@@ -21,7 +21,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -160,20 +159,12 @@ public class ReService {
     Stream<String> stream =
         headers.entrySet().stream()
             .map(
-                (entry) -> {
+                entry -> {
                   String values =
                       entry.getValue().stream().collect(Collectors.joining("\", \"", "\"", "\""));
                   return entry.getKey() + ": [" + values + "]";
                 });
     return stream.collect(Collectors.joining(", "));
-  }
-
-  public static String getResponseMessagePayload(@Nullable ResponseEntity<?> response) {
-    if (response != null && response.getBody() != null) {
-      Object body = response.getBody();
-      return body.toString();
-    }
-    return null;
   }
 
   public void addRe(ReEventDto reEventDto) {
