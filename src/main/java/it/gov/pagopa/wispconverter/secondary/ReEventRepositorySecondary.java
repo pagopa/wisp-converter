@@ -5,10 +5,11 @@ import com.azure.spring.data.cosmos.repository.CosmosRepository;
 import com.azure.spring.data.cosmos.repository.Query;
 import it.gov.pagopa.wispconverter.repository.model.ReEventEntity;
 import it.gov.pagopa.wispconverter.repository.model.SessionIdEntity;
-import java.util.List;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+
+import java.util.List;
 
 @Repository
 @Qualifier("secondaryCosmosTemplate")
@@ -39,8 +40,8 @@ public interface ReEventRepositorySecondary extends CosmosRepository<ReEventEnti
             "AND c.sessionId = @sessionId " +
             "AND c.status = @status ORDER BY c._ts")
     List<ReEventEntity> findBySessionIdAndStatusAndPartitionKey(@Param("date") String partitionKey,
-                                                 @Param("sessionId") String sessionId,
-                                                 @Param("status") String status);
+                                                                @Param("sessionId") String sessionId,
+                                                                @Param("status") String status);
 
     @Query("SELECT * FROM c " +
             "WHERE c.sessionId = @sessionId " +
@@ -66,7 +67,7 @@ public interface ReEventRepositorySecondary extends CosmosRepository<ReEventEnti
     )
     List<SessionIdEntity> findSessionWithoutRedirect(@Param("dateFrom") String dateFrom, @Param("dateTo") String dateTo);
 
-        @Query("SELECT * FROM c " +
+    @Query("SELECT * FROM c " +
             "WHERE c.partitionKey = @date " +
             "AND c.eventCategory = 'INTERFACE' AND c.eventSubcategory = 'REQ' " +
             "AND c.businessProcess = @businessProcess " +

@@ -35,10 +35,10 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     public ErrorResponse handleAppException(AppException appEx) {
         String operationId = MDC.get(Constants.MDC_OPERATION_ID);
 
-        if( appEx.getError() == AppErrorCodeMessageEnum.ERROR || appEx.getError() == AppErrorCodeMessageEnum.GENERIC_ERROR ) {
-            log.error(String.format("[ALERT] AppException: operation-id=[%s]", operationId!=null?operationId:"n/a"), appEx);
+        if (appEx.getError() == AppErrorCodeMessageEnum.ERROR || appEx.getError() == AppErrorCodeMessageEnum.GENERIC_ERROR) {
+            log.error(String.format("[ALERT] AppException: operation-id=[%s]", operationId != null ? operationId : "n/a"), appEx);
         } else {
-            log.error(String.format("AppException: operation-id=[%s]", operationId!=null?operationId:"n/a"), appEx);
+            log.error(String.format("AppException: operation-id=[%s]", operationId != null ? operationId : "n/a"), appEx);
         }
 
         ErrorResponse errorResponse = errorUtil.forAppException(appEx);
@@ -51,7 +51,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ErrorResponse handleGenericException(Exception ex) {
         String operationId = MDC.get(Constants.MDC_OPERATION_ID);
-        log.error(String.format("GenericException: operation-id=[%s]", operationId!=null?operationId:"n/a"), ex);
+        log.error(String.format("GenericException: operation-id=[%s]", operationId != null ? operationId : "n/a"), ex);
 
         AppException appEx = new AppException(ex, AppErrorCodeMessageEnum.ERROR, ex.getMessage());
         ErrorResponse errorResponse = errorUtil.forAppException(appEx);

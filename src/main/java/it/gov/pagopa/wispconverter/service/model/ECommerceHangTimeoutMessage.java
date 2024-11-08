@@ -20,6 +20,6 @@ public class ECommerceHangTimeoutMessage {
 
     @Override
     public String toString() {
-       return new Gson().toJson(this);
+        return new Gson().toJson(this);
     }
 }

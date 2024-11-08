@@ -26,8 +26,9 @@ public class JaxbElementUtil {
     public SOAPMessage getMessage(String payload) {
         return getMessage(payload.getBytes(StandardCharsets.UTF_8));
     }
+
     public SOAPMessage getMessage(byte[] payload) {
-        try{
+        try {
             ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(payload);
             SOAPMessage message = MessageFactory.newInstance().createMessage(null, byteArrayInputStream);
             byteArrayInputStream.close();
@@ -36,17 +37,18 @@ public class JaxbElementUtil {
             throw new AppException(e, AppErrorCodeMessageEnum.PARSING_GENERIC_ERROR, e.getMessage());
         }
     }
-    public <T> T getHeader(SOAPMessage message,Class<T> headerclass){
+
+    public <T> T getHeader(SOAPMessage message, Class<T> headerclass) {
         try {
-            return convertToBean(message.getSOAPHeader().extractAllHeaderElements().next(),headerclass);
+            return convertToBean(message.getSOAPHeader().extractAllHeaderElements().next(), headerclass);
         } catch (SOAPException e) {
             throw new AppException(e, AppErrorCodeMessageEnum.PARSING_INVALID_HEADER, e.getMessage());
         }
     }
 
-    public <T> T getBody(SOAPMessage message,Class<T> bodyClass) {
+    public <T> T getBody(SOAPMessage message, Class<T> bodyClass) {
         try {
-            return convertToBean(message.getSOAPBody().extractContentAsDocument(),bodyClass);
+            return convertToBean(message.getSOAPBody().extractContentAsDocument(), bodyClass);
         } catch (SOAPException e) {
             throw new AppException(e, AppErrorCodeMessageEnum.PARSING_INVALID_BODY, e.getMessage());
         }
@@ -62,23 +64,25 @@ public class JaxbElementUtil {
             throw new AppException(e, AppErrorCodeMessageEnum.PARSING_GENERIC_ERROR, e.getMessage());
         }
     }
+
     public <T> T convertToBean(byte[] xml, Class<T> targetType) {
         try {
             ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(xml);
             JAXBContext context = JAXBContext.newInstance(targetType);
             Unmarshaller unmarshaller = context.createUnmarshaller();
-            JAXBElement<T> jaxbElement = unmarshaller.unmarshal(new StreamSource(byteArrayInputStream),targetType);
+            JAXBElement<T> jaxbElement = unmarshaller.unmarshal(new StreamSource(byteArrayInputStream), targetType);
             byteArrayInputStream.close();
-            return (T)jaxbElement.getValue();
+            return jaxbElement.getValue();
         } catch (JAXBException | IOException e) {
             throw new AppException(e, AppErrorCodeMessageEnum.PARSING_GENERIC_ERROR, e.getMessage());
         }
     }
+
     public <T> T convertToBean(String xml, Class<T> targetType) {
-        return convertToBean(xml.getBytes(StandardCharsets.UTF_8),targetType);
+        return convertToBean(xml.getBytes(StandardCharsets.UTF_8), targetType);
     }
 
-    public SOAPMessage newMessage(){
+    public SOAPMessage newMessage() {
         try {
             return MessageFactory.newInstance().createMessage();
         } catch (SOAPException e) {
@@ -86,7 +90,7 @@ public class JaxbElementUtil {
         }
     }
 
-    public void addBody(SOAPMessage message,Object bodyObject,Class bodyClass){
+    public void addBody(SOAPMessage message, Object bodyObject, Class bodyClass) {
         JAXBContext context = null;
         try {
             context = JAXBContext.newInstance(bodyClass);
@@ -97,7 +101,7 @@ public class JaxbElementUtil {
         }
     }
 
-    public void addHeader(SOAPMessage message,Object headerObject,Class headerClass){
+    public void addHeader(SOAPMessage message, Object headerObject, Class headerClass) {
         JAXBContext context = null;
         try {
             context = JAXBContext.newInstance(headerClass);
@@ -108,7 +112,7 @@ public class JaxbElementUtil {
         }
     }
 
-    public String toString(SOAPMessage message){
+    public String toString(SOAPMessage message) {
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         try {
             message.writeTo(byteArrayOutputStream);
@@ -116,17 +120,17 @@ public class JaxbElementUtil {
         } catch (SOAPException | IOException e) {
             throw new AppException(e, AppErrorCodeMessageEnum.PARSING_GENERIC_ERROR, e.getMessage());
         }
-        String ss = new String(byteArrayOutputStream.toByteArray(),StandardCharsets.UTF_8);
+        String ss = byteArrayOutputStream.toString(StandardCharsets.UTF_8);
         return ss;
     }
 
-    public String objectToString(Object element){
+    public String objectToString(Object element) {
         try {
             StringWriter stringWriter = new StringWriter();
             Class c;
-            if(element instanceof JAXBElement element1){
+            if (element instanceof JAXBElement element1) {
                 c = element1.getValue().getClass();
-            }else{
+            } else {
                 c = element.getClass();
             }
             JAXBContext jaxbContext = JAXBContext.newInstance(c);
@@ -135,7 +139,7 @@ public class JaxbElementUtil {
             marshaller.setProperty(Marshaller.JAXB_ENCODING, "UTF-8");
             marshaller.setProperty("org.glassfish.jaxb.namespacePrefixMapper", new RTNamespaceMapper());
             marshaller.setProperty(Marshaller.JAXB_SCHEMA_LOCATION, "http://www.digitpa.gov.it/schemas/2011/Pagamenti/ PagInf_RPT_RT_6_2_0.xsd");
-            marshaller.marshal(element,stringWriter);
+            marshaller.marshal(element, stringWriter);
             return stringWriter.toString();
         } catch (JAXBException e) {
             throw new AppException(e, AppErrorCodeMessageEnum.PARSING_GENERIC_ERROR, e.getMessage());

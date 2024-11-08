@@ -45,5 +45,5 @@ public class Constants {
     public static final String MDC_STATION_ID = "stationId";
     public static final String MDC_CHANNEL_ID = "channelId";
     public static final String MDC_REQUEST_ID = "requestId";
-  public static final String MDC_PRIMITIVE = "primitive";
+    public static final String MDC_PRIMITIVE = "primitive";
 }

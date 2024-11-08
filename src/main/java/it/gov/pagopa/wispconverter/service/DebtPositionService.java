@@ -19,12 +19,6 @@ import it.gov.pagopa.wispconverter.service.model.session.RPTContentDTO;
 import it.gov.pagopa.wispconverter.service.model.session.SessionDataDTO;
 import it.gov.pagopa.wispconverter.util.CommonUtility;
 import it.gov.pagopa.wispconverter.util.Constants;
-import java.math.BigDecimal;
-import java.time.OffsetDateTime;
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
@@ -33,6 +27,13 @@ import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClientException;
+
+import java.math.BigDecimal;
+import java.time.OffsetDateTime;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -343,20 +344,20 @@ public class DebtPositionService {
         for (PaymentNoticeContentDTO paymentNotice : sessionData.getAllPaymentNotices()) {
 
             String iuv = paymentNotice.getIuv();
-                // communicate with GPD in order to retrieve the debt position
-                PaymentPositionModelBaseResponseDto paymentPosition = retrievedPaymentPosition;
-                if (!iuv.equals(iuvFromRetrievedPaymentPosition)) {
-                    paymentPosition = gpdClientInstance.getDebtPositionByIUV(creditorInstitutionId, iuv, MDC.get(Constants.MDC_REQUEST_ID));
-                    if (paymentPosition.getPaymentOption() == null || paymentPosition.getPaymentOption().isEmpty()) {
-                        throw new AppException(AppErrorCodeMessageEnum.PAYMENT_OPTION_NOT_EXTRACTABLE, iuvFromRetrievedPaymentPosition);
-                    }
+            // communicate with GPD in order to retrieve the debt position
+            PaymentPositionModelBaseResponseDto paymentPosition = retrievedPaymentPosition;
+            if (!iuv.equals(iuvFromRetrievedPaymentPosition)) {
+                paymentPosition = gpdClientInstance.getDebtPositionByIUV(creditorInstitutionId, iuv, MDC.get(Constants.MDC_REQUEST_ID));
+                if (paymentPosition.getPaymentOption() == null || paymentPosition.getPaymentOption().isEmpty()) {
+                    throw new AppException(AppErrorCodeMessageEnum.PAYMENT_OPTION_NOT_EXTRACTABLE, iuvFromRetrievedPaymentPosition);
                 }
+            }
 
-                // update the payment notice, setting the NAV code from the retrieved existing payment position
-                paymentNotice.setNoticeNumber(CommonUtility.getSinglePaymentOption(paymentPosition).getNav());
+            // update the payment notice, setting the NAV code from the retrieved existing payment position
+            paymentNotice.setNoticeNumber(CommonUtility.getSinglePaymentOption(paymentPosition).getNav());
 
-                // save event in RE for trace the error due to invalid payment position status
-                generateREForInvalidPaymentPosition(sessionData, iuv);
+            // save event in RE for trace the error due to invalid payment position status
+            generateREForInvalidPaymentPosition(sessionData, iuv);
         }
 
         // finally, throw an exception for notify the error, including all the IUVs
@@ -543,10 +544,10 @@ public class DebtPositionService {
         if (Boolean.TRUE.equals(isTracingOnREEnabled)) {
             PaymentNoticeContentDTO paymentNotice = sessionDataDTO.getPaymentNoticeByIUV(iuv);
             reService.sendEvent(WorkflowStatus.CONVERSION_ERROR_SENDING_RT, RePaymentContext.builder()
-                            .iuv(iuv)
-                            .noticeNumber(paymentNotice.getNoticeNumber())
-                            .paymentToken(paymentNotice.getCcp())
-                            .domainId(paymentNotice.getFiscalCode())
+                    .iuv(iuv)
+                    .noticeNumber(paymentNotice.getNoticeNumber())
+                    .paymentToken(paymentNotice.getCcp())
+                    .domainId(paymentNotice.getFiscalCode())
                     .build());
         }
     }

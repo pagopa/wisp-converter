@@ -12,7 +12,7 @@ public class MDCEnrichInterceptor implements HandlerInterceptor {
 
     @Override
     public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
-        if(handler instanceof HandlerMethod) {
+        if (handler instanceof HandlerMethod) {
             if (!MDCUtil.hasStatus()) {
                 log.debug("[afterCompletion] configure status");
                 MDCUtil.setMDCCloseSuccessOperation(response.getStatus());

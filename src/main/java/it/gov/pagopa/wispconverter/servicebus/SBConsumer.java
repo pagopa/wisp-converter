@@ -1,11 +1,10 @@
 package it.gov.pagopa.wispconverter.servicebus;
 
 import com.azure.messaging.servicebus.*;
-import it.gov.pagopa.wispconverter.service.ReService;
-import java.util.concurrent.TimeUnit;
-import javax.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
+
+import javax.annotation.PreDestroy;
+import java.util.concurrent.TimeUnit;
 
 // Service Bus Consumer
 @Slf4j

@@ -12,10 +12,6 @@ import it.gov.pagopa.wispconverter.service.model.re.RePaymentContext;
 import it.gov.pagopa.wispconverter.util.CommonUtility;
 import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.MDCUtil;
-import java.io.IOException;
-import java.time.ZonedDateTime;
-import java.util.List;
-import javax.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.MDC;
@@ -23,6 +19,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
+
+import javax.annotation.PostConstruct;
+import java.io.IOException;
+import java.time.ZonedDateTime;
+import java.util.List;
 
 /**
  * This class is the consumer of the queue 'ecommerce-hang-timeout' of the service bus.
@@ -34,16 +35,12 @@ import org.springframework.stereotype.Component;
 public class ECommerceHangTimeoutConsumer extends SBConsumer {
 
     private final ObjectMapper mapper = new ObjectMapper();
-
-    @Value("${azure.sb.wisp-ecommerce-hang-timeout-queue.connectionString}")
-    private String connectionString;
-
-    @Value("${azure.sb.queue.ecommerce-hang-timeout.name}")
-    private String queueName;
-
     private final ReceiptService receiptService;
     private final ReService reService;
-
+    @Value("${azure.sb.wisp-ecommerce-hang-timeout-queue.connectionString}")
+    private String connectionString;
+    @Value("${azure.sb.queue.ecommerce-hang-timeout.name}")
+    private String queueName;
     @Value("${disable-service-bus-receiver}")
     private boolean disableServiceBusReceiver;
 
@@ -80,9 +77,9 @@ public class ECommerceHangTimeoutConsumer extends SBConsumer {
             MDC.put(Constants.MDC_DOMAIN_ID, timeoutMessage.getFiscalCode());
             MDC.put(Constants.MDC_NOTICE_NUMBER, timeoutMessage.getNoticeNumber());
             reService.sendEvent(WorkflowStatus.ECOMMERCE_HANG_TIMER_IN_TIMEOUT, RePaymentContext.builder()
-                            .domainId(timeoutMessage.getFiscalCode())
-                            .noticeNumber(timeoutMessage.getNoticeNumber())
-                    .build() , "Expired eCommerce hang timer. A Negative sendRT will be sent: " + timeoutMessage);
+                    .domainId(timeoutMessage.getFiscalCode())
+                    .noticeNumber(timeoutMessage.getNoticeNumber())
+                    .build(), "Expired eCommerce hang timer. A Negative sendRT will be sent: " + timeoutMessage);
 
             // transform to string list
             var inputPaaInviaRTKo = List.of(ReceiptDto.builder()

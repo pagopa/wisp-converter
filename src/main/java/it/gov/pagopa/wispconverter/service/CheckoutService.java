@@ -8,15 +8,16 @@ import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.service.mapper.CartMapper;
 import it.gov.pagopa.wispconverter.service.model.session.PaymentNoticeContentDTO;
 import it.gov.pagopa.wispconverter.service.model.session.SessionDataDTO;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.Set;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
+
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j

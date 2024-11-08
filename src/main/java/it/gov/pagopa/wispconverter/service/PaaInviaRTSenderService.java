@@ -14,12 +14,6 @@ import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.JaxbElementUtil;
 import it.gov.pagopa.wispconverter.util.ProxyUtility;
 import jakarta.xml.soap.SOAPMessage;
-import java.net.InetSocketAddress;
-import java.net.URI;
-import java.nio.charset.StandardCharsets;
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.util.Pair;
@@ -30,6 +24,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestClient;
+
+import java.net.InetSocketAddress;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -45,6 +46,14 @@ public class PaaInviaRTSenderService {
 
     @Value("#{'${wisp-converter.rt-send.no-dead-letter-on-states}'.split(',')}")
     private List<String> noDeadLetterOnStates;
+
+    public static HttpHeaders toHttpHeaders(List<Pair<String, String>> headerList) {
+        HttpHeaders headers = new HttpHeaders();
+        for (Pair<String, String> pair : headerList) {
+            headers.add(pair.getFirst(), pair.getSecond());
+        }
+        return headers;
+    }
 
     public void sendToCreditorInstitution(URI uri, InetSocketAddress proxyAddress, List<Pair<String, String>> headers, String payload, String domainId, String iuv, String ccp) {
 
@@ -128,7 +137,7 @@ public class PaaInviaRTSenderService {
             }
 
         } catch (AppException e) {
-            reService.sendEvent(WorkflowStatus.COMMUNICATION_WITH_CREDITOR_INSTITUTION_PROCESSED, null,null, OutcomeEnum.COMMUNICATION_RECEIVED_FAILURE);
+            reService.sendEvent(WorkflowStatus.COMMUNICATION_WITH_CREDITOR_INSTITUTION_PROCESSED, null, null, OutcomeEnum.COMMUNICATION_RECEIVED_FAILURE);
             throw e;
 
         } catch (Exception e) {
@@ -173,7 +182,6 @@ public class PaaInviaRTSenderService {
         return client;
     }
 
-
     private PaaInviaRTRisposta checkResponseValidity(ResponseEntity<String> response, String rawBody) {
 
         // check the response received and, if the status code is not a 2xx code, it throws an exception
@@ -191,13 +199,5 @@ public class PaaInviaRTSenderService {
         }
 
         return body;
-    }
-
-    public static HttpHeaders toHttpHeaders(List<Pair<String, String>> headerList) {
-        HttpHeaders headers = new HttpHeaders();
-        for (Pair<String, String> pair : headerList) {
-            headers.add(pair.getFirst(), pair.getSecond());
-        }
-        return headers;
     }
 }

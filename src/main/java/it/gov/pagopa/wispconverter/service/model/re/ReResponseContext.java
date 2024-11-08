@@ -8,7 +8,7 @@ import org.springframework.http.HttpStatus;
 @Builder
 @Getter
 public class ReResponseContext {
-    
+
     private String payload;
     private HttpHeaders headers;
     private HttpStatus statusCode;

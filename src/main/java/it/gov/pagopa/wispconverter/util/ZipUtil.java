@@ -10,7 +10,8 @@ import java.util.zip.GZIPOutputStream;
 
 public class ZipUtil {
 
-    private ZipUtil(){}
+    private ZipUtil() {
+    }
 
     public static byte[] zip(String str) throws IOException {
         byte[] strBytes = str.getBytes(StandardCharsets.UTF_8);
@@ -29,11 +30,11 @@ public class ZipUtil {
         return gzipInputStream.readAllBytes();
     }
 
-    public static byte[] base64Decode(String base64Encoded){
+    public static byte[] base64Decode(String base64Encoded) {
         return Base64.getDecoder().decode(base64Encoded);
     }
 
-    public static String getUtf8String(byte[] bytes){
+    public static String getUtf8String(byte[] bytes) {
         return new String(bytes, StandardCharsets.UTF_8);
     }
 

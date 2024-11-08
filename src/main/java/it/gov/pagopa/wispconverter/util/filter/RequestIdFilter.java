@@ -18,7 +18,6 @@ import java.util.UUID;
 import static it.gov.pagopa.wispconverter.util.Constants.HEADER_REQUEST_ID;
 
 
-
 @Slf4j
 public class RequestIdFilter extends OncePerRequestFilter {
 
@@ -32,7 +31,7 @@ public class RequestIdFilter extends OncePerRequestFilter {
         if (requestId == null || requestId.isEmpty()) {
             requestId = UUID.randomUUID().toString();
             log.debug("RequestIdFilter - assign new {}=[{}]", HEADER_REQUEST_ID, requestId);
-        } else{
+        } else {
             log.debug("RequestIdFilter - found {}=[{}]", HEADER_REQUEST_ID, requestId);
         }
 
@@ -40,7 +39,7 @@ public class RequestIdFilter extends OncePerRequestFilter {
         MDC.put(Constants.MDC_REQUEST_ID, requestId);
 
         // set requestId in the response header
-        ((HttpServletResponse) response).setHeader(HEADER_REQUEST_ID, requestId);
+        response.setHeader(HEADER_REQUEST_ID, requestId);
 
         filterChain.doFilter(request, response);
         MDC.clear();

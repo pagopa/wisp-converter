@@ -20,21 +20,18 @@ import java.time.format.DateTimeFormatter;
 @ConditionalOnProperty(name = "cron.job.schedule.recovery.enabled", matchIfMissing = false)
 public class RecoveryScheduler {
 
+    private final RecoveryService recoveryService;
     @Value("${cron.job.schedule.recovery.hours.ago.from}")
     private int fromHoursAgo;
-
     @Value("${cron.job.schedule.recovery.hours.ago.until}") // untilHoursAgo: upperbound for a payment session
     private int untilHoursAgo;
-
-    private final RecoveryService recoveryService;
+    @Getter
+    private Thread threadOfExecution;
 
     @Autowired
     public RecoveryScheduler(RecoveryService recoveryService) {
         this.recoveryService = recoveryService;
     }
-
-    @Getter
-    private Thread threadOfExecution;
 
     // https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/scheduling/support/CronExpression.html
     @Scheduled(cron = "${cron.job.schedule.recovery.receipt-ko.trigger}")
