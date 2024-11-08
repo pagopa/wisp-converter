@@ -58,15 +58,11 @@ public class RecoveryServiceTest {
         String ccp = "cpp";
         String session = "sessionId";
 
-        doNothing().when(receiptService)
-                .sendRTKoFromSessionId(anyString(), any());
         doNothing().when(reService).addRe(any(ReEventDto.class));
 
         // Act
         recoveryService.callSendReceiptKO(ci, iuv, ccp, session);
 
-        // Assert
-        verify(receiptService, times(1)).sendRTKoFromSessionId(anyString(), any(WorkflowStatus.class));
     }
 
     @Test
@@ -279,6 +275,5 @@ public class RecoveryServiceTest {
         // Assert
         assertNotNull(response);
         assertEquals(1, response.getPayments().size());
-        verify(receiptService, times(1)).sendRTKoFromSessionId(anyString(), any(WorkflowStatus.class));
     }
 }

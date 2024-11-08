@@ -71,7 +71,7 @@ public class PaymentTimeoutConsumerTest {
         when(message.getMessageId()).thenReturn("messageId");
         when(message.getSequenceNumber()).thenReturn(1L);
 
-        doNothing().when(reService).addRe(any());
+        doNothing().when(reService).sendEvent(any(), any(), any());
 
         // Mock the message body
         ReceiptDto receiptDto = new ReceiptDto();
