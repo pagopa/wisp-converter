@@ -12,19 +12,17 @@ import it.gov.pagopa.wispconverter.service.model.re.RePaymentContext;
 import it.gov.pagopa.wispconverter.util.CommonUtility;
 import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.MDCUtil;
+import java.io.IOException;
+import java.time.ZonedDateTime;
+import java.util.List;
+import javax.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.MDC;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
-
-import javax.annotation.PostConstruct;
-import java.io.IOException;
-import java.time.ZonedDateTime;
-import java.util.List;
 
 /**
  * This class is the consumer of the queue 'ecommerce-hang-timeout' of the service bus.
@@ -43,14 +41,16 @@ public class ECommerceHangTimeoutConsumer extends SBConsumer {
     @Value("${azure.sb.queue.ecommerce-hang-timeout.name}")
     private String queueName;
 
-    @Autowired
-    private ReceiptService receiptService;
-
-    @Autowired
-    private ReService reService;
+    private final ReceiptService receiptService;
+    private final ReService reService;
 
     @Value("${disable-service-bus-receiver}")
     private boolean disableServiceBusReceiver;
+
+    public ECommerceHangTimeoutConsumer(ReceiptService receiptService, ReService reService) {
+        this.receiptService = receiptService;
+        this.reService = reService;
+    }
 
     @PostConstruct
     public void post() {

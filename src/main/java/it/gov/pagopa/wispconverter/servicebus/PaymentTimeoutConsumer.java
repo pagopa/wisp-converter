@@ -18,7 +18,6 @@ import javax.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.MDC;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
@@ -39,11 +38,16 @@ public class PaymentTimeoutConsumer extends SBConsumer {
   @Value("${disable-service-bus-receiver}")
   private boolean disableServiceBusReceiver;
 
-  @Autowired private ReceiptService receiptService;
+  private final ReceiptService receiptService;
 
-  @Autowired private ReService reService;
+  private final ReService reService;
 
-  @EventListener(ApplicationReadyEvent.class)
+    public PaymentTimeoutConsumer(ReceiptService receiptService, ReService reService) {
+        this.receiptService = receiptService;
+        this.reService = reService;
+    }
+
+    @EventListener(ApplicationReadyEvent.class)
   public void initializeClient() {
     if (receiverClient != null && !disableServiceBusReceiver) {
       log.info("[Scheduled] Starting PaymentTimeoutConsumer {}", ZonedDateTime.now());

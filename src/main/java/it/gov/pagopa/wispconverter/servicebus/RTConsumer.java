@@ -26,7 +26,6 @@ import java.util.List;
 import javax.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
@@ -50,26 +49,37 @@ public class RTConsumer extends SBConsumer {
 
   private final ObjectMapper mapper = new ObjectMapper();
 
-  @Autowired private RtRetryComosService rtRetryComosService;
+   private final RtRetryComosService rtRetryComosService;
 
-  @Autowired private RtReceiptCosmosService rtReceiptCosmosService;
+   private final RtReceiptCosmosService rtReceiptCosmosService;
 
-  @Autowired private IdempotencyService idempotencyService;
+   private final IdempotencyService idempotencyService;
 
-  @Autowired private PaaInviaRTSenderService paaInviaRTSenderService;
+   private final PaaInviaRTSenderService paaInviaRTSenderService;
 
-  @Autowired private ServiceBusService serviceBusService;
+   private final ServiceBusService serviceBusService;
 
-  @Autowired private ReceiptDeadLetterRepository receiptDeadLetterRepository;
+   private final ReceiptDeadLetterRepository receiptDeadLetterRepository;
 
-  @Autowired private ReService reService;
+   private final ReService reService;
 
-  @Autowired private JaxbElementUtil jaxbElementUtil;
+   private final JaxbElementUtil jaxbElementUtil;
 
   @Value("${disable-service-bus-receiver}")
   private boolean disableServiceBusReceiver;
 
-  @EventListener(ApplicationReadyEvent.class)
+    public RTConsumer(RtRetryComosService rtRetryComosService, RtReceiptCosmosService rtReceiptCosmosService, IdempotencyService idempotencyService, PaaInviaRTSenderService paaInviaRTSenderService, ServiceBusService serviceBusService, ReceiptDeadLetterRepository receiptDeadLetterRepository, ReService reService, JaxbElementUtil jaxbElementUtil) {
+        this.rtRetryComosService = rtRetryComosService;
+        this.rtReceiptCosmosService = rtReceiptCosmosService;
+        this.idempotencyService = idempotencyService;
+        this.paaInviaRTSenderService = paaInviaRTSenderService;
+        this.serviceBusService = serviceBusService;
+        this.receiptDeadLetterRepository = receiptDeadLetterRepository;
+        this.reService = reService;
+        this.jaxbElementUtil = jaxbElementUtil;
+    }
+
+    @EventListener(ApplicationReadyEvent.class)
   public void initializeClient() {
     if (receiverClient != null && !disableServiceBusReceiver) {
       log.info("[Scheduled] Starting RTConsumer {}", ZonedDateTime.now());

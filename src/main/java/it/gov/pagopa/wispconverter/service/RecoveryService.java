@@ -4,6 +4,7 @@ import com.azure.cosmos.models.PartitionKey;
 import com.google.gson.Gson;
 import gov.telematici.pagamenti.ws.nodoperpa.ppthead.IntestazionePPT;
 import gov.telematici.pagamenti.ws.pafornode.PaSendRTV2Request;
+import gov.telematici.pagamenti.ws.papernodo.ObjectFactory;
 import it.gov.pagopa.gen.wispconverter.client.cache.model.ConnectionDto;
 import it.gov.pagopa.gen.wispconverter.client.cache.model.StationDto;
 import it.gov.pagopa.wispconverter.controller.ReceiptController;
@@ -418,146 +419,165 @@ public class RecoveryService {
     gov.telematici.pagamenti.ws.papernodo.ObjectFactory objectFactory =
         new gov.telematici.pagamenti.ws.papernodo.ObjectFactory();
     for (String receiptId : request.getReceiptIds()) {
-
-      String sessionId = null;
-      try {
-        Optional<RTRequestEntity> rtRequestEntityOpt = rtRetryRepository.findById(receiptId);
-        if (rtRequestEntityOpt.isEmpty()) {
-          throw new AppException(
-              AppErrorCodeMessageEnum.ERROR,
-              String.format("No valid receipt found with id [%s]", receiptId));
-        }
-
-        RTRequestEntity rtRequestEntity = rtRequestEntityOpt.get();
-        String idempotencyKey = rtRequestEntity.getIdempotencyKey();
-        String[] idempotencyKeyComponents = idempotencyKey.split("_");
-        if (idempotencyKeyComponents.length < 2) {
-          throw new AppException(
-              AppErrorCodeMessageEnum.ERROR,
-              String.format(
-                  "Invalid idempotency key [%s]. It must be composed of sessionId, notice number and domain.",
-                  idempotencyKey));
-        }
-
-        sessionId = idempotencyKeyComponents[0];
-        MDC.put(Constants.MDC_SESSION_ID, sessionId);
-        Optional<RPTRequestEntity> rptRequestOpt = rptRequestRepository.findById(sessionId);
-        if (rptRequestOpt.isEmpty()) {
-          throw new AppException(
-              AppErrorCodeMessageEnum.ERROR,
-              String.format("No valid RPT request found with id [%s].", sessionId));
-        }
-
-        RPTRequestEntity rptRequestEntity = rptRequestOpt.get();
-        SessionDataDTO sessionData =
-            rptExtractorService.extractSessionData(
-                rptRequestEntity.getPrimitive(), rptRequestEntity.getPayload());
-
-        String stationId = sessionData.getCommonFields().getStationId();
-        StationDto station = configCacheService.getStationByIdFromCache(stationId);
-
-        // regenerate destination networking info
-        ConnectionDto stationConnection = station.getConnection();
-        URI uri =
-            CommonUtility.constructUrl(
-                stationConnection.getProtocol().getValue(),
-                stationConnection.getIp(),
-                stationConnection.getPort().intValue(),
-                station.getService() != null ? station.getService().getPath() : "");
-        rtRequestEntity.setUrl(uri.toString());
-        rtRequestEntity.setHeaders(generateHeader(uri, station));
-
-        InetSocketAddress proxyAddress =
-            CommonUtility.constructProxyAddress(uri, station, apimPath);
-        if (proxyAddress != null) {
-          rtRequestEntity.setProxyAddress(
-              String.format("%s:%s", proxyAddress.getHostString(), proxyAddress.getPort()));
-        }
-
-        // regenerate paaInviaRT payload info
-        // extract data from old paaInviaRT
-        String oldReceipt =
-            new String(ZipUtil.unzip(AppBase64Util.base64Decode(rtRequestEntity.getPayload())));
-
-        SOAPMessage msg = jaxbElementUtil.getMessage(oldReceipt);
-
-        IntestazionePPT oldReceiptHeader = jaxbElementUtil.getHeader(msg, IntestazionePPT.class);
-
-        String domainId = oldReceiptHeader.getIdentificativoDominio();
-        String iuv = oldReceiptHeader.getIdentificativoUnivocoVersamento();
-
-        // retrieve the needed RPT
-        List<RPTContentDTO> rpts = ReceiptService.extractRequiredRPTs(sessionData, iuv, domainId);
-        int overrideId = 1;
-        for (RPTContentDTO rpt : rpts) {
-
-          // Re-generate the RT payload in order to actualize values and structural errors
-          // If newly-generated payload is not null, the data in 'receipt-rt' is updated with
-          // extracted data
-          String newlyGeneratedPayload =
-              regenerateReceiptPayload(
-                  rtRequestEntity.getPartitionKey(),
-                  rtRequestEntity.getReceiptType(),
-                  sessionData,
-                  rpt,
-                  objectFactory);
-
-          String payload = newlyGeneratedPayload != null ? newlyGeneratedPayload : oldReceipt;
-
-          // update entity from 'receipt' container with retry 0 and newly-generated payload
-          String rptDomainId = rpt.getRpt().getDomain().getDomainId();
-          String overriddenIdempotencyKey =
-              String.format(
-                  "%s_%s_%s",
-                  idempotencyKeyComponents[0], idempotencyKeyComponents[1], rptDomainId);
-          String overriddenReceiptId = receiptId + "-" + overrideId;
-          rtRequestEntity.setId(overriddenReceiptId);
-          rtRequestEntity.setDomainId(domainId);
-          rtRequestEntity.setIdempotencyKey(overriddenIdempotencyKey);
-          rtRequestEntity.setSessionId(sessionId);
-          rtRequestEntity.setRetry(0);
-          rtRequestEntity.setPayload(AppBase64Util.base64Encode(ZipUtil.zip(payload)));
-          rtRetryRepository.save(rtRequestEntity);
-
-          String compositedIdForReceipt =
-              String.format("%s_%s", rtRequestEntity.getPartitionKey(), overriddenReceiptId);
-          serviceBusService.sendMessage(compositedIdForReceipt, null);
-
-          generateRE(
-              Constants.PAA_INVIA_RT,
-              WorkflowStatus.RT_SEND_RESCHEDULING_SUCCESS,
-              domainId,
-              iuv,
-              rpt.getCcp(),
-              sessionId,
-              String.format("Generated receipt: %s", overriddenReceiptId));
-          response.getReceiptStatus().add(Pair.of(overriddenReceiptId, "SCHEDULED"));
-          overrideId += 1;
-        }
-        // remove old receipt
-        rtRetryRepository.deleteById(
-            receiptId, new PartitionKey(rtRequestEntity.getPartitionKey()));
-
-      } catch (Exception e) {
-
-        log.error("Reconciliation for receipt id [{}] ended unsuccessfully!", receiptId, e);
-
-        generateRE(
-            Constants.PAA_INVIA_RT,
-            WorkflowStatus.RT_SEND_RESCHEDULING_FAILURE,
-            null,
-            null,
-            null,
-            sessionId,
-            null);
-
-        response
-            .getReceiptStatus()
-            .add(Pair.of(receiptId, String.format("FAILED: [%s]", e.getMessage())));
-      }
+      recoverSingleReceipt(receiptId, objectFactory, response);
     }
 
     return response;
+  }
+
+  private void recoverSingleReceipt(String receiptId, ObjectFactory objectFactory, RecoveryReceiptReportResponse response) {
+    String sessionId = null;
+    try {
+      RTRequestEntity rtRequestEntity = findRtRequestEntityIfExists(receiptId);
+      String[] idempotencyKeyComponents = getIdempotencyKeyComponents(rtRequestEntity);
+
+      sessionId = idempotencyKeyComponents[0];
+      MDC.put(Constants.MDC_SESSION_ID, sessionId);
+      RPTRequestEntity rptRequestEntity = findRptRequestEntityIfExists(sessionId);
+      SessionDataDTO sessionData =
+          rptExtractorService.extractSessionData(
+              rptRequestEntity.getPrimitive(), rptRequestEntity.getPayload());
+
+      String stationId = sessionData.getCommonFields().getStationId();
+      StationDto station = configCacheService.getStationByIdFromCache(stationId);
+
+      // regenerate destination networking info
+      ConnectionDto stationConnection = station.getConnection();
+      URI uri =
+          CommonUtility.constructUrl(
+              stationConnection.getProtocol().getValue(),
+              stationConnection.getIp(),
+              stationConnection.getPort().intValue(),
+              station.getService() != null ? station.getService().getPath() : "");
+      rtRequestEntity.setUrl(uri.toString());
+      rtRequestEntity.setHeaders(generateHeader(uri, station));
+
+      InetSocketAddress proxyAddress =
+          CommonUtility.constructProxyAddress(uri, station, apimPath);
+      if (proxyAddress != null) {
+        rtRequestEntity.setProxyAddress(
+            String.format("%s:%s", proxyAddress.getHostString(), proxyAddress.getPort()));
+      }
+
+      // regenerate paaInviaRT payload info
+      // extract data from old paaInviaRT
+      String oldReceipt =
+          new String(ZipUtil.unzip(AppBase64Util.base64Decode(rtRequestEntity.getPayload())));
+
+      SOAPMessage msg = jaxbElementUtil.getMessage(oldReceipt);
+
+      IntestazionePPT oldReceiptHeader = jaxbElementUtil.getHeader(msg, IntestazionePPT.class);
+
+      String domainId = oldReceiptHeader.getIdentificativoDominio();
+      String iuv = oldReceiptHeader.getIdentificativoUnivocoVersamento();
+
+      // retrieve the needed RPT
+      List<RPTContentDTO> rpts = ReceiptService.extractRequiredRPTs(sessionData, iuv, domainId);
+      int overrideId = 1;
+      for (RPTContentDTO rpt : rpts) {
+
+        // Re-generate the RT payload in order to actualize values and structural errors
+        // If newly-generated payload is not null, the data in 'receipt-rt' is updated with
+        // extracted data
+        String newlyGeneratedPayload =
+            regenerateReceiptPayload(
+                rtRequestEntity.getPartitionKey(),
+                rtRequestEntity.getReceiptType(),
+                sessionData,
+                rpt,
+                    objectFactory);
+
+        String payload = newlyGeneratedPayload != null ? newlyGeneratedPayload : oldReceipt;
+
+        // update entity from 'receipt' container with retry 0 and newly-generated payload
+        String rptDomainId = rpt.getRpt().getDomain().getDomainId();
+        String overriddenIdempotencyKey =
+            String.format(
+                "%s_%s_%s",
+                idempotencyKeyComponents[0], idempotencyKeyComponents[1], rptDomainId);
+        String overriddenReceiptId = receiptId + "-" + overrideId;
+        rtRequestEntity.setId(overriddenReceiptId);
+        rtRequestEntity.setDomainId(domainId);
+        rtRequestEntity.setIdempotencyKey(overriddenIdempotencyKey);
+        rtRequestEntity.setSessionId(sessionId);
+        rtRequestEntity.setRetry(0);
+        rtRequestEntity.setPayload(AppBase64Util.base64Encode(ZipUtil.zip(payload)));
+        rtRetryRepository.save(rtRequestEntity);
+
+        String compositedIdForReceipt =
+            String.format("%s_%s", rtRequestEntity.getPartitionKey(), overriddenReceiptId);
+        serviceBusService.sendMessage(compositedIdForReceipt, null);
+
+        generateRE(
+            Constants.PAA_INVIA_RT,
+            WorkflowStatus.RT_SEND_RESCHEDULING_SUCCESS,
+            domainId,
+            iuv,
+            rpt.getCcp(),
+            sessionId,
+            String.format("Generated receipt: %s", overriddenReceiptId));
+        response.getReceiptStatus().add(Pair.of(overriddenReceiptId, "SCHEDULED"));
+        overrideId += 1;
+      }
+      // remove old receipt
+      rtRetryRepository.deleteById(
+              receiptId, new PartitionKey(rtRequestEntity.getPartitionKey()));
+
+    } catch (Exception e) {
+      handleExceptionRecoverSingleReceipt(receiptId, response, e, sessionId);
+    }
+  }
+
+  private RPTRequestEntity findRptRequestEntityIfExists(String sessionId) {
+    Optional<RPTRequestEntity> rptRequestOpt = rptRequestRepository.findById(sessionId);
+    if (rptRequestOpt.isEmpty()) {
+      throw new AppException(
+          AppErrorCodeMessageEnum.ERROR,
+          String.format("No valid RPT request found with id [%s].", sessionId));
+    }
+
+    return rptRequestOpt.get();
+  }
+
+  private static String[] getIdempotencyKeyComponents(RTRequestEntity rtRequestEntity) {
+    String idempotencyKey = rtRequestEntity.getIdempotencyKey();
+    String[] idempotencyKeyComponents = idempotencyKey.split("_");
+    if (idempotencyKeyComponents.length < 2) {
+      throw new AppException(
+          AppErrorCodeMessageEnum.ERROR,
+          String.format(
+              "Invalid idempotency key [%s]. It must be composed of sessionId, notice number and domain.",
+              idempotencyKey));
+    }
+    return idempotencyKeyComponents;
+  }
+
+  private RTRequestEntity findRtRequestEntityIfExists(String receiptId) {
+    Optional<RTRequestEntity> rtRequestEntityOpt = rtRetryRepository.findById(receiptId);
+    if (rtRequestEntityOpt.isEmpty()) {
+      throw new AppException(
+          AppErrorCodeMessageEnum.ERROR,
+          String.format("No valid receipt found with id [%s]", receiptId));
+    }
+
+    RTRequestEntity rtRequestEntity = rtRequestEntityOpt.get();
+    return rtRequestEntity;
+  }
+
+  private void handleExceptionRecoverSingleReceipt(String receiptId, RecoveryReceiptReportResponse response, Exception e, String sessionId) {
+    log.error("Reconciliation for receipt id [{}] ended unsuccessfully!", receiptId, e);
+
+    generateRE(
+        Constants.PAA_INVIA_RT,
+        WorkflowStatus.RT_SEND_RESCHEDULING_FAILURE,
+        null,
+        null,
+        null,
+            sessionId,
+        null);
+
+    response.getReceiptStatus()
+        .add(Pair.of(receiptId, String.format("FAILED: [%s]", e.getMessage())));
   }
 
   private List<String> generateHeader(URI uri, StationDto station) {
