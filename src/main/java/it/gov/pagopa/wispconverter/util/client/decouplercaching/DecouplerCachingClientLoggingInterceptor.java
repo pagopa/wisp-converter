@@ -1,6 +1,6 @@
 package it.gov.pagopa.wispconverter.util.client.decouplercaching;
 
-import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
+import it.gov.pagopa.wispconverter.repository.model.enumz.WorkflowStatus;
 import it.gov.pagopa.wispconverter.service.ReService;
 import it.gov.pagopa.wispconverter.util.client.AbstractAppClientLoggingInterceptor;
 import it.gov.pagopa.wispconverter.util.client.ClientServiceEnum;
@@ -21,12 +21,12 @@ public class DecouplerCachingClientLoggingInterceptor extends AbstractAppClientL
     }
 
     @Override
-    protected InternalStepStatus getOperationStatus(String url, HttpMethod httpMethod) {
-        InternalStepStatus status = null;
+    protected WorkflowStatus getOperationStatus(String url, HttpMethod httpMethod) {
+        WorkflowStatus status = null;
         if (url.contains("/save-mapping")) {
-            status = InternalStepStatus.COMMUNICATION_WITH_APIM_FOR_CACHING_RPT_MAPPING_PROCESSED;
+            status = WorkflowStatus.COMMUNICATION_WITH_APIM_FOR_CACHING_RPT_MAPPING_PROCESSED;
         } else if (url.contains("/save-cart-mapping")) {
-            status = InternalStepStatus.COMMUNICATION_WITH_APIM_FOR_CACHING_SESSION_MAPPING_PROCESSED;
+            status = WorkflowStatus.COMMUNICATION_WITH_APIM_FOR_CACHING_SESSION_MAPPING_PROCESSED;
         }
         return status;
     }

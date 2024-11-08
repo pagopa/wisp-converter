@@ -10,7 +10,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import it.gov.pagopa.wispconverter.controller.model.RPTTimerRequest;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
-import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
+import it.gov.pagopa.wispconverter.repository.model.enumz.WorkflowStatus;
 import it.gov.pagopa.wispconverter.service.RPTTimerService;
 import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.EndpointRETrace;
@@ -49,7 +49,7 @@ public class RPTTimerController {
             produces = MediaType.APPLICATION_JSON_VALUE,
             consumes = MediaType.APPLICATION_JSON_VALUE
     )
-    @EndpointRETrace(status = InternalStepStatus.RPT_TIMER_CREATION_PROCESSED, businessProcess = RPT_BP_TIMER_SET, reEnabled = true)
+    @EndpointRETrace(status = WorkflowStatus.RPT_TIMER_CREATION_PROCESSED, businessProcess = RPT_BP_TIMER_SET, reEnabled = true)
     public void createTimer(@RequestBody RPTTimerRequest request) {
         try {
             log.info("Invoking API operation createRPTTimer - args: {}", sanitizeInput(request.toString()));
@@ -75,7 +75,7 @@ public class RPTTimerController {
             value = "/timer",
             produces = MediaType.APPLICATION_JSON_VALUE
     )
-    @EndpointRETrace(status = InternalStepStatus.RPT_TIMER_DELETION_PROCESSED, businessProcess = RPT_BP_TIMER_DELETE, reEnabled = true)
+    @EndpointRETrace(status = WorkflowStatus.RPT_TIMER_DELETION_PROCESSED, businessProcess = RPT_BP_TIMER_DELETE, reEnabled = true)
     public void deleteTimer(@RequestParam() String sessionId) {
         try {
             log.info("Invoking API operation deleteRPTTimer - args: {}", sanitizeInput(sessionId));

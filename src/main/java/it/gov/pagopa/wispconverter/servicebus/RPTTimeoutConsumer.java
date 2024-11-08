@@ -4,7 +4,7 @@ import com.azure.messaging.servicebus.ServiceBusReceivedMessage;
 import com.azure.messaging.servicebus.ServiceBusReceivedMessageContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.wispconverter.controller.model.RPTTimerRequest;
-import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
+import it.gov.pagopa.wispconverter.repository.model.enumz.WorkflowStatus;
 import it.gov.pagopa.wispconverter.service.ConfigCacheService;
 import it.gov.pagopa.wispconverter.service.IdempotencyService;
 import it.gov.pagopa.wispconverter.service.PaaInviaRTSenderService;
@@ -90,7 +90,7 @@ public class RPTTimeoutConsumer extends SBConsumer {
             RPTTimerRequest timeoutMessage = mapper.readValue(message.getBody().toStream(), RPTTimerRequest.class);
 
             // sending rt- from session id
-            receiptService.sendRTKoFromSessionId(timeoutMessage.getSessionId(), InternalStepStatus.RPT_TIMER_IN_TIMEOUT);
+            receiptService.sendRTKoFromSessionId(timeoutMessage.getSessionId(), WorkflowStatus.RPT_TIMER_IN_TIMEOUT);
         } catch (IOException e) {
             log.error("Error when read rpt timer request value from message: '{}'. Body: '{}'", message.getMessageId(), message.getBody());
         }

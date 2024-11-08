@@ -3,7 +3,7 @@ package it.gov.pagopa.wispconverter.service;
 import it.gov.pagopa.gen.wispconverter.client.checkout.model.CartRequestDto;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
-import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
+import it.gov.pagopa.wispconverter.repository.model.enumz.WorkflowStatus;
 import it.gov.pagopa.wispconverter.repository.model.enumz.ReceiptStatusEnum;
 import it.gov.pagopa.wispconverter.service.model.ECommerceHangTimeoutMessage;
 import it.gov.pagopa.wispconverter.service.model.session.SessionDataDTO;
@@ -58,7 +58,7 @@ public class ConverterService {
             this.debtPositionService.createDebtPositions(sessionData);
 
             // call APIM policy for save key for decoupler and save in Redis cache the mapping of the request identifier needed for RT generation in next steps
-            this.decouplerService.storeRequestMappingInCache(sessionData, sessionId);
+            this.decouplerService.storeRequestMappingInCache(sessionData);
 
             // execute communication with Checkout service and set the redirection URI as response
             checkoutResponse = this.checkoutService.executeCall(sessionData);
@@ -71,11 +71,11 @@ public class ConverterService {
 
         } catch (AppException ex) {
             log.error("An appException error occurred during convert operations: " + ex.getMessage());
-            receiptService.sendRTKoFromSessionId(sessionId, InternalStepStatus.CONVERSION_ERROR_SENDING_RT);
+            receiptService.sendRTKoFromSessionId(sessionId, WorkflowStatus.CONVERSION_PROCESSED);
             throw ex;
         } catch (Exception ex) {
             log.error("A generic error occurred during convert operations: " + ex.getMessage());
-            receiptService.sendRTKoFromSessionId(sessionId, InternalStepStatus.CONVERSION_ERROR_SENDING_RT);
+            receiptService.sendRTKoFromSessionId(sessionId, WorkflowStatus.CONVERSION_PROCESSED);
             throw ex;
         }
         return checkoutResponse;

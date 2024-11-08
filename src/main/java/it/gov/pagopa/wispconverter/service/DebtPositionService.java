@@ -6,20 +6,25 @@ import it.gov.pagopa.gen.wispconverter.client.iuvgenerator.api.GenerationApi;
 import it.gov.pagopa.gen.wispconverter.client.iuvgenerator.model.IUVGenerationResponseDto;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
-import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
+import it.gov.pagopa.wispconverter.repository.model.enumz.WorkflowStatus;
 import it.gov.pagopa.wispconverter.service.mapper.DebtPositionMapper;
 import it.gov.pagopa.wispconverter.service.mapper.DebtPositionUpdateMapper;
 import it.gov.pagopa.wispconverter.service.model.DigitalStampDTO;
 import it.gov.pagopa.wispconverter.service.model.TransferDTO;
 import it.gov.pagopa.wispconverter.service.model.paymentrequest.PaymentRequestDTO;
-import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
+import it.gov.pagopa.wispconverter.service.model.re.RePaymentContext;
 import it.gov.pagopa.wispconverter.service.model.session.PaymentNoticeContentDTO;
 import it.gov.pagopa.wispconverter.service.model.session.PaymentPositionExistence;
 import it.gov.pagopa.wispconverter.service.model.session.RPTContentDTO;
 import it.gov.pagopa.wispconverter.service.model.session.SessionDataDTO;
 import it.gov.pagopa.wispconverter.util.CommonUtility;
 import it.gov.pagopa.wispconverter.util.Constants;
-import it.gov.pagopa.wispconverter.util.ReUtil;
+import java.math.BigDecimal;
+import java.time.OffsetDateTime;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
@@ -28,13 +33,6 @@ import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClientException;
-
-import java.math.BigDecimal;
-import java.time.OffsetDateTime;
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -345,7 +343,6 @@ public class DebtPositionService {
         for (PaymentNoticeContentDTO paymentNotice : sessionData.getAllPaymentNotices()) {
 
             String iuv = paymentNotice.getIuv();
-            try {
                 // communicate with GPD in order to retrieve the debt position
                 PaymentPositionModelBaseResponseDto paymentPosition = retrievedPaymentPosition;
                 if (!iuv.equals(iuvFromRetrievedPaymentPosition)) {
@@ -360,9 +357,6 @@ public class DebtPositionService {
 
                 // save event in RE for trace the error due to invalid payment position status
                 generateREForInvalidPaymentPosition(sessionData, iuv);
-            } catch (AppException e) {
-                generateREForNotExistingPaymentPosition(sessionData, iuv);
-            }
         }
 
         // finally, throw an exception for notify the error, including all the IUVs
@@ -384,8 +378,6 @@ public class DebtPositionService {
             // communicating with GPD service in order to update the existing payment position
             gpdClientInstance.updatePosition(creditorInstitutionId, updatedPaymentPosition.getIupd(), updatedPaymentPosition, MDC.get(Constants.MDC_REQUEST_ID), true);
 
-            // generate and save events in RE for trace the update of the existing payment position
-            generateREForUpdatedPaymentPosition(sessionData, iuv);
 
         } catch (RestClientException e) {
 
@@ -446,7 +438,6 @@ public class DebtPositionService {
 
         // generate a new NAV code calling IUVGenerator
         String nav = generateNavCodeFromIuvGenerator(creditorInstitutionId);
-        generateREForCreatedNAV(sessionData, iuv, nav);
         if (!Constants.NODO_INVIA_CARRELLO_RPT.equals(MDC.get(Constants.MDC_PRIMITIVE))) {
             MDC.put(Constants.MDC_NOTICE_NUMBER, nav);
         }
@@ -566,47 +557,13 @@ public class DebtPositionService {
         // creating event to be persisted for RE
         if (Boolean.TRUE.equals(isTracingOnREEnabled)) {
             PaymentNoticeContentDTO paymentNotice = sessionDataDTO.getPaymentNoticeByIUV(iuv);
-            generateRE(InternalStepStatus.GENERATING_RT_FOR_INVALID_PAYMENT_POSITION_IN_GPD, iuv, paymentNotice.getNoticeNumber(), paymentNotice.getCcp(), paymentNotice.getFiscalCode(), null);
+            reService.sendEvent(WorkflowStatus.CONVERSION_ERROR_SENDING_RT, RePaymentContext.builder()
+                            .iuv(iuv)
+                            .noticeNumber(paymentNotice.getNoticeNumber())
+                            .paymentToken(paymentNotice.getCcp())
+                            .domainId(paymentNotice.getFiscalCode())
+                    .build());
         }
-    }
-
-    private void generateREForNotExistingPaymentPosition(SessionDataDTO sessionDataDTO, String iuv) {
-
-        // creating event to be persisted for RE
-        if (Boolean.TRUE.equals(isTracingOnREEnabled)) {
-            PaymentNoticeContentDTO paymentNotice = sessionDataDTO.getPaymentNoticeByIUV(iuv);
-            String otherInfo = String.format("The RPT with IUV [%s] is not related to a payment position in GPD, so no notice number can be extracted for RT generation.", iuv);
-        }
-    }
-
-    private void generateREForCreatedNAV(SessionDataDTO sessionDataDTO, String iuv, String nav) {
-
-        // creating event to be persisted for RE
-        if (Boolean.TRUE.equals(isTracingOnREEnabled)) {
-            PaymentNoticeContentDTO paymentNotice = sessionDataDTO.getPaymentNoticeByIUV(iuv);
-        }
-    }
-
-    private void generateREForUpdatedPaymentPosition(SessionDataDTO sessionDataDTO, String iuv) {
-
-        // creating event to be persisted for RE
-        if (Boolean.TRUE.equals(isTracingOnREEnabled)) {
-            PaymentNoticeContentDTO paymentNotice = sessionDataDTO.getPaymentNoticeByIUV(iuv);
-        }
-    }
-
-    private void generateRE(InternalStepStatus status, String iuv, String noticeNumber, String ccp, String domainId, String otherInfo) {
-
-        // setting data in MDC for next use
-        ReEventDto reEvent = ReUtil.getREBuilder()
-                .status(status)
-                .iuv(iuv)
-                .ccp(ccp)
-                .domainId(domainId)
-                .noticeNumber(noticeNumber)
-                .info(otherInfo)
-                .build();
-        reService.addRe(reEvent);
     }
 
 }

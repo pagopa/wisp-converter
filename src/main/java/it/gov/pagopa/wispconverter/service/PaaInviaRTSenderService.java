@@ -7,26 +7,29 @@ import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.model.enumz.OutcomeEnum;
 import it.gov.pagopa.wispconverter.repository.model.enumz.ReceiptStatusEnum;
+import it.gov.pagopa.wispconverter.repository.model.enumz.WorkflowStatus;
+import it.gov.pagopa.wispconverter.service.model.re.ReRequestContext;
+import it.gov.pagopa.wispconverter.service.model.re.ReResponseContext;
 import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.JaxbElementUtil;
 import it.gov.pagopa.wispconverter.util.ProxyUtility;
-import it.gov.pagopa.wispconverter.util.ReUtil;
 import jakarta.xml.soap.SOAPMessage;
-import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.util.Pair;
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Service;
-import org.springframework.web.client.HttpStatusCodeException;
-import org.springframework.web.client.RestClient;
-
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
-
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.util.Pair;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpStatusCodeException;
+import org.springframework.web.client.RestClient;
 
 @Service
 @RequiredArgsConstructor
@@ -75,10 +78,39 @@ public class PaaInviaRTSenderService {
             // set the correct response regarding the creditor institution response
             if (Constants.OK.equals(paaInviaRTRisposta.getEsito())) {
                 rtReceiptCosmosService.updateReceiptStatus(domainId, iuv, ccp, ReceiptStatusEnum.SENT);
-                reService.addRe(ReUtil.createEventForCommunicationWithCI(uri.toString(), headers, payload, response, OutcomeEnum.OK));
+                reService.sendEvent(
+                        WorkflowStatus.COMMUNICATION_WITH_CREDITOR_INSTITUTION_PROCESSED,
+                        null,
+                        null,
+                        OutcomeEnum.OK,
+                        ReRequestContext.builder()
+                                .method(HttpMethod.POST)
+                                .uri(uri.toString())
+                                .headers(toHttpHeaders(headers))
+                                .payload(payload)
+                                .build(),
+                        ReResponseContext.builder()
+                                .headers(response.getHeaders())
+                                .statusCode(HttpStatus.valueOf(response.getStatusCode().value()))
+                                .payload(response.getBody())
+                                .build());
             } else {
                 rtReceiptCosmosService.updateReceiptStatus(domainId, iuv, ccp, ReceiptStatusEnum.SENT_REJECTED_BY_EC);
-                ReUtil.createEventForCommunicationWithCI(uri.toString(), headers, payload, response, OutcomeEnum.COMMUNICATION_RECEIVED_FAILURE);
+                reService.sendEvent(
+                        WorkflowStatus.COMMUNICATION_WITH_CREDITOR_INSTITUTION_PROCESSED,
+                        null,
+                        null,
+                        OutcomeEnum.COMMUNICATION_RECEIVED_FAILURE,
+                        ReRequestContext.builder()
+                                .method(HttpMethod.POST)
+                                .uri(uri.toString())
+                                .headers(toHttpHeaders(headers))
+                                .payload(payload)
+                                .build(),
+                        ReResponseContext.builder()
+                                .headers(response.getHeaders())
+                                .statusCode(HttpStatus.valueOf(response.getStatusCode().value()))
+                                .build());
                 FaultBean fault = paaInviaRTRisposta.getFault();
                 String faultCode = "ND";
                 String faultString = "ND";
@@ -96,17 +128,29 @@ public class PaaInviaRTSenderService {
             }
 
         } catch (AppException e) {
-
-            ReUtil.createEventForCommunicationWithCI(uri.toString(), headers, payload, null, OutcomeEnum.COMMUNICATION_RECEIVED_FAILURE);
+            reService.sendEvent(WorkflowStatus.COMMUNICATION_WITH_CREDITOR_INSTITUTION_PROCESSED, null,null, OutcomeEnum.COMMUNICATION_RECEIVED_FAILURE);
             throw e;
 
         } catch (Exception e) {
 
             // Save an RE event in order to track the response from creditor institution
             if (e instanceof HttpStatusCodeException error) {
-
                 ResponseEntity<String> response = new ResponseEntity<>(error.getResponseBodyAsString(), error.getResponseHeaders(), error.getStatusCode().value());
-                ReUtil.createEventForCommunicationWithCI(uri.toString(), headers, payload, response, OutcomeEnum.COMMUNICATION_RECEIVED_FAILURE);
+                reService.sendEvent(
+                        WorkflowStatus.COMMUNICATION_WITH_CREDITOR_INSTITUTION_PROCESSED,
+                        null,
+                        null,
+                        OutcomeEnum.COMMUNICATION_RECEIVED_FAILURE,
+                        ReRequestContext.builder()
+                                .method(HttpMethod.POST)
+                                .uri(uri.toString())
+                                .headers(toHttpHeaders(headers))
+                                .payload(payload)
+                                .build(),
+                        ReResponseContext.builder()
+                                .headers(response.getHeaders())
+                                .statusCode(HttpStatus.valueOf(response.getStatusCode().value()))
+                                .build());
             }
 
             throw new AppException(AppErrorCodeMessageEnum.RECEIPT_GENERATION_GENERIC_ERROR, e.getMessage());
@@ -147,5 +191,13 @@ public class PaaInviaRTSenderService {
         }
 
         return body;
+    }
+
+    public static HttpHeaders toHttpHeaders(List<Pair<String, String>> headerList) {
+        HttpHeaders headers = new HttpHeaders();
+        for (Pair<String, String> pair : headerList) {
+            headers.add(pair.getFirst(), pair.getSecond());
+        }
+        return headers;
     }
 }

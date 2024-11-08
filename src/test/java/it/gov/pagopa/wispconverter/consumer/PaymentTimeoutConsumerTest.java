@@ -82,7 +82,7 @@ public class PaymentTimeoutConsumerTest {
 
         paymentTimeoutConsumer.processMessage(context);
 
-        verify(receiptService, times(1)).sendKoPaaInviaRtToCreditorInstitution(anyString());
+        verify(receiptService, times(1)).sendKoPaaInviaRtToCreditorInstitution(anyList());
     }
 
     @Test

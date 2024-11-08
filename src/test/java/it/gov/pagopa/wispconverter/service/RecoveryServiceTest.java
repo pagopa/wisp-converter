@@ -5,7 +5,7 @@ import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.model.RTEntity;
 import it.gov.pagopa.wispconverter.repository.model.ReEventEntity;
 import it.gov.pagopa.wispconverter.repository.model.SessionIdEntity;
-import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
+import it.gov.pagopa.wispconverter.repository.model.enumz.WorkflowStatus;
 import it.gov.pagopa.wispconverter.secondary.RTRepositorySecondary;
 import it.gov.pagopa.wispconverter.secondary.ReEventRepositorySecondary;
 import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
@@ -66,7 +66,7 @@ public class RecoveryServiceTest {
         recoveryService.callSendReceiptKO(ci, iuv, ccp, session);
 
         // Assert
-        verify(receiptService, times(1)).sendRTKoFromSessionId(anyString(), any(InternalStepStatus.class));
+        verify(receiptService, times(1)).sendRTKoFromSessionId(anyString(), any(WorkflowStatus.class));
     }
 
     @Test
@@ -254,7 +254,7 @@ public class RecoveryServiceTest {
         // Assert
         assertNotNull(response);
         assertEquals(0, response.getPayments().size());
-        verify(receiptService, times(0)).sendRTKoFromSessionId(anyString(), any(InternalStepStatus.class));
+        verify(receiptService, times(0)).sendRTKoFromSessionId(anyString(), any(WorkflowStatus.class));
     }
 
     @Test
@@ -279,6 +279,6 @@ public class RecoveryServiceTest {
         // Assert
         assertNotNull(response);
         assertEquals(1, response.getPayments().size());
-        verify(receiptService, times(1)).sendRTKoFromSessionId(anyString(), any(InternalStepStatus.class));
+        verify(receiptService, times(1)).sendRTKoFromSessionId(anyString(), any(WorkflowStatus.class));
     }
 }

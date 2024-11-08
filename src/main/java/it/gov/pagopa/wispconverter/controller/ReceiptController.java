@@ -12,7 +12,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import it.gov.pagopa.wispconverter.controller.model.ReceiptRequest;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
-import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
+import it.gov.pagopa.wispconverter.repository.model.enumz.WorkflowStatus;
 import it.gov.pagopa.wispconverter.service.ReceiptService;
 import it.gov.pagopa.wispconverter.service.RtReceiptCosmosService;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
@@ -95,12 +95,12 @@ public class ReceiptController {
             produces = MediaType.APPLICATION_JSON_VALUE,
             consumes = MediaType.APPLICATION_JSON_VALUE
     )
-    @EndpointRETrace(status = InternalStepStatus.RECEIPT_SEND_PROCESSED, businessProcess = BP_RECEIPT_KO, reEnabled = true)
+    @EndpointRETrace(status = WorkflowStatus.RECEIPT_SEND_PROCESSED, businessProcess = BP_RECEIPT_KO, reEnabled = true)
     public void receiptKo(@RequestBody String request) throws Exception {
 
         try {
             log.info("Invoking API operation receiptKo - args: {}", request);
-            receiptService.sendKoPaaInviaRtToCreditorInstitution(List.of(mapper.readValue(request, ReceiptDto.class)).toString());
+            receiptService.sendKoPaaInviaRtToCreditorInstitution(List.of(mapper.readValue(request, ReceiptDto.class)));
             log.info("Successful API operation receiptKo");
         } catch (Exception ex) {
             String operationId = MDC.get(Constants.MDC_OPERATION_ID);
@@ -122,7 +122,7 @@ public class ReceiptController {
             produces = MediaType.APPLICATION_JSON_VALUE,
             consumes = MediaType.APPLICATION_JSON_VALUE
     )
-    @EndpointRETrace(status = InternalStepStatus.RECEIPT_SEND_PROCESSED, businessProcess = BP_RECEIPT_OK, reEnabled = true)
+    @EndpointRETrace(status = WorkflowStatus.RECEIPT_SEND_PROCESSED, businessProcess = BP_RECEIPT_OK, reEnabled = true)
     public void receiptOk(@RequestBody ReceiptRequest request) throws IOException {
 
         try {

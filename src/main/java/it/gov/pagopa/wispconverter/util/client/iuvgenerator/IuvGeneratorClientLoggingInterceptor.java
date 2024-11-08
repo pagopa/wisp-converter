@@ -1,6 +1,6 @@
 package it.gov.pagopa.wispconverter.util.client.iuvgenerator;
 
-import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
+import it.gov.pagopa.wispconverter.repository.model.enumz.WorkflowStatus;
 import it.gov.pagopa.wispconverter.service.ReService;
 import it.gov.pagopa.wispconverter.util.client.AbstractAppClientLoggingInterceptor;
 import it.gov.pagopa.wispconverter.util.client.ClientServiceEnum;
@@ -21,7 +21,7 @@ public class IuvGeneratorClientLoggingInterceptor extends AbstractAppClientLoggi
     }
 
     @Override
-    protected InternalStepStatus getOperationStatus(String url, HttpMethod httpMethod) {
-        return InternalStepStatus.COMMUNICATION_WITH_IUVGENERATOR_FOR_NAV_CREATION_PROCESSED;
+    protected WorkflowStatus getOperationStatus(String url, HttpMethod httpMethod) {
+        return WorkflowStatus.COMMUNICATION_WITH_IUVGENERATOR_FOR_NAV_CREATION_PROCESSED;
     }
 }

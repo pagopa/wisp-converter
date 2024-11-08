@@ -1,23 +1,17 @@
 package it.gov.pagopa.wispconverter.servicebus;
 
 import com.azure.messaging.servicebus.*;
-import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
 import it.gov.pagopa.wispconverter.service.ReService;
-import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
-import it.gov.pagopa.wispconverter.util.ReUtil;
+import java.util.concurrent.TimeUnit;
+import javax.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-
-import javax.annotation.PreDestroy;
-import java.util.concurrent.TimeUnit;
 
 // Service Bus Consumer
 @Slf4j
 public abstract class SBConsumer {
     protected ServiceBusProcessorClient receiverClient;
 
-    @Autowired
-    private ReService reService;
 
     @PreDestroy
     public void preDestroy() {
@@ -53,18 +47,8 @@ public abstract class SBConsumer {
                 Thread.currentThread().interrupt();
             }
         } else {
-            log.error("Error source {}, reason {}, message: {}", context.getErrorSource(),
-                    reason, context.getException());
+            log.error("Error source {}, reason {}, message: ", context.getErrorSource(), reason, context.getException());
         }
-    }
-
-    protected void generateRE(InternalStepStatus status, String otherInfo) {
-
-        ReEventDto reEvent = ReUtil.getREBuilder()
-                .status(status)
-                .info(otherInfo)
-                .build();
-        reService.addRe(reEvent);
     }
 
 }

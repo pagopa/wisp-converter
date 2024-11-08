@@ -1,6 +1,6 @@
 package it.gov.pagopa.wispconverter.util.client.apiconfigcache;
 
-import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
+import it.gov.pagopa.wispconverter.repository.model.enumz.WorkflowStatus;
 import it.gov.pagopa.wispconverter.service.ReService;
 import it.gov.pagopa.wispconverter.util.client.AbstractAppClientLoggingInterceptor;
 import it.gov.pagopa.wispconverter.util.client.ClientServiceEnum;
@@ -19,7 +19,7 @@ public class ApiConfigCacheClientLoggingInterceptor extends AbstractAppClientLog
     }
 
     @Override
-    protected InternalStepStatus getOperationStatus(String url, HttpMethod httpMethod) {
-        return null;
+    protected WorkflowStatus getOperationStatus(String url, HttpMethod httpMethod) {
+        return WorkflowStatus.COMMUNICATION_WITH_APICONFIG_CACHE_PROCESSED;
     }
 }

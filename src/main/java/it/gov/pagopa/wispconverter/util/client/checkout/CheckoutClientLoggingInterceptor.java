@@ -1,6 +1,6 @@
 package it.gov.pagopa.wispconverter.util.client.checkout;
 
-import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
+import it.gov.pagopa.wispconverter.repository.model.enumz.WorkflowStatus;
 import it.gov.pagopa.wispconverter.service.ReService;
 import it.gov.pagopa.wispconverter.util.client.AbstractAppClientLoggingInterceptor;
 import it.gov.pagopa.wispconverter.util.client.ClientServiceEnum;
@@ -21,7 +21,7 @@ public class CheckoutClientLoggingInterceptor extends AbstractAppClientLoggingIn
     }
 
     @Override
-    protected InternalStepStatus getOperationStatus(String url, HttpMethod httpMethod) {
-        return InternalStepStatus.COMMUNICATION_WITH_CHECKOUT_FOR_CART_CREATION_PROCESSED;
+    protected WorkflowStatus getOperationStatus(String url, HttpMethod httpMethod) {
+        return WorkflowStatus.COMMUNICATION_WITH_CHECKOUT_FOR_CART_CREATION_PROCESSED;
     }
 }

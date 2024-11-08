@@ -3,7 +3,6 @@ package it.gov.pagopa.wispconverter.service;
 import it.gov.pagopa.gen.wispconverter.client.cache.model.StationDto;
 import it.gov.pagopa.gen.wispconverter.client.checkout.model.CartRequestDto;
 import it.gov.pagopa.gen.wispconverter.client.checkout.model.CartResponseDto;
-import it.gov.pagopa.gen.wispconverter.client.checkout.model.PaymentNoticeDto;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.service.mapper.CartMapper;
@@ -47,9 +46,6 @@ public class CheckoutService {
             it.gov.pagopa.gen.wispconverter.client.checkout.api.DefaultApi apiInstance = new it.gov.pagopa.gen.wispconverter.client.checkout.api.DefaultApi(checkoutClient);
             CartResponseDto response = apiInstance.postCarts(cart);
             location = response.getCheckoutRedirectUrl().toString();
-
-            // generate and save re events internal for change status
-            generateRE(sessionData, cart, location);
 
         } catch (RestClientException e) {
             throw new AppException(AppErrorCodeMessageEnum.CLIENT_CHECKOUT,
@@ -117,16 +113,5 @@ public class CheckoutService {
         url = url.replace("//", "/");
 
         return protocol + "://" + url;
-    }
-
-    private void generateRE(SessionDataDTO sessionData, CartRequestDto cartRequest, String redirectUrl) {
-
-        // creating event to be persisted for RE
-        if (Boolean.TRUE.equals(isTracingOnREEnabled)) {
-            for (PaymentNoticeDto paymentNoticeFromCart : cartRequest.getPaymentNotices()) {
-                PaymentNoticeContentDTO paymentNotice = sessionData.getPaymentNoticeByNoticeNumber(paymentNoticeFromCart.getNoticeNumber());
-               
-            }
-        }
     }
 }

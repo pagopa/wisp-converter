@@ -3,10 +3,12 @@ package it.gov.pagopa.wispconverter.servicebus;
 import com.azure.messaging.servicebus.ServiceBusReceivedMessage;
 import com.azure.messaging.servicebus.ServiceBusReceivedMessageContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
+import it.gov.pagopa.wispconverter.repository.model.enumz.WorkflowStatus;
+import it.gov.pagopa.wispconverter.service.ReService;
 import it.gov.pagopa.wispconverter.service.ReceiptService;
 import it.gov.pagopa.wispconverter.service.model.ECommerceHangTimeoutMessage;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
+import it.gov.pagopa.wispconverter.service.model.re.RePaymentContext;
 import it.gov.pagopa.wispconverter.util.CommonUtility;
 import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.MDCUtil;
@@ -44,6 +46,9 @@ public class ECommerceHangTimeoutConsumer extends SBConsumer {
     @Autowired
     private ReceiptService receiptService;
 
+    @Autowired
+    private ReService reService;
+
     @Value("${disable-service-bus-receiver}")
     private boolean disableServiceBusReceiver;
 
@@ -74,7 +79,10 @@ public class ECommerceHangTimeoutConsumer extends SBConsumer {
             // log event
             MDC.put(Constants.MDC_DOMAIN_ID, timeoutMessage.getFiscalCode());
             MDC.put(Constants.MDC_NOTICE_NUMBER, timeoutMessage.getNoticeNumber());
-            generateRE(InternalStepStatus.ECOMMERCE_HANG_TIMER_TRIGGER, "Expired eCommerce hang timer. A Negative sendRT will be sent: " + timeoutMessage);
+            reService.sendEvent(WorkflowStatus.ECOMMERCE_HANG_TIMER_IN_TIMEOUT, RePaymentContext.builder()
+                            .domainId(timeoutMessage.getFiscalCode())
+                            .noticeNumber(timeoutMessage.getNoticeNumber())
+                    .build() , "Expired eCommerce hang timer. A Negative sendRT will be sent: " + timeoutMessage);
 
             // transform to string list
             var inputPaaInviaRTKo = List.of(ReceiptDto.builder()

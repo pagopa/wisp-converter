@@ -1,6 +1,6 @@
 package it.gov.pagopa.wispconverter.util.client.gpd;
 
-import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
+import it.gov.pagopa.wispconverter.repository.model.enumz.WorkflowStatus;
 import it.gov.pagopa.wispconverter.service.ReService;
 import it.gov.pagopa.wispconverter.util.client.AbstractAppClientLoggingInterceptor;
 import it.gov.pagopa.wispconverter.util.client.ClientServiceEnum;
@@ -28,12 +28,12 @@ public class GpdClientLoggingInterceptor extends AbstractAppClientLoggingInterce
     }
 
     @Override
-    protected InternalStepStatus getOperationStatus(String url, HttpMethod httpMethod) {
-        InternalStepStatus status;
+    protected WorkflowStatus getOperationStatus(String url, HttpMethod httpMethod) {
+        WorkflowStatus status;
         if (httpMethod.equals(HttpMethod.GET) && getDebtPositionPattern.asMatchPredicate().test(url)) {
-            status = InternalStepStatus.COMMUNICATION_WITH_GPD_FOR_DEBT_POSITION_RETRIEVE_PROCESSED;
+            status = WorkflowStatus.COMMUNICATION_WITH_GPD_FOR_DEBT_POSITION_RETRIEVE_PROCESSED;
         } else {
-            status = InternalStepStatus.COMMUNICATION_WITH_GPD_FOR_DEBT_POSITION_UPSERT_PROCESSED;
+            status = WorkflowStatus.COMMUNICATION_WITH_GPD_FOR_DEBT_POSITION_UPSERT_PROCESSED;
         }
         return status;
     }

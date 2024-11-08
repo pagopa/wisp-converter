@@ -1,312 +1,367 @@
 package it.gov.pagopa.wispconverter.util.client;
 
-import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
 import it.gov.pagopa.wispconverter.repository.model.enumz.OutcomeEnum;
+import it.gov.pagopa.wispconverter.repository.model.enumz.WorkflowStatus;
 import it.gov.pagopa.wispconverter.service.ReService;
-import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
+import it.gov.pagopa.wispconverter.service.model.re.ReRequestContext;
+import it.gov.pagopa.wispconverter.service.model.re.ReResponseContext;
 import it.gov.pagopa.wispconverter.util.CommonUtility;
 import it.gov.pagopa.wispconverter.util.Constants;
-import it.gov.pagopa.wispconverter.util.ReUtil;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.UUID;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.MDC;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpRequest;
+import org.springframework.http.*;
 import org.springframework.http.client.ClientHttpRequestExecution;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StreamUtils;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.UUID;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 @Slf4j
 public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpRequestInterceptor {
 
-    public static final String REQUEST_DEFAULT_MESSAGE_PREFIX = "===> CLIENT Request OPERATION_ID=%s, CLIENT_OPERATION_ID=%s - ";
-    public static final String RESPONSE_DEFAULT_MESSAGE_PREFIX = "<=== CLIENT Response OPERATION_ID=%s, CLIENT_OPERATION_ID=%s -";
-    private static final int REQUEST_DEFAULT_MAX_PAYLOAD_LENGTH = 50;
-    private static final int RESPONSE_DEFAULT_MAX_PAYLOAD_LENGTH = 50;
-    private static final String SPACE = " ";
-    private static final String PRETTY_OUT = "\n===> *";
-    private static final String PRETTY_IN = "\n<=== *";
-    private final ReService reService;
-    protected ClientServiceEnum clientServiceEnum;
-    private boolean requestIncludeHeaders;
-    private boolean responseIncludeHeaders;
-    private boolean requestIncludePayload;
-    private boolean responseIncludePayload;
-    private Predicate<String> requestHeaderPredicate;
-    private Predicate<String> responseHeaderPredicate;
-    private int requestMaxPayloadLength = REQUEST_DEFAULT_MAX_PAYLOAD_LENGTH;
-    private int responseMaxPayloadLength = RESPONSE_DEFAULT_MAX_PAYLOAD_LENGTH;
-    private boolean requestPretty;
-    private boolean responsePretty;
-    private boolean mustPersistEventOnRE;
+  public static final String REQUEST_DEFAULT_MESSAGE_PREFIX =
+      "===> CLIENT Request OPERATION_ID=%s, CLIENT_OPERATION_ID=%s - ";
+  public static final String RESPONSE_DEFAULT_MESSAGE_PREFIX =
+      "<=== CLIENT Response OPERATION_ID=%s, CLIENT_OPERATION_ID=%s -";
+  private static final int REQUEST_DEFAULT_MAX_PAYLOAD_LENGTH = 50;
+  private static final int RESPONSE_DEFAULT_MAX_PAYLOAD_LENGTH = 50;
+  private static final String SPACE = " ";
+  private static final String PRETTY_OUT = "\n===> *";
+  private static final String PRETTY_IN = "\n<=== *";
+  private final ReService reService;
+  protected ClientServiceEnum clientServiceEnum;
+  private boolean requestIncludeHeaders;
+  private boolean responseIncludeHeaders;
+  private boolean requestIncludePayload;
+  private boolean responseIncludePayload;
+  private Predicate<String> requestHeaderPredicate;
+  private Predicate<String> responseHeaderPredicate;
+  private int requestMaxPayloadLength = REQUEST_DEFAULT_MAX_PAYLOAD_LENGTH;
+  private int responseMaxPayloadLength = RESPONSE_DEFAULT_MAX_PAYLOAD_LENGTH;
+  private boolean requestPretty;
+  private boolean responsePretty;
+  private boolean mustPersistEventOnRE;
 
-    protected AbstractAppClientLoggingInterceptor(RequestResponseLoggingProperties clientLoggingProperties, ReService reService, ClientServiceEnum clientServiceEnum) {
-        this.reService = reService;
-        this.clientServiceEnum = clientServiceEnum;
-        this.mustPersistEventOnRE = true;
+  protected AbstractAppClientLoggingInterceptor(
+      RequestResponseLoggingProperties clientLoggingProperties,
+      ReService reService,
+      ClientServiceEnum clientServiceEnum) {
+    this.reService = reService;
+    this.clientServiceEnum = clientServiceEnum;
+    this.mustPersistEventOnRE = true;
 
-        if (clientLoggingProperties != null) {
-            RequestResponseLoggingProperties.Request request = clientLoggingProperties.getRequest();
-            if (request != null) {
-                this.requestIncludeHeaders = request.isIncludeHeaders();
-                this.requestIncludePayload = request.isIncludePayload();
-                this.requestMaxPayloadLength = request.getMaxPayloadLength() != null ? request.getMaxPayloadLength() : REQUEST_DEFAULT_MAX_PAYLOAD_LENGTH;
-                this.requestHeaderPredicate = s -> !s.equals(request.getMaskHeaderName());
-                this.requestPretty = request.isPretty();
-            }
-            RequestResponseLoggingProperties.Response response = clientLoggingProperties.getResponse();
-            if (response != null) {
-                this.responseIncludeHeaders = response.isIncludeHeaders();
-                this.responseIncludePayload = response.isIncludePayload();
-                this.responseMaxPayloadLength = response.getMaxPayloadLength() != null ? response.getMaxPayloadLength() : RESPONSE_DEFAULT_MAX_PAYLOAD_LENGTH;
-                this.responseHeaderPredicate = null;
-                this.responsePretty = response.isPretty();
-            }
-        }
+    if (clientLoggingProperties != null) {
+      RequestResponseLoggingProperties.Request request = clientLoggingProperties.getRequest();
+      if (request != null) {
+        this.requestIncludeHeaders = request.isIncludeHeaders();
+        this.requestIncludePayload = request.isIncludePayload();
+        this.requestMaxPayloadLength =
+            request.getMaxPayloadLength() != null
+                ? request.getMaxPayloadLength()
+                : REQUEST_DEFAULT_MAX_PAYLOAD_LENGTH;
+        this.requestHeaderPredicate = s -> !s.equals(request.getMaskHeaderName());
+        this.requestPretty = request.isPretty();
+      }
+      RequestResponseLoggingProperties.Response response = clientLoggingProperties.getResponse();
+      if (response != null) {
+        this.responseIncludeHeaders = response.isIncludeHeaders();
+        this.responseIncludePayload = response.isIncludePayload();
+        this.responseMaxPayloadLength =
+            response.getMaxPayloadLength() != null
+                ? response.getMaxPayloadLength()
+                : RESPONSE_DEFAULT_MAX_PAYLOAD_LENGTH;
+        this.responseHeaderPredicate = null;
+        this.responsePretty = response.isPretty();
+      }
+    }
+  }
 
+  @Override
+  public ClientHttpResponse intercept(
+      HttpRequest request, byte[] body, ClientHttpRequestExecution execution) throws IOException {
+
+    String startClient = String.valueOf(System.currentTimeMillis());
+    String clientOperationId = UUID.randomUUID().toString();
+    String operationId = MDC.get(Constants.MDC_OPERATION_ID);
+    logRequest(clientOperationId, operationId, request, body);
+    OutcomeEnum outcome;
+    WorkflowStatus status = getOperationStatus(request.getURI().toString(), request.getMethod());
+
+    ClientHttpResponse response = null;
+    try {
+
+      response = execution.execute(request, body);
+
+      String executionClientTime = CommonUtility.getExecutionTime(startClient);
+      MDC.put(Constants.MDC_CLIENT_EXECUTION_TIME, executionClientTime);
+      if (response.getStatusCode().is2xxSuccessful()) {
+        outcome = OutcomeEnum.OK;
+      } else {
+        outcome = OutcomeEnum.COMMUNICATION_RECEIVED_FAILURE;
+      }
+      logResponse(clientOperationId, operationId, executionClientTime, request, response);
+
+      generateRe(request, body, response, status, outcome);
+
+    } catch (Exception e) {
+
+      outcome = OutcomeEnum.COMMUNICATION_RECEIVED_FAILURE;
+      String executionClientTime = CommonUtility.getExecutionTime(startClient);
+      MDC.put(Constants.MDC_CLIENT_EXECUTION_TIME, executionClientTime);
+      logResponse(clientOperationId, operationId, executionClientTime, request, null);
+      generateRe(request, body, response, status, outcome);
+      throw e;
+
+    } finally {
+
+      MDC.remove(Constants.MDC_CLIENT_EXECUTION_TIME);
     }
 
-    @Override
-    public ClientHttpResponse intercept(HttpRequest request, byte[] body, ClientHttpRequestExecution execution) throws IOException {
+    return response;
+  }
 
-        String startClient = String.valueOf(System.currentTimeMillis());
-        String clientOperationId = UUID.randomUUID().toString();
-        String operationId = MDC.get(Constants.MDC_OPERATION_ID);
-        logRequest(clientOperationId, operationId, request, body);
-        OutcomeEnum outcome;
-        InternalStepStatus status = getOperationStatus(request.getURI().toString(), request.getMethod());
-
-        ClientHttpResponse response = null;
-        try {
-
-            response = execution.execute(request, body);
-
-            String executionClientTime = CommonUtility.getExecutionTime(startClient);
-            MDC.put(Constants.MDC_CLIENT_EXECUTION_TIME, executionClientTime);
-            if (response.getStatusCode().is2xxSuccessful()) {
-                outcome = OutcomeEnum.OK;
-            } else {
-                outcome = OutcomeEnum.COMMUNICATION_RECEIVED_FAILURE;
-            }
-            logResponse(clientOperationId, operationId, executionClientTime, request, response);
-            persistInterfaceEventInRE(ReUtil.createEventForClientCommunication(request, response, body, status, outcome));
-
-        } catch (Exception e) {
-
-            outcome = OutcomeEnum.COMMUNICATION_NEVER_RECEIVED;
-            String executionClientTime = CommonUtility.getExecutionTime(startClient);
-            MDC.put(Constants.MDC_CLIENT_EXECUTION_TIME, executionClientTime);
-            logResponse(clientOperationId, operationId, executionClientTime, request, null);
-            persistInterfaceEventInRE(ReUtil.createEventForClientCommunication(request, response, body, status, outcome));
-            throw e;
-
-        } finally {
-
-            MDC.remove(Constants.MDC_CLIENT_EXECUTION_TIME);
-        }
-
-        return response;
+  private void generateRe(HttpRequest request, byte[] body, ClientHttpResponse response, WorkflowStatus status, OutcomeEnum outcome) throws IOException {
+      ReRequestContext requestContext = null;
+    if (request != null) {
+      requestContext =
+          ReRequestContext.builder()
+              .uri(request.getURI().toString())
+              .method(request.getMethod())
+              .headers(request.getHeaders())
+              .payload(Arrays.toString(body))
+              .build();
     }
+    ReResponseContext responseContext = null;
+    if (response != null) {
+      responseContext =
+          ReResponseContext.builder()
+              .statusCode(HttpStatus.valueOf(response.getStatusCode().value()))
+              .headers(response.getHeaders())
+              .payload(StreamUtils.copyToString(response.getBody(), StandardCharsets.UTF_8))
+              .build();
+    }
+    reService.sendEvent(status, null, null, outcome, requestContext, responseContext);
+  }
 
-    protected String createRequestMessage(String clientOperationId, String operationId, HttpRequest request, byte[] reqBody) {
-        StringBuilder msg = new StringBuilder();
-        msg.append(String.format(REQUEST_DEFAULT_MESSAGE_PREFIX, operationId, clientOperationId));
-        if (this.requestPretty) {
-            msg.append(PRETTY_OUT).append(SPACE);
-        }
-        msg.append("path: ").append(request.getMethod()).append(' ');
-        msg.append(request.getURI());
+  protected String createRequestMessage(
+      String clientOperationId, String operationId, HttpRequest request, byte[] reqBody) {
+    StringBuilder msg = new StringBuilder();
+    msg.append(String.format(REQUEST_DEFAULT_MESSAGE_PREFIX, operationId, clientOperationId));
+    if (this.requestPretty) {
+      msg.append(PRETTY_OUT).append(SPACE);
+    }
+    msg.append("path: ").append(request.getMethod()).append(' ');
+    msg.append(request.getURI());
 
-        if (this.requestIncludeHeaders) {
-            HttpHeaders headers = new HttpHeaders();
-            request.getHeaders().forEach((s, h) -> {
+    if (this.requestIncludeHeaders) {
+      HttpHeaders headers = new HttpHeaders();
+      request
+          .getHeaders()
+          .forEach(
+              (s, h) -> {
                 headers.add(s, StringUtils.join(h, ","));
+              });
+      if (this.requestHeaderPredicate != null) {
+        headers.forEach(
+            (key, value) -> {
+              if (!this.requestHeaderPredicate.test(key)) {
+                headers.set(key, "masked");
+              }
             });
-            if (this.requestHeaderPredicate != null) {
-                headers.forEach(
-                        (key, value) -> {
-                            if (!this.requestHeaderPredicate.test(key)) {
-                                headers.set(key, "masked");
-                            }
-                        });
-            }
-            String formatRequestHeaders = formatRequestHeaders(headers);
-            if (formatRequestHeaders != null) {
-                if (this.requestPretty) {
-                    msg.append(PRETTY_OUT).append(SPACE);
-                } else {
-                    msg.append(", ");
-                }
-                msg.append("headers: [").append(formatRequestHeaders);
-                if (this.requestPretty) {
-                    msg.append(PRETTY_OUT).append(SPACE);
-                }
-                msg.append("]");
-            }
+      }
+      String formatRequestHeaders = formatRequestHeaders(headers);
+      if (formatRequestHeaders != null) {
+        if (this.requestPretty) {
+          msg.append(PRETTY_OUT).append(SPACE);
+        } else {
+          msg.append(", ");
         }
-
-        if (this.requestIncludePayload) {
-            String payload = new String(reqBody, StandardCharsets.UTF_8);
-            if (payload != null) {
-                if (this.requestPretty) {
-                    msg.append(PRETTY_OUT).append(SPACE);
-                } else {
-                    msg.append(", ");
-                }
-                msg.append("payload: ").append(payload);
-            }
+        msg.append("headers: [").append(formatRequestHeaders);
+        if (this.requestPretty) {
+          msg.append(PRETTY_OUT).append(SPACE);
         }
-
-        return msg.toString();
+        msg.append("]");
+      }
     }
 
-    protected String createResponseMessage(String clientOperationId, String operationId, String clientExecutionTime, HttpRequest request, ClientHttpResponse response)
-            throws IOException {
-        StringBuilder msg = new StringBuilder();
-        msg.append(String.format(RESPONSE_DEFAULT_MESSAGE_PREFIX, operationId, clientOperationId));
-        if (this.responsePretty) {
-            msg.append(PRETTY_IN).append(SPACE);
-        }
-        msg.append("path: ").append(request.getMethod()).append(' ');
-        msg.append(request.getURI());
-
-        if (this.responsePretty) {
-            msg.append(PRETTY_IN).append(SPACE);
+    if (this.requestIncludePayload) {
+      String payload = new String(reqBody, StandardCharsets.UTF_8);
+      if (payload != null) {
+        if (this.requestPretty) {
+          msg.append(PRETTY_OUT).append(SPACE);
         } else {
+          msg.append(", ");
+        }
+        msg.append("payload: ").append(payload);
+      }
+    }
+
+    return msg.toString();
+  }
+
+  protected String createResponseMessage(
+      String clientOperationId,
+      String operationId,
+      String clientExecutionTime,
+      HttpRequest request,
+      ClientHttpResponse response)
+      throws IOException {
+    StringBuilder msg = new StringBuilder();
+    msg.append(String.format(RESPONSE_DEFAULT_MESSAGE_PREFIX, operationId, clientOperationId));
+    if (this.responsePretty) {
+      msg.append(PRETTY_IN).append(SPACE);
+    }
+    msg.append("path: ").append(request.getMethod()).append(' ');
+    msg.append(request.getURI());
+
+    if (this.responsePretty) {
+      msg.append(PRETTY_IN).append(SPACE);
+    } else {
+      msg.append(", ");
+    }
+    msg.append("client-execution-time: ").append(clientExecutionTime).append("ms");
+
+    if (response != null) {
+      if (this.responsePretty) {
+        msg.append(PRETTY_IN).append(SPACE);
+      }
+      msg.append("status: ").append(response.getStatusCode().value());
+
+      if (this.responseIncludeHeaders) {
+        HttpHeaders headers = new HttpHeaders();
+        response
+            .getHeaders()
+            .forEach(
+                (s, h) -> {
+                  headers.add(s, StringUtils.join(h, ","));
+                });
+        if (this.responseHeaderPredicate != null) {
+          headers.forEach(
+              (key, value) -> {
+                if (!this.requestHeaderPredicate.test(key)) {
+                  headers.set(key, "masked");
+                }
+              });
+        }
+        String formatResponseHeaders = formatResponseHeaders(headers);
+        if (formatResponseHeaders != null) {
+          if (this.requestPretty) {
+            msg.append(PRETTY_IN).append(SPACE);
+          } else {
             msg.append(", ");
+          }
+          msg.append("headers: [").append(formatResponseHeaders);
+          if (this.requestPretty) {
+            msg.append(PRETTY_OUT).append(SPACE);
+          }
+          msg.append("]");
         }
-        msg.append("client-execution-time: ").append(clientExecutionTime).append("ms");
+      }
 
-        if (response != null) {
-            if (this.responsePretty) {
-                msg.append(PRETTY_IN).append(SPACE);
-            }
-            msg.append("status: ").append(response.getStatusCode().value());
+      if (this.responseIncludePayload) {
+        String payload = bodyToString(response.getBody());
+        if (!payload.isBlank()) {
+          if (this.requestPretty) {
+            msg.append(PRETTY_IN).append(SPACE);
+          } else {
+            msg.append(", ");
+          }
+          msg.append("payload: ").append(payload);
+        }
+      }
+    } else {
+      if (this.responsePretty) {
+        msg.append(PRETTY_IN).append(SPACE);
+      }
+      msg.append("NO RICEVUTA");
+    }
 
-            if (this.responseIncludeHeaders) {
-                HttpHeaders headers = new HttpHeaders();
-                response.getHeaders().forEach((s, h) -> {
-                    headers.add(s, StringUtils.join(h, ","));
+    return msg.toString();
+  }
+
+  protected void logRequest(
+      String clientOperationId, String operationId, HttpRequest request, byte[] reqBody) {
+    if (log.isDebugEnabled()) {
+      log.debug(createRequestMessage(clientOperationId, operationId, request, reqBody));
+    }
+  }
+
+  @SneakyThrows
+  protected void logResponse(
+      String clientOperationId,
+      String operationId,
+      String clientExecutionTime,
+      HttpRequest request,
+      ClientHttpResponse response) {
+    if (log.isDebugEnabled()) {
+      log.debug(
+          createResponseMessage(
+              clientOperationId, operationId, clientExecutionTime, request, response));
+    }
+  }
+
+  private String formatRequestHeaders(MultiValueMap<String, String> headers) {
+    Stream<String> stream =
+        headers.entrySet().stream()
+            .map(
+                (entry) -> {
+                  if (this.requestPretty) {
+                    String values =
+                        entry.getValue().stream().collect(Collectors.joining("\", \"", "\"", "\""));
+                    return PRETTY_OUT + "*\t" + entry.getKey() + ": [" + values + "]";
+                  } else {
+                    String values =
+                        entry.getValue().stream().collect(Collectors.joining("\", \"", "\"", "\""));
+                    return entry.getKey() + ": [" + values + "]";
+                  }
                 });
-                if (this.responseHeaderPredicate != null) {
-                    headers.forEach(
-                            (key, value) -> {
-                                if (!this.requestHeaderPredicate.test(key)) {
-                                    headers.set(key, "masked");
-                                }
-                            });
-                }
-                String formatResponseHeaders = formatResponseHeaders(headers);
-                if (formatResponseHeaders != null) {
-                    if (this.requestPretty) {
-                        msg.append(PRETTY_IN).append(SPACE);
-                    } else {
-                        msg.append(", ");
-                    }
-                    msg.append("headers: [").append(formatResponseHeaders);
-                    if (this.requestPretty) {
-                        msg.append(PRETTY_OUT).append(SPACE);
-                    }
-                    msg.append("]");
-                }
-            }
-
-            if (this.responseIncludePayload) {
-                String payload = bodyToString(response.getBody());
-                if (!payload.isBlank()) {
-                    if (this.requestPretty) {
-                        msg.append(PRETTY_IN).append(SPACE);
-                    } else {
-                        msg.append(", ");
-                    }
-                    msg.append("payload: ").append(payload);
-                }
-            }
-        } else {
-            if (this.responsePretty) {
-                msg.append(PRETTY_IN).append(SPACE);
-            }
-            msg.append("NO RICEVUTA");
-        }
-
-        return msg.toString();
+    if (this.requestPretty) {
+      return stream.collect(Collectors.joining(""));
+    } else {
+      return stream.collect(Collectors.joining(", "));
     }
+  }
 
-
-    protected void logRequest(String clientOperationId, String operationId, HttpRequest request, byte[] reqBody) {
-        if (log.isDebugEnabled()) {
-            log.debug(createRequestMessage(clientOperationId, operationId, request, reqBody));
-        }
-    }
-
-    @SneakyThrows
-    protected void logResponse(String clientOperationId, String operationId, String clientExecutionTime, HttpRequest request, ClientHttpResponse response) {
-        if (log.isDebugEnabled()) {
-            log.debug(createResponseMessage(clientOperationId, operationId, clientExecutionTime, request, response));
-        }
-    }
-
-    private String formatRequestHeaders(MultiValueMap<String, String> headers) {
-        Stream<String> stream = headers.entrySet().stream()
-                .map((entry) -> {
-                    if (this.requestPretty) {
-                        String values = entry.getValue().stream().collect(Collectors.joining("\", \"", "\"", "\""));
-                        return PRETTY_OUT + "*\t" + entry.getKey() + ": [" + values + "]";
-                    } else {
-                        String values = entry.getValue().stream().collect(Collectors.joining("\", \"", "\"", "\""));
-                        return entry.getKey() + ": [" + values + "]";
-                    }
+  private String formatResponseHeaders(MultiValueMap<String, String> headers) {
+    Stream<String> stream =
+        headers.entrySet().stream()
+            .map(
+                (entry) -> {
+                  if (this.responsePretty) {
+                    String values =
+                        entry.getValue().stream().collect(Collectors.joining("\", \"", "\"", "\""));
+                    return PRETTY_IN + "*\t" + entry.getKey().toLowerCase() + ": [" + values + "]";
+                  } else {
+                    String values =
+                        entry.getValue().stream().collect(Collectors.joining("\", \"", "\"", "\""));
+                    return entry.getKey().toLowerCase() + ": [" + values + "]";
+                  }
                 });
-        if (this.requestPretty) {
-            return stream.collect(Collectors.joining(""));
-        } else {
-            return stream.collect(Collectors.joining(", "));
-        }
+    if (this.requestPretty) {
+      return stream.collect(Collectors.joining(""));
+    } else {
+      return stream.collect(Collectors.joining(", "));
     }
+  }
 
-    private String formatResponseHeaders(MultiValueMap<String, String> headers) {
-        Stream<String> stream = headers.entrySet().stream()
-                .map((entry) -> {
-                    if (this.responsePretty) {
-                        String values = entry.getValue().stream().collect(Collectors.joining("\", \"", "\"", "\""));
-                        return PRETTY_IN + "*\t" + entry.getKey().toLowerCase() + ": [" + values + "]";
-                    } else {
-                        String values = entry.getValue().stream().collect(Collectors.joining("\", \"", "\"", "\""));
-                        return entry.getKey().toLowerCase() + ": [" + values + "]";
-                    }
-                });
-        if (this.requestPretty) {
-            return stream.collect(Collectors.joining(""));
-        } else {
-            return stream.collect(Collectors.joining(", "));
-        }
-    }
+  private String bodyToString(InputStream body) throws IOException {
+    return StreamUtils.copyToString(body, StandardCharsets.UTF_8);
+  }
 
-    private String bodyToString(InputStream body) throws IOException {
-        return StreamUtils.copyToString(body, StandardCharsets.UTF_8);
-    }
 
-    private void persistInterfaceEventInRE(ReEventDto reEvent) {
-        if (this.mustPersistEventOnRE) {
-            reService.addRe(reEvent);
-        }
-    }
+  protected void avoidEventPersistenceOnRE() {
+    this.mustPersistEventOnRE = false;
+  }
 
-    protected void avoidEventPersistenceOnRE() {
-        this.mustPersistEventOnRE = false;
-    }
-
-    protected abstract InternalStepStatus getOperationStatus(String url, HttpMethod httpMethod);
+  protected abstract WorkflowStatus getOperationStatus(String url, HttpMethod httpMethod);
 }

@@ -11,10 +11,7 @@ import it.gov.pagopa.wispconverter.repository.NavToIuvMappingRepository;
 import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.ReceiptDeadLetterRepository;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
-import it.gov.pagopa.wispconverter.service.ConfigCacheService;
-import it.gov.pagopa.wispconverter.service.PaaInviaRTSenderService;
-import it.gov.pagopa.wispconverter.service.RecoveryService;
-import it.gov.pagopa.wispconverter.service.RtReceiptCosmosService;
+import it.gov.pagopa.wispconverter.service.*;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
 import it.gov.pagopa.wispconverter.utils.TestUtils;
 import lombok.SneakyThrows;
@@ -65,6 +62,8 @@ class ReceiptTest {
     private CacheRepository cacheRepository;
     @MockBean
     private NavToIuvMappingRepository navToIuvMappingRepository;
+    @MockBean
+    private ReService reService;
 
     private String getPaSendRTPayload() {
         return TestUtils.loadFileContent("/requests/paSendRTV2.xml");

@@ -5,7 +5,6 @@ import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
@@ -13,8 +12,8 @@ import lombok.experimental.SuperBuilder;
 @Container(containerName = "receipt-dead-letter")
 @Getter
 @Setter
-@ToString(exclude = "payload")
-@EqualsAndHashCode(exclude = "payload")
+@ToString(callSuper = true)
+@EqualsAndHashCode(callSuper = true)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @SuperBuilder(toBuilder = true)
 public class ReceiptDeadLetterEntity extends RTRequestEntity {

@@ -5,18 +5,15 @@ import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.RTRetryRepository;
 import it.gov.pagopa.wispconverter.repository.model.RTRequestEntity;
-import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
-import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
+import it.gov.pagopa.wispconverter.repository.model.enumz.WorkflowStatus;
 import it.gov.pagopa.wispconverter.util.Constants;
-import it.gov.pagopa.wispconverter.util.ReUtil;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Optional;
 
 @Service
 @Slf4j
@@ -54,21 +51,9 @@ public class RtRetryComosService {
                 MDC.put(Constants.MDC_SESSION_ID, idempotencyKeySections[0]);
             }
         }
-        generateRE(rtRequestEntity.getPayload());
+        reService.sendEvent(WorkflowStatus.FOUND_RT_IN_STORAGE);
 
         return rtRequestEntity;
     }
-
-    private void generateRE(String payload) {
-
-        // creating event to be persisted for RE
-        if (Boolean.TRUE.equals(isTracingOnREEnabled)) {
-            ReEventDto reEvent = ReUtil.getREBuilder()
-                    .status(InternalStepStatus.FOUND_RT_IN_STORAGE)
-                    .requestPayload(payload)
-                    .requestPayload(String.valueOf(payload != null ? payload.length() : 0))
-                    .build();
-            reService.addRe(reEvent);
-        }
-    }
+    
 }
