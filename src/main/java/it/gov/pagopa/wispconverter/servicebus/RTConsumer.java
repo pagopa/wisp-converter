@@ -26,6 +26,7 @@ import java.util.List;
 import javax.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
@@ -49,37 +50,26 @@ public class RTConsumer extends SBConsumer {
 
   private final ObjectMapper mapper = new ObjectMapper();
 
-   private final RtRetryComosService rtRetryComosService;
+  @Autowired private RtRetryComosService rtRetryComosService;
 
-   private final RtReceiptCosmosService rtReceiptCosmosService;
+  @Autowired private RtReceiptCosmosService rtReceiptCosmosService;
 
-   private final IdempotencyService idempotencyService;
+  @Autowired private IdempotencyService idempotencyService;
 
-   private final PaaInviaRTSenderService paaInviaRTSenderService;
+  @Autowired private PaaInviaRTSenderService paaInviaRTSenderService;
 
-   private final ServiceBusService serviceBusService;
+  @Autowired private ServiceBusService serviceBusService;
 
-   private final ReceiptDeadLetterRepository receiptDeadLetterRepository;
+  @Autowired private ReceiptDeadLetterRepository receiptDeadLetterRepository;
 
-   private final ReService reService;
+  @Autowired private ReService reService;
 
-   private final JaxbElementUtil jaxbElementUtil;
+  @Autowired private JaxbElementUtil jaxbElementUtil;
 
   @Value("${disable-service-bus-receiver}")
   private boolean disableServiceBusReceiver;
 
-    public RTConsumer(RtRetryComosService rtRetryComosService, RtReceiptCosmosService rtReceiptCosmosService, IdempotencyService idempotencyService, PaaInviaRTSenderService paaInviaRTSenderService, ServiceBusService serviceBusService, ReceiptDeadLetterRepository receiptDeadLetterRepository, ReService reService, JaxbElementUtil jaxbElementUtil) {
-        this.rtRetryComosService = rtRetryComosService;
-        this.rtReceiptCosmosService = rtReceiptCosmosService;
-        this.idempotencyService = idempotencyService;
-        this.paaInviaRTSenderService = paaInviaRTSenderService;
-        this.serviceBusService = serviceBusService;
-        this.receiptDeadLetterRepository = receiptDeadLetterRepository;
-        this.reService = reService;
-        this.jaxbElementUtil = jaxbElementUtil;
-    }
-
-    @EventListener(ApplicationReadyEvent.class)
+  @EventListener(ApplicationReadyEvent.class)
   public void initializeClient() {
     if (receiverClient != null && !disableServiceBusReceiver) {
       log.info("[Scheduled] Starting RTConsumer {}", ZonedDateTime.now());
@@ -90,11 +80,11 @@ public class RTConsumer extends SBConsumer {
   @PostConstruct
   public void post() {
     if (StringUtils.isNotBlank(connectionString)
-        && !connectionString.equals("-")
-        && !disableServiceBusReceiver) {
+            && !connectionString.equals("-")
+            && !disableServiceBusReceiver) {
       receiverClient =
-          CommonUtility.getServiceBusProcessorClient(
-              connectionString, queueName, this::processMessage, this::processError);
+              CommonUtility.getServiceBusProcessorClient(
+                      connectionString, queueName, this::processMessage, this::processError);
     }
   }
 
@@ -112,7 +102,7 @@ public class RTConsumer extends SBConsumer {
 
     // get RT request entity from database
     RTRequestEntity rtRequestEntity =
-        rtRetryComosService.getRTRequestEntity(receiptId, rtInsertionDate);
+            rtRetryComosService.getRTRequestEntity(receiptId, rtInsertionDate);
     String idempotencyKey = rtRequestEntity.getIdempotencyKey();
     ReceiptTypeEnum receiptType = rtRequestEntity.getReceiptType();
 
@@ -123,7 +113,7 @@ public class RTConsumer extends SBConsumer {
       // before sending the RT to the creditor institution, the idempotency key must be checked in
       // order to not send duplicated receipts
       isIdempotencyKeyProcessable =
-          idempotencyService.isIdempotencyKeyProcessable(idempotencyKey, receiptType);
+              idempotencyService.isIdempotencyKeyProcessable(idempotencyKey, receiptType);
       if (isIdempotencyKeyProcessable) {
 
         // Lock idempotency key status to avoid concurrency issues
@@ -131,10 +121,10 @@ public class RTConsumer extends SBConsumer {
 
         // If receipt was found, it must be sent to creditor institution, so it try this operation
         log.debug(
-            "Sending message {}, retry: {}", compositedIdForReceipt, rtRequestEntity.getRetry());
+                "Sending message {}, retry: {}", compositedIdForReceipt, rtRequestEntity.getRetry());
         boolean isSend =
-            resendRTToCreditorInstitution(
-                receiptId, rtRequestEntity, compositedIdForReceipt, idempotencyKey);
+                resendRTToCreditorInstitution(
+                        receiptId, rtRequestEntity, compositedIdForReceipt, idempotencyKey);
 
         idempotencyStatus = isSend ? IdempotencyStatusEnum.SUCCESS : IdempotencyStatusEnum.FAILED;
 
@@ -164,10 +154,10 @@ public class RTConsumer extends SBConsumer {
   }
 
   private boolean resendRTToCreditorInstitution(
-      String receiptId,
-      RTRequestEntity receipt,
-      String compositedIdForReceipt,
-      String idempotencyKey) {
+          String receiptId,
+          RTRequestEntity receipt,
+          String compositedIdForReceipt,
+          String idempotencyKey) {
 
     boolean isSend = false;
     String ci = receipt.getDomainId();
@@ -198,19 +188,19 @@ public class RTConsumer extends SBConsumer {
           throw new AppException(AppErrorCodeMessageEnum.CONFIGURATION_INVALID_STATION_PROXY);
         }
         proxyAddress =
-            new InetSocketAddress(proxyComponents[0], Integer.parseInt(proxyComponents[1]));
+                new InetSocketAddress(proxyComponents[0], Integer.parseInt(proxyComponents[1]));
       }
 
       String rawPayload = new String(unzippedPayload);
 
       paaInviaRTSenderService.sendToCreditorInstitution(
-          URI.create(receipt.getUrl()),
-          proxyAddress,
-          extractHeaders(receipt.getHeaders()),
-          rawPayload,
-          ci,
-          iuv,
-          ccp);
+              URI.create(receipt.getUrl()),
+              proxyAddress,
+              extractHeaders(receipt.getHeaders()),
+              rawPayload,
+              ci,
+              iuv,
+              ccp);
       rtRetryComosService.deleteRTRequestEntity(receipt);
       log.debug("Sent receipt [{}]", receiptId);
 
@@ -223,7 +213,7 @@ public class RTConsumer extends SBConsumer {
       if (e.getError().equals(AppErrorCodeMessageEnum.RECEIPT_GENERATION_ERROR_DEAD_LETTER)) {
         // Sending dead letter in case of unknown status
         receiptDeadLetterRepository.save(
-            mapper.convertValue(receipt, ReceiptDeadLetterEntity.class));
+                mapper.convertValue(receipt, ReceiptDeadLetterEntity.class));
         generateREForDeadLetter(receipt);
 
         // Remove receipt from receipt collection
@@ -257,7 +247,7 @@ public class RTConsumer extends SBConsumer {
   }
 
   private void reScheduleReceiptSend(
-      RTRequestEntity receipt, String receiptId, String compositedIdForReceipt) {
+          RTRequestEntity receipt, String receiptId, String compositedIdForReceipt) {
     String ci = receipt.getDomainId();
     String iuv = receipt.getIuv();
     String ccp = receipt.getCcp();
@@ -298,55 +288,55 @@ public class RTConsumer extends SBConsumer {
   private void generateREForSentRT() {
 
     reService.sendEvent(
-        WorkflowStatus.RT_SCHEDULED_SEND_FAILURE, null, "Re-scheduled send operation: success.");
+            WorkflowStatus.RT_SCHEDULED_SEND_FAILURE, null, "Re-scheduled send operation: success.");
   }
 
   private void generateREForNotSentRT(Throwable e) {
 
     reService.sendEvent(
-        WorkflowStatus.RT_SCHEDULED_SEND_FAILURE,
-        null,
-        "Re-scheduled send operation: failure. Caused by: " + e.getMessage());
+            WorkflowStatus.RT_SCHEDULED_SEND_FAILURE,
+            null,
+            "Re-scheduled send operation: failure. Caused by: " + e.getMessage());
   }
 
   private void generateREForSuccessfulReschedulingSentRT() {
 
     reService.sendEvent(
-        WorkflowStatus.RT_SCHEDULED_SEND_FAILURE,
-        null,
-        "Trying to re-schedule for next retry: success.");
+            WorkflowStatus.RT_SCHEDULED_SEND_FAILURE,
+            null,
+            "Trying to re-schedule for next retry: success.");
   }
 
   private void generateREForFailedReschedulingSentRT(Throwable exception) {
 
     reService.sendEvent(
-        WorkflowStatus.RT_SCHEDULED_SEND_FAILURE,
-        null,
-        "Trying to re-schedule for next retry: failure. Caused by: " + exception.getMessage());
+            WorkflowStatus.RT_SCHEDULED_SEND_FAILURE,
+            null,
+            "Trying to re-schedule for next retry: failure. Caused by: " + exception.getMessage());
   }
 
   private void generateREForMaxRetriesOnReschedulingSentRT(int retries) {
 
     reService.sendEvent(
-        WorkflowStatus.RT_SEND_RESCHEDULING_REACHED_MAX_RETRIES,
-        null,
-        "Reached max retries: [" + retries + "].");
+            WorkflowStatus.RT_SEND_RESCHEDULING_REACHED_MAX_RETRIES,
+            null,
+            "Reached max retries: [" + retries + "].");
   }
 
   private void generateREForDeadLetter(RTRequestEntity rtRequestEntity) {
 
     reService.sendEvent(
-        WorkflowStatus.RT_DEAD_LETTER_SAVED,
-        RePaymentContext.builder()
-            .iuv(rtRequestEntity.getIuv())
-            .domainId(rtRequestEntity.getDomainId())
-            .ccp(rtRequestEntity.getCcp())
-            .build(),
-        "Saved dead letter for receipt with iuv: "
-            + rtRequestEntity.getIuv()
-            + ", domainId: "
-            + rtRequestEntity.getDomainId()
-            + ", ccp: "
-            + rtRequestEntity.getCcp());
+            WorkflowStatus.RT_DEAD_LETTER_SAVED,
+            RePaymentContext.builder()
+                    .iuv(rtRequestEntity.getIuv())
+                    .domainId(rtRequestEntity.getDomainId())
+                    .ccp(rtRequestEntity.getCcp())
+                    .build(),
+            "Saved dead letter for receipt with iuv: "
+                    + rtRequestEntity.getIuv()
+                    + ", domainId: "
+                    + rtRequestEntity.getDomainId()
+                    + ", ccp: "
+                    + rtRequestEntity.getCcp());
   }
 }

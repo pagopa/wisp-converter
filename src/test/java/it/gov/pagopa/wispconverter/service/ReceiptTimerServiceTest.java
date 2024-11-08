@@ -80,7 +80,7 @@ class ReceiptTimerServiceTest {
     verify(cacheRepository, times(1))
         .insert(any(String.class), eq("123"), eq(1000L), eq(ChronoUnit.MILLIS));
     verify(eCommerceHangTimerService, times(1))
-        .cancelScheduledMessage("noticeNumber", eq("fiscalCode"), eq("sessionId321"));
+        .cancelScheduledMessage(eq("noticeNumber"), eq("fiscalCode"), eq("sessionId321"));
   }
 
   @Test
