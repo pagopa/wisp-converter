@@ -23,6 +23,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
@@ -64,6 +65,9 @@ class ReceiptTest {
     private NavToIuvMappingRepository navToIuvMappingRepository;
     @MockBean
     private ReService reService;
+
+    @MockBean
+    private it.gov.pagopa.gen.wispconverter.client.decouplercaching.invoker.ApiClient decouplerCachingClient;
 
     private String getPaSendRTPayload() {
         return TestUtils.loadFileContent("/requests/paSendRTV2.xml");
@@ -295,6 +299,8 @@ class ReceiptTest {
                 .build();
         when(rptRequestRepository.findById(anyString())).thenReturn(Optional.of(rptRequestEntity));
 
+        // mocking delete-sessionId
+        TestUtils.setMock(decouplerCachingClient, ResponseEntity.ok().build());
 
         // executing request
         ReceiptDto receipts = ReceiptDto.builder()
@@ -331,6 +337,8 @@ class ReceiptTest {
                 .build();
         when(rptRequestRepository.findById(anyString())).thenReturn(Optional.of(rptRequestEntity));
 
+        // mocking delete-sessionId
+        TestUtils.setMock(decouplerCachingClient, ResponseEntity.ok().build());
 
         // executing request
         ReceiptDto receipts = ReceiptDto.builder()
@@ -434,6 +442,9 @@ class ReceiptTest {
                 .payload(TestUtils.zipAndEncode(TestUtils.getRptPayload(false, STATION_ID, "{pa}", "48111111112222222", "100.00", "datispec")))
                 .build();
         when(rptRequestRepository.findById(anyString())).thenReturn(Optional.of(rptRequestEntity));
+
+        // mocking delete-sessionId
+        TestUtils.setMock(decouplerCachingClient, ResponseEntity.ok().build());
 
         // mocking error response from creditor institution
         ReceiptDto receipts = ReceiptDto.builder()
