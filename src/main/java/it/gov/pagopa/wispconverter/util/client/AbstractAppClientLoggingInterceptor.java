@@ -1,7 +1,6 @@
 package it.gov.pagopa.wispconverter.util.client;
 
-import it.gov.pagopa.wispconverter.repository.model.enumz.OutcomeEnum;
-import it.gov.pagopa.wispconverter.repository.model.enumz.WorkflowStatus;
+import it.gov.pagopa.wispconverter.repository.model.enumz.*;
 import it.gov.pagopa.wispconverter.service.ReService;
 import it.gov.pagopa.wispconverter.service.model.re.ReRequestContext;
 import it.gov.pagopa.wispconverter.service.model.re.ReResponseContext;
@@ -106,13 +105,14 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
 
       String executionClientTime = CommonUtility.getExecutionTime(startClient);
       MDC.put(Constants.MDC_CLIENT_EXECUTION_TIME, executionClientTime);
+
       if (response.getStatusCode().is2xxSuccessful()) {
         outcome = OutcomeEnum.OK;
       } else {
         outcome = OutcomeEnum.COMMUNICATION_RECEIVED_FAILURE;
       }
-      logResponse(clientOperationId, operationId, executionClientTime, request, response);
 
+      logResponse(clientOperationId, operationId, executionClientTime, request, response);
       generateRe(request, body, response, status, outcome);
 
     } catch (Exception e) {
@@ -125,114 +125,82 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
       throw e;
 
     } finally {
-
       MDC.remove(Constants.MDC_CLIENT_EXECUTION_TIME);
     }
 
     return response;
   }
 
-  private void generateRe(
-      HttpRequest request,
-      byte[] body,
-      ClientHttpResponse response,
-      WorkflowStatus status,
-      OutcomeEnum outcome)
-      throws IOException {
-    ReRequestContext requestContext = null;
-    if (request != null) {
-      requestContext =
-          ReRequestContext.builder()
-              .uri(request.getURI().toString())
-              .method(request.getMethod())
-              .headers(request.getHeaders())
-              .payload(Arrays.toString(body))
-              .build();
-    }
-    ReResponseContext responseContext = null;
-    if (response != null) {
-      responseContext =
-          ReResponseContext.builder()
-              .statusCode(HttpStatus.valueOf(response.getStatusCode().value()))
-              .headers(response.getHeaders())
-              .payload(StreamUtils.copyToString(response.getBody(), StandardCharsets.UTF_8))
-              .build();
-    }
-    reService.sendEvent(status, null, null, outcome, requestContext, responseContext);
-  }
-
   protected String createRequestMessage(
       String clientOperationId, String operationId, HttpRequest request, @Nullable byte[] reqBody) {
-
     StringBuilder msg = new StringBuilder();
-    appendRequestPrefix(msg, operationId, clientOperationId);
-    appendRequestPath(msg, request);
-    appendRequestHeaders(msg, request);
-    appendRequestPayload(msg, reqBody);
-
+    appendContext(clientOperationId, operationId, msg);
+    appendURL(request, msg);
+    appendHeaders(request, msg);
+    appendBody(reqBody, msg);
     return msg.toString();
   }
 
-  // Append the request prefix information
-  private void appendRequestPrefix(
-      StringBuilder msg, String operationId, String clientOperationId) {
+  private void appendContext(String clientOperationId, String operationId, StringBuilder msg) {
     msg.append(String.format(REQUEST_DEFAULT_MESSAGE_PREFIX, operationId, clientOperationId));
-    appendPretty(msg);
-  }
-
-  // Append the request path and method
-  private void appendRequestPath(StringBuilder msg, HttpRequest request) {
-    msg.append("path: ").append(request.getMethod()).append(' ').append(request.getURI());
-  }
-
-  // Append the request headers if needed
-  private void appendRequestHeaders(StringBuilder msg, HttpRequest request) {
-    if (!this.requestIncludeHeaders) return;
-
-    HttpHeaders headers = collectHeaders(request);
-    maskSensitiveHeaders(headers);
-
-    String formattedHeaders = formatRequestHeaders(headers);
-    if (formattedHeaders != null) {
-      appendPretty(msg);
-      msg.append("headers: [").append(formattedHeaders).append("]");
+    if (this.requestPretty) {
+      msg.append(PRETTY_OUT).append(SPACE);
     }
   }
 
-  // Collect headers from the request
-  private HttpHeaders collectHeaders(HttpRequest request) {
-    HttpHeaders headers = new HttpHeaders();
-    request.getHeaders().forEach((key, values) -> headers.add(key, StringUtils.join(values, ",")));
-    return headers;
+  private void appendContext2(String clientOperationId, String operationId, StringBuilder msg) {
+    msg.append(String.format(RESPONSE_DEFAULT_MESSAGE_PREFIX, operationId, clientOperationId));
+    if (this.responsePretty) {
+      msg.append(PRETTY_IN).append(SPACE);
+    }
   }
 
-  // Mask headers based on the predicate
-  private void maskSensitiveHeaders(HttpHeaders headers) {
-    if (this.requestHeaderPredicate != null) {
+  private static void appendURL(HttpRequest request, StringBuilder msg) {
+    msg.append("path: ").append(request.getMethod()).append(' ');
+    msg.append(request.getURI());
+  }
+
+  private void appendBody(@Nullable byte[] reqBody, StringBuilder msg) {
+    if (this.requestIncludePayload && reqBody != null) {
+      String payload = new String(reqBody, StandardCharsets.UTF_8);
+      if (this.requestPretty) {
+        msg.append(PRETTY_OUT).append(SPACE);
+      } else {
+        msg.append(", ");
+      }
+      msg.append("payload: ").append(payload);
+    }
+  }
+
+  private void appendHeaders(HttpRequest request, StringBuilder msg) {
+    if (this.requestIncludeHeaders) {
+      HttpHeaders headers = new HttpHeaders();
+      request.getHeaders().forEach((s, h) -> headers.add(s, StringUtils.join(h, ",")));
+      maskSensitiveHeader(this.requestHeaderPredicate, headers);
+      String formatRequestHeaders = formatRequestHeaders(headers);
+      if (formatRequestHeaders != null) {
+        if (this.requestPretty) {
+          msg.append(PRETTY_OUT).append(SPACE);
+        } else {
+          msg.append(", ");
+        }
+        msg.append("headers: [").append(formatRequestHeaders);
+        if (this.requestPretty) {
+          msg.append(PRETTY_OUT).append(SPACE);
+        }
+        msg.append("]");
+      }
+    }
+  }
+
+  private void maskSensitiveHeader(Predicate<String> requestHeaderPredicate, HttpHeaders headers) {
+    if (requestHeaderPredicate != null) {
       headers.forEach(
           (key, value) -> {
             if (!this.requestHeaderPredicate.test(key)) {
               headers.set(key, "masked");
             }
           });
-    }
-  }
-
-  // Append the request payload if needed
-  private void appendRequestPayload(StringBuilder msg, @Nullable byte[] reqBody) {
-    if (!this.requestIncludePayload || reqBody == null) return;
-
-    String payload = new String(reqBody, StandardCharsets.UTF_8);
-    appendPretty(msg);
-    msg.append("payload: ").append(payload);
-  }
-
-  // Adds pretty output if enabled
-  private void appendPretty(StringBuilder msg) {
-    if (this.requestPretty) {
-      msg.append(PRETTY_OUT).append(SPACE);
-    } else {
-      msg.append(", ");
     }
   }
 
@@ -245,80 +213,67 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
       throws IOException {
 
     StringBuilder msg = new StringBuilder();
-    appendResponsePrefix(msg, operationId, clientOperationId);
-    appendRequestPath(msg, request);
-    appendClientExecutionTime(msg, clientExecutionTime);
-    appendResponseStatus(msg, response);
-    appendResponseHeaders(msg, response);
-    appendResponsePayload(msg, response);
+    appendContext2(clientOperationId, operationId, msg);
+    appendURL(request, msg);
 
-    return msg.toString();
-  }
-
-  // Append the response prefix information
-  private void appendResponsePrefix(
-      StringBuilder msg, String operationId, String clientOperationId) {
-    msg.append(String.format(RESPONSE_DEFAULT_MESSAGE_PREFIX, operationId, clientOperationId));
-    appendPrettyIn(msg);
-  }
-
-  // Append the client execution time
-  private void appendClientExecutionTime(StringBuilder msg, String clientExecutionTime) {
-    appendPrettyIn(msg);
-    msg.append("client-execution-time: ").append(clientExecutionTime).append("ms");
-  }
-
-  // Append the response status code if the response is not null
-  private void appendResponseStatus(StringBuilder msg, ClientHttpResponse response)
-      throws IOException {
-    if (response != null) {
-      appendPrettyIn(msg);
-      msg.append("status: ").append(response.getStatusCode().value());
-    } else {
-      appendPrettyIn(msg);
-      msg.append("NO RICEVUTA");
-    }
-  }
-
-  // Append the response headers if enabled
-  private void appendResponseHeaders(StringBuilder msg, ClientHttpResponse response) {
-    if (response == null || !this.responseIncludeHeaders) return;
-
-    HttpHeaders headers = collectHeaders(response);
-    maskSensitiveHeaders(headers);
-    String formattedHeaders = formatResponseHeaders(headers);
-
-    if (formattedHeaders != null) {
-      appendPrettyIn(msg);
-      msg.append("headers: [").append(formattedHeaders).append("]");
-    }
-  }
-
-  // Collect headers from the response
-  private HttpHeaders collectHeaders(ClientHttpResponse response) {
-    HttpHeaders headers = new HttpHeaders();
-    response.getHeaders().forEach((key, values) -> headers.add(key, StringUtils.join(values, ",")));
-    return headers;
-  }
-
-  // Append the response payload if enabled
-  private void appendResponsePayload(StringBuilder msg, ClientHttpResponse response)
-      throws IOException {
-    if (!this.responseIncludePayload || response == null) return;
-
-    String payload = bodyToString(response.getBody());
-    if (!payload.isBlank()) {
-      appendPrettyIn(msg);
-      msg.append("payload: ").append(payload);
-    }
-  }
-
-  // Adds pretty formatting if enabled
-  private void appendPrettyIn(StringBuilder msg) {
     if (this.responsePretty) {
       msg.append(PRETTY_IN).append(SPACE);
     } else {
       msg.append(", ");
+    }
+    msg.append("client-execution-time: ").append(clientExecutionTime).append("ms");
+
+    if (response != null) {
+      if (this.responsePretty) {
+        msg.append(PRETTY_IN).append(SPACE);
+      }
+      msg.append("status: ").append(response.getStatusCode().value());
+
+      appendHeaders(response, msg);
+
+      appendBody(response, msg);
+    } else {
+      if (this.responsePretty) {
+        msg.append(PRETTY_IN).append(SPACE);
+      }
+      msg.append("NO RICEVUTA");
+    }
+
+    return msg.toString();
+  }
+
+  private void appendBody(ClientHttpResponse response, StringBuilder msg) throws IOException {
+    if (this.responseIncludePayload) {
+      String payload = bodyToString(response.getBody());
+      if (!payload.isBlank()) {
+        if (this.requestPretty) {
+          msg.append(PRETTY_IN).append(SPACE);
+        } else {
+          msg.append(", ");
+        }
+        msg.append("payload: ").append(payload);
+      }
+    }
+  }
+
+  private void appendHeaders(ClientHttpResponse response, StringBuilder msg) {
+    if (this.responseIncludeHeaders) {
+      HttpHeaders headers = new HttpHeaders();
+      response.getHeaders().forEach((s, h) -> headers.add(s, StringUtils.join(h, ",")));
+      maskSensitiveHeader(this.responseHeaderPredicate, headers);
+      String formatResponseHeaders = formatResponseHeaders(headers);
+      if (formatResponseHeaders != null) {
+        if (this.requestPretty) {
+          msg.append(PRETTY_IN).append(SPACE);
+        } else {
+          msg.append(", ");
+        }
+        msg.append("headers: [").append(formatResponseHeaders);
+        if (this.requestPretty) {
+          msg.append(PRETTY_OUT).append(SPACE);
+        }
+        msg.append("]");
+      }
     }
   }
 
@@ -348,12 +303,13 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
         headers.entrySet().stream()
             .map(
                 entry -> {
-                  String values =
-                      entry.getValue().stream().collect(Collectors.joining(DELIMITER, "\"", "\""));
-                  if (this.requestPretty) {
-                    return PRETTY_OUT + "*\t" + entry.getKey() + ": [" + values + "]";
+                    String values =
+                        entry.getValue().stream()
+                            .collect(Collectors.joining(DELIMITER, "\"", "\""));
+                    if (this.requestPretty) {
+                        return PRETTY_OUT + "*\t" + entry.getKey() + ": [" + values + "]";
                   } else {
-                    return entry.getKey() + ": [" + values + "]";
+                        return entry.getKey() + ": [" + values + "]";
                   }
                 });
     if (this.requestPretty) {
@@ -368,16 +324,13 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
         headers.entrySet().stream()
             .map(
                 entry -> {
-                  if (this.responsePretty) {
                     String values =
                         entry.getValue().stream()
                             .collect(Collectors.joining(DELIMITER, "\"", "\""));
-                    return PRETTY_IN + "*\t" + entry.getKey().toLowerCase() + ": [" + values + "]";
+                    if (this.responsePretty) {
+                        return PRETTY_IN + "*\t" + entry.getKey().toLowerCase() + ": [" + values + "]";
                   } else {
-                    String values =
-                        entry.getValue().stream()
-                            .collect(Collectors.joining(DELIMITER, "\"", "\""));
-                    return entry.getKey().toLowerCase() + ": [" + values + "]";
+                        return entry.getKey().toLowerCase() + ": [" + values + "]";
                   }
                 });
     if (this.requestPretty) {
@@ -393,6 +346,37 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
 
   protected void avoidEventPersistenceOnRE() {
     this.mustPersistEventOnRE = false;
+  }
+
+  private void generateRe(
+      HttpRequest request,
+      byte[] body,
+      ClientHttpResponse response,
+      WorkflowStatus status,
+      OutcomeEnum outcome)
+      throws IOException {
+    ReRequestContext requestContext = null;
+    if (request != null) {
+      requestContext =
+          ReRequestContext.builder()
+              .uri(request.getURI().toString())
+              .method(request.getMethod())
+              .headers(request.getHeaders())
+              .payload(Arrays.toString(body))
+              .build();
+    }
+    ReResponseContext responseContext = null;
+    if (response != null) {
+      responseContext =
+          ReResponseContext.builder()
+              .statusCode(HttpStatus.valueOf(response.getStatusCode().value()))
+              .headers(response.getHeaders())
+              .payload(StreamUtils.copyToString(response.getBody(), StandardCharsets.UTF_8))
+              .build();
+    }
+    if (this.mustPersistEventOnRE) {
+      reService.sendEvent(status, null, null, outcome, requestContext, responseContext);
+    }
   }
 
   protected abstract WorkflowStatus getOperationStatus(String url, HttpMethod httpMethod);
