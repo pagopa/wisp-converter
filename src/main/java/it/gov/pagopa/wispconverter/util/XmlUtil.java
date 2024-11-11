@@ -11,11 +11,13 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.GregorianCalendar;
+import java.util.TimeZone;
 
 public class XmlUtil {
 
-    public static XMLGregorianCalendar toXMLGregoirianCalendar(Instant instant) {
+    public static XMLGregorianCalendar toXMLGregorianCalendar(Instant instant) {
         GregorianCalendar gregorianCalendar = new GregorianCalendar();
+        gregorianCalendar.setTimeZone(TimeZone.getTimeZone("Europe/Rome"));
         gregorianCalendar.setTimeInMillis(instant.toEpochMilli());
         try {
             XMLGregorianCalendar xmlGregorianCalendar = DatatypeFactory.newInstance().newXMLGregorianCalendar(gregorianCalendar);
@@ -25,6 +27,12 @@ public class XmlUtil {
         } catch (DatatypeConfigurationException e) {
             throw new AppException(e, AppErrorCodeMessageEnum.PARSING_INVALID_BODY);
         }
+    }
+
+    public static XMLGregorianCalendar toXMLGregorianCalendar(XMLGregorianCalendar xmlGregorianCalendar) {
+        xmlGregorianCalendar.setMillisecond(DatatypeConstants.FIELD_UNDEFINED); // removing info about milliseconds
+        xmlGregorianCalendar.setTimezone(DatatypeConstants.FIELD_UNDEFINED); // removing all references about timezone
+        return xmlGregorianCalendar;
     }
 
     public static BigDecimal toBigDecimalWithScale(BigDecimal target, int scale) {
