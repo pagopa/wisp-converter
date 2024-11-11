@@ -32,6 +32,7 @@ public class Constants {
     public static final String MDC_EXECUTION_TIME = "executionTime";
     public static final String MDC_ERROR_CODE = "errorCode";
     public static final String MDC_ERROR_DETAIL = "errorDetail";
+    public static final String MDC_ERROR_LINE = "errorLine";
     public static final String MDC_OPERATION_ID = "operationId";
     public static final String MDC_BUSINESS_PROCESS = "businessProcess";
     public static final String MDC_SESSION_ID = "sessionId";
@@ -46,4 +47,5 @@ public class Constants {
     public static final String MDC_CHANNEL_ID = "channelId";
     public static final String MDC_REQUEST_ID = "requestId";
     public static final String MDC_PRIMITIVE = "primitive";
+    public static final String MDC_INFO = "info";
 }

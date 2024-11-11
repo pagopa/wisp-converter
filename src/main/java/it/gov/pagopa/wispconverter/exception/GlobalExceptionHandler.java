@@ -1,7 +1,5 @@
-package it.gov.pagopa.wispconverter.controller.advice;
+package it.gov.pagopa.wispconverter.exception;
 
-import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
-import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.ErrorUtil;
 import it.gov.pagopa.wispconverter.util.MDCUtil;
@@ -43,7 +41,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
         ErrorResponse errorResponse = errorUtil.forAppException(appEx);
         ProblemDetail problemDetail = errorResponse.updateAndGetBody(this.messageSource, LocaleContextHolder.getLocale());
-        errorUtil.finalizeError(problemDetail, errorResponse.getStatusCode().value());
+        errorUtil.finalizeError(appEx, problemDetail, errorResponse.getStatusCode().value());
 
         return errorResponse;
     }
@@ -56,7 +54,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         AppException appEx = new AppException(ex, AppErrorCodeMessageEnum.ERROR, ex.getMessage());
         ErrorResponse errorResponse = errorUtil.forAppException(appEx);
         ProblemDetail problemDetail = errorResponse.updateAndGetBody(this.messageSource, LocaleContextHolder.getLocale());
-        errorUtil.finalizeError(problemDetail, errorResponse.getStatusCode().value());
+        errorUtil.finalizeError(ex, problemDetail, errorResponse.getStatusCode().value());
+
+        log.error("Failed API operation createRPTTimer - error: {}", errorResponse);
 
         return errorResponse;
     }
@@ -65,7 +65,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     protected ResponseEntity<Object> handleExceptionInternal(Exception ex, Object body, HttpHeaders headers, HttpStatusCode statusCode, WebRequest request) {
         if (body == null && ex instanceof ErrorResponse errorResponse) {
             ProblemDetail problemDetail = errorResponse.updateAndGetBody(this.messageSource, LocaleContextHolder.getLocale());
-            errorUtil.finalizeError(problemDetail, errorResponse.getStatusCode().value());
+            errorUtil.finalizeError(ex, problemDetail, errorResponse.getStatusCode().value());
 
             body = problemDetail;
         } else {

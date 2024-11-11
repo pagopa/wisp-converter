@@ -41,6 +41,7 @@ public class ReEventEntity {
     private String requestPayload;
     private String responsePayload;
     private String operationErrorCode;
+    private String operationErrorLine;
     private String operationErrorDetail;
     private String sessionId;
     private String cartId;

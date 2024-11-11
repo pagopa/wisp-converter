@@ -11,7 +11,9 @@ import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import it.gov.pagopa.wispconverter.service.model.re.RePaymentContext;
 import it.gov.pagopa.wispconverter.service.model.re.ReRequestContext;
 import it.gov.pagopa.wispconverter.service.model.re.ReResponseContext;
+import it.gov.pagopa.wispconverter.util.AppBase64Util;
 import it.gov.pagopa.wispconverter.util.Constants;
+import it.gov.pagopa.wispconverter.util.ZipUtil;
 import jakarta.annotation.Nullable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +21,7 @@ import org.slf4j.MDC;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.time.Instant;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -32,23 +35,6 @@ public class ReService {
     private final ReEventRepository reEventRepository;
     private final ReEventMapper reEventMapper;
 
-    private static Instant getStartTime() {
-        return MDC.get(Constants.MDC_START_TIME) == null
-                ? null
-                : Instant.ofEpochMilli(Long.parseLong(MDC.get(Constants.MDC_START_TIME)));
-    }
-
-    private static String formatHeaders(HttpHeaders headers) {
-        Stream<String> stream =
-                headers.entrySet().stream()
-                        .map(
-                                entry -> {
-                                    String values =
-                                            entry.getValue().stream().collect(Collectors.joining("\", \"", "\"", "\""));
-                                    return entry.getKey() + ": [" + values + "]";
-                                });
-        return stream.collect(Collectors.joining(", "));
-    }
 
     /**
      * @param status the event to send
@@ -113,7 +99,7 @@ public class ReService {
                             .insertedTimestamp(mdcStartTime)
                             .businessProcess(MDC.get(Constants.MDC_BUSINESS_PROCESS))
                             .sessionId(MDC.get(Constants.MDC_SESSION_ID))
-                            .executionTimeMs(Long.valueOf(MDC.get(Constants.MDC_CLIENT_EXECUTION_TIME)))
+                            .executionTimeMs(getExecutionTimeMs())
                             //  event
                             .status(status.name())
                             .eventCategory(status.getType())
@@ -140,13 +126,13 @@ public class ReService {
                         .httpMethod(request.getMethod().name())
                         .httpUri(request.getUri())
                         .requestHeaders(formatHeaders(request.getHeaders()))
-                        .requestPayload(request.getPayload());
+                        .requestPayload(compressData(request.getPayload()));
             }
             //  response
             if (response != null) {
                 reEvent
                         .responseHeaders(formatHeaders(response.getHeaders()))
-                        .responsePayload(response.getPayload())
+                        .responsePayload(compressData(response.getPayload()))
                         .httpStatusCode(response.getStatusCode().value());
             }
             // payment info
@@ -168,8 +154,47 @@ public class ReService {
         }
     }
 
+    private static Long getExecutionTimeMs() {
+        try {
+            return Long.valueOf(MDC.get(Constants.MDC_CLIENT_EXECUTION_TIME));
+        } catch (IllegalArgumentException e) {
+            return -1L;
+        }
+    }
+
     public void addRe(ReEventDto reEventDto) {
         ReEventEntity reEventEntity = reEventMapper.toReEventEntity(reEventDto);
+        reEventEntity.setOperationErrorLine(MDC.get(Constants.MDC_ERROR_LINE));
         reEventRepository.save(reEventEntity);
+    }
+
+    private static Instant getStartTime() {
+        return MDC.get(Constants.MDC_START_TIME) == null
+                ? null
+                : Instant.ofEpochMilli(Long.parseLong(MDC.get(Constants.MDC_START_TIME)));
+    }
+
+    private static String formatHeaders(HttpHeaders headers) {
+        Stream<String> stream =
+                headers.entrySet().stream()
+                        .map(
+                                entry -> {
+                                    String values =
+                                            entry.getValue().stream().collect(Collectors.joining("\", \"", "\"", "\""));
+                                    return entry.getKey() + ": [" + values + "]";
+                                });
+        return stream.collect(Collectors.joining(", "));
+    }
+
+    private static String compressData(String payload) {
+        String result = null;
+        try {
+            if (payload != null) {
+                result = AppBase64Util.base64Encode(ZipUtil.zip(payload));
+            }
+        } catch (IOException e) {
+            throw new AppException(AppErrorCodeMessageEnum.ERROR, e);
+        }
+        return result;
     }
 }

@@ -1,6 +1,7 @@
 package it.gov.pagopa.wispconverter.service;
 
 import it.gov.pagopa.gen.wispconverter.client.checkout.model.CartRequestDto;
+import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
 import it.gov.pagopa.wispconverter.repository.model.enumz.ReceiptStatusEnum;
@@ -39,7 +40,7 @@ public class ConverterService {
 
     private final ReceiptService receiptService;
 
-    public String convert(String sessionId) throws URISyntaxException {
+    public String convert(String sessionId) {
 
         // deleting timer on RPT
         removeRPTTimer(sessionId);
@@ -69,14 +70,10 @@ public class ConverterService {
             // set eCommerce timer foreach notices in the cart
             setECommerceHangTimer(sessionData);
 
-        } catch (AppException ex) {
-            log.error("An appException error occurred during convert operations: " + ex.getMessage());
-            receiptService.sendRTKoFromSessionId(sessionId, WorkflowStatus.CONVERSION_PROCESSED);
-            throw ex;
         } catch (Exception ex) {
-            log.error("A generic error occurred during convert operations: " + ex.getMessage());
+            log.debug("A generic error occurred during convert operations: {}", ex.getMessage());
             receiptService.sendRTKoFromSessionId(sessionId, WorkflowStatus.CONVERSION_PROCESSED);
-            throw ex;
+            throw new AppException(AppErrorCodeMessageEnum.ERROR, ex);
         }
         return checkoutResponse;
     }
@@ -87,10 +84,14 @@ public class ConverterService {
      * (see {@link ECommerceHangTimeoutConsumer} class for more details).
      *
      * @param sessionData Data of the cart with the paymentOptions
-     * @throws URISyntaxException
      */
-    private void setECommerceHangTimer(SessionDataDTO sessionData) throws URISyntaxException {
-        CartRequestDto cart = checkoutService.extractCart(sessionData);
+    private void setECommerceHangTimer(SessionDataDTO sessionData) {
+        CartRequestDto cart = null;
+        try {
+            cart = checkoutService.extractCart(sessionData);
+        } catch (URISyntaxException e) {
+            throw new AppException(AppErrorCodeMessageEnum.ERROR, e);
+        }
         String sessionId = sessionData.getCommonFields().getSessionId();
         cart.getPaymentNotices().forEach(elem ->
                 eCommerceHangTimerService.sendMessage(ECommerceHangTimeoutMessage.builder()
@@ -106,9 +107,8 @@ public class ConverterService {
      * (see {@link RPTTimeoutConsumer} class for more details).
      *
      * @param sessionId Data of the cart with the paymentOptions
-     * @throws URISyntaxException
      */
-    private void removeRPTTimer(String sessionId) throws URISyntaxException {
+    private void removeRPTTimer(String sessionId) {
         rptTimerService.cancelScheduledMessage(sessionId);
     }
 

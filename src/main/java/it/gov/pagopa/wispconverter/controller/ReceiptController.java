@@ -10,13 +10,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import it.gov.pagopa.wispconverter.controller.model.ReceiptRequest;
-import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
-import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.model.enumz.WorkflowStatus;
 import it.gov.pagopa.wispconverter.service.ReceiptService;
 import it.gov.pagopa.wispconverter.service.RtReceiptCosmosService;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
-import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.EndpointRETrace;
 import it.gov.pagopa.wispconverter.util.ErrorUtil;
 import it.gov.pagopa.wispconverter.util.ReceiptRequestHandler;
@@ -24,11 +21,9 @@ import it.gov.pagopa.wispconverter.util.ReceiptRequestHandler.PaSendRTV2Request;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.MDC;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.*;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
@@ -68,22 +63,9 @@ public class ReceiptController {
     })
     @GetMapping(value = "")
     public ResponseEntity<String> receiptRetrieve(@QueryParam("ci") String ci, @QueryParam("ccp") String ccp, @QueryParam("iuv") String iuv) {
-        try {
-            log.info("Invoking API operation receiptRetrieve - args: {}", ci, ccp, iuv);
             if (rtReceiptCosmosService.receiptRtExist(ci, iuv, ccp))
                 return ResponseEntity.ok("");
             else return ResponseEntity.notFound().build();
-        } catch (Exception ex) {
-            String operationId = MDC.get(Constants.MDC_OPERATION_ID);
-            log.error(String.format("GenericException: operation-id=[%s]", operationId != null ? operationId : "n/a"), ex);
-
-            AppException appException = new AppException(ex, AppErrorCodeMessageEnum.ERROR, ex.getMessage());
-            ErrorResponse errorResponse = errorUtil.forAppException(appException);
-            log.error("Failed API operation receiptRetrieve - error: {}", errorResponse);
-            throw ex;
-        } finally {
-            log.info("Successful API operation receiptRetrieve");
-        }
     }
 
     @Operation(summary = "", description = "", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"Receipt"})
@@ -96,21 +78,8 @@ public class ReceiptController {
             consumes = MediaType.APPLICATION_JSON_VALUE
     )
     @EndpointRETrace(status = WorkflowStatus.RECEIPT_SEND_PROCESSED, businessProcess = BP_RECEIPT_KO, reEnabled = true)
-    public void receiptKo(@RequestBody String request) throws Exception {
-
-        try {
-            log.info("Invoking API operation receiptKo - args: {}", request);
-            receiptService.sendKoPaaInviaRtToCreditorInstitution(List.of(mapper.readValue(request, ReceiptDto.class)));
-            log.info("Successful API operation receiptKo");
-        } catch (Exception ex) {
-            String operationId = MDC.get(Constants.MDC_OPERATION_ID);
-            log.error(String.format("GenericException: operation-id=[%s]", operationId != null ? operationId : "n/a"), ex);
-
-            AppException appException = new AppException(ex, AppErrorCodeMessageEnum.ERROR, ex.getMessage());
-            ErrorResponse errorResponse = errorUtil.forAppException(appException);
-            log.error("Failed API operation receiptKo - error: {}", errorResponse);
-            throw ex;
-        }
+    public void receiptKo(@RequestBody ReceiptDto request) {
+            receiptService.sendKoPaaInviaRtToCreditorInstitution(List.of(request));
     }
 
     @Operation(summary = "", description = "", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"Receipt"})
@@ -123,21 +92,9 @@ public class ReceiptController {
             consumes = MediaType.APPLICATION_JSON_VALUE
     )
     @EndpointRETrace(status = WorkflowStatus.RECEIPT_SEND_PROCESSED, businessProcess = BP_RECEIPT_OK, reEnabled = true)
-    public void receiptOk(@RequestBody ReceiptRequest request) throws IOException {
-
-        try {
+    public void receiptOk(@RequestBody ReceiptRequest request) {
             log.info("Invoking API operation receiptOk - args: {}", this.getReceiptRequestInfoToLog(request.getContent()));
             receiptService.sendOkPaaInviaRtToCreditorInstitution(request.getContent());
-            log.info("Successful API operation receiptOk");
-        } catch (Exception ex) {
-            String operationId = MDC.get(Constants.MDC_OPERATION_ID);
-            log.error(String.format("GenericException: operation-id=[%s]", operationId != null ? operationId : "n/a"), ex);
-
-            AppException appException = new AppException(ex, AppErrorCodeMessageEnum.ERROR, ex.getMessage());
-            ErrorResponse errorResponse = errorUtil.forAppException(appException);
-            log.error("Failed API operation receiptOk - error: {}", errorResponse);
-            throw ex;
-        }
     }
 
     private String getReceiptRequestInfoToLog(String xml) {

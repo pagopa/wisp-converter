@@ -7,18 +7,13 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import it.gov.pagopa.wispconverter.controller.model.*;
-import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
-import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.service.RecoveryService;
-import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.ErrorUtil;
 import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.MDC;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.*;
 
 import static it.gov.pagopa.wispconverter.util.CommonUtility.sanitizeInput;
@@ -41,20 +36,8 @@ public class RecoveryController {
     })
     @PostMapping(value = "/{creditor_institution}/receipt-ko")
     public ResponseEntity<RecoveryReceiptResponse> recoverReceiptKOForCreditorInstitution(@PathVariable("creditor_institution") String ci, @QueryParam("date_from") String dateFrom, @QueryParam("date_to") String dateTo) {
-        try {
-            log.info("Invoking API operation recoverReceiptKOForCreditorInstitution - args: {} {} {}", ci, dateFrom, dateTo);
             RecoveryReceiptResponse response = recoveryService.recoverReceiptKOByCI(ci, dateFrom, dateTo);
             return ResponseEntity.ok(response);
-        } catch (Exception ex) {
-            String operationId = MDC.get(Constants.MDC_OPERATION_ID);
-            log.error(String.format("GenericException: operation-id=[%s]", operationId != null ? operationId : "n/a"), ex);
-            AppException appException = new AppException(ex, AppErrorCodeMessageEnum.ERROR, ex.getMessage());
-            ErrorResponse errorResponse = errorUtil.forAppException(appException);
-            log.error("Failed API operation recoverReceiptKOForCreditorInstitution - error: {}", errorResponse);
-            throw ex;
-        } finally {
-            log.info("Successful API operation recoverReceiptKOForCreditorInstitution");
-        }
     }
 
 
@@ -68,8 +51,6 @@ public class RecoveryController {
                                                                                                 @Pattern(regexp = "[a-zA-Z0-9_-]{1,100}") @PathVariable("iuv") String iuv,
                                                                                                 @Pattern(regexp = "[a-zA-Z0-9_-]{1,10}") @QueryParam("date_from") String dateFrom,
                                                                                                 @Pattern(regexp = "[a-zA-Z0-9_-]{1,10}") @QueryParam("date_to") String dateTo) {
-        try {
-            log.info("Invoking API operation recoverReceiptKOForCreditorInstitution - args: {} {} {} {}", ci, iuv, dateFrom, dateTo);
 
             RecoveryReceiptResponse recoveryReceiptResponse = recoveryService.recoverReceiptKOByIUV(ci, iuv, dateFrom, dateTo);
             if (recoveryReceiptResponse != null) {
@@ -78,16 +59,6 @@ public class RecoveryController {
                 // RPT with CI and IUV could not be recovered via API
                 return ResponseEntity.badRequest().build();
             }
-        } catch (Exception ex) {
-            String operationId = MDC.get(Constants.MDC_OPERATION_ID);
-            log.error(String.format("GenericException: operation-id=[%s]", operationId != null ? operationId : "n/a"), ex);
-            AppException appException = new AppException(ex, AppErrorCodeMessageEnum.ERROR, ex.getMessage());
-            ErrorResponse errorResponse = errorUtil.forAppException(appException);
-            log.error("Failed API operation recoverReceiptKOForCreditorInstitution - error: {}", errorResponse);
-            throw ex;
-        } finally {
-            log.info("Successful API operation recoverReceiptKOForCreditorInstitution");
-        }
     }
 
     @Operation(summary = "Execute reconciliation for passed receipts.", description = "Execute reconciliation of all receipts in the request, searching by passed identifier", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"Recovery"})
@@ -96,17 +67,7 @@ public class RecoveryController {
     })
     @PostMapping(value = "/receipts")
     public ResponseEntity<RecoveryReceiptReportResponse> recoverReceiptToBeReSent(@RequestBody RecoveryReceiptRequest request) {
-        try {
-            log.info("Invoking API operation recoverReceiptToBeReSent - args: {}", sanitizeInput(request.toString()));
             return ResponseEntity.ok(recoveryService.recoverReceiptToBeReSent(request));
-        } catch (Exception ex) {
-            String operationId = MDC.get(Constants.MDC_OPERATION_ID);
-            log.error(String.format("GenericException: operation-id=[%s]", operationId != null ? operationId : "n/a"), ex);
-            AppException appException = new AppException(ex, AppErrorCodeMessageEnum.ERROR, ex.getMessage());
-            ErrorResponse errorResponse = errorUtil.forAppException(appException);
-            log.error("Failed API operation recoverReceiptToBeReSent - error: {}", errorResponse);
-            throw ex;
-        }
     }
 
     @Operation(summary = "Execute reconciliation for passed receipts by partition.", description = "Execute reconciliation of all receipts contained in the partitions of the request", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"Recovery"})
@@ -115,17 +76,9 @@ public class RecoveryController {
     })
     @PostMapping(value = "/partitions")
     public ResponseEntity<RecoveryReceiptReportResponse> recoverReceiptToBeReSentByPartition(@RequestBody RecoveryReceiptByPartitionRequest request) {
-        try {
-            log.info("Invoking API operation recoverReceiptToBeReSentByPartition - args: {}", sanitizeInput(request.toString()));
+            log.debug("Invoking API operation recoverReceiptToBeReSentByPartition - args: {}", sanitizeInput(request.toString()));
             return ResponseEntity.ok(recoveryService.recoverReceiptToBeReSentByPartition(request));
-        } catch (Exception ex) {
-            String operationId = MDC.get(Constants.MDC_OPERATION_ID);
-            log.error(String.format("GenericException: operation-id=[%s]", operationId != null ? operationId : "n/a"), ex);
-            AppException appException = new AppException(ex, AppErrorCodeMessageEnum.ERROR, ex.getMessage());
-            ErrorResponse errorResponse = errorUtil.forAppException(appException);
-            log.error("Failed API operation recoverReceiptToBeReSentByPartition - error: {}", errorResponse);
-            throw ex;
-        }
+
     }
 
     @Operation(summary = "Execute reconciliation for OK receipts by sessionId.", description = "Execute reconciliation of all receipts related to the sessionIds of the request", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"Recovery"})
@@ -134,16 +87,8 @@ public class RecoveryController {
     })
     @PostMapping(value = "/sessionIds/ok")
     public ResponseEntity<RecoveryReceiptReportResponse> recoverReceiptToBeReSentBySessionId(@RequestBody RecoveryReceiptBySessionIdRequest request) {
-        try {
             log.debug("Invoking API operation recoverReceiptToBeReSentBySessionId - args: {}", sanitizeInput(request.toString()));
             return ResponseEntity.ok(recoveryService.recoverReceiptOkToBeReSentBySessionIds(request));
-        } catch (Exception ex) {
-            String operationId = MDC.get(Constants.MDC_OPERATION_ID);
-            log.error(String.format("GenericException: operation-id=[%s]", operationId != null ? operationId : "n/a"), ex);
-            AppException appException = new AppException(ex, AppErrorCodeMessageEnum.ERROR, ex.getMessage());
-            ErrorResponse errorResponse = errorUtil.forAppException(appException);
-            log.error("Failed API operation recoverReceiptToBeReSentBySessionId - error: {}", errorResponse);
-            throw ex;
-        }
+
     }
 }

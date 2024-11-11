@@ -8,7 +8,6 @@ import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.CacheRepository;
 import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
-import it.gov.pagopa.wispconverter.repository.model.enumz.OutcomeEnum;
 import it.gov.pagopa.wispconverter.repository.model.enumz.WorkflowStatus;
 import it.gov.pagopa.wispconverter.service.model.re.RePaymentContext;
 import it.gov.pagopa.wispconverter.util.Constants;
@@ -88,10 +87,7 @@ public class RPTTimerService {
             setRPTTimerInfoInMDC(sessionId);
 
             // checking if sessionId is present in container data
-            var rpt = this.rptRequestRepository.findById(sessionId);
-            if (rpt.isEmpty()) {
-                throw new AppException(AppErrorCodeMessageEnum.PERSISTENCE_RPT_NOT_FOUND, sessionId);
-            }
+            checkIfRptExists(sessionId);
 
             String key = String.format(RPT_TIMER_MESSAGE_KEY_FORMAT, sessionId);
 
@@ -102,49 +98,42 @@ public class RPTTimerService {
 
             // build the service bus message
             ServiceBusMessage serviceBusMessage = new ServiceBusMessage(message.toString());
-            log.debug(
-                    "Sending scheduled message {} to the queue: {}",
-                    sanitizeInput(message.toString()),
-                    queueName);
+            log.debug("Sending scheduled message {} to the queue: {}", sanitizeInput(message.toString()), queueName);
 
             // compute time and schedule message for consumer trigger
             OffsetDateTime scheduledExpirationTime = OffsetDateTime.now().plusSeconds(expirationTime);
-            Long sequenceNumber =
-                    serviceBusSenderClient.scheduleMessage(serviceBusMessage, scheduledExpirationTime);
+            Long sequenceNumber = serviceBusSenderClient.scheduleMessage(serviceBusMessage, scheduledExpirationTime);
 
-            try {
-                // insert in Redis cache sequenceNumber of the message
-                cacheRepository.insert(key, sequenceNumber.toString(), expirationTime, ChronoUnit.SECONDS);
+            tryToInsertKeyInRedis(message, key, sequenceNumber, sessionId);
 
-                // log event
-                log.info(
-                        "Sent scheduled message_base64 {} to the queue: {}",
-                        LogUtils.encodeToBase64(sanitizeInput(message.toString())),
-                        queueName);
-                reService.sendEvent(
-                        WorkflowStatus.RPT_TIMER_CREATED,
-                        RePaymentContext.builder()
-                                .domainId(MDC.get(Constants.MDC_DOMAIN_ID))
-                                .paymentToken(MDC.get(Constants.MDC_PAYMENT_TOKEN))
-                                .build(),
-                        "Scheduled RPTTimerService: [" + message + "]");
-            } catch (Exception e) {
-                serviceBusSenderClient.cancelScheduledMessage(sequenceNumber);
+        }
+    }
 
-                // log event
-                log.debug(
-                        "Timer not set due to an exception for rpt_timer_key: {} and sessionId: {}",
-                        sanitizeInput(key),
-                        sanitizeInput(sessionId));
-                reService.sendEvent(
-                        WorkflowStatus.RPT_TIMER_CREATION_PROCESSED,
-                        RePaymentContext.builder()
-                                .domainId(MDC.get(Constants.MDC_DOMAIN_ID))
-                                .paymentToken(MDC.get(Constants.MDC_PAYMENT_TOKEN))
-                                .build(),
-                        "Exception timer not set: [" + sequenceNumber + "] for sessionId: [" + sessionId + "]",
-                        OutcomeEnum.OK);
-            }
+    private void checkIfRptExists(String sessionId) {
+        var rpt = this.rptRequestRepository.findById(sessionId);
+        if (rpt.isEmpty()) {
+            throw new AppException(AppErrorCodeMessageEnum.PERSISTENCE_RPT_NOT_FOUND, sessionId);
+        }
+    }
+
+    private void tryToInsertKeyInRedis(RPTTimerRequest message, String key, Long sequenceNumber, String sessionId) {
+        try {
+            // insert in Redis cache sequenceNumber of the message
+            cacheRepository.insert(key, sequenceNumber.toString(), expirationTime, ChronoUnit.SECONDS);
+            // log event
+            log.info("Sent scheduled message_base64 {} to the queue: {}", LogUtils.encodeToBase64(sanitizeInput(message.toString())), queueName);
+            reService.sendEvent(
+                    WorkflowStatus.RPT_TIMER_CREATED,
+                    RePaymentContext.builder()
+                            .domainId(MDC.get(Constants.MDC_DOMAIN_ID))
+                            .paymentToken(MDC.get(Constants.MDC_PAYMENT_TOKEN))
+                            .build(),
+                    "Scheduled RPTTimerService: [" + message + "]");
+        } catch (Exception e) {
+            serviceBusSenderClient.cancelScheduledMessage(sequenceNumber);
+            // log event
+            MDC.put(Constants.MDC_INFO, "Exception timer not set: [" + sequenceNumber + "] for sessionId: [" + sessionId + "]");
+            log.debug("Timer not set due to an exception for rpt_timer_key: {} and sessionId: {}", sanitizeInput(key), sanitizeInput(sessionId));
         }
     }
 
@@ -165,18 +154,14 @@ public class RPTTimerService {
 
                 // cancel scheduled message in the service bus queue
                 callCancelScheduledMessage(sequenceNumber);
-                log.info(
-                        "Canceled scheduled message for rpt_timer_base64 {}",
+                log.info("Canceled scheduled message for rpt_timer_base64 {}",
                         LogUtils.encodeToBase64(sanitizeInput(sessionId)));
 
                 // delete the sequenceNumber from the Redis cache
                 cacheRepository.delete(key);
 
                 // log event
-                log.debug(
-                        "Deleted sequence number {} for rpt_timer_base64-token: {} from cache",
-                        sequenceNumber,
-                        sanitizeInput(sessionId));
+                log.debug("Deleted sequence number {} for rpt_timer_base64-token: {} from cache", sequenceNumber, sanitizeInput(sessionId));
             }
         }
     }

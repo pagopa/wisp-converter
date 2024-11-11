@@ -38,8 +38,8 @@ public class ReInterceptor implements HandlerInterceptor {
 
     private final ReService reService;
 
-    private static OutcomeEnum getOutcomeEnum(HttpServletResponse response) {
-        return response.getStatus() > 399 ? OutcomeEnum.KO : OutcomeEnum.OK;
+    private static OutcomeEnum getOutcomeEnum(HttpServletResponse response, EndpointRETrace trace) {
+        return response.getStatus() > 399 ? trace.outcomeError() : trace.outcomeOk();
     }
 
     private static HttpHeaders formatServerRequestHeaders(HttpServletResponse request) {
@@ -121,15 +121,15 @@ public class ReInterceptor implements HandlerInterceptor {
                 String businessProcess = trace.businessProcess();
                 log.debug("[afterCompletion] trace RE SERVER OUT businessProcess = [{}]", businessProcess);
                 MDC.put(MDC_STATUS, trace.status().name());
-                MDC.put(
-                        Constants.MDC_CLIENT_EXECUTION_TIME,
+                MDC.put(Constants.MDC_CLIENT_EXECUTION_TIME,
                         CommonUtility.getExecutionTime(
                                 CommonUtility.getExecutionTime(MDC.get(Constants.MDC_START_TIME))));
+
                 reService.sendEvent(
                         WorkflowStatus.valueOf(MDC.get(MDC_STATUS)),
                         null,
-                        null,
-                        getOutcomeEnum(response),
+                        MDC.get(Constants.MDC_INFO),
+                        getOutcomeEnum(response, trace),
                         ReRequestContext.builder()
                                 .uri(request.getRequestURI())
                                 .method(HttpMethod.valueOf(request.getMethod()))
