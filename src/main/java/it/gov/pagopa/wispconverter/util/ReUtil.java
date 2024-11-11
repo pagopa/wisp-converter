@@ -241,7 +241,7 @@ public class ReUtil {
     private static ReEventDto.ReEventDtoBuilder createBaseRE() {
         Instant mdcStartTime = MDC.get(Constants.MDC_START_TIME) == null ? null : Instant.ofEpochMilli(Long.parseLong(MDC.get(Constants.MDC_START_TIME)));
         return ReEventDto.builder()
-                .id(UUID.randomUUID().toString())
+                //.id(UUID.randomUUID().toString())
                 .requestId(MDC.get(Constants.MDC_REQUEST_ID))
                 .operationId(MDC.get(Constants.MDC_OPERATION_ID))
                 .clientOperationId(MDC.get(Constants.MDC_CLIENT_OPERATION_ID))
