@@ -1,6 +1,7 @@
 package it.gov.pagopa.wispconverter.repository.model;
 
 import com.azure.spring.data.cosmos.core.mapping.Container;
+import com.azure.spring.data.cosmos.core.mapping.GeneratedValue;
 import com.azure.spring.data.cosmos.core.mapping.PartitionKey;
 import it.gov.pagopa.wispconverter.repository.model.enumz.*;
 import lombok.Builder;
@@ -18,6 +19,7 @@ public class ReEventEntity {
      * The identifier of the single event.
      */
     @Id
+    @GeneratedValue
     private String id;
 
     /**
