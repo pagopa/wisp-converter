@@ -212,6 +212,7 @@ public class RPTExtractorService {
                         .payerEmail(email)
                         .isMultibeneficiary(isMultibeneficiary)
                         .containsDigitalStamp(rptContents.stream().anyMatch(RPTContentDTO::getContainsDigitalStamp))
+                        .feeCode(soapBody.getCodiceConvenzione())
                         .build())
                 .paymentNotices(new HashMap<>())
                 .rpts(rpts)
