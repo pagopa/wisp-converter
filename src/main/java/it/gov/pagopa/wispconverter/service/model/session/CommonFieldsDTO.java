@@ -31,4 +31,5 @@ public class CommonFieldsDTO {
     private Boolean isMultibeneficiary;
     private Boolean containsDigitalStamp;
     private String signatureType;
+    private String feeCode;
 }
