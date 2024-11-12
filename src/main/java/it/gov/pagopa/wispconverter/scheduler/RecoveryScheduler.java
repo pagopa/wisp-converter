@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 
 @Component
 @Slf4j
@@ -40,15 +41,19 @@ public class RecoveryScheduler {
     @Scheduled(cron = "${cron.job.schedule.recovery.receipt-ko.trigger}")
     @Async
     public void recoverReceiptKOCronJob() {
-        ZonedDateTime dateFrom = ZonedDateTime.now(ZoneOffset.UTC).minusHours(fromHoursAgo);
-        ZonedDateTime dateTo = ZonedDateTime.now(ZoneOffset.UTC).minusHours(untilHoursAgo);
+        ZonedDateTime dateFrom = ZonedDateTime.now(ZoneOffset.UTC).minusHours(fromHoursAgo).truncatedTo(ChronoUnit.HOURS);
+        ZonedDateTime dateTo = ZonedDateTime.now(ZoneOffset.UTC).minusHours(untilHoursAgo).truncatedTo(ChronoUnit.HOURS);
         log.info("[WISP-Recovery][Scheduled][Start] Reconciliation Cron: recoverReceiptKOCronJob running at {}, for recover stale RPT from {} to {}",
                 DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(LocalDateTime.now()), dateFrom, dateTo);
 
-        int missingRTRecovered = this.recoveryService.recoverReceiptKOByDate(dateFrom, dateTo).getPayments().size();
+        // recover RPT without redirect
         int missingRedirectRecovered = this.recoveryService.recoverMissingRedirect(dateFrom, dateTo);
 
-        log.info("[WISP-Recovery][Scheduled][Stop] Reconciliation Cron: recoverReceiptKOCronJob {} receipt-ko sent", missingRedirectRecovered + missingRTRecovered);
+        // recover receipt-rt in state redirect or sending with rt equals to null
+        int missingRTRecovered = this.recoveryService.recoverReceiptKOByDate(dateFrom, dateTo).getPayments().size();
+
+        log.info("[WISP-Recovery][Scheduled][Stop] Reconciliation Cron: recoverReceiptKOCronJob {} receipt-ko sent," +
+                        " missingRedirect: {}, missingRTRecovered: {}", missingRedirectRecovered + missingRTRecovered, missingRedirectRecovered, missingRTRecovered);
         this.threadOfExecution = Thread.currentThread();
     }
 }
