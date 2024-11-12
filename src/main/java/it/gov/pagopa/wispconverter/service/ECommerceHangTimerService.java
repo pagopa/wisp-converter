@@ -8,12 +8,9 @@ import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.CacheRepository;
 import it.gov.pagopa.wispconverter.repository.model.enumz.WorkflowStatus;
 import it.gov.pagopa.wispconverter.service.model.ECommerceHangTimeoutMessage;
-import it.gov.pagopa.wispconverter.service.model.re.RePaymentContext;
-import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.LogUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -109,10 +106,6 @@ public class ECommerceHangTimerService {
                     queueName);
             reService.sendEvent(
                     WorkflowStatus.ECOMMERCE_HANG_TIMER_CREATED,
-                    RePaymentContext.builder()
-                            .domainId(MDC.get(Constants.MDC_DOMAIN_ID))
-                            .paymentToken(MDC.get(Constants.MDC_PAYMENT_TOKEN))
-                            .build(),
                     "Scheduled eCommerce hang release: ["
                             + message
                             + "] "
@@ -167,6 +160,7 @@ public class ECommerceHangTimerService {
                         sequenceNumber,
                         sanitizeInput(noticeNumber),
                         sanitizeInput(fiscalCode));
+                reService.sendEvent(WorkflowStatus.ECOMMERCE_HANG_TIMER_DELETED);
             }
         }
     }

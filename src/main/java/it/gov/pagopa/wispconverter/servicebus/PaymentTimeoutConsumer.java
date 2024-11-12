@@ -3,11 +3,11 @@ package it.gov.pagopa.wispconverter.servicebus;
 import com.azure.messaging.servicebus.ServiceBusReceivedMessage;
 import com.azure.messaging.servicebus.ServiceBusReceivedMessageContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import it.gov.pagopa.wispconverter.repository.model.enumz.OutcomeEnum;
 import it.gov.pagopa.wispconverter.repository.model.enumz.WorkflowStatus;
 import it.gov.pagopa.wispconverter.service.ReService;
 import it.gov.pagopa.wispconverter.service.ReceiptService;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
-import it.gov.pagopa.wispconverter.service.model.re.RePaymentContext;
 import it.gov.pagopa.wispconverter.util.CommonUtility;
 import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.MDCUtil;
@@ -70,31 +70,26 @@ public class PaymentTimeoutConsumer extends SBConsumer {
                 message.getMessageId(),
                 message.getSequenceNumber(),
                 message.getBody());
+        OutcomeEnum outcome;
         try {
             ReceiptDto receiptDto = mapper.readValue(message.getBody().toStream(), ReceiptDto.class);
-            generateREForPaymentTokenTimeout(receiptDto);
+            MDC.put(Constants.MDC_SESSION_ID, receiptDto.getSessionId());
+            MDC.put(Constants.MDC_PAYMENT_TOKEN, receiptDto.getPaymentToken());
+            MDC.put(Constants.MDC_DOMAIN_ID, receiptDto.getFiscalCode());
+            MDC.put(Constants.MDC_NOTICE_NUMBER, receiptDto.getNoticeNumber());
 
             receiptService.sendKoPaaInviaRtToCreditorInstitution(List.of(receiptDto));
+
+            outcome = MDC.get(Constants.MDC_OUTCOME) == null ? OutcomeEnum.OK : OutcomeEnum.valueOf(MDC.get(Constants.MDC_OUTCOME));
+
         } catch (IOException e) {
             log.error(
                     "Error when read ReceiptDto value from message: '{}'. Body: '{}'",
                     message.getMessageId(),
                     message.getBody());
+            outcome = MDC.get(Constants.MDC_OUTCOME) == null ? OutcomeEnum.ERROR : OutcomeEnum.valueOf(MDC.get(Constants.MDC_OUTCOME));
         }
+        reService.sendEvent(WorkflowStatus.PAYMENT_TOKEN_TIMER_IN_TIMEOUT, null, outcome);
         MDC.clear();
-    }
-
-    private void generateREForPaymentTokenTimeout(ReceiptDto receipt) {
-        MDC.put(Constants.MDC_PAYMENT_TOKEN, receipt.getPaymentToken());
-        MDC.put(Constants.MDC_DOMAIN_ID, receipt.getFiscalCode());
-        MDC.put(Constants.MDC_NOTICE_NUMBER, receipt.getNoticeNumber());
-        reService.sendEvent(
-                WorkflowStatus.PAYMENT_TOKEN_TIMER_IN_TIMEOUT,
-                RePaymentContext.builder()
-                        .paymentToken(receipt.getPaymentToken())
-                        .domainId(receipt.getFiscalCode())
-                        .noticeNumber(receipt.getNoticeNumber())
-                        .build(),
-                "Expired payment token. A KO receipt will be sent: " + receipt);
     }
 }

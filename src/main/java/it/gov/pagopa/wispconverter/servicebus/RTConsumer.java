@@ -9,16 +9,13 @@ import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.ReceiptDeadLetterRepository;
 import it.gov.pagopa.wispconverter.repository.model.RTRequestEntity;
 import it.gov.pagopa.wispconverter.repository.model.ReceiptDeadLetterEntity;
-import it.gov.pagopa.wispconverter.repository.model.enumz.IdempotencyStatusEnum;
-import it.gov.pagopa.wispconverter.repository.model.enumz.ReceiptStatusEnum;
-import it.gov.pagopa.wispconverter.repository.model.enumz.ReceiptTypeEnum;
-import it.gov.pagopa.wispconverter.repository.model.enumz.WorkflowStatus;
+import it.gov.pagopa.wispconverter.repository.model.enumz.*;
 import it.gov.pagopa.wispconverter.service.*;
-import it.gov.pagopa.wispconverter.service.model.re.RePaymentContext;
 import it.gov.pagopa.wispconverter.util.*;
 import jakarta.xml.soap.SOAPMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -105,30 +102,33 @@ public class RTConsumer extends SBConsumer {
         String receiptId = idSections[1] + "_" + idSections[2];
 
         // get RT request entity from database
-        RTRequestEntity rtRequestEntity =
-                rtRetryComosService.getRTRequestEntity(receiptId, rtInsertionDate);
+        RTRequestEntity rtRequestEntity = rtRetryComosService.getRTRequestEntity(receiptId, rtInsertionDate);
+
+        MDC.put(Constants.MDC_SESSION_ID, rtRequestEntity.getSessionId());
+        MDC.put(Constants.MDC_CCP, rtRequestEntity.getCcp());
+        MDC.put(Constants.MDC_DOMAIN_ID, rtRequestEntity.getDomainId());
+        MDC.put(Constants.MDC_IUV, rtRequestEntity.getIuv());
+        MDC.put(Constants.MDC_STATION_ID, rtRequestEntity.getStation());
+
         String idempotencyKey = rtRequestEntity.getIdempotencyKey();
         ReceiptTypeEnum receiptType = rtRequestEntity.getReceiptType();
 
         IdempotencyStatusEnum idempotencyStatus = IdempotencyStatusEnum.FAILED;
         boolean isIdempotencyKeyProcessable = false;
+        OutcomeEnum outcome = OutcomeEnum.ERROR;
         try {
 
             // before sending the RT to the creditor institution, the idempotency key must be checked in
             // order to not send duplicated receipts
-            isIdempotencyKeyProcessable =
-                    idempotencyService.isIdempotencyKeyProcessable(idempotencyKey, receiptType);
+            isIdempotencyKeyProcessable = idempotencyService.isIdempotencyKeyProcessable(idempotencyKey, receiptType);
             if (isIdempotencyKeyProcessable) {
 
                 // Lock idempotency key status to avoid concurrency issues
                 idempotencyService.lockIdempotencyKey(idempotencyKey, receiptType);
 
                 // If receipt was found, it must be sent to creditor institution, so it try this operation
-                log.debug(
-                        "Sending message {}, retry: {}", compositedIdForReceipt, rtRequestEntity.getRetry());
-                boolean isSend =
-                        resendRTToCreditorInstitution(
-                                receiptId, rtRequestEntity, compositedIdForReceipt, idempotencyKey);
+                log.debug("Sending message {}, retry: {}", compositedIdForReceipt, rtRequestEntity.getRetry());
+                boolean isSend = resendRTToCreditorInstitution(receiptId, rtRequestEntity, compositedIdForReceipt, idempotencyKey);
 
                 idempotencyStatus = isSend ? IdempotencyStatusEnum.SUCCESS : IdempotencyStatusEnum.FAILED;
 
@@ -141,12 +141,18 @@ public class RTConsumer extends SBConsumer {
                 }
             }
 
-        } catch (Exception e) {
+            outcome = MDC.get(Constants.MDC_OUTCOME) == null ? OutcomeEnum.OK : OutcomeEnum.valueOf(MDC.get(Constants.MDC_OUTCOME));
 
-            // Generate a new event in RE for store the unsuccessful re-sending of the receipt
-            generateREForNotSentRT(e);
+        } catch (Exception e) {
+            outcome = MDC.get(Constants.MDC_OUTCOME) == null ? OutcomeEnum.ERROR : OutcomeEnum.valueOf(MDC.get(Constants.MDC_OUTCOME));
+        } finally {
+            unlockIdempotencyKey(isIdempotencyKeyProcessable, idempotencyKey, receiptType, idempotencyStatus);
+            reService.sendEvent(WorkflowStatus.RECEIPT_RESEND_PROCESSED, null, outcome);
         }
 
+    }
+
+    private void unlockIdempotencyKey(boolean isIdempotencyKeyProcessable, String idempotencyKey, ReceiptTypeEnum receiptType, IdempotencyStatusEnum idempotencyStatus) {
         // Unlock idempotency key after a successful operation
         if (isIdempotencyKeyProcessable) {
             try {
@@ -208,29 +214,29 @@ public class RTConsumer extends SBConsumer {
             rtRetryComosService.deleteRTRequestEntity(receipt);
             log.debug("Sent receipt [{}]", receiptId);
 
-            // generate a new event in RE for store the successful re-sending of the receipt
-            generateREForSentRT();
+
             isSend = true;
 
         } catch (AppException e) {
 
             if (e.getError().equals(AppErrorCodeMessageEnum.RECEIPT_GENERATION_ERROR_DEAD_LETTER)) {
+                MDC.put(Constants.MDC_OUTCOME, OutcomeEnum.SENDING_RT_FAILED_STORED_IN_DEADLETTER.name());
+
                 // Sending dead letter in case of unknown status
                 receiptDeadLetterRepository.save(
                         mapper.convertValue(receipt, ReceiptDeadLetterEntity.class));
-                generateREForDeadLetter(receipt);
 
                 // Remove receipt from receipt collection
                 rtRetryComosService.deleteRTRequestEntity(receipt);
             } else {
-                // generate a new event in RE for store the unsuccessful re-sending of the receipt
-                generateREForNotSentRT(e);
+                MDC.put(Constants.MDC_OUTCOME, OutcomeEnum.SENDING_RT_FAILED.name());
 
                 // Rescheduled due to errors caused by faulty communication with creditor institution
                 reScheduleReceiptSend(receipt, receiptId, compositedIdForReceipt);
             }
 
         } catch (IOException e) {
+            MDC.put(Constants.MDC_OUTCOME, OutcomeEnum.SENDING_RT_FAILED.name());
 
             rtReceiptCosmosService.updateReceiptStatus(ci, iuv, ccp, ReceiptStatusEnum.NOT_SENT);
 
@@ -271,76 +277,23 @@ public class RTConsumer extends SBConsumer {
                 // process for this receipt
                 serviceBusService.sendMessage(compositedIdForReceipt, schedulingTimeInMinutes);
 
-                // generate a new event in RE for store the successful scheduling of the RT send
-                generateREForSuccessfulReschedulingSentRT();
                 rtReceiptCosmosService.updateReceiptStatus(ci, iuv, ccp, ReceiptStatusEnum.SCHEDULED);
+
+                MDC.put(Constants.MDC_OUTCOME, OutcomeEnum.SENDING_RT_FAILED_RESCHEDULING_SUCCESSFUL.name());
 
             } catch (Exception e) {
 
-                // generate a new event in RE for store the unsuccessful scheduling of the RT send
-                generateREForFailedReschedulingSentRT(e);
+                MDC.put(Constants.MDC_OUTCOME, OutcomeEnum.SENDING_RT_FAILED_RESCHEDULING_FAILED.name());
+
                 rtReceiptCosmosService.updateReceiptStatus(ci, iuv, ccp, ReceiptStatusEnum.NOT_SENT);
             }
         } else {
 
-            // generate a new event in RE for store the unsuccessful scheduling of the RT send
-            generateREForMaxRetriesOnReschedulingSentRT(receipt.getRetry());
+            MDC.put(Constants.MDC_OUTCOME, OutcomeEnum.SENDING_RT_FAILED_MAX_RETRIES.name());
+
             rtReceiptCosmosService.updateReceiptStatus(ci, iuv, ccp, ReceiptStatusEnum.NOT_SENT);
         }
     }
 
-    private void generateREForSentRT() {
 
-        reService.sendEvent(
-                WorkflowStatus.RT_SCHEDULED_SEND_FAILURE, null, "Re-scheduled send operation: success.");
-    }
-
-    private void generateREForNotSentRT(Throwable e) {
-
-        reService.sendEvent(
-                WorkflowStatus.RT_SCHEDULED_SEND_FAILURE,
-                null,
-                "Re-scheduled send operation: failure. Caused by: " + e.getMessage());
-    }
-
-    private void generateREForSuccessfulReschedulingSentRT() {
-
-        reService.sendEvent(
-                WorkflowStatus.RT_SCHEDULED_SEND_FAILURE,
-                null,
-                "Trying to re-schedule for next retry: success.");
-    }
-
-    private void generateREForFailedReschedulingSentRT(Throwable exception) {
-
-        reService.sendEvent(
-                WorkflowStatus.RT_SCHEDULED_SEND_FAILURE,
-                null,
-                "Trying to re-schedule for next retry: failure. Caused by: " + exception.getMessage());
-    }
-
-    private void generateREForMaxRetriesOnReschedulingSentRT(int retries) {
-
-        reService.sendEvent(
-                WorkflowStatus.RT_SEND_RESCHEDULING_REACHED_MAX_RETRIES,
-                null,
-                "Reached max retries: [" + retries + "].");
-    }
-
-    private void generateREForDeadLetter(RTRequestEntity rtRequestEntity) {
-
-        reService.sendEvent(
-                WorkflowStatus.RT_DEAD_LETTER_SAVED,
-                RePaymentContext.builder()
-                        .iuv(rtRequestEntity.getIuv())
-                        .domainId(rtRequestEntity.getDomainId())
-                        .ccp(rtRequestEntity.getCcp())
-                        .build(),
-                "Saved dead letter for receipt with iuv: "
-                        + rtRequestEntity.getIuv()
-                        + ", domainId: "
-                        + rtRequestEntity.getDomainId()
-                        + ", ccp: "
-                        + rtRequestEntity.getCcp());
-    }
 }

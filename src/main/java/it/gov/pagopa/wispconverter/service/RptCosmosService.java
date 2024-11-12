@@ -26,7 +26,6 @@ public class RptCosmosService {
     private Boolean isTracingOnREEnabled;
 
     public RPTRequestEntity getRPTRequestEntity(String sessionId) {
-        MDC.put(Constants.MDC_SESSION_ID, sessionId);
 
         // searching RPT by session identifier: if no element is found throw an exception, in the RE will be saved an exception event of failure
         Optional<RPTRequestEntity> optRPTReqEntity = this.rptRequestRepository.findById(sessionId);

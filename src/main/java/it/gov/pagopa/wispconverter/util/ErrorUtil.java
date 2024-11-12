@@ -67,7 +67,9 @@ public class ErrorUtil {
         setExtraProperties(problemDetail);
         MDCUtil.setMDCError(problemDetail);
         MDCUtil.setMDCCloseFailedOperation(statusCode);
-        MDC.put(Constants.MDC_ERROR_LINE, ex.getStackTrace()[0].toString());
+        if (ex != null && ex.getStackTrace() != null && ex.getStackTrace().length > 0) {
+            MDC.put(Constants.MDC_ERROR_LINE, ex.getStackTrace()[0].toString());
+        }
     }
 
     public URI getTypeFromErrorCode(String errorCode) {

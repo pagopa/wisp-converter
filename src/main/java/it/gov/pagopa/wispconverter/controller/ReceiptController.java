@@ -63,9 +63,9 @@ public class ReceiptController {
     })
     @GetMapping(value = "")
     public ResponseEntity<String> receiptRetrieve(@QueryParam("ci") String ci, @QueryParam("ccp") String ccp, @QueryParam("iuv") String iuv) {
-            if (rtReceiptCosmosService.receiptRtExist(ci, iuv, ccp))
-                return ResponseEntity.ok("");
-            else return ResponseEntity.notFound().build();
+        if (rtReceiptCosmosService.receiptRtExist(ci, iuv, ccp))
+            return ResponseEntity.ok("");
+        else return ResponseEntity.notFound().build();
     }
 
     @Operation(summary = "", description = "", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"Receipt"})
@@ -79,7 +79,7 @@ public class ReceiptController {
     )
     @EndpointRETrace(status = WorkflowStatus.RECEIPT_SEND_PROCESSED, businessProcess = BP_RECEIPT_KO, reEnabled = true)
     public void receiptKo(@RequestBody ReceiptDto request) {
-            receiptService.sendKoPaaInviaRtToCreditorInstitution(List.of(request));
+        receiptService.sendKoPaaInviaRtToCreditorInstitution(List.of(request));
     }
 
     @Operation(summary = "", description = "", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"Receipt"})
@@ -93,8 +93,8 @@ public class ReceiptController {
     )
     @EndpointRETrace(status = WorkflowStatus.RECEIPT_SEND_PROCESSED, businessProcess = BP_RECEIPT_OK, reEnabled = true)
     public void receiptOk(@RequestBody ReceiptRequest request) {
-            log.info("Invoking API operation receiptOk - args: {}", this.getReceiptRequestInfoToLog(request.getContent()));
-            receiptService.sendOkPaaInviaRtToCreditorInstitution(request.getContent());
+        log.info("Invoking API operation receiptOk - args: {}", this.getReceiptRequestInfoToLog(request.getContent()));
+        receiptService.sendOkPaaInviaRtToCreditorInstitution(request.getContent());
     }
 
     private String getReceiptRequestInfoToLog(String xml) {

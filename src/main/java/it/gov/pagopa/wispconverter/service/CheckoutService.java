@@ -8,8 +8,10 @@ import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.service.mapper.CartMapper;
 import it.gov.pagopa.wispconverter.service.model.session.PaymentNoticeContentDTO;
 import it.gov.pagopa.wispconverter.service.model.session.SessionDataDTO;
+import it.gov.pagopa.wispconverter.util.Constants;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
@@ -74,6 +76,7 @@ public class CheckoutService {
         returnUrls.setReturnErrorUrl(new URI(String.format(uriContent, "ERROR")));
         cart.setReturnUrls(returnUrls);
 
+        MDC.put(Constants.MDC_CART_ID, cart.getIdCart());
         return cart;
     }
 

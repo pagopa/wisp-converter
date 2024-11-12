@@ -30,9 +30,9 @@ public class RequestIdFilter extends OncePerRequestFilter {
         String requestId = request.getHeader(HEADER_REQUEST_ID);
         if (requestId == null || requestId.isEmpty()) {
             requestId = UUID.randomUUID().toString();
-            log.debug("RequestIdFilter - assign new {}=[{}]", HEADER_REQUEST_ID, requestId);
+            log.trace("RequestIdFilter - assign new {}=[{}]", HEADER_REQUEST_ID, requestId);
         } else {
-            log.debug("RequestIdFilter - found {}=[{}]", HEADER_REQUEST_ID, requestId);
+            log.trace("RequestIdFilter - found {}=[{}]", HEADER_REQUEST_ID, requestId);
         }
 
         // set requestId in MDC

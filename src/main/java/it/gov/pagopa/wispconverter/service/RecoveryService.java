@@ -21,7 +21,6 @@ import it.gov.pagopa.wispconverter.repository.model.enumz.WorkflowStatus;
 import it.gov.pagopa.wispconverter.secondary.IdempotencyKeyRepositorySecondary;
 import it.gov.pagopa.wispconverter.secondary.RTRepositorySecondary;
 import it.gov.pagopa.wispconverter.secondary.ReEventRepositorySecondary;
-import it.gov.pagopa.wispconverter.service.model.re.RePaymentContext;
 import it.gov.pagopa.wispconverter.service.model.session.CommonFieldsDTO;
 import it.gov.pagopa.wispconverter.service.model.session.RPTContentDTO;
 import it.gov.pagopa.wispconverter.service.model.session.ReceiptContentDTO;
@@ -319,8 +318,10 @@ public class RecoveryService {
         // setting data in MDC for next use
         MDC.put(Constants.MDC_PRIMITIVE, primitive);
         MDC.put(Constants.MDC_SESSION_ID, sessionId);
-        reService.sendEvent(
-                status, RePaymentContext.builder().domainId(domainId).iuv(iuv).ccp(ccp).build(), info);
+        MDC.put(Constants.MDC_DOMAIN_ID, domainId);
+        MDC.put(Constants.MDC_IUV, iuv);
+        MDC.put(Constants.MDC_CCP, ccp);
+        reService.sendEvent(status, info);
     }
 
     @Transactional

@@ -12,6 +12,8 @@ import it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigDataV1Dto;
 import it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigurationKeyDto;
 import it.gov.pagopa.gen.wispconverter.client.cache.model.ConnectionDto;
 import it.gov.pagopa.gen.wispconverter.client.cache.model.StationDto;
+import it.gov.pagopa.gen.wispconverter.client.decouplercaching.api.DefaultApi;
+import it.gov.pagopa.gen.wispconverter.client.decouplercaching.model.SessionIdDto;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.ReceiptDeadLetterRepository;
@@ -25,7 +27,6 @@ import it.gov.pagopa.wispconverter.repository.model.enumz.WorkflowStatus;
 import it.gov.pagopa.wispconverter.service.mapper.RTMapper;
 import it.gov.pagopa.wispconverter.service.model.CachedKeysMapping;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
-import it.gov.pagopa.wispconverter.service.model.re.RePaymentContext;
 import it.gov.pagopa.wispconverter.service.model.session.CommonFieldsDTO;
 import it.gov.pagopa.wispconverter.service.model.session.RPTContentDTO;
 import it.gov.pagopa.wispconverter.service.model.session.ReceiptContentDTO;
@@ -122,8 +123,7 @@ public class ReceiptService {
         return header;
     }
 
-    public static List<RPTContentDTO> extractRequiredRPTs(
-            SessionDataDTO sessionData, String iuv, String creditorInstitutionId) {
+    public static List<RPTContentDTO> extractRequiredRPTs(SessionDataDTO sessionData, String iuv, String creditorInstitutionId) {
         List<RPTContentDTO> rpts;
         if (Boolean.TRUE.equals(sessionData.getCommonFields().getIsMultibeneficiary())) {
             rpts = sessionData.getAllRPTs().stream().toList();
@@ -176,15 +176,8 @@ public class ReceiptService {
     public void sendKoPaaInviaRtToCreditorInstitution(List<ReceiptDto> receipts) {
         try {
 
-            it.gov.pagopa.gen.wispconverter.client.decouplercaching.api.DefaultApi apiInstance =
-                    new it.gov.pagopa.gen.wispconverter.client.decouplercaching.api.DefaultApi(
-                            decouplerCachingClient);
-            it.gov.pagopa.gen.wispconverter.client.decouplercaching.model.SessionIdDto sessionIdDto =
-                    new it.gov.pagopa.gen.wispconverter.client.decouplercaching.model.SessionIdDto();
-
-            // map the received payload as a list of receipts that will be lately evaluated
-            gov.telematici.pagamenti.ws.papernodo.ObjectFactory objectFactory =
-                    new gov.telematici.pagamenti.ws.papernodo.ObjectFactory();
+            var apiInstance = new it.gov.pagopa.gen.wispconverter.client.decouplercaching.api.DefaultApi(decouplerCachingClient);
+            var sessionIdDto = new it.gov.pagopa.gen.wispconverter.client.decouplercaching.model.SessionIdDto();
 
             // retrieve configuration data from cache
             ConfigDataV1Dto configData = configCacheService.getConfigData();
@@ -193,92 +186,7 @@ public class ReceiptService {
 
             // generate and send a KO RT for each receipt received in the payload
             for (ReceiptDto receipt : receipts) {
-                // workaround to reuse endpoint service. in this case sessionId =
-                // sessionId_fiscalCode_noticeNumber
-                sessionIdDto.setSessionId(
-                        String.format(
-                                "%s_%s_%s",
-                                receipt.getSessionId(), receipt.getFiscalCode(), receipt.getNoticeNumber()));
-
-                // necessary to block activatePaymentNoticeV2
-                apiInstance.deleteSessionId(sessionIdDto, MDC.get(Constants.MDC_REQUEST_ID));
-
-                MDCUtil.setReceiptTimerInfoInMDC(receipt.getFiscalCode(), receipt.getNoticeNumber(), null);
-
-                // retrieve the NAV-to-IUV mapping key from Redis, then use the result for retrieve the
-                // session data
-                String noticeNumber = receipt.getNoticeNumber();
-                CachedKeysMapping cachedMapping =
-                        decouplerService.getCachedMappingFromNavToIuv(receipt.getFiscalCode(), noticeNumber);
-                String iuv = cachedMapping.getIuv();
-
-                // use the session-id for generate session data information on which the next execution will
-                // operate
-                SessionDataDTO sessionData = getSessionDataFromSessionId(receipt.getSessionId());
-                CommonFieldsDTO commonFields = sessionData.getCommonFields();
-
-        /*
-          Validate the station, checking if exists one with the required segregation code and, if is onboarded on GPD
-          has the correct primitive version.
-          If it is not onboarded on GPD, it must be used for generate RT to sent to creditor institution via
-          institution's custom endpoint.
-        */
-                if (CommonUtility.isStationOnboardedOnGpd(
-                        configCacheService, sessionData, receipt.getFiscalCode(), stationInGpdPartialPath)) {
-
-                    generateREForNotGenerableRT(sessionData, iuv, noticeNumber);
-
-                } else {
-
-          /*
-           For each RPT extracted from session data that is required by paSendRTV2, is necessary to generate a single paaInviaRT SOAP request.
-           Each paaInviaRT generated will be autonomously sent to creditor institution in order to track each RPT.
-          */
-                    List<RPTContentDTO> rpts = extractRequiredRPTs(sessionData, iuv, receipt.getFiscalCode());
-                    for (RPTContentDTO rpt : rpts) {
-
-                        // generate the header for the paaInviaRT SOAP request. This object is common for each
-                        // generated request
-                        IntestazionePPT header =
-                                generateHeader(
-                                        rpt.getRpt().getDomain().getDomainId(),
-                                        iuv,
-                                        rpt.getCcp(),
-                                        commonFields.getCreditorInstitutionBrokerId(),
-                                        commonFields.getStationId());
-
-                        // Generating the paaInviaRT payload from the RPT
-                        String paymentOutcome = "Annullato da WISP";
-                        JAXBElement<CtRicevutaTelematica> generatedReceipt =
-                                new ObjectFactory()
-                                        .createRT(
-                                                generateRTContentForKoReceipt(
-                                                        rpt, configurations, Instant.now(), paymentOutcome));
-                        String rawGeneratedReceipt = jaxbElementUtil.objectToString(generatedReceipt);
-                        String paaInviaRtPayload =
-                                generatePayloadAsRawString(header, null, rawGeneratedReceipt, objectFactory);
-
-                        // retrieve station from common station identifier
-                        StationDto station = stations.get(commonFields.getStationId());
-
-                        ReceiptContentDTO receiptContent =
-                                ReceiptContentDTO.builder()
-                                        .paaInviaRTPayload(paaInviaRtPayload)
-                                        .rtPayload(rawGeneratedReceipt)
-                                        .build();
-
-                        // send receipt to the creditor institution and, if not correctly sent, add to queue for
-                        // retry
-                        sendReceiptToCreditorInstitution(
-                                sessionData,
-                                rpt,
-                                receiptContent,
-                                rpt.getIuv(),
-                                noticeNumber,
-                                station,
-                                true);
-                    }
-                }
+                handleSingleReceiptForPaaInviaRt(receipt, sessionIdDto, apiInstance, configurations, stations);
             }
 
         } catch (AppException e) {
@@ -286,6 +194,108 @@ public class ReceiptService {
         } catch (Exception e) {
             throw new AppException(AppErrorCodeMessageEnum.RECEIPT_KO_NOT_SENT, e);
         }
+    }
+
+    private void handleSingleReceiptForPaaInviaRt(ReceiptDto receipt, SessionIdDto sessionIdDto, DefaultApi apiInstance, Map<String, ConfigurationKeyDto> configurations, Map<String, StationDto> stations) {
+        // workaround to reuse endpoint service. in this case sessionId =
+        // sessionId_fiscalCode_noticeNumber
+        sessionIdDto.setSessionId(String.format("%s_%s_%s",
+                receipt.getSessionId(), receipt.getFiscalCode(), receipt.getNoticeNumber()));
+
+        // necessary to block activatePaymentNoticeV2
+        apiInstance.deleteSessionId(sessionIdDto, MDC.get(Constants.MDC_REQUEST_ID));
+
+        MDCUtil.setReceiptTimerInfoInMDC(receipt.getFiscalCode(), receipt.getNoticeNumber(), null);
+
+        // retrieve the NAV-to-IUV mapping key from Redis, then use the result for retrieve the
+        // session data
+        String noticeNumber = receipt.getNoticeNumber();
+        String iuv = retrieveIuvFromCache(receipt, noticeNumber);
+
+        // use the session-id for generate session data information on which the next execution will
+        // operate
+        SessionDataDTO sessionData = getSessionDataFromSessionId(receipt.getSessionId());
+        CommonFieldsDTO commonFields = sessionData.getCommonFields();
+
+        /*
+          Validate the station, checking if exists one with the required segregation code and, if is onboarded on GPD
+          has the correct primitive version.
+          If it is not onboarded on GPD, it must be used for generate RT to sent to creditor institution via
+          institution's custom endpoint.
+        */
+        if (CommonUtility.isStationOnboardedOnGpd(
+                configCacheService, sessionData, receipt.getFiscalCode(), stationInGpdPartialPath)) {
+
+            generateREForNotGenerableRT(sessionData, iuv, noticeNumber);
+
+        } else {
+
+          /*
+           For each RPT extracted from session data that is required by paSendRTV2, is necessary to generate a single paaInviaRT SOAP request.
+           Each paaInviaRT generated will be autonomously sent to creditor institution in order to track each RPT.
+          */
+            List<RPTContentDTO> rpts = extractRequiredRPTs(sessionData, iuv, receipt.getFiscalCode());
+            for (RPTContentDTO rpt : rpts) {
+                handleSingleRptForSendingPaaInviaRpt(configurations, stations, rpt, iuv, commonFields, sessionData, noticeNumber);
+            }
+        }
+    }
+
+    private void handleSingleRptForSendingPaaInviaRpt(Map<String, ConfigurationKeyDto> configurations,
+                                                      Map<String, StationDto> stations,
+                                                      RPTContentDTO rpt,
+                                                      String iuv,
+                                                      CommonFieldsDTO commonFields,
+                                                      SessionDataDTO sessionData,
+                                                      String noticeNumber) {
+        // generate the header for the paaInviaRT SOAP request. This object is common for each
+        // generated request
+        IntestazionePPT header =
+                generateHeader(
+                        rpt.getRpt().getDomain().getDomainId(),
+                        iuv,
+                        rpt.getCcp(),
+                        commonFields.getCreditorInstitutionBrokerId(),
+                        commonFields.getStationId());
+
+        // Generating the paaInviaRT payload from the RPT
+        String paymentOutcome = "Annullato da WISP";
+        JAXBElement<CtRicevutaTelematica> generatedReceipt =
+                new ObjectFactory()
+                        .createRT(
+                                generateRTContentForKoReceipt(
+                                        rpt, configurations, Instant.now(), paymentOutcome));
+        String rawGeneratedReceipt = jaxbElementUtil.objectToString(generatedReceipt);
+        // map the received payload as a list of receipts that will be lately evaluated
+        var objectFactory = new gov.telematici.pagamenti.ws.papernodo.ObjectFactory();
+        String paaInviaRtPayload =
+                generatePayloadAsRawString(header, null, rawGeneratedReceipt, objectFactory);
+
+        // retrieve station from common station identifier
+        StationDto station = stations.get(commonFields.getStationId());
+
+        ReceiptContentDTO receiptContent =
+                ReceiptContentDTO.builder()
+                        .paaInviaRTPayload(paaInviaRtPayload)
+                        .rtPayload(rawGeneratedReceipt)
+                        .build();
+
+        // send receipt to the creditor institution and, if not correctly sent, add to queue for
+        // retry
+        sendReceiptToCreditorInstitution(
+                sessionData,
+                rpt,
+                receiptContent,
+                rpt.getIuv(),
+                noticeNumber,
+                station,
+                true);
+    }
+
+    private String retrieveIuvFromCache(ReceiptDto receipt, String noticeNumber) {
+        CachedKeysMapping cachedMapping =
+                decouplerService.getCachedMappingFromNavToIuv(receipt.getFiscalCode(), noticeNumber);
+        return cachedMapping.getIuv();
     }
 
     public void sendOkPaaInviaRtToCreditorInstitution(String payload) {
@@ -337,9 +347,7 @@ public class ReceiptService {
           For each RPT extracted from session data that is required by paSendRTV2, is necessary to generate a single paaInviaRT SOAP request.
           Each paaInviaRT generated will be autonomously sent to creditor institution in order to track each RPT.
         */
-                List<RPTContentDTO> rpts =
-                        extractRequiredRPTs(
-                                sessionData, receipt.getCreditorReferenceId(), receipt.getFiscalCode());
+                List<RPTContentDTO> rpts = extractRequiredRPTs(sessionData, receipt.getCreditorReferenceId(), receipt.getFiscalCode());
                 for (RPTContentDTO rpt : rpts) {
 
                     // actualize content for correctly handle multibeneficiary carts
@@ -805,14 +813,15 @@ public class ReceiptService {
             String psp = rptContent.getRpt().getPayeeInstitution().getSubjectUniqueIdentifier().getCode();
 
             // creating event to be persisted for RE
-            reService.sendEvent(
-                    WorkflowStatus.RT_NOT_GENERABLE_FOR_GPD_STATION,
-                    RePaymentContext.builder()
-                            .iuv(iuv)
-                            .noticeNumber(noticeNumber)
-                            .ccp(rptContent.getCcp())
-                            .pspId(psp)
-                            .build());
+            MDC.put(Constants.MDC_IUV, iuv);
+            MDC.put(Constants.MDC_NOTICE_NUMBER, noticeNumber);
+            MDC.put(Constants.MDC_PSP_ID, psp);
+            MDC.put(Constants.MDC_CCP, rptContent.getCcp());
+            reService.sendEvent(WorkflowStatus.SENDING_RT_SKIPPED_GPD_STATION);
+            MDC.remove(Constants.MDC_IUV);
+            MDC.remove(Constants.MDC_NOTICE_NUMBER);
+            MDC.remove(Constants.MDC_PSP_ID);
+            MDC.remove(Constants.MDC_CCP);
         }
     }
 
@@ -822,14 +831,16 @@ public class ReceiptService {
         String psp = rptContent.getRpt().getPayeeInstitution().getSubjectUniqueIdentifier().getCode();
 
         // creating event to be persisted for RE
+        MDC.put(Constants.MDC_IUV, iuv);
+        MDC.put(Constants.MDC_NOTICE_NUMBER, noticeNumber);
+        MDC.put(Constants.MDC_PSP_ID, psp);
+        MDC.put(Constants.MDC_CCP, rptContent.getCcp());
         reService.sendEvent(
-                WorkflowStatus.RT_SEND_SUCCESS,
-                RePaymentContext.builder()
-                        .iuv(iuv)
-                        .noticeNumber(noticeNumber)
-                        .ccp(rptContent.getCcp())
-                        .pspId(psp)
-                        .build());
+                WorkflowStatus.RT_SEND_SUCCESS);
+        MDC.remove(Constants.MDC_IUV);
+        MDC.remove(Constants.MDC_NOTICE_NUMBER);
+        MDC.remove(Constants.MDC_PSP_ID);
+        MDC.remove(Constants.MDC_CCP);
     }
 
     public void generateREForNotSentRT(
@@ -839,14 +850,16 @@ public class ReceiptService {
         String psp = rptContent.getRpt().getPayeeInstitution().getSubjectUniqueIdentifier().getCode();
 
         // creating event to be persisted for RE
+        MDC.put(Constants.MDC_IUV, iuv);
+        MDC.put(Constants.MDC_NOTICE_NUMBER, noticeNumber);
+        MDC.put(Constants.MDC_PSP_ID, psp);
+        MDC.put(Constants.MDC_CCP, rptContent.getCcp());
         reService.sendEvent(
-                WorkflowStatus.RT_SEND_FAILURE,
-                RePaymentContext.builder()
-                        .iuv(iuv)
-                        .noticeNumber(noticeNumber)
-                        .ccp(rptContent.getCcp())
-                        .pspId(psp)
-                        .build(), otherInfo);
+                WorkflowStatus.RT_SEND_FAILURE, otherInfo);
+        MDC.remove(Constants.MDC_IUV);
+        MDC.remove(Constants.MDC_NOTICE_NUMBER);
+        MDC.remove(Constants.MDC_PSP_ID);
+        MDC.remove(Constants.MDC_CCP);
     }
 
     private void generateREForSuccessfulSchedulingSentRT(
@@ -856,14 +869,16 @@ public class ReceiptService {
         String psp = rptContent.getRpt().getPayeeInstitution().getSubjectUniqueIdentifier().getCode();
 
         // creating event to be persisted for RE
+        MDC.put(Constants.MDC_IUV, iuv);
+        MDC.put(Constants.MDC_NOTICE_NUMBER, noticeNumber);
+        MDC.put(Constants.MDC_PSP_ID, psp);
+        MDC.put(Constants.MDC_CCP, rptContent.getCcp());
         reService.sendEvent(
-                WorkflowStatus.RT_SEND_SCHEDULING_SUCCESS,
-                RePaymentContext.builder()
-                        .iuv(iuv)
-                        .noticeNumber(noticeNumber)
-                        .ccp(rptContent.getCcp())
-                        .pspId(psp)
-                        .build());
+                WorkflowStatus.RT_SEND_SCHEDULING_SUCCESS);
+        MDC.remove(Constants.MDC_IUV);
+        MDC.remove(Constants.MDC_NOTICE_NUMBER);
+        MDC.remove(Constants.MDC_PSP_ID);
+        MDC.remove(Constants.MDC_CCP);
     }
 
     private void generateREForFailedSchedulingSentRT(
@@ -874,15 +889,17 @@ public class ReceiptService {
 
         // creating event to be persisted for RE
         String otherInfo = "Caused by: " + e.getMessage();
+        // creating event to be persisted for RE
+        MDC.put(Constants.MDC_IUV, iuv);
+        MDC.put(Constants.MDC_NOTICE_NUMBER, noticeNumber);
+        MDC.put(Constants.MDC_PSP_ID, psp);
+        MDC.put(Constants.MDC_CCP, rptContent.getCcp());
         reService.sendEvent(
-                WorkflowStatus.RT_SEND_SCHEDULING_FAILURE,
-                RePaymentContext.builder()
-                        .iuv(iuv)
-                        .noticeNumber(noticeNumber)
-                        .ccp(rptContent.getCcp())
-                        .pspId(psp)
-                        .build(),
-                otherInfo);
+                WorkflowStatus.RT_SEND_SCHEDULING_FAILURE, otherInfo);
+        MDC.remove(Constants.MDC_IUV);
+        MDC.remove(Constants.MDC_NOTICE_NUMBER);
+        MDC.remove(Constants.MDC_PSP_ID);
+        MDC.remove(Constants.MDC_CCP);
     }
 
     private void generateREDeadLetter(
@@ -892,18 +909,18 @@ public class ReceiptService {
         String psp = rptContent.getRpt().getPayeeInstitution().getSubjectUniqueIdentifier().getCode();
 
         // creating event to be persisted for RE
-        reService.sendEvent(
-                status,
-                RePaymentContext.builder()
-                        .iuv(rptContent.getIuv())
-                        .noticeNumber(noticeNumber)
-                        .ccp(rptContent.getCcp())
-                        .pspId(psp)
-                        .build(),
-                info);
+        MDC.put(Constants.MDC_IUV, rptContent.getIuv());
+        MDC.put(Constants.MDC_NOTICE_NUMBER, noticeNumber);
+        MDC.put(Constants.MDC_PSP_ID, psp);
+        MDC.put(Constants.MDC_CCP, rptContent.getCcp());
+        reService.sendEvent(status, info);
+        MDC.remove(Constants.MDC_IUV);
+        MDC.remove(Constants.MDC_NOTICE_NUMBER);
+        MDC.remove(Constants.MDC_PSP_ID);
+        MDC.remove(Constants.MDC_CCP);
     }
 
-    public void sendRTKoFromSessionId(String sessionId, WorkflowStatus workflowStatus) {
+    public void sendRTKoFromSessionId(String sessionId) {
 
         log.debug("Processing session id: {}", sessionId);
 
@@ -920,7 +937,6 @@ public class ReceiptService {
 
         // log event
         MDC.put(Constants.MDC_SESSION_ID, sessionId);
-        reService.sendEvent(workflowStatus, null, "A Negative sendRT will be sent: " + sessionId);
 
         SessionDataDTO sessionDataDTO = getSessionDataFromSessionId(sessionId);
 
@@ -935,96 +951,75 @@ public class ReceiptService {
         Map<String, StationDto> stations = configData.getStations();
 
         for (RPTContentDTO rpt : sessionDataDTO.getRpts().values()) {
+            handleSingleRptForSendRtKo(rpt, sessionDataDTO, objectFactory, configurations, stations);
+        }
+        MDC.clear();
+    }
 
-            String domainId = rpt.getRpt().getDomain().getDomainId();
-            String iuv = rpt.getIuv();
+    private void handleSingleRptForSendRtKo(RPTContentDTO rpt, SessionDataDTO sessionDataDTO, gov.telematici.pagamenti.ws.papernodo.ObjectFactory objectFactory, Map<String, ConfigurationKeyDto> configurations, Map<String, StationDto> stations) {
+        String domainId = rpt.getRpt().getDomain().getDomainId();
+        String iuv = rpt.getIuv();
 
-            // idempotency key creation to check if the rt has already been sent
-            String idempotencyKey =
-                    IdempotencyService.generateIdempotencyKeyId(
-                            sessionDataDTO.getCommonFields().getSessionId(), iuv, domainId);
-            idempotencyService.lockIdempotencyKey(idempotencyKey, ReceiptTypeEnum.KO);
+        // idempotency key creation to check if the rt has already been sent
+        String idempotencyKey =
+                IdempotencyService.generateIdempotencyKeyId(
+                        sessionDataDTO.getCommonFields().getSessionId(), iuv, domainId);
+        idempotencyService.lockIdempotencyKey(idempotencyKey, ReceiptTypeEnum.KO);
 
-            String rtRawPayload =
-                    generateKoRtFromSessionData(
-                            domainId,
-                            rpt.getIuv(),
-                            rpt,
-                            sessionDataDTO.getCommonFields(),
-                            objectFactory,
-                            configurations,
-                            ReceiptStatusEnum.SENDING);
-            StationDto station = stations.get(sessionDataDTO.getCommonFields().getStationId());
-            ConnectionDto stationConnection = station.getConnection();
-            URI uri =
-                    CommonUtility.constructUrl(
-                            stationConnection.getProtocol().getValue(),
-                            stationConnection.getIp(),
-                            stationConnection.getPort().intValue(),
-                            station.getService() != null ? station.getService().getPath() : "");
-            List<Pair<String, String>> headers =
-                    CommonUtility.constructHeadersForPaaInviaRT(
-                            uri, station, stationInForwarderPartialPath, forwarderSubscriptionKey);
-            InetSocketAddress proxyAddress = CommonUtility.constructProxyAddress(uri, station, apimPath);
-            IdempotencyStatusEnum idempotencyStatus;
-            try {
+        String rtRawPayload =
+                generateKoRtFromSessionData(
+                        domainId,
+                        rpt.getIuv(),
+                        rpt,
+                        sessionDataDTO.getCommonFields(),
+                        objectFactory,
+                        configurations,
+                        ReceiptStatusEnum.SENDING);
+        StationDto station = stations.get(sessionDataDTO.getCommonFields().getStationId());
+        ConnectionDto stationConnection = station.getConnection();
+        URI uri =
+                CommonUtility.constructUrl(
+                        stationConnection.getProtocol().getValue(),
+                        stationConnection.getIp(),
+                        stationConnection.getPort().intValue(),
+                        station.getService() != null ? station.getService().getPath() : "");
+        List<Pair<String, String>> headers =
+                CommonUtility.constructHeadersForPaaInviaRT(
+                        uri, station, stationInForwarderPartialPath, forwarderSubscriptionKey);
+        InetSocketAddress proxyAddress = CommonUtility.constructProxyAddress(uri, station, apimPath);
+        IdempotencyStatusEnum idempotencyStatus;
+        try {
 
-                // send the receipt to the creditor institution via the URL set in the station configuration
-                String ccp = rpt.getCcp();
-                paaInviaRTSenderService.sendToCreditorInstitution(
-                        uri, proxyAddress, headers, rtRawPayload, domainId, iuv, ccp);
+            // send the receipt to the creditor institution via the URL set in the station configuration
+            String ccp = rpt.getCcp();
+            paaInviaRTSenderService.sendToCreditorInstitution(
+                    uri, proxyAddress, headers, rtRawPayload, domainId, iuv, ccp);
 
-                // generate a new event in RE for store the successful sending of the receipt
-                generateREForSentRT(rpt, rpt.getIuv(), null);
-                idempotencyStatus = IdempotencyStatusEnum.SUCCESS;
-            } catch (AppException e) {
-                String message = e.getError().getDetail();
-                if (e.getError().equals(AppErrorCodeMessageEnum.RECEIPT_GENERATION_ERROR_DEAD_LETTER)) {
-                    try {
-                        RTRequestEntity rtRequestEntity =
-                                generateRTRequestEntity(
-                                        sessionDataDTO,
-                                        uri,
-                                        proxyAddress,
-                                        headers,
-                                        rtRawPayload,
-                                        station,
-                                        rpt,
-                                        idempotencyKey,
-                                        ReceiptTypeEnum.KO);
-                        receiptDeadLetterRepository.save(
-                                mapper.convertValue(rtRequestEntity, ReceiptDeadLetterEntity.class));
-                        generateREDeadLetter(rpt, null, WorkflowStatus.RT_DEAD_LETTER_SAVED, null);
-                    } catch (IOException ex) {
-                        generateREDeadLetter(rpt, null, WorkflowStatus.RT_DEAD_LETTER_FAILED, null);
-                    }
-                } else {
-                    // because of the not sent receipt, it is necessary to schedule a retry of the sending
-                    // process for this receipt
-                    scheduleRTSend(
-                            sessionDataDTO,
-                            uri,
-                            proxyAddress,
-                            headers,
-                            rtRawPayload,
-                            station,
-                            rpt,
-                            null,
-                            idempotencyKey,
-                            ReceiptTypeEnum.KO);
-                    log.error(
-                            EXCEPTION
-                                    + AppErrorCodeMessageEnum.RECEIPT_KO_NOT_GENERATED_BUT_MAYBE_RESCHEDULED
-                                    .getDetail());
-                    generateREForNotSentRT(rpt, iuv, null, message);
+            // generate a new event in RE for store the successful sending of the receipt
+            generateREForSentRT(rpt, rpt.getIuv(), null);
+            idempotencyStatus = IdempotencyStatusEnum.SUCCESS;
+        } catch (AppException e) {
+            String message = e.getError().getDetail();
+            if (e.getError().equals(AppErrorCodeMessageEnum.RECEIPT_GENERATION_ERROR_DEAD_LETTER)) {
+                try {
+                    RTRequestEntity rtRequestEntity =
+                            generateRTRequestEntity(
+                                    sessionDataDTO,
+                                    uri,
+                                    proxyAddress,
+                                    headers,
+                                    rtRawPayload,
+                                    station,
+                                    rpt,
+                                    idempotencyKey,
+                                    ReceiptTypeEnum.KO);
+                    receiptDeadLetterRepository.save(
+                            mapper.convertValue(rtRequestEntity, ReceiptDeadLetterEntity.class));
+                    generateREDeadLetter(rpt, null, WorkflowStatus.RT_DEAD_LETTER_SAVED, null);
+                } catch (IOException ex) {
+                    generateREDeadLetter(rpt, null, WorkflowStatus.RT_DEAD_LETTER_FAILED, null);
                 }
-                idempotencyStatus = IdempotencyStatusEnum.FAILED;
-
-            } catch (Exception e) {
-
-                // generate a new event in RE for store the unsuccessful sending of the receipt
-                String message = e.getMessage();
-
+            } else {
                 // because of the not sent receipt, it is necessary to schedule a retry of the sending
                 // process for this receipt
                 scheduleRTSend(
@@ -1038,25 +1033,49 @@ public class ReceiptService {
                         null,
                         idempotencyKey,
                         ReceiptTypeEnum.KO);
-
                 log.error(
                         EXCEPTION
                                 + AppErrorCodeMessageEnum.RECEIPT_KO_NOT_GENERATED_BUT_MAYBE_RESCHEDULED
                                 .getDetail());
-                generateREForNotSentRT(rpt, rpt.getIuv(), null, message);
-
-                idempotencyStatus = IdempotencyStatusEnum.FAILED;
+                generateREForNotSentRT(rpt, iuv, null, message);
             }
+            idempotencyStatus = IdempotencyStatusEnum.FAILED;
 
-            try {
-                // Unlock idempotency key after a successful operation
-                idempotencyService.unlockIdempotencyKey(
-                        idempotencyKey, ReceiptTypeEnum.KO, idempotencyStatus);
-            } catch (AppException e) {
-                log.error("AppException: ", e);
-            }
+        } catch (Exception e) {
+
+            // generate a new event in RE for store the unsuccessful sending of the receipt
+            String message = e.getMessage();
+
+            // because of the not sent receipt, it is necessary to schedule a retry of the sending
+            // process for this receipt
+            scheduleRTSend(
+                    sessionDataDTO,
+                    uri,
+                    proxyAddress,
+                    headers,
+                    rtRawPayload,
+                    station,
+                    rpt,
+                    null,
+                    idempotencyKey,
+                    ReceiptTypeEnum.KO);
+
+            log.error(
+                    EXCEPTION
+                            + AppErrorCodeMessageEnum.RECEIPT_KO_NOT_GENERATED_BUT_MAYBE_RESCHEDULED
+                            .getDetail());
+            generateREForNotSentRT(rpt, rpt.getIuv(), null, message);
+
+            idempotencyStatus = IdempotencyStatusEnum.FAILED;
         }
-        MDC.clear();
+
+        try {
+            // Unlock idempotency key after a successful operation
+            idempotencyService.unlockIdempotencyKey(
+                    idempotencyKey, ReceiptTypeEnum.KO, idempotencyStatus);
+        } catch (AppException e) {
+            log.error("AppException: ", e);
+        }
     }
 
     private RTRequestEntity generateRTRequestEntity(

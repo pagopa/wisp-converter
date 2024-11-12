@@ -419,7 +419,7 @@ class ReceiptTest {
                         .accept(MediaType.APPLICATION_JSON)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(MockMvcResultMatchers.status().is5xxServerError())
+                .andExpect(MockMvcResultMatchers.status().is4xxClientError())
                 .andDo(result -> {
                     assertNotNull(result);
                     assertNotNull(result.getResponse());

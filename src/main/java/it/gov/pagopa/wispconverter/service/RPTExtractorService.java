@@ -12,7 +12,6 @@ import it.gov.pagopa.wispconverter.repository.model.enumz.WorkflowStatus;
 import it.gov.pagopa.wispconverter.service.mapper.RPTMapper;
 import it.gov.pagopa.wispconverter.service.model.PaymentRequestDomainDTO;
 import it.gov.pagopa.wispconverter.service.model.paymentrequest.PaymentRequestDTO;
-import it.gov.pagopa.wispconverter.service.model.re.RePaymentContext;
 import it.gov.pagopa.wispconverter.service.model.session.CommonFieldsDTO;
 import it.gov.pagopa.wispconverter.service.model.session.RPTContentDTO;
 import it.gov.pagopa.wispconverter.service.model.session.SessionDataDTO;
@@ -250,6 +249,11 @@ public class RPTExtractorService {
             rpts.put(iuv, rpt);
         }
 
+        MDC.put(Constants.MDC_CART_ID, soapHeader.getIdentificativoCarrello());
+        MDC.put(Constants.MDC_DOMAIN_ID, creditorInstitutionId);
+        MDC.put(Constants.MDC_PSP_ID, soapBody.getIdentificativoPSP());
+        MDC.put(Constants.MDC_STATION_ID, soapHeader.getIdentificativoStazioneIntermediarioPA());
+        MDC.put(Constants.MDC_CHANNEL_ID, soapBody.getIdentificativoCanale());
         // finally, generate session data
         return SessionDataDTO.builder()
                 .commonFields(
@@ -306,13 +310,10 @@ public class RPTExtractorService {
         // creating event to be persisted for RE
         if (Boolean.TRUE.equals(isTracingOnREEnabled)) {
             for (RPTContentDTO rpt : sessionData.getAllRPTs()) {
-                reService.sendEvent(
-                        WorkflowStatus.RPTS_EXTRACTED,
-                        RePaymentContext.builder()
-                                .domainId(rpt.getRpt().getDomain().getDomainId())
-                                .iuv(rpt.getIuv())
-                                .ccp(rpt.getCcp())
-                                .build());
+                MDC.put(Constants.MDC_DOMAIN_ID, rpt.getRpt().getDomain().getDomainId());
+                MDC.put(Constants.MDC_IUV, rpt.getIuv());
+                MDC.put(Constants.MDC_CCP, rpt.getCcp());
+                reService.sendEvent(WorkflowStatus.RPTS_EXTRACTED);
             }
         }
     }

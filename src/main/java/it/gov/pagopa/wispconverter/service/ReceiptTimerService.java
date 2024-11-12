@@ -5,9 +5,7 @@ import com.azure.messaging.servicebus.ServiceBusMessage;
 import com.azure.messaging.servicebus.ServiceBusSenderClient;
 import it.gov.pagopa.wispconverter.controller.model.ReceiptTimerRequest;
 import it.gov.pagopa.wispconverter.repository.CacheRepository;
-import it.gov.pagopa.wispconverter.repository.model.enumz.WorkflowStatus;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
-import it.gov.pagopa.wispconverter.service.model.re.RePaymentContext;
 import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.LogUtils;
 import it.gov.pagopa.wispconverter.util.MDCUtil;
@@ -53,11 +51,13 @@ public class ReceiptTimerService {
 
     public void sendMessage(ReceiptTimerRequest message) {
         if (!disableServiceBusSender) {
+
             String paymentToken = message.getPaymentToken();
             String fiscalCode = message.getFiscalCode();
             String noticeNumber = message.getNoticeNumber();
             String sessionId = message.getSessionId();
             MDCUtil.setReceiptTimerInfoInMDC(fiscalCode, noticeNumber, paymentToken);
+            MDC.put(Constants.MDC_SESSION_ID, message.getSessionId());
 
             // Duplicate Prevention Logic
             String sequenceNumberKey = String.format(CACHING_KEY_TEMPLATE, message.getPaymentToken());
@@ -92,24 +92,10 @@ public class ReceiptTimerService {
                     String.valueOf(sequenceNumber),
                     message.getExpirationTime(),
                     ChronoUnit.MILLIS);
-            log.debug(
-                    "Cache sequence number {} for payment-token: {}", sequenceNumber, sequenceNumberKey);
+            log.debug("Cache sequence number {} for payment-token: {}", sequenceNumber, sequenceNumberKey);
 
             // delete ecommerce hang timer: we delete the scheduled message from the queue
             eCommerceHangTimerService.cancelScheduledMessage(noticeNumber, fiscalCode, sessionId);
-
-            reService.sendEvent(
-                    WorkflowStatus.PAYMENT_TOKEN_TIMER_CREATED,
-                    RePaymentContext.builder()
-                            .domainId(MDC.get(Constants.MDC_DOMAIN_ID))
-                            .noticeNumber(MDC.get(Constants.MDC_NOTICE_NUMBER))
-                            .paymentToken(MDC.get(Constants.MDC_PAYMENT_TOKEN))
-                            .build(),
-                    "Cached sequence number: ["
-                            + sequenceNumber
-                            + "] for payment token: ["
-                            + sequenceNumberKey
-                            + "]");
         }
     }
 
@@ -131,45 +117,20 @@ public class ReceiptTimerService {
         if (sequenceNumberString != null) {
 
             // cancel scheduled message
-            boolean deletedScheduledMessage = this.callCancelScheduledMessage(sequenceNumberString);
-            boolean isDeleted = cacheRepository.delete(sequenceNumberKey);
-            if (deletedScheduledMessage && isDeleted) {
-                log.debug(
-                        "Canceled scheduled message for payment-token_base64 {}",
-                        LogUtils.encodeToBase64(paymentToken));
-                log.debug(
-                        "Deleted sequence number {} for payment-token: {} from cache",
-                        sequenceNumberString,
-                        sequenceNumberKey);
-                reService.sendEvent(
-                        WorkflowStatus.PAYMENT_TOKEN_TIMER_DELETED_SCHEDULING,
-                        RePaymentContext.builder()
-                                .domainId(MDC.get(Constants.MDC_DOMAIN_ID))
-                                .noticeNumber(MDC.get(Constants.MDC_NOTICE_NUMBER))
-                                .paymentToken(MDC.get(Constants.MDC_PAYMENT_TOKEN))
-                                .build(),
-                        "Deleted sequence number: ["
-                                + sequenceNumberString
-                                + "] for payment token: ["
-                                + sequenceNumberKey
-                                + "]");
-            }
+            this.callCancelScheduledMessage(sequenceNumberString);
+            cacheRepository.delete(sequenceNumberKey);
         }
     }
 
-    public boolean callCancelScheduledMessage(String sequenceNumberString) {
-        boolean isOk;
+    public void callCancelScheduledMessage(String sequenceNumberString) {
         long sequenceNumber = Long.parseLong(sequenceNumberString);
         try {
             serviceBusSenderClient.cancelScheduledMessage(sequenceNumber);
-            isOk = true;
         } catch (Exception exception) {
             log.debug(
                     String.format(
                             "Scheduled message with sequence number [%s] not deleted. Cause: %s",
                             sequenceNumberString, exception.getMessage()));
-            isOk = false;
         }
-        return isOk;
     }
 }

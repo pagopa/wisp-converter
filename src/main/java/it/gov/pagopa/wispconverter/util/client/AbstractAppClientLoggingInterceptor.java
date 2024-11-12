@@ -119,7 +119,7 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
             if (response.getStatusCode().is2xxSuccessful()) {
                 outcome = OutcomeEnum.OK;
             } else {
-                outcome = OutcomeEnum.COMMUNICATION_RECEIVED_FAILURE;
+                outcome = OutcomeEnum.COMMUNICATION_FAILURE;
             }
 
             logResponse(clientOperationId, operationId, executionClientTime, request, response);
@@ -127,7 +127,7 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
 
         } catch (Exception e) {
 
-            outcome = OutcomeEnum.COMMUNICATION_RECEIVED_FAILURE;
+            outcome = OutcomeEnum.COMMUNICATION_FAILURE;
             String executionClientTime = CommonUtility.getExecutionTime(startClient);
             MDC.put(Constants.MDC_CLIENT_EXECUTION_TIME, executionClientTime);
             logResponse(clientOperationId, operationId, executionClientTime, request, null);
@@ -380,7 +380,7 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
                             .build();
         }
         if (this.mustPersistEventOnRE) {
-            reService.sendEvent(status, null, null, outcome, requestContext, responseContext);
+            reService.sendEvent(status, null, outcome, requestContext, responseContext);
         }
     }
 

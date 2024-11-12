@@ -78,7 +78,7 @@ public abstract class AbstractAppServerLoggingInterceptor implements HandlerInte
                 this.responsePretty = response.isPretty();
             }
         }
-        this.sessionIdPattern = Pattern.compile("sessionId=([a-zA-Z0-9_-]+)");
+        this.sessionIdPattern = Pattern.compile("(idSession|sessionId)=([a-zA-Z0-9_-]+)");
     }
 
     @Override
@@ -371,7 +371,7 @@ public abstract class AbstractAppServerLoggingInterceptor implements HandlerInte
             // include sessionID in MDC
             Matcher sessionIdMatcher = this.sessionIdPattern.matcher(queryString);
             if (sessionIdMatcher.find()) {
-                MDC.put(Constants.MDC_SESSION_ID, sessionIdMatcher.group(1));
+                MDC.put(Constants.MDC_SESSION_ID, sessionIdMatcher.group(2));
             }
         }
     }

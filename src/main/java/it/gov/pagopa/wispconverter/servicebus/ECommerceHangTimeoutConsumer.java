@@ -3,12 +3,12 @@ package it.gov.pagopa.wispconverter.servicebus;
 import com.azure.messaging.servicebus.ServiceBusReceivedMessage;
 import com.azure.messaging.servicebus.ServiceBusReceivedMessageContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import it.gov.pagopa.wispconverter.repository.model.enumz.OutcomeEnum;
 import it.gov.pagopa.wispconverter.repository.model.enumz.WorkflowStatus;
 import it.gov.pagopa.wispconverter.service.ReService;
 import it.gov.pagopa.wispconverter.service.ReceiptService;
 import it.gov.pagopa.wispconverter.service.model.ECommerceHangTimeoutMessage;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
-import it.gov.pagopa.wispconverter.service.model.re.RePaymentContext;
 import it.gov.pagopa.wispconverter.util.CommonUtility;
 import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.MDCUtil;
@@ -69,6 +69,7 @@ public class ECommerceHangTimeoutConsumer extends SBConsumer {
         MDCUtil.setSessionDataInfo("ecommerce-hang-timeout-trigger");
         ServiceBusReceivedMessage message = context.getMessage();
         log.debug("Processing message. Session: {}, Sequence #: {}. Contents: {}", message.getMessageId(), message.getSequenceNumber(), message.getBody());
+        OutcomeEnum outcome;
         try {
             // read the message
             ECommerceHangTimeoutMessage timeoutMessage = mapper.readValue(message.getBody().toStream(), ECommerceHangTimeoutMessage.class);
@@ -76,10 +77,7 @@ public class ECommerceHangTimeoutConsumer extends SBConsumer {
             // log event
             MDC.put(Constants.MDC_DOMAIN_ID, timeoutMessage.getFiscalCode());
             MDC.put(Constants.MDC_NOTICE_NUMBER, timeoutMessage.getNoticeNumber());
-            reService.sendEvent(WorkflowStatus.ECOMMERCE_HANG_TIMER_IN_TIMEOUT, RePaymentContext.builder()
-                    .domainId(timeoutMessage.getFiscalCode())
-                    .noticeNumber(timeoutMessage.getNoticeNumber())
-                    .build(), "Expired eCommerce hang timer. A Negative sendRT will be sent: " + timeoutMessage);
+            MDC.put(Constants.MDC_SESSION_ID, timeoutMessage.getSessionId());
 
             // transform to string list
             var inputPaaInviaRTKo = List.of(ReceiptDto.builder()
@@ -88,9 +86,13 @@ public class ECommerceHangTimeoutConsumer extends SBConsumer {
                     .sessionId(timeoutMessage.getSessionId())
                     .build());
             receiptService.sendKoPaaInviaRtToCreditorInstitution(inputPaaInviaRTKo);
+
+            outcome = MDC.get(Constants.MDC_OUTCOME) == null ? OutcomeEnum.OK : OutcomeEnum.valueOf(MDC.get(Constants.MDC_OUTCOME));
         } catch (IOException e) {
             log.error("Error when read ECommerceHangTimeoutDto value from message: '{}'. Body: '{}'", message.getMessageId(), message.getBody());
+            outcome = MDC.get(Constants.MDC_OUTCOME) == null ? OutcomeEnum.ERROR : OutcomeEnum.valueOf(MDC.get(Constants.MDC_OUTCOME));
         }
+            reService.sendEvent(WorkflowStatus.ECOMMERCE_HANG_TIMER_IN_TIMEOUT, null, outcome);
         MDC.clear();
     }
 

@@ -38,7 +38,7 @@ public class RequestResponseWrapperFilter extends OncePerRequestFilter {
         }
         try {
             String requestId = MDC.get(Constants.MDC_REQUEST_ID);
-            log.debug("RequestResponseWrapperFilter - wrap req and resp for {}=[{}]", Constants.MDC_REQUEST_ID, requestId != null ? requestId : "na");
+            log.trace("RequestResponseWrapperFilter - wrap req and resp for {}=[{}]", Constants.MDC_REQUEST_ID, requestId != null ? requestId : "na");
             filterChain.doFilter(requestToUse, responseToUse);
         } finally {
             if (request.isAsyncStarted()) {

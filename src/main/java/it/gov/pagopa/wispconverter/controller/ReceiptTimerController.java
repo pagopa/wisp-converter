@@ -8,7 +8,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import it.gov.pagopa.wispconverter.controller.model.ReceiptTimerRequest;
-import it.gov.pagopa.wispconverter.repository.model.enumz.OutcomeEnum;
 import it.gov.pagopa.wispconverter.repository.model.enumz.WorkflowStatus;
 import it.gov.pagopa.wispconverter.service.ReceiptTimerService;
 import it.gov.pagopa.wispconverter.util.EndpointRETrace;
@@ -50,11 +49,11 @@ public class ReceiptTimerController {
             produces = MediaType.APPLICATION_JSON_VALUE,
             consumes = MediaType.APPLICATION_JSON_VALUE
     )
-    @EndpointRETrace(status = WorkflowStatus.PAYMENT_TOKEN_TIMER_CREATION_PROCESSED, outcomeError = OutcomeEnum.PAYMENT_TOKEN_TIMER_CREATION_FAILED, businessProcess = BP_TIMER_SET, reEnabled = true)
+    @EndpointRETrace(status = WorkflowStatus.PAYMENT_TOKEN_TIMER_CREATION_PROCESSED, businessProcess = BP_TIMER_SET, reEnabled = true)
     public void createTimer(@RequestBody ReceiptTimerRequest request) {
-            // PAGOPA-2300 - the expiration time is increased by a configurable delta
-            request.setExpirationTime(request.getExpirationTime() + deltaExpirationTime);
-            receiptTimerService.sendMessage(request);
+        // PAGOPA-2300 - the expiration time is increased by a configurable delta
+        request.setExpirationTime(request.getExpirationTime() + deltaExpirationTime);
+        receiptTimerService.sendMessage(request);
     }
 
     @Operation(summary = "deleteTimer", description = "Delete a timer by paymentToken", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"ReceiptTimer"})
@@ -65,9 +64,9 @@ public class ReceiptTimerController {
             value = "/timer",
             produces = MediaType.APPLICATION_JSON_VALUE
     )
-    @EndpointRETrace(status = WorkflowStatus.PAYMENT_TOKEN_TIMER_DELETION_PROCESSED, outcomeError = OutcomeEnum.PAYMENT_TOKEN_TIMER_DELETION_FAILED, businessProcess = BP_TIMER_DELETE, reEnabled = true)
+    @EndpointRETrace(status = WorkflowStatus.PAYMENT_TOKEN_TIMER_DELETION_PROCESSED, businessProcess = BP_TIMER_DELETE, reEnabled = true)
     public void deleteTimer(@RequestParam() String paymentTokens) {
-            List<String> tokens = Arrays.asList(paymentTokens.split(","));
-            receiptTimerService.cancelScheduledMessage(tokens);
+        List<String> tokens = Arrays.asList(paymentTokens.split(","));
+        receiptTimerService.cancelScheduledMessage(tokens);
     }
 }

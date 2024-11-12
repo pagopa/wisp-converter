@@ -43,6 +43,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         ProblemDetail problemDetail = errorResponse.updateAndGetBody(this.messageSource, LocaleContextHolder.getLocale());
         errorUtil.finalizeError(appEx, problemDetail, errorResponse.getStatusCode().value());
 
+        log.error("Failed API operation {} - error: {}", MDC.get(Constants.MDC_BUSINESS_PROCESS), errorResponse);
+
         return errorResponse;
     }
 
@@ -56,7 +58,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         ProblemDetail problemDetail = errorResponse.updateAndGetBody(this.messageSource, LocaleContextHolder.getLocale());
         errorUtil.finalizeError(ex, problemDetail, errorResponse.getStatusCode().value());
 
-        log.error("Failed API operation createRPTTimer - error: {}", errorResponse);
+        log.error("Failed API operation {} - error: {}", MDC.get(Constants.MDC_BUSINESS_PROCESS), errorResponse);
 
         return errorResponse;
     }

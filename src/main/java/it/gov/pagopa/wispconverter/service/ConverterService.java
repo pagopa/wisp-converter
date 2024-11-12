@@ -40,6 +40,8 @@ public class ConverterService {
 
     private final ReceiptService receiptService;
 
+    private final ReService reService;
+
     public String convert(String sessionId) {
 
         // deleting timer on RPT
@@ -72,7 +74,7 @@ public class ConverterService {
 
         } catch (Exception ex) {
             log.debug("A generic error occurred during convert operations: {}", ex.getMessage());
-            receiptService.sendRTKoFromSessionId(sessionId, WorkflowStatus.CONVERSION_PROCESSED);
+            receiptService.sendRTKoFromSessionId(sessionId);
             throw new AppException(AppErrorCodeMessageEnum.ERROR, ex);
         }
         return checkoutResponse;
@@ -99,6 +101,7 @@ public class ConverterService {
                         .noticeNumber(elem.getNoticeNumber())
                         .sessionId(sessionId)
                         .build()));
+        reService.sendEvent(WorkflowStatus.ECOMMERCE_HANG_TIMER_CREATED);
     }
 
     /**
@@ -110,6 +113,7 @@ public class ConverterService {
      */
     private void removeRPTTimer(String sessionId) {
         rptTimerService.cancelScheduledMessage(sessionId);
+        reService.sendEvent(WorkflowStatus.RPT_TIMER_DELETED);
     }
 
 }

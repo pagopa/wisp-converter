@@ -15,6 +15,7 @@ import it.gov.pagopa.wispconverter.util.JaxbElementUtil;
 import it.gov.pagopa.wispconverter.util.ProxyUtility;
 import jakarta.xml.soap.SOAPMessage;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.util.Pair;
 import org.springframework.http.HttpHeaders;
@@ -58,112 +59,144 @@ public class PaaInviaRTSenderService {
     public void sendToCreditorInstitution(URI uri, InetSocketAddress proxyAddress, List<Pair<String, String>> headers, String payload, String domainId, String iuv, String ccp) {
 
         try {
+            callCreditorInstitution(uri, proxyAddress, headers, payload, domainId, iuv, ccp);
+        } catch (Exception e) {
+            // Save an RE event in order to track the response from creditor institution
+            throw wrapInAppException(e);
+        }
+    }
 
-            // Generating the REST client, setting proxy specification if needed
-            RestClient client = generateClient(proxyAddress);
+    /**
+     * This method wraps an exception in a {@link AppException}
+     *
+     * @param e An exception
+     * @return an {@link AppException}
+     */
+    private static AppException wrapInAppException(Exception e) {
+        if (e instanceof AppException appException) {
+            return appException;
+        } else {
+            return new AppException(AppErrorCodeMessageEnum.RECEIPT_GENERATION_GENERIC_ERROR, e);
+        }
+    }
 
-            // Send the passed request payload to the passed URL
-            RestClient.RequestBodySpec bodySpec = client.post()
-                    .uri(uri)
-                    .body(payload);
-            for (Pair<String, String> header : headers) {
-                bodySpec.header(header.getFirst(), header.getSecond());
+    private void callCreditorInstitution(URI uri, InetSocketAddress proxyAddress, List<Pair<String, String>> headers, String payload, String domainId, String iuv, String ccp) throws NoSuchAlgorithmException, KeyManagementException {
+        // Generating the REST client, setting proxy specification if needed
+        RestClient client = generateClient(proxyAddress);
+
+        // Send the passed request payload to the passed URL
+        RestClient.RequestBodySpec bodySpec = client.post()
+                .uri(uri)
+                .body(payload);
+        for (Pair<String, String> header : headers) {
+            bodySpec.header(header.getFirst(), header.getSecond());
+        }
+
+        rtReceiptCosmosService.updateReceiptStatus(domainId, iuv, ccp, ReceiptStatusEnum.SENDING);
+
+        // Retrieving response from creditor institution paaInviaRT response
+        ResponseEntity<String> response = executeCall(uri, headers, payload, bodySpec);
+
+        String bodyPayload = response.getBody();
+        // check SOAP response and extract body if it is valid
+        PaaInviaRTRisposta body = checkResponseValidity(response, bodyPayload);
+
+        // check the response and if the outcome is KO, throw an exception
+        EsitoPaaInviaRT paaInviaRTRisposta = body.getPaaInviaRTRisposta();
+        // check the response if the dead letter sending is needed
+        boolean isSavedDeadLetter = checkIfSendDeadLetter(paaInviaRTRisposta);
+
+        // set the correct response regarding the creditor institution response
+        if (Constants.OK.equals(paaInviaRTRisposta.getEsito())) {
+            rtReceiptCosmosService.updateReceiptStatus(domainId, iuv, ccp, ReceiptStatusEnum.SENT);
+            MDC.put(Constants.MDC_OUTCOME, OutcomeEnum.OK.name());
+            reService.sendEvent(
+                    WorkflowStatus.COMMUNICATION_WITH_CREDITOR_INSTITUTION_PROCESSED,
+                    null,
+                    OutcomeEnum.OK,
+                    ReRequestContext.builder()
+                            .method(HttpMethod.POST)
+                            .uri(uri.toString())
+                            .headers(toHttpHeaders(headers))
+                            .payload(payload)
+                            .build(),
+                    ReResponseContext.builder()
+                            .headers(response.getHeaders())
+                            .statusCode(HttpStatus.valueOf(response.getStatusCode().value()))
+                            .payload(response.getBody())
+                            .build());
+        } else {
+            rtReceiptCosmosService.updateReceiptStatus(domainId, iuv, ccp, ReceiptStatusEnum.SENT_REJECTED_BY_EC);
+            MDC.put(Constants.MDC_OUTCOME, OutcomeEnum.SENDING_RT_FAILED_REJECTED_BY_CI.name());
+            reService.sendEvent(
+                    WorkflowStatus.COMMUNICATION_WITH_CREDITOR_INSTITUTION_PROCESSED,
+                    "CI refused the RT",
+                    OutcomeEnum.COMMUNICATION_FAILURE,
+                    ReRequestContext.builder()
+                            .method(HttpMethod.POST)
+                            .uri(uri.toString())
+                            .headers(toHttpHeaders(headers))
+                            .payload(payload)
+                            .build(),
+                    ReResponseContext.builder()
+                            .headers(response.getHeaders())
+                            .statusCode(HttpStatus.valueOf(response.getStatusCode().value()))
+                            .build());
+            FaultBean fault = paaInviaRTRisposta.getFault();
+            String faultCode = "ND";
+            String faultString = "ND";
+            String faultDescr = "ND";
+            if (fault != null) {
+                faultCode = fault.getFaultCode();
+                faultString = fault.getFaultString();
+                faultDescr = fault.getDescription();
             }
-
-            rtReceiptCosmosService.updateReceiptStatus(domainId, iuv, ccp, ReceiptStatusEnum.SENDING);
-
-            // Retrieving response from creditor institution paaInviaRT response
-            ResponseEntity<String> response = bodySpec.retrieve().toEntity(String.class);
-            String bodyPayload = response.getBody();
-
-            // check SOAP response and extract body if it is valid
-            PaaInviaRTRisposta body = checkResponseValidity(response, bodyPayload);
-
-            // check the response and if the outcome is KO, throw an exception
-            EsitoPaaInviaRT paaInviaRTRisposta = body.getPaaInviaRTRisposta();
-            // check the response if the dead letter sending is needed
-            boolean isSavedDeadLetter = checkIfSendDeadLetter(paaInviaRTRisposta);
-
-            // set the correct response regarding the creditor institution response
-            if (Constants.OK.equals(paaInviaRTRisposta.getEsito())) {
-                rtReceiptCosmosService.updateReceiptStatus(domainId, iuv, ccp, ReceiptStatusEnum.SENT);
-                reService.sendEvent(
-                        WorkflowStatus.COMMUNICATION_WITH_CREDITOR_INSTITUTION_PROCESSED,
-                        null,
-                        null,
-                        OutcomeEnum.OK,
-                        ReRequestContext.builder()
-                                .method(HttpMethod.POST)
-                                .uri(uri.toString())
-                                .headers(toHttpHeaders(headers))
-                                .payload(payload)
-                                .build(),
-                        ReResponseContext.builder()
-                                .headers(response.getHeaders())
-                                .statusCode(HttpStatus.valueOf(response.getStatusCode().value()))
-                                .payload(response.getBody())
-                                .build());
+            if (isSavedDeadLetter) {
+                // throw to move receipt to dead letter container
+                throw new AppException(AppErrorCodeMessageEnum.RECEIPT_GENERATION_ERROR_DEAD_LETTER, paaInviaRTRisposta.getEsito(), faultCode, faultString, faultDescr);
             } else {
-                rtReceiptCosmosService.updateReceiptStatus(domainId, iuv, ccp, ReceiptStatusEnum.SENT_REJECTED_BY_EC);
-                reService.sendEvent(
-                        WorkflowStatus.COMMUNICATION_WITH_CREDITOR_INSTITUTION_PROCESSED,
-                        null,
-                        null,
-                        OutcomeEnum.COMMUNICATION_RECEIVED_FAILURE,
-                        ReRequestContext.builder()
-                                .method(HttpMethod.POST)
-                                .uri(uri.toString())
-                                .headers(toHttpHeaders(headers))
-                                .payload(payload)
-                                .build(),
-                        ReResponseContext.builder()
-                                .headers(response.getHeaders())
-                                .statusCode(HttpStatus.valueOf(response.getStatusCode().value()))
-                                .build());
-                FaultBean fault = paaInviaRTRisposta.getFault();
-                String faultCode = "ND";
-                String faultString = "ND";
-                String faultDescr = "ND";
-                if (fault != null) {
-                    faultCode = fault.getFaultCode();
-                    faultString = fault.getFaultString();
-                    faultDescr = fault.getDescription();
-                }
-                if (isSavedDeadLetter) {
-                    // throw to move receipt to dead letter container
-                    throw new AppException(AppErrorCodeMessageEnum.RECEIPT_GENERATION_ERROR_DEAD_LETTER, paaInviaRTRisposta.getEsito(), faultCode, faultString, faultDescr);
-                }
                 throw new AppException(AppErrorCodeMessageEnum.RECEIPT_GENERATION_ERROR_RESPONSE_FROM_CREDITOR_INSTITUTION, faultCode, faultString, faultDescr);
             }
 
-        } catch (AppException e) {
-            reService.sendEvent(WorkflowStatus.COMMUNICATION_WITH_CREDITOR_INSTITUTION_PROCESSED, null, null, OutcomeEnum.COMMUNICATION_RECEIVED_FAILURE);
-            throw e;
-
-        } catch (Exception e) {
-
-            // Save an RE event in order to track the response from creditor institution
-            if (e instanceof HttpStatusCodeException error) {
-                ResponseEntity<String> response = new ResponseEntity<>(error.getResponseBodyAsString(), error.getResponseHeaders(), error.getStatusCode().value());
-                reService.sendEvent(
-                        WorkflowStatus.COMMUNICATION_WITH_CREDITOR_INSTITUTION_PROCESSED,
-                        null,
-                        null,
-                        OutcomeEnum.COMMUNICATION_RECEIVED_FAILURE,
-                        ReRequestContext.builder()
-                                .method(HttpMethod.POST)
-                                .uri(uri.toString())
-                                .headers(toHttpHeaders(headers))
-                                .payload(payload)
-                                .build(),
-                        ReResponseContext.builder()
-                                .headers(response.getHeaders())
-                                .statusCode(HttpStatus.valueOf(response.getStatusCode().value()))
-                                .build());
-            }
-
-            throw new AppException(AppErrorCodeMessageEnum.RECEIPT_GENERATION_GENERIC_ERROR, e.getMessage());
         }
+    }
+
+    private ResponseEntity<String> executeCall(URI uri, List<Pair<String, String>> headers, String payload, RestClient.RequestBodySpec bodySpec) {
+        ResponseEntity<String> response;
+        try {
+            response = bodySpec.retrieve().toEntity(String.class);
+        } catch (HttpStatusCodeException error) {
+            ResponseEntity<String> res = new ResponseEntity<>(error.getResponseBodyAsString(), error.getResponseHeaders(), error.getStatusCode().value());
+            reService.sendEvent(
+                    WorkflowStatus.COMMUNICATION_WITH_CREDITOR_INSTITUTION_PROCESSED,
+                    "http status error",
+                    OutcomeEnum.COMMUNICATION_FAILURE,
+                    ReRequestContext.builder()
+                            .method(HttpMethod.POST)
+                            .uri(uri.toString())
+                            .headers(toHttpHeaders(headers))
+                            .payload(payload)
+                            .build(),
+                    ReResponseContext.builder()
+                            .headers(res.getHeaders())
+                            .statusCode(HttpStatus.valueOf(res.getStatusCode().value()))
+                            .build());
+            throw error;
+        }
+        catch (Exception e){
+            reService.sendEvent(
+                    WorkflowStatus.COMMUNICATION_WITH_CREDITOR_INSTITUTION_PROCESSED,
+                    "generic exception",
+                    OutcomeEnum.COMMUNICATION_FAILURE,
+                    ReRequestContext.builder()
+                            .method(HttpMethod.POST)
+                            .uri(uri.toString())
+                            .headers(toHttpHeaders(headers))
+                            .payload(payload)
+                            .build(), null);
+            throw e;
+        }
+        return response;
     }
 
     private boolean checkIfSendDeadLetter(EsitoPaaInviaRT esitoPaaInviaRT) {

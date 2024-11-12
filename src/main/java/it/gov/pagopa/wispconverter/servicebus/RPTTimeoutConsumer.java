@@ -4,12 +4,11 @@ import com.azure.messaging.servicebus.ServiceBusReceivedMessage;
 import com.azure.messaging.servicebus.ServiceBusReceivedMessageContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.wispconverter.controller.model.RPTTimerRequest;
+import it.gov.pagopa.wispconverter.repository.model.enumz.OutcomeEnum;
 import it.gov.pagopa.wispconverter.repository.model.enumz.WorkflowStatus;
-import it.gov.pagopa.wispconverter.service.ConfigCacheService;
-import it.gov.pagopa.wispconverter.service.IdempotencyService;
-import it.gov.pagopa.wispconverter.service.PaaInviaRTSenderService;
-import it.gov.pagopa.wispconverter.service.ReceiptService;
+import it.gov.pagopa.wispconverter.service.*;
 import it.gov.pagopa.wispconverter.util.CommonUtility;
+import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.MDCUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -51,6 +50,9 @@ public class RPTTimeoutConsumer extends SBConsumer {
     private ReceiptService receiptService;
 
     @Autowired
+    private ReService reService;
+
+    @Autowired
     private PaaInviaRTSenderService paaInviaRTSenderService;
 
     @Autowired
@@ -84,16 +86,24 @@ public class RPTTimeoutConsumer extends SBConsumer {
     public void processMessage(ServiceBusReceivedMessageContext context) {
         MDCUtil.setSessionDataInfo("rpt-timeout-trigger");
         ServiceBusReceivedMessage message = context.getMessage();
+
         log.info("Processing message. Session: {}, Sequence #: {}. Contents: {}", message.getMessageId(), message.getSequenceNumber(), message.getBody());
+        OutcomeEnum outcome;
         try {
             // read the message
             RPTTimerRequest timeoutMessage = mapper.readValue(message.getBody().toStream(), RPTTimerRequest.class);
+            MDC.put(Constants.MDC_SESSION_ID, timeoutMessage.getSessionId());
 
             // sending rt- from session id
-            receiptService.sendRTKoFromSessionId(timeoutMessage.getSessionId(), WorkflowStatus.RPT_TIMER_IN_TIMEOUT);
+            receiptService.sendRTKoFromSessionId(timeoutMessage.getSessionId());
+
+            outcome = MDC.get(Constants.MDC_OUTCOME) == null ? OutcomeEnum.OK : OutcomeEnum.valueOf(MDC.get(Constants.MDC_OUTCOME));
+
         } catch (IOException e) {
+            outcome = MDC.get(Constants.MDC_OUTCOME) == null ? OutcomeEnum.ERROR : OutcomeEnum.valueOf(MDC.get(Constants.MDC_OUTCOME));
             log.error("Error when read rpt timer request value from message: '{}'. Body: '{}'", message.getMessageId(), message.getBody());
         }
+        reService.sendEvent(WorkflowStatus.RPT_TIMER_IN_TIMEOUT, null, outcome);
         MDC.clear();
     }
 }

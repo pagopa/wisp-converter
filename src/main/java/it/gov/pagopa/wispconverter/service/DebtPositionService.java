@@ -12,7 +12,6 @@ import it.gov.pagopa.wispconverter.service.mapper.DebtPositionUpdateMapper;
 import it.gov.pagopa.wispconverter.service.model.DigitalStampDTO;
 import it.gov.pagopa.wispconverter.service.model.TransferDTO;
 import it.gov.pagopa.wispconverter.service.model.paymentrequest.PaymentRequestDTO;
-import it.gov.pagopa.wispconverter.service.model.re.RePaymentContext;
 import it.gov.pagopa.wispconverter.service.model.session.PaymentNoticeContentDTO;
 import it.gov.pagopa.wispconverter.service.model.session.PaymentPositionExistence;
 import it.gov.pagopa.wispconverter.service.model.session.RPTContentDTO;
@@ -105,9 +104,11 @@ public class DebtPositionService {
               Using the extracted IUV, check if a payment position already exists in GPD.
               In any case, returns a status that will be used for evaluate each case, or eventually throw an exception if something went wrong.
              */
+            MDC.put(Constants.MDC_IUV, iuv);
+            MDC.put(Constants.MDC_DOMAIN_ID, creditorInstitutionId);
             Pair<PaymentPositionExistence, Optional<PaymentPositionModelBaseResponseDto>> response = checkPaymentPositionExistenceInGPD(gpdClientInstance, creditorInstitutionId, iuv);
-            switch (response.getFirst()) {
 
+            switch (response.getFirst()) {
                 case EXISTS_INVALID ->
                         handleInvalidPaymentPositions(gpdClientInstance, sessionData, response.getSecond().orElse(null), creditorInstitutionId);
                 case EXISTS_VALID ->
@@ -116,6 +117,8 @@ public class DebtPositionService {
                         handleNewPaymentPosition(sessionData, extractedPaymentPosition, iuvToSaveInBulkOperation, iuv, creditorInstitutionId);
             }
         }
+        MDC.remove(Constants.MDC_IUV);
+        MDC.remove(Constants.MDC_DOMAIN_ID);
 
         // executing the bulk insert of that payment position that were not available in GPD
         handlePaymentPositionInsertion(gpdClientInstance, sessionData, extractedPaymentPositions, iuvToSaveInBulkOperation);
@@ -471,7 +474,6 @@ public class DebtPositionService {
 
             // generating NAV code using standard AUX digit and the generated IUV code
             navCode = this.auxDigit + response.getIuv();
-
         } catch (RestClientException e) {
             throw new AppException(AppErrorCodeMessageEnum.CLIENT_IUVGENERATOR,
                     String.format(REST_CLIENT_LOG_STRING, e.getCause().getClass().getCanonicalName(), e.getMessage()));
@@ -511,7 +513,6 @@ public class DebtPositionService {
 
                     // communicating with GPD service in order to update the existing payment position
                     gpdClientInstance.createMultiplePositions(creditorInstitutionId, multiplePaymentPositions, MDC.get(Constants.MDC_REQUEST_ID), true);
-
                 }
 
             } catch (RestClientException e) {
@@ -543,12 +544,11 @@ public class DebtPositionService {
         // creating event to be persisted for RE
         if (Boolean.TRUE.equals(isTracingOnREEnabled)) {
             PaymentNoticeContentDTO paymentNotice = sessionDataDTO.getPaymentNoticeByIUV(iuv);
-            reService.sendEvent(WorkflowStatus.CONVERSION_ERROR_SENDING_RT, RePaymentContext.builder()
-                    .iuv(iuv)
-                    .noticeNumber(paymentNotice.getNoticeNumber())
-                    .paymentToken(paymentNotice.getCcp())
-                    .domainId(paymentNotice.getFiscalCode())
-                    .build());
+            MDC.put(Constants.MDC_IUV, iuv);
+            MDC.put(Constants.MDC_NOTICE_NUMBER, paymentNotice.getNoticeNumber());
+            MDC.put(Constants.MDC_CCP, paymentNotice.getCcp());
+            MDC.put(Constants.MDC_DOMAIN_ID, paymentNotice.getFiscalCode());
+            reService.sendEvent(WorkflowStatus.CONVERSION_ERROR_SENDING_RT);
         }
     }
 

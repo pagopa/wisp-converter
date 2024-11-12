@@ -48,4 +48,7 @@ public class Constants {
     public static final String MDC_REQUEST_ID = "requestId";
     public static final String MDC_PRIMITIVE = "primitive";
     public static final String MDC_INFO = "info";
+    public static final String MDC_ARGS = "args";
+
+    public static final String MDC_OUTCOME = "outcome";
 }

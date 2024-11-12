@@ -66,7 +66,7 @@ public class CosmosDBConfig extends AbstractCosmosConfiguration {
 
         @Override
         public void processResponseDiagnostics(@Nullable ResponseDiagnostics responseDiagnostics) {
-            log.debug("Response Diagnostics {}", responseDiagnostics);
+            log.trace("Response Diagnostics {}", responseDiagnostics);
         }
     }
 }

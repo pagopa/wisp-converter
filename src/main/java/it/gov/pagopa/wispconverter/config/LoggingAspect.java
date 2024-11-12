@@ -3,13 +3,12 @@ package it.gov.pagopa.wispconverter.config;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
+import it.gov.pagopa.wispconverter.util.Constants;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.xml.bind.JAXBElement;
 import lombok.extern.slf4j.Slf4j;
-import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
-import org.aspectj.lang.annotation.AfterReturning;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
@@ -19,13 +18,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
-import org.springframework.web.ErrorResponse;
 
 import javax.annotation.PostConstruct;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 import static it.gov.pagopa.wispconverter.util.CommonUtility.deNull;
 
@@ -34,16 +31,6 @@ import static it.gov.pagopa.wispconverter.util.CommonUtility.deNull;
 @Slf4j
 public class LoggingAspect {
 
-  public static final String START_TIME = "startTime";
-  public static final String METHOD = "method";
-  public static final String STATUS = "status";
-  public static final String CODE = "httpCode";
-  public static final String RESPONSE_TIME = "responseTime";
-  public static final String FAULT_CODE = "faultCode";
-  public static final String FAULT_DETAIL = "faultDetail";
-  public static final String REQUEST_ID = "requestId";
-  public static final String OPERATION_ID = "operationId";
-  public static final String ARGS = "args";
 
   final HttpServletRequest httRequest;
 
@@ -71,14 +58,14 @@ public class LoggingAspect {
   }
 
   private static String getTitle(ResponseEntity<Object> result) {
-    if (result != null && result.getBody() != null && result.getBody() instanceof ProblemDetail problemDetail 
+    if (result != null && result.getBody() != null && result.getBody() instanceof ProblemDetail problemDetail
     		&& problemDetail.getTitle() != null) {
       return problemDetail.getTitle();
     } else return AppErrorCodeMessageEnum.UNKNOWN.getTitle();
   }
 
   public static String getExecutionTime() {
-    String startTime = MDC.get(START_TIME);
+    String startTime = MDC.get(Constants.MDC_EXECUTION_TIME);
     if (startTime != null) {
       long endTime = System.currentTimeMillis();
       long executionTime = endTime - Long.parseLong(startTime);
@@ -130,52 +117,17 @@ public class LoggingAspect {
 
   @Around(value = "restController()")
   public Object logApiInvocation(ProceedingJoinPoint joinPoint) throws Throwable {
-    MDC.put(METHOD, joinPoint.getSignature().getName());
-    MDC.put(START_TIME, String.valueOf(System.currentTimeMillis()));
-    MDC.put(OPERATION_ID, UUID.randomUUID().toString());
-    if (MDC.get(REQUEST_ID) == null) {
-      var requestId = UUID.randomUUID().toString();
-      MDC.put(REQUEST_ID, requestId);
-    }
     Map<String, String> params = getParams(joinPoint);
-    MDC.put(ARGS, params.toString());
+    MDC.put(Constants.MDC_ARGS, params.toString());
 
-    log.info("Invoking API operation{} - args: {}", joinPoint.getSignature().getName(), params);
+    log.debug("Invoking API operation{} - args: {}", joinPoint.getSignature().getName(), params);
 
     Object result = joinPoint.proceed();
 
-    MDC.put(STATUS, "OK");
-    MDC.put(CODE, String.valueOf(httpResponse.getStatus()));
-    MDC.put(RESPONSE_TIME, getExecutionTime());
     log.info("Successful API operation {} - result: {}", joinPoint.getSignature().getName(), result);
-    MDC.remove(STATUS);
-    MDC.remove(CODE);
-    MDC.remove(RESPONSE_TIME);
-    MDC.remove(START_TIME);
     return result;
   }
-  
-  @AfterReturning(value = "execution(* *..advice.GlobalExceptionHandler.handleAppException(..)) || execution(* *..advice.GlobalExceptionHandler.handleGenericException(..))", returning = "result")
-  public void trowingApiInvocation(JoinPoint joinPoint, ErrorResponse result) {
-    MDC.put(STATUS, "KO");
-    MDC.put(CODE, String.valueOf(result.getStatusCode().value()));
-    MDC.put(RESPONSE_TIME, getExecutionTime());
-    MDC.put(FAULT_CODE, result.getTitleMessageCode());
-    MDC.put(FAULT_DETAIL, result.getDetailMessageCode());
-    log.info("Failed API operation {} - error: {}", MDC.get(METHOD), result);
-    MDC.clear();
-  }
-  
-  @AfterReturning(value = "execution(* *..advice.GlobalExceptionHandler.handleExceptionInternal(..))", returning = "result")
-  public void trowingApiInvocation(JoinPoint joinPoint, ResponseEntity<Object> result) {
-    MDC.put(STATUS, "KO");
-    MDC.put(CODE, String.valueOf(result.getStatusCode().value()));
-    MDC.put(RESPONSE_TIME, getExecutionTime());
-    MDC.put(FAULT_CODE, getTitle(result));
-    MDC.put(FAULT_DETAIL, getDetail(result));
-    log.info("Failed API operation {} - error: {}", MDC.get(METHOD), result);
-    MDC.clear();
-  }
+
 
   @Around(value = "repository() || service()")
   public Object logTrace(ProceedingJoinPoint joinPoint) throws Throwable {

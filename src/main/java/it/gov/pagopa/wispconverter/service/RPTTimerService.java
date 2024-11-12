@@ -8,8 +8,7 @@ import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.CacheRepository;
 import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
-import it.gov.pagopa.wispconverter.repository.model.enumz.WorkflowStatus;
-import it.gov.pagopa.wispconverter.service.model.re.RePaymentContext;
+import it.gov.pagopa.wispconverter.repository.model.enumz.OutcomeEnum;
 import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.LogUtils;
 import lombok.RequiredArgsConstructor;
@@ -122,16 +121,10 @@ public class RPTTimerService {
             cacheRepository.insert(key, sequenceNumber.toString(), expirationTime, ChronoUnit.SECONDS);
             // log event
             log.info("Sent scheduled message_base64 {} to the queue: {}", LogUtils.encodeToBase64(sanitizeInput(message.toString())), queueName);
-            reService.sendEvent(
-                    WorkflowStatus.RPT_TIMER_CREATED,
-                    RePaymentContext.builder()
-                            .domainId(MDC.get(Constants.MDC_DOMAIN_ID))
-                            .paymentToken(MDC.get(Constants.MDC_PAYMENT_TOKEN))
-                            .build(),
-                    "Scheduled RPTTimerService: [" + message + "]");
         } catch (Exception e) {
             serviceBusSenderClient.cancelScheduledMessage(sequenceNumber);
             // log event
+            MDC.put(Constants.MDC_OUTCOME, OutcomeEnum.ERROR.name());
             MDC.put(Constants.MDC_INFO, "Exception timer not set: [" + sequenceNumber + "] for sessionId: [" + sessionId + "]");
             log.debug("Timer not set due to an exception for rpt_timer_key: {} and sessionId: {}", sanitizeInput(key), sanitizeInput(sessionId));
         }
