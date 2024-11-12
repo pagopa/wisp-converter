@@ -13,6 +13,7 @@ import it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigDataV1Dto;
 import it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigurationKeyDto;
 import it.gov.pagopa.gen.wispconverter.client.cache.model.ConnectionDto;
 import it.gov.pagopa.gen.wispconverter.client.cache.model.StationDto;
+import it.gov.pagopa.wispconverter.custom.DecouplerApiClient;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.ReceiptDeadLetterRepository;
@@ -55,6 +56,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 import static it.gov.pagopa.wispconverter.util.Constants.PAA_INVIA_RT;
 
@@ -90,6 +92,8 @@ public class ReceiptService {
     private final ReceiptDeadLetterRepository receiptDeadLetterRepository;
 
     private final it.gov.pagopa.gen.wispconverter.client.decouplercaching.invoker.ApiClient decouplerCachingClient;
+
+    private final it.gov.pagopa.gen.wispconverter.client.decouplercaching.invoker.ApiClient decouplerCachingClientWithRetry;
 
     private final ObjectMapper mapper;
 
@@ -176,7 +180,6 @@ public class ReceiptService {
      */
     public void sendKoPaaInviaRtToCreditorInstitution(List<ReceiptDto> receipts) {
         try {
-
             it.gov.pagopa.gen.wispconverter.client.decouplercaching.api.DefaultApi apiInstance = new it.gov.pagopa.gen.wispconverter.client.decouplercaching.api.DefaultApi(decouplerCachingClient);
             it.gov.pagopa.gen.wispconverter.client.decouplercaching.model.SessionIdDto sessionIdDto = new it.gov.pagopa.gen.wispconverter.client.decouplercaching.model.SessionIdDto();
 
@@ -730,12 +733,17 @@ public class ReceiptService {
         log.debug("Processing session id: {}", sessionId);
 
         // deactivate the sessionId inside the cache
-        it.gov.pagopa.gen.wispconverter.client.decouplercaching.api.DefaultApi apiInstance = new it.gov.pagopa.gen.wispconverter.client.decouplercaching.api.DefaultApi(decouplerCachingClient);
+        it.gov.pagopa.gen.wispconverter.client.decouplercaching.api.DefaultApi apiInstance = new it.gov.pagopa.gen.wispconverter.client.decouplercaching.api.DefaultApi(decouplerCachingClientWithRetry);
         it.gov.pagopa.gen.wispconverter.client.decouplercaching.model.SessionIdDto sessionIdDto = new it.gov.pagopa.gen.wispconverter.client.decouplercaching.model.SessionIdDto();
         sessionIdDto.setSessionId(sessionId);
 
-        // necessary only if rptTimer is triggered, otherwise it has already been removed
-        apiInstance.deleteSessionId(sessionIdDto, MDC.get(Constants.MDC_REQUEST_ID));
+        CompletableFuture.runAsync(() -> {
+            // necessary only if rptTimer is triggered, otherwise it has already been removed
+            apiInstance.deleteSessionId(sessionIdDto, MDC.get(Constants.MDC_REQUEST_ID));
+        }).exceptionally(throwable -> {
+            log.error("[sessionId={}] Exception while deleteSessionId: {}", sessionId, throwable.getMessage());
+            return null;
+        });
 
         // log event
         MDC.put(Constants.MDC_SESSION_ID, sessionId);

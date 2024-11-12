@@ -70,6 +70,30 @@ public class DecouplerCachingClientConfig {
         return client;
     }
 
+    @Bean
+    public it.gov.pagopa.gen.wispconverter.client.decouplercaching.invoker.ApiClient decouplerCachingClientWithRetry() {
+        RequestResponseLoggingProperties clientLoggingProperties = decouplerCachingClientLoggingProperties();
+
+        DecouplerCachingClientLoggingInterceptor clientLogging = new DecouplerCachingClientLoggingInterceptor(clientLoggingProperties, reService, isTracingOfClientOnREEnabled);
+
+        RestTemplate restTemplate = restTemplate();
+
+        List<ClientHttpRequestInterceptor> currentInterceptors = restTemplate.getInterceptors();
+        currentInterceptors.add(clientLogging);
+        restTemplate.setInterceptors(currentInterceptors);
+
+        restTemplate.setErrorHandler(new DecouplerCachingClientResponseErrorHandler());
+
+        it.gov.pagopa.gen.wispconverter.client.decouplercaching.invoker.ApiClient client = new it.gov.pagopa.gen.wispconverter.client.decouplercaching.invoker.ApiClient(restTemplate);
+
+        client.setBasePath(basePath);
+        client.setApiKey(apiKey);
+        client.setMaxAttemptsForRetry(3);
+        client.setWaitTimeMillis(50);
+
+        return client;
+    }
+
     private RestTemplate restTemplate() {
         RestTemplate restTemplate = new RestTemplate();
         // This allows us to read the response more than once - Necessary for debugging.
