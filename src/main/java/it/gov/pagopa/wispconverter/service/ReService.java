@@ -23,7 +23,7 @@ public class ReService {
             ReEventEntity reEventEntity = reEventMapper.toReEventEntity(reEventDto);
             reEventRepository.save(reEventEntity);
         } catch (Exception e) {
-            throw new AppException(AppErrorCodeMessageEnum.PERSISTENCE_SAVING_RE_ERROR, e);
+            log.error("[RE-429] Exception: {}", AppErrorCodeMessageEnum.PERSISTENCE_SAVING_RE_ERROR.getDetail());
         }
     }
 }
