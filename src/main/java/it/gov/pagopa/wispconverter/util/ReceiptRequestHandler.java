@@ -23,7 +23,7 @@ public class ReceiptRequestHandler extends DefaultHandler {
     public void characters(char[] ch, int start, int length) throws SAXException {
         if (elementValue == null) {
             elementValue = new StringBuilder();
-        } else {
+        } else if (start + length <= ch.length) {
             elementValue.append(ch, start, length);
         }
     }
@@ -36,13 +36,7 @@ public class ReceiptRequestHandler extends DefaultHandler {
     @Override
     public void startElement(String uri, String lName, String qName, Attributes attr) throws SAXException {
         switch (qName) {
-            case NOTICE_NUMBER:
-                elementValue = new StringBuilder();
-                break;
-            case FISCAL_CODE:
-                elementValue = new StringBuilder();
-                break;
-            case CREDITOR_REFERENCE_ID:
+            case NOTICE_NUMBER, FISCAL_CODE, CREDITOR_REFERENCE_ID:
                 elementValue = new StringBuilder();
                 break;
             default:
