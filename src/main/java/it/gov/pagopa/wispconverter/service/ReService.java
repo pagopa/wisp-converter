@@ -154,7 +154,7 @@ public class ReService {
             }
             addRe(reEvent.build());
         } catch (Exception e) {
-            log.error("[RE-429][sessionId:{}] Exception: {}", sessionId, AppErrorCodeMessageEnum.PERSISTENCE_SAVING_RE_ERROR.getDetail());
+            log.error("[RE-429][sessionId:{}] {}", sessionId, AppErrorCodeMessageEnum.PERSISTENCE_SAVING_RE_ERROR.getTitle(), e);
         }
     }
 

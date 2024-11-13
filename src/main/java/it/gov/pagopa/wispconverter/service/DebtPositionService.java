@@ -12,12 +12,7 @@ import it.gov.pagopa.wispconverter.service.mapper.DebtPositionUpdateMapper;
 import it.gov.pagopa.wispconverter.service.model.DigitalStampDTO;
 import it.gov.pagopa.wispconverter.service.model.TransferDTO;
 import it.gov.pagopa.wispconverter.service.model.paymentrequest.PaymentRequestDTO;
-import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import it.gov.pagopa.wispconverter.service.model.session.*;
-import it.gov.pagopa.wispconverter.service.model.session.PaymentNoticeContentDTO;
-import it.gov.pagopa.wispconverter.service.model.session.PaymentPositionExistence;
-import it.gov.pagopa.wispconverter.service.model.session.RPTContentDTO;
-import it.gov.pagopa.wispconverter.service.model.session.SessionDataDTO;
 import it.gov.pagopa.wispconverter.util.CommonUtility;
 import it.gov.pagopa.wispconverter.util.Constants;
 import lombok.RequiredArgsConstructor;
@@ -324,14 +319,12 @@ public class DebtPositionService {
             }
             body = Optional.of(debtPosition);
 
-        } catch (AppException e) {
+        } catch (Exception e) {
 
             // if status code is 404, no valid payment position exists. So, a new one can be freely created
-            HttpClientErrorException clientError = (HttpClientErrorException) e.getCause();
-            if (clientError != null && clientError.getStatusCode().value() == 404) {
+            if (e instanceof HttpClientErrorException clientError && clientError.getStatusCode().value() == 404) {
                 status = PaymentPositionExistence.NOT_EXISTS;
             }
-
             // any other status code is an error, so throw an exception
             else {
                 throw new AppException(AppErrorCodeMessageEnum.CLIENT_GPD, String.format("Unable to read payment position with IUV [%s].", iuv));

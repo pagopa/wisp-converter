@@ -75,7 +75,11 @@ public class ConverterService {
         } catch (Exception ex) {
             log.debug("A generic error occurred during convert operations: {}", ex.getMessage());
             receiptService.sendRTKoFromSessionId(sessionId);
-            throw new AppException(AppErrorCodeMessageEnum.ERROR, ex);
+            if (ex instanceof AppException e) {
+                throw e;
+            } else {
+                throw new AppException(AppErrorCodeMessageEnum.ERROR, ex);
+            }
         }
         return checkoutResponse;
     }
