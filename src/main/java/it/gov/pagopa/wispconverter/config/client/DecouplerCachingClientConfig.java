@@ -1,5 +1,6 @@
 package it.gov.pagopa.wispconverter.config.client;
 
+import it.gov.pagopa.wispconverter.custom.DecouplerApiClient;
 import it.gov.pagopa.wispconverter.service.ReService;
 import it.gov.pagopa.wispconverter.util.client.RequestResponseLoggingProperties;
 import it.gov.pagopa.wispconverter.util.client.decouplercaching.DecouplerCachingClientLoggingInterceptor;
@@ -84,7 +85,7 @@ public class DecouplerCachingClientConfig {
 
         restTemplate.setErrorHandler(new DecouplerCachingClientResponseErrorHandler());
 
-        it.gov.pagopa.gen.wispconverter.client.decouplercaching.invoker.ApiClient client = new it.gov.pagopa.gen.wispconverter.client.decouplercaching.invoker.ApiClient(restTemplate);
+        DecouplerApiClient client = new DecouplerApiClient(restTemplate);
 
         client.setBasePath(basePath);
         client.setApiKey(apiKey);
