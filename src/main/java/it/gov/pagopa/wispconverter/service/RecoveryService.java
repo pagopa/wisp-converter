@@ -318,9 +318,7 @@ public class RecoveryService {
         // TODO inject MDC
         try {
             for (String sessionId : request.getSessionIds()) {
-                CompletableFuture.runAsync(() -> {
-                    receiptService.sendRTKoFromSessionId(sessionId, InternalStepStatus.RT_RECONCILIATION_PROCESS);
-                });
+                CompletableFuture.runAsync(() -> receiptService.sendRTKoFromSessionId(sessionId, InternalStepStatus.RT_RECONCILIATION_PROCESS));
             }
         }
         catch (Exception e) {
