@@ -132,7 +132,7 @@ public class ReService {
         try {
             return Long.valueOf(MDC.get(Constants.MDC_CLIENT_EXECUTION_TIME));
         } catch (IllegalArgumentException e) {
-            return -1L;
+            return null;
         }
     }
 

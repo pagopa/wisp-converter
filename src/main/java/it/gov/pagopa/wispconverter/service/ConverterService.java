@@ -105,7 +105,6 @@ public class ConverterService {
                         .noticeNumber(elem.getNoticeNumber())
                         .sessionId(sessionId)
                         .build()));
-        reService.sendEvent(WorkflowStatus.ECOMMERCE_HANG_TIMER_CREATED);
     }
 
     /**

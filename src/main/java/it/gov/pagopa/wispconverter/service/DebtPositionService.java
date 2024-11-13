@@ -322,12 +322,12 @@ public class DebtPositionService {
         } catch (Exception e) {
 
             // if status code is 404, no valid payment position exists. So, a new one can be freely created
-            if (e instanceof HttpClientErrorException clientError && clientError.getStatusCode().value() == 404) {
+            if (e.getCause() instanceof HttpClientErrorException clientError && clientError.getStatusCode().value() == 404) {
                 status = PaymentPositionExistence.NOT_EXISTS;
             }
             // any other status code is an error, so throw an exception
             else {
-                throw new AppException(AppErrorCodeMessageEnum.CLIENT_GPD, String.format("Unable to read payment position with IUV [%s].", iuv));
+                throw new AppException(e, AppErrorCodeMessageEnum.CLIENT_GPD, String.format("Unable to read payment position with IUV [%s].", iuv));
             }
         }
 

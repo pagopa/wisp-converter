@@ -8,12 +8,9 @@ import it.gov.pagopa.wispconverter.util.client.RequestResponseLoggingProperties;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpMethod;
 
-import java.util.regex.Pattern;
-
 @Slf4j
 public class GpdClientLoggingInterceptor extends AbstractAppClientLoggingInterceptor {
 
-    private final Pattern getDebtPositionPattern;
 
     public GpdClientLoggingInterceptor(RequestResponseLoggingProperties clientLoggingProperties, ReService reService, Boolean isTracingOfClientOnREEnabled) {
         super(clientLoggingProperties, reService, ClientServiceEnum.GPD);
@@ -23,14 +20,12 @@ public class GpdClientLoggingInterceptor extends AbstractAppClientLoggingInterce
             avoidEventPersistenceOnRE();
         }
 
-        // defining pattern for retrieve operational status
-        getDebtPositionPattern = Pattern.compile("organizations/[^/]+/paymentoptions/[^/]+/debtposition");
     }
 
     @Override
     protected WorkflowStatus getOperationStatus(String url, HttpMethod httpMethod) {
         WorkflowStatus status;
-        if (httpMethod.equals(HttpMethod.GET) && getDebtPositionPattern.asMatchPredicate().test(url)) {
+        if (httpMethod.equals(HttpMethod.GET)) {
             status = WorkflowStatus.COMMUNICATION_WITH_GPD_FOR_DEBT_POSITION_RETRIEVE_PROCESSED;
         } else {
             status = WorkflowStatus.COMMUNICATION_WITH_GPD_FOR_DEBT_POSITION_UPSERT_PROCESSED;
