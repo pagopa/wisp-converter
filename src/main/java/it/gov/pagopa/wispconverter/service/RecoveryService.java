@@ -48,7 +48,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 @Service
@@ -69,6 +68,7 @@ public class RecoveryService {
 
     private static final String DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
     private static final String DATE_FORMAT_DAY = "yyyy-MM-dd";
+    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern(DATE_FORMAT);
     private static final List<String> blockedReceiptStatus = List.of(
             ReceiptStatusEnum.NOT_SENT.name(),
             ReceiptStatusEnum.REDIRECT.name(),
@@ -134,7 +134,8 @@ public class RecoveryService {
     // Recover by dates (cron)
     public RecoveryReceiptResponse recoverReceiptKOByDate(ZonedDateTime dateFrom, ZonedDateTime dateTo) {
         // Query database for blocked Receipt in given timestamp
-        List<RTEntity> rtEntities = rtRepository.findByMidReceiptStatusInAndTimestampBetween(dateFrom.toString(), dateTo.toString());
+        List<RTEntity> rtEntities = rtRepository.findByMidReceiptStatusInAndTimestampBetween(
+                dateFrom.format(DATE_TIME_FORMATTER), dateTo.format(DATE_TIME_FORMATTER));
         // For each entity call send receipt KO
         rtEntities.forEach(rtEntity -> callSendReceiptKO(rtEntity.getDomainId(), rtEntity.getIuv(), rtEntity.getCcp(), rtEntity.getSessionId()));
         return this.extractRecoveryReceiptResponse(rtEntities);
@@ -310,6 +311,14 @@ public class RecoveryService {
         }
         catch (IOException e) {
             throw new AppException(AppErrorCodeMessageEnum.ERROR, "Problem with receipt payload");
+        }
+    }
+
+    @Transactional
+    public void recoverReceiptKoToBeReSentBySessionIds(RecoveryReceiptBySessionIdRequest request) {
+        // TODO inject MDC
+        for (String sessionId : request.getSessionIds()) {
+            CompletableFuture.runAsync(() -> receiptService.sendRTKoFromSessionId(sessionId, InternalStepStatus.RT_RECONCILIATION_PROCESS));
         }
     }
 
