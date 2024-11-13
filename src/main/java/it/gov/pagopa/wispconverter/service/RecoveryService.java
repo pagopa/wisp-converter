@@ -315,7 +315,7 @@ public class RecoveryService {
 
     @Transactional
     public void recoverReceiptKoToBeReSentBySessionIds(RecoveryReceiptBySessionIdRequest request) {
-        List<Pair<String, String>> receiptStatus = new ArrayList<>();
+        // TODO inject MDC
         try {
             for (String sessionId : request.getSessionIds()) {
                 CompletableFuture.runAsync(() -> {
