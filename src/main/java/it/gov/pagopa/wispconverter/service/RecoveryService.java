@@ -316,13 +316,8 @@ public class RecoveryService {
     @Transactional
     public void recoverReceiptKoToBeReSentBySessionIds(RecoveryReceiptBySessionIdRequest request) {
         // TODO inject MDC
-        try {
-            for (String sessionId : request.getSessionIds()) {
-                CompletableFuture.runAsync(() -> receiptService.sendRTKoFromSessionId(sessionId, InternalStepStatus.RT_RECONCILIATION_PROCESS));
-            }
-        }
-        catch (Exception e) {
-            throw new AppException(e, AppErrorCodeMessageEnum.ERROR, "Problem with KO receipt");
+        for (String sessionId : request.getSessionIds()) {
+            CompletableFuture.runAsync(() -> receiptService.sendRTKoFromSessionId(sessionId, InternalStepStatus.RT_RECONCILIATION_PROCESS));
         }
     }
 
