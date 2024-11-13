@@ -56,16 +56,6 @@ public class PaaInviaRTSenderService {
         return headers;
     }
 
-    public void sendToCreditorInstitution(URI uri, InetSocketAddress proxyAddress, List<Pair<String, String>> headers, String payload, String domainId, String iuv, String ccp) {
-
-        try {
-            callCreditorInstitution(uri, proxyAddress, headers, payload, domainId, iuv, ccp);
-        } catch (Exception e) {
-            // Save an RE event in order to track the response from creditor institution
-            throw wrapInAppException(e);
-        }
-    }
-
     /**
      * This method wraps an exception in a {@link AppException}
      *
@@ -77,6 +67,15 @@ public class PaaInviaRTSenderService {
             return appException;
         } else {
             return new AppException(AppErrorCodeMessageEnum.RECEIPT_GENERATION_GENERIC_ERROR, e);
+        }
+    }
+
+    public void sendToCreditorInstitution(URI uri, InetSocketAddress proxyAddress, List<Pair<String, String>> headers, String payload, String domainId, String iuv, String ccp) {
+        try {
+            callCreditorInstitution(uri, proxyAddress, headers, payload, domainId, iuv, ccp);
+        } catch (Exception e) {
+            // Save an RE event in order to track the response from creditor institution
+            throw wrapInAppException(e);
         }
     }
 
@@ -130,7 +129,7 @@ public class PaaInviaRTSenderService {
             MDC.put(Constants.MDC_OUTCOME, OutcomeEnum.SENDING_RT_FAILED_REJECTED_BY_CI.name());
             reService.sendEvent(
                     WorkflowStatus.COMMUNICATION_WITH_CREDITOR_INSTITUTION_PROCESSED,
-                    "CI refused the RT",
+                    "Creditor Institution refused RT",
                     OutcomeEnum.COMMUNICATION_FAILURE,
                     ReRequestContext.builder()
                             .method(HttpMethod.POST)
@@ -157,7 +156,6 @@ public class PaaInviaRTSenderService {
             } else {
                 throw new AppException(AppErrorCodeMessageEnum.RECEIPT_GENERATION_ERROR_RESPONSE_FROM_CREDITOR_INSTITUTION, faultCode, faultString, faultDescr);
             }
-
         }
     }
 
@@ -169,7 +167,7 @@ public class PaaInviaRTSenderService {
             ResponseEntity<String> res = new ResponseEntity<>(error.getResponseBodyAsString(), error.getResponseHeaders(), error.getStatusCode().value());
             reService.sendEvent(
                     WorkflowStatus.COMMUNICATION_WITH_CREDITOR_INSTITUTION_PROCESSED,
-                    "http status error",
+                    "HTTP error on communication with creditor institution",
                     OutcomeEnum.COMMUNICATION_FAILURE,
                     ReRequestContext.builder()
                             .method(HttpMethod.POST)
@@ -182,11 +180,10 @@ public class PaaInviaRTSenderService {
                             .statusCode(HttpStatus.valueOf(res.getStatusCode().value()))
                             .build());
             throw error;
-        }
-        catch (Exception e){
+        } catch (Exception e) {
             reService.sendEvent(
                     WorkflowStatus.COMMUNICATION_WITH_CREDITOR_INSTITUTION_PROCESSED,
-                    "generic exception",
+                    "Unexpected error: " + e.getMessage(),
                     OutcomeEnum.COMMUNICATION_FAILURE,
                     ReRequestContext.builder()
                             .method(HttpMethod.POST)
