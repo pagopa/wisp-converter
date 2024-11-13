@@ -81,10 +81,7 @@ public class ECommerceHangTimerService {
             String fiscalCode = message.getFiscalCode();
             String sessionId = message.getSessionId();
             setEcommerceHangTimerInfoInMDC(fiscalCode, noticeNumber);
-
-            String key =
-                    String.format(ECOMMERCE_TIMER_MESSAGE_KEY_FORMAT, noticeNumber, fiscalCode, sessionId);
-
+            String key = String.format(ECOMMERCE_TIMER_MESSAGE_KEY_FORMAT, noticeNumber, fiscalCode, sessionId);
             // If the key is already present in the cache, we delete it to avoid duplicated message.
             if (Boolean.TRUE.equals(cacheRepository.hasKey(key))) {
                 cancelScheduledMessage(noticeNumber, fiscalCode, sessionId);

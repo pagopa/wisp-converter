@@ -120,24 +120,27 @@ public class ReInterceptor implements HandlerInterceptor {
     }
 
     @Override
-    public void afterCompletion(
-            HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
+    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
         if (handler instanceof HandlerMethod handlerMethod) {
             EndpointRETrace trace = handlerMethod.getMethod().getAnnotation(EndpointRETrace.class);
             if (trace != null && trace.reEnabled()) {
                 String businessProcess = trace.businessProcess();
                 log.debug("[afterCompletion] trace RE SERVER OUT businessProcess = [{}]", businessProcess);
                 MDC.put(MDC_STATUS, trace.status().name());
-                MDC.put(Constants.MDC_CLIENT_EXECUTION_TIME,
-                        CommonUtility.getExecutionTime(
-                                CommonUtility.getExecutionTime(MDC.get(Constants.MDC_START_TIME))));
+                MDC.put(Constants.MDC_CLIENT_EXECUTION_TIME, CommonUtility.getExecutionTime(CommonUtility.getExecutionTime(MDC.get(Constants.MDC_START_TIME))));
+
+                String requestUri = request.getRequestURI();
+                String queryString = request.getQueryString();
+                if (queryString != null && !queryString.isEmpty()) {
+                    requestUri += "?" + queryString;
+                }
 
                 reService.sendEvent(
                         WorkflowStatus.valueOf(MDC.get(MDC_STATUS)),
                         MDC.get(Constants.MDC_INFO),
                         getOutcomeEnum(response),
                         ReRequestContext.builder()
-                                .uri(request.getRequestURI())
+                                .uri(requestUri)
                                 .method(HttpMethod.valueOf(request.getMethod()))
                                 .payload(getRequestMessagePayload(request))
                                 .headers(formatServerRequestHeaders(request))
