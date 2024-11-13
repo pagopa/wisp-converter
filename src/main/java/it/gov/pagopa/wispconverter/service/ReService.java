@@ -73,15 +73,13 @@ public class ReService {
                           @Nullable ReResponseContext response) {
 
         String sessionId = MDC.get(Constants.MDC_SESSION_ID);
-        Instant mdcStartTime = getStartTime();
-
         try {
             // build event
             var reEvent = ReEventDto.builder()
                     //  context
                     .id(UUID.randomUUID().toString())
                     .operationId(MDC.get(Constants.MDC_OPERATION_ID))
-                    .insertedTimestamp(mdcStartTime)
+                    .insertedTimestamp(getStartTime())
                     .businessProcess(MDC.get(Constants.MDC_BUSINESS_PROCESS))
                     .sessionId(sessionId)
                     .executionTimeMs(getExecutionTimeMs())
