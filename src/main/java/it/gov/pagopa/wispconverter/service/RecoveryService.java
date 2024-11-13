@@ -108,7 +108,7 @@ public class RecoveryService {
         CompletableFuture<Boolean> executeRecovery = CompletableFuture.supplyAsync(withMdc(() -> {
             rtEntities.forEach(rtEntity -> callSendReceiptKO(rtEntity.getDomainId(), rtEntity.getIuv(), rtEntity.getCcp(), rtEntity.getSessionId()));
             return true;
-                        }));
+        }));
         executeRecovery
                 .thenAccept(value -> log.debug("Reconciliation for creditor institution [{}] in date range [{}-{}] completed!", creditorInstitution, dateFrom, dateTo))
                 .exceptionally(e -> {
@@ -374,6 +374,7 @@ public class RecoveryService {
                 serviceBusService.sendMessage(compositedIdForReceipt, null);
 
                 generateRE(WorkflowStatus.RT_SEND_SCHEDULING_SUCCESS, domainId, iuv, rpt.getCcp(), sessionId, String.format("Generated receipt: %s", overriddenReceiptId));
+
                 response.getReceiptStatus().add(Pair.of(overriddenReceiptId, "SCHEDULED"));
                 overrideId += 1;
             }

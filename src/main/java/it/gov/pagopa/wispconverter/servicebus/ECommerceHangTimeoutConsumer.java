@@ -69,7 +69,7 @@ public class ECommerceHangTimeoutConsumer extends SBConsumer {
         MDCUtil.setSessionDataInfo("ecommerce-hang-timeout-trigger");
         ServiceBusReceivedMessage message = context.getMessage();
         log.debug("Processing message. Session: {}, Sequence #: {}. Contents: {}", message.getMessageId(), message.getSequenceNumber(), message.getBody());
-        OutcomeEnum outcome;
+        OutcomeEnum outcome = OutcomeEnum.ERROR;
         try {
             // read the message
             ECommerceHangTimeoutMessage timeoutMessage = mapper.readValue(message.getBody().toStream(), ECommerceHangTimeoutMessage.class);
@@ -91,9 +91,11 @@ public class ECommerceHangTimeoutConsumer extends SBConsumer {
         } catch (IOException e) {
             log.error("Error when read ECommerceHangTimeoutDto value from message: '{}'. Body: '{}'", message.getMessageId(), message.getBody());
             outcome = MDC.get(Constants.MDC_OUTCOME) == null ? OutcomeEnum.ERROR : OutcomeEnum.valueOf(MDC.get(Constants.MDC_OUTCOME));
+        } finally {
+            reService.sendEvent(WorkflowStatus.ECOMMERCE_HANG_TIMER_IN_TIMEOUT, context.getMessage(), null, outcome);
+            MDC.clear();
         }
-            reService.sendEvent(WorkflowStatus.ECOMMERCE_HANG_TIMER_IN_TIMEOUT, null, outcome);
-        MDC.clear();
+
     }
 
 

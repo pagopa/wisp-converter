@@ -147,9 +147,8 @@ public class RTConsumer extends SBConsumer {
             outcome = MDC.get(Constants.MDC_OUTCOME) == null ? OutcomeEnum.ERROR : OutcomeEnum.valueOf(MDC.get(Constants.MDC_OUTCOME));
         } finally {
             unlockIdempotencyKey(isIdempotencyKeyProcessable, idempotencyKey, receiptType, idempotencyStatus);
-            reService.sendEvent(WorkflowStatus.RECEIPT_RESEND_PROCESSED, null, outcome);
+            reService.sendEvent(WorkflowStatus.RECEIPT_RESEND_PROCESSED, context.getMessage(), null, outcome);
         }
-
     }
 
     private void unlockIdempotencyKey(boolean isIdempotencyKeyProcessable, String idempotencyKey, ReceiptTypeEnum receiptType, IdempotencyStatusEnum idempotencyStatus) {

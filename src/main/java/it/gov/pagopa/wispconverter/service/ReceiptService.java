@@ -827,23 +827,6 @@ public class ReceiptService {
         MDC.remove(Constants.MDC_CCP);
     }
 
-    public void _generateREForNotSentRT(RPTContentDTO rptContent, String iuv, String noticeNumber, String otherInfo) {
-
-        // extract psp on which the payment will be sent
-        String psp = rptContent.getRpt().getPayeeInstitution().getSubjectUniqueIdentifier().getCode();
-
-        // creating event to be persisted for RE
-        MDC.put(Constants.MDC_IUV, iuv);
-        MDC.put(Constants.MDC_NOTICE_NUMBER, noticeNumber);
-        MDC.put(Constants.MDC_PSP_ID, psp);
-        MDC.put(Constants.MDC_CCP, rptContent.getCcp());
-        reService.sendEvent(WorkflowStatus.RT_SEND_FAILURE, otherInfo);
-        MDC.remove(Constants.MDC_IUV);
-        MDC.remove(Constants.MDC_NOTICE_NUMBER);
-        MDC.remove(Constants.MDC_PSP_ID);
-        MDC.remove(Constants.MDC_CCP);
-    }
-
     private void generateREForSuccessfulSchedulingSentRT(RPTContentDTO rptContent, String iuv, String noticeNumber) {
 
         // extract psp on which the payment will be sent

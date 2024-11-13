@@ -15,7 +15,6 @@ public enum WorkflowStatus {
     ECOMMERCE_HANG_TIMER_DELETED(EventCategoryEnum.INTERNAL, "Ecommerce hang timer deleted"),
     CONVERSION_ERROR_SENDING_RT(EventCategoryEnum.INTERFACE, "Invalid Payment Position status"),
     RT_SEND_SUCCESS(EventCategoryEnum.INTERNAL, "RT sent successfully"),
-    RT_SEND_FAILURE(EventCategoryEnum.INTERNAL, "Failure in sending RT"),
     RT_SEND_MOVED_IN_DEADLETTER(EventCategoryEnum.INTERNAL, "RT dead letter saved"),
     RT_SEND_SKIPPED_FOR_GPD_STATION(EventCategoryEnum.INTERNAL, "RT cannot be generated for the GPD station"),
     RT_SEND_SCHEDULING_SUCCESS(EventCategoryEnum.INTERNAL, "RT send scheduling succeeded"),

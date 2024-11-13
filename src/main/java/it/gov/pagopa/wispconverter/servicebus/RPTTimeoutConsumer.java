@@ -88,7 +88,7 @@ public class RPTTimeoutConsumer extends SBConsumer {
         ServiceBusReceivedMessage message = context.getMessage();
 
         log.info("Processing message. Session: {}, Sequence #: {}. Contents: {}", message.getMessageId(), message.getSequenceNumber(), message.getBody());
-        OutcomeEnum outcome;
+        OutcomeEnum outcome = OutcomeEnum.ERROR;
         try {
             // read the message
             RPTTimerRequest timeoutMessage = mapper.readValue(message.getBody().toStream(), RPTTimerRequest.class);
@@ -102,8 +102,9 @@ public class RPTTimeoutConsumer extends SBConsumer {
         } catch (IOException e) {
             outcome = MDC.get(Constants.MDC_OUTCOME) == null ? OutcomeEnum.ERROR : OutcomeEnum.valueOf(MDC.get(Constants.MDC_OUTCOME));
             log.error("Error when read rpt timer request value from message: '{}'. Body: '{}'", message.getMessageId(), message.getBody());
+        } finally {
+            reService.sendEvent(WorkflowStatus.RPT_TIMER_IN_TIMEOUT, context.getMessage(), "Triggered timeout ended.", outcome);
+            MDC.clear();
         }
-        reService.sendEvent(WorkflowStatus.RPT_TIMER_IN_TIMEOUT, null, outcome);
-        MDC.clear();
     }
 }

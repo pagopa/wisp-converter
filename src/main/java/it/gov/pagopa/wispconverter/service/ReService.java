@@ -1,5 +1,6 @@
 package it.gov.pagopa.wispconverter.service;
 
+import com.azure.messaging.servicebus.ServiceBusReceivedMessage;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.ReEventRepository;
@@ -34,6 +35,41 @@ public class ReService {
     private final ReEventRepository reEventRepository;
     private final ReEventMapper reEventMapper;
 
+    private static Long getExecutionTimeMs() {
+        try {
+            return Long.valueOf(MDC.get(Constants.MDC_CLIENT_EXECUTION_TIME));
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+
+    private static Instant getStartTime() {
+        return MDC.get(Constants.MDC_START_TIME) == null
+                ? null
+                : Instant.ofEpochMilli(Long.parseLong(MDC.get(Constants.MDC_START_TIME)));
+    }
+
+    private static String formatHeaders(HttpHeaders headers) {
+        Stream<String> stream = headers.entrySet().stream()
+                .map(
+                        entry -> {
+                            String values = entry.getValue().stream().collect(Collectors.joining("\", \"", "\"", "\""));
+                            return entry.getKey() + ": [" + values + "]";
+                        });
+        return stream.collect(Collectors.joining(", "));
+    }
+
+    private static String compressData(String payload) {
+        String result = null;
+        try {
+            if (payload != null) {
+                result = AppBase64Util.base64Encode(ZipUtil.zip(payload));
+            }
+        } catch (IOException e) {
+            throw new AppException(AppErrorCodeMessageEnum.ERROR, e);
+        }
+        return result;
+    }
 
     /**
      * @param status the event to send
@@ -57,6 +93,18 @@ public class ReService {
      */
     public void sendEvent(WorkflowStatus status, String info, OutcomeEnum outcome) {
         sendEvent(status, info, outcome, null, null);
+    }
+
+    /**
+     * @param status  the event to send
+     * @param info    some string to log
+     * @param outcome the outcome of the event
+     */
+    public void sendEvent(WorkflowStatus status, ServiceBusReceivedMessage serviceBusMsg, String info, OutcomeEnum outcome) {
+        ReRequestContext request = ReRequestContext.builder()
+                .payload(new String(serviceBusMsg.getBody().toBytes()))
+                .build();
+        sendEvent(status, info, outcome, request, null);
     }
 
     /**
@@ -125,43 +173,6 @@ public class ReService {
         ReEventEntity reEventEntity = reEventMapper.toReEventEntity(reEventDto);
         reEventEntity.setOperationErrorLine(MDC.get(Constants.MDC_ERROR_LINE));
         reEventRepository.save(reEventEntity);
-    }
-
-
-    private static Long getExecutionTimeMs() {
-        try {
-            return Long.valueOf(MDC.get(Constants.MDC_CLIENT_EXECUTION_TIME));
-        } catch (IllegalArgumentException e) {
-            return null;
-        }
-    }
-
-    private static Instant getStartTime() {
-        return MDC.get(Constants.MDC_START_TIME) == null
-                ? null
-                : Instant.ofEpochMilli(Long.parseLong(MDC.get(Constants.MDC_START_TIME)));
-    }
-
-    private static String formatHeaders(HttpHeaders headers) {
-        Stream<String> stream = headers.entrySet().stream()
-                .map(
-                        entry -> {
-                            String values = entry.getValue().stream().collect(Collectors.joining("\", \"", "\"", "\""));
-                            return entry.getKey() + ": [" + values + "]";
-                        });
-        return stream.collect(Collectors.joining(", "));
-    }
-
-    private static String compressData(String payload) {
-        String result = null;
-        try {
-            if (payload != null) {
-                result = AppBase64Util.base64Encode(ZipUtil.zip(payload));
-            }
-        } catch (IOException e) {
-            throw new AppException(AppErrorCodeMessageEnum.ERROR, e);
-        }
-        return result;
     }
 
 }

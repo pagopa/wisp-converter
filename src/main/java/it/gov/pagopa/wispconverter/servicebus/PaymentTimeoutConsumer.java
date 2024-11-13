@@ -65,12 +65,8 @@ public class PaymentTimeoutConsumer extends SBConsumer {
     public void processMessage(ServiceBusReceivedMessageContext context) {
         MDCUtil.setSessionDataInfo("payment-token-timeout-trigger");
         ServiceBusReceivedMessage message = context.getMessage();
-        log.debug(
-                "Processing message. Session: {}, Sequence #: {}. Contents: {}",
-                message.getMessageId(),
-                message.getSequenceNumber(),
-                message.getBody());
-        OutcomeEnum outcome;
+        log.debug("Processing message. Session: {}, Sequence #: {}. Contents: {}", message.getMessageId(), message.getSequenceNumber(), message.getBody());
+        OutcomeEnum outcome = OutcomeEnum.ERROR;
         try {
             ReceiptDto receiptDto = mapper.readValue(message.getBody().toStream(), ReceiptDto.class);
             MDC.put(Constants.MDC_SESSION_ID, receiptDto.getSessionId());
@@ -88,8 +84,9 @@ public class PaymentTimeoutConsumer extends SBConsumer {
                     message.getMessageId(),
                     message.getBody());
             outcome = MDC.get(Constants.MDC_OUTCOME) == null ? OutcomeEnum.ERROR : OutcomeEnum.valueOf(MDC.get(Constants.MDC_OUTCOME));
+        } finally {
+            reService.sendEvent(WorkflowStatus.PAYMENT_TOKEN_TIMER_IN_TIMEOUT, context.getMessage(), null, outcome);
+            MDC.clear();
         }
-        reService.sendEvent(WorkflowStatus.PAYMENT_TOKEN_TIMER_IN_TIMEOUT, null, outcome);
-        MDC.clear();
     }
 }
