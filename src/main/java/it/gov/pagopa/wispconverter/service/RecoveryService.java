@@ -314,6 +314,14 @@ public class RecoveryService {
         }
     }
 
+    @Transactional
+    public void recoverReceiptKoToBeReSentBySessionIds(RecoveryReceiptBySessionIdRequest request) {
+        // TODO inject MDC
+        for (String sessionId : request.getSessionIds()) {
+            CompletableFuture.runAsync(() -> receiptService.sendRTKoFromSessionId(sessionId, InternalStepStatus.RT_RECONCILIATION_PROCESS));
+        }
+    }
+
     public RecoveryReceiptReportResponse recoverReceiptToBeReSentByPartition(RecoveryReceiptByPartitionRequest request) {
 
         List<String> receiptsIds = request.getPartitionKeys().stream()

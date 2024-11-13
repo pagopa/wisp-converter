@@ -72,7 +72,7 @@ public class IdempotencyService {
         IdempotencyKeyEntity idempotencyKeyEntity;
 
         // try to retrieve idempotency key entity from the storage and check if exists
-        // In this case, no findBy with partition key is set because the search could refers to different days
+        // In this case, no findBy with partition key is set because the search could refer to different days
         Optional<IdempotencyKeyEntity> optIdempotencyKeyEntity = idempotencyKeyRepository.findById(idempotencyKey);
         if (optIdempotencyKeyEntity.isPresent()) {
 
