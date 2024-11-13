@@ -27,6 +27,7 @@ import java.util.List;
 public class ReceiptTimerService {
 
     public static final String CACHING_KEY_TEMPLATE = "wisp_timer_%s";
+    public static final String PAYMENT_TOKEN_CACHING_KEY_TEMPLATE = "2_wisp_%s";
     private final CacheRepository cacheRepository;
     private final ReService reService;
     @Value("${azure.sb.wisp-payment-timeout-queue.connectionString}")
@@ -107,6 +108,13 @@ public class ReceiptTimerService {
 
     private void cancelScheduledMessage(String paymentToken) {
         MDCUtil.setReceiptTimerInfoInMDC(null, null, paymentToken);
+        ReceiptTimerRequest cacheInfo = cacheRepository.read(String.format(PAYMENT_TOKEN_CACHING_KEY_TEMPLATE, paymentToken), ReceiptTimerRequest.class);
+        if(cacheInfo != null){
+            MDC.put(Constants.MDC_SESSION_ID, cacheInfo.getSessionId());
+            MDC.put(Constants.MDC_PAYMENT_TOKEN, cacheInfo.getPaymentToken());
+            MDC.put(Constants.MDC_DOMAIN_ID, cacheInfo.getFiscalCode());
+            MDC.put(Constants.MDC_NOTICE_NUMBER, cacheInfo.getNoticeNumber());
+        }
 
         log.debug("Cancel scheduled message for payment-token {}", paymentToken);
         String sequenceNumberKey = String.format(CACHING_KEY_TEMPLATE, paymentToken);

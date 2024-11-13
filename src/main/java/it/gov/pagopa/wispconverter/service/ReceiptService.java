@@ -321,6 +321,7 @@ public class ReceiptService {
 
             // paymentNote is equal to session-id
             String paymentNote = paSendRTV2Request.getReceipt().getPaymentNote();
+            MDC.put(Constants.MDC_SESSION_ID, paymentNote);
             // use session-id for generate session data information on which the next execution will
             // operate
             SessionDataDTO sessionData = getSessionDataFromSessionId(paymentNote);
