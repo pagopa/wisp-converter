@@ -25,7 +25,6 @@ import it.gov.pagopa.wispconverter.repository.model.enumz.ReceiptStatusEnum;
 import it.gov.pagopa.wispconverter.repository.model.enumz.ReceiptTypeEnum;
 import it.gov.pagopa.wispconverter.service.mapper.RTMapper;
 import it.gov.pagopa.wispconverter.service.model.CachedKeysMapping;
-import it.gov.pagopa.wispconverter.service.model.PaymentSubjectDTO;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
 import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import it.gov.pagopa.wispconverter.service.model.session.CommonFieldsDTO;
@@ -39,6 +38,7 @@ import jakarta.xml.soap.SOAPMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
@@ -55,6 +55,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 import static it.gov.pagopa.wispconverter.util.Constants.PAA_INVIA_RT;
 
@@ -90,6 +91,9 @@ public class ReceiptService {
     private final ReceiptDeadLetterRepository receiptDeadLetterRepository;
 
     private final it.gov.pagopa.gen.wispconverter.client.decouplercaching.invoker.ApiClient decouplerCachingClient;
+
+    @Autowired
+    private final it.gov.pagopa.gen.wispconverter.client.decouplercaching.invoker.ApiClient decouplerCachingClientWithRetry;
 
     private final ObjectMapper mapper;
 
@@ -176,12 +180,9 @@ public class ReceiptService {
      */
     public void sendKoPaaInviaRtToCreditorInstitution(List<ReceiptDto> receipts) {
         try {
-
-            it.gov.pagopa.gen.wispconverter.client.decouplercaching.api.DefaultApi apiInstance = new it.gov.pagopa.gen.wispconverter.client.decouplercaching.api.DefaultApi(decouplerCachingClient);
-            it.gov.pagopa.gen.wispconverter.client.decouplercaching.model.SessionIdDto sessionIdDto = new it.gov.pagopa.gen.wispconverter.client.decouplercaching.model.SessionIdDto();
-
             // map the received payload as a list of receipts that will be lately evaluated
             gov.telematici.pagamenti.ws.papernodo.ObjectFactory objectFactory = new gov.telematici.pagamenti.ws.papernodo.ObjectFactory();
+            it.gov.pagopa.gen.wispconverter.client.decouplercaching.model.SessionIdDto sessionIdDto = new it.gov.pagopa.gen.wispconverter.client.decouplercaching.model.SessionIdDto();
 
             // retrieve configuration data from cache
             ConfigDataV1Dto configData = configCacheService.getConfigData();
@@ -192,9 +193,8 @@ public class ReceiptService {
             for (ReceiptDto receipt : receipts) {
                 // workaround to reuse endpoint service. in this case sessionId = sessionId_fiscalCode_noticeNumber
                 sessionIdDto.setSessionId(String.format("%s_%s_%s", receipt.getSessionId(), receipt.getFiscalCode(), receipt.getNoticeNumber()));
-
-                // necessary to block activatePaymentNoticeV2
-                apiInstance.deleteSessionId(sessionIdDto, MDC.get(Constants.MDC_REQUEST_ID));
+                // delete 2_wisp_timer_hang_{wisp_delete_sessionId} from cache via APIM call
+                this.deleteHangTimerCacheKey(sessionIdDto);
 
                 MDCUtil.setReceiptTimerInfoInMDC(receipt.getFiscalCode(), receipt.getNoticeNumber(), null);
 
@@ -726,16 +726,11 @@ public class ReceiptService {
     }
 
     public void sendRTKoFromSessionId(String sessionId, InternalStepStatus internalStepStatus) {
-
-        log.debug("Processing session id: {}", sessionId);
-
-        // deactivate the sessionId inside the cache
-        it.gov.pagopa.gen.wispconverter.client.decouplercaching.api.DefaultApi apiInstance = new it.gov.pagopa.gen.wispconverter.client.decouplercaching.api.DefaultApi(decouplerCachingClient);
+        log.debug("[sendRTKoFromSessionId] Processing session id: {}", sessionId);
         it.gov.pagopa.gen.wispconverter.client.decouplercaching.model.SessionIdDto sessionIdDto = new it.gov.pagopa.gen.wispconverter.client.decouplercaching.model.SessionIdDto();
         sessionIdDto.setSessionId(sessionId);
-
-        // necessary only if rptTimer is triggered, otherwise it has already been removed
-        apiInstance.deleteSessionId(sessionIdDto, MDC.get(Constants.MDC_REQUEST_ID));
+        // delete 2_wisp_timer_hang_{wisp_delete_sessionId} from cache via APIM call
+        this.deleteHangTimerCacheKey(sessionIdDto);
 
         // log event
         MDC.put(Constants.MDC_SESSION_ID, sessionId);
@@ -827,6 +822,24 @@ public class ReceiptService {
             }
         }
         MDC.clear();
+    }
+
+    /**
+     * sessionIdDto could contain sessionId or sessionId_fiscalCode_noticeNumber
+     * @param sessionIdDto
+     */
+    private void deleteHangTimerCacheKey(it.gov.pagopa.gen.wispconverter.client.decouplercaching.model.SessionIdDto sessionIdDto) {
+        // deactivate the sessionId inside the cache
+        it.gov.pagopa.gen.wispconverter.client.decouplercaching.api.DefaultApi apiInstance = new it.gov.pagopa.gen.wispconverter.client.decouplercaching.api.DefaultApi(decouplerCachingClientWithRetry);
+
+        CompletableFuture.runAsync(() -> {
+            log.info("[{}][cache-key={}] delete-hang-timer-cache-key", sessionIdDto.getSessionId(), Instant.now().toString());
+            // necessary only if rptTimer is triggered, otherwise it has already been removed
+            apiInstance.deleteSessionId(sessionIdDto, MDC.get(Constants.MDC_REQUEST_ID));
+        }).exceptionally(throwable -> {
+            log.error("[cache-key={}] Exception while delete-hang-timer-cache-key: {}", sessionIdDto.getSessionId(), throwable.getMessage());
+            return null;
+        });
     }
 
     private RTRequestEntity generateRTRequestEntity(SessionDataDTO sessionData, URI uri, InetSocketAddress proxyAddress, List<Pair<String, String>> headers, String payload,
