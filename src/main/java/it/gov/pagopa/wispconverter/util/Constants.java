@@ -26,7 +26,6 @@ public class Constants {
     public static final String MDC_CONTROL_FLAG = "controlFlag";
     public static final String MDC_START_TIME = "startTime";
     public static final String MDC_CLIENT_EXECUTION_TIME = "clientExecutionTime";
-    public static final String MDC_EVENT_CATEGORY = "eventCategory";
     public static final String MDC_STATUS = "status";
     public static final String MDC_STATUS_CODE = "httpCode";
     public static final String MDC_EXECUTION_TIME = "executionTime";
@@ -49,6 +48,5 @@ public class Constants {
     public static final String MDC_PRIMITIVE = "primitive";
     public static final String MDC_INFO = "info";
     public static final String MDC_ARGS = "args";
-
     public static final String MDC_OUTCOME = "outcome";
 }

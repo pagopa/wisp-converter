@@ -466,7 +466,7 @@ public class ReceiptService {
                 rptRequestEntity.getPrimitive(), rptRequestEntity.getPayload());
     }
 
-    private boolean sendReceiptToCreditorInstitution(
+    private void sendReceiptToCreditorInstitution(
             SessionDataDTO sessionData,
             RPTContentDTO rpt,
             ReceiptContentDTO receiptContentDTO,
@@ -475,7 +475,6 @@ public class ReceiptService {
             StationDto station,
             boolean mustSendNegativeRT) {
 
-        boolean isSuccessful = false;
         String domainId = rpt.getRpt().getDomain().getDomainId();
 
     /*
@@ -530,7 +529,6 @@ public class ReceiptService {
                 // generate a new event in RE for store the successful sending of the receipt
                 generateREForSentRT(rpt, iuv, noticeNumber);
                 idempotencyStatus = IdempotencyStatusEnum.SUCCESS;
-                isSuccessful = true;
             } catch (AppException e) {
                 String message = e.getError().getDetail();
                 if (e.getError().equals(AppErrorCodeMessageEnum.RECEIPT_GENERATION_ERROR_DEAD_LETTER)) {
@@ -604,7 +602,6 @@ public class ReceiptService {
             }
         }
 
-        return isSuccessful;
     }
 
     private CtRicevutaTelematica generateRTContentForKoReceipt(

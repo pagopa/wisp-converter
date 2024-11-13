@@ -29,6 +29,10 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     private final ErrorUtil errorUtil;
     private final MessageSource messageSource;
 
+    /**
+     * @param appEx the {@link AppException} to handle
+     * @return the {@link ErrorResponse} to return to the client
+     */
     @ExceptionHandler(AppException.class)
     public ErrorResponse handleAppException(AppException appEx) {
         String operationId = MDC.get(Constants.MDC_OPERATION_ID);
@@ -39,27 +43,29 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             log.error(String.format("AppException: operation-id=[%s]", operationId != null ? operationId : "n/a"), appEx);
         }
 
-        ErrorResponse errorResponse = errorUtil.forAppException(appEx);
-        ProblemDetail problemDetail = errorResponse.updateAndGetBody(this.messageSource, LocaleContextHolder.getLocale());
-        errorUtil.finalizeError(appEx, problemDetail, errorResponse.getStatusCode().value());
-
-        log.error("Failed API operation {} - error: {}", MDC.get(Constants.MDC_BUSINESS_PROCESS), errorResponse);
-
-        return errorResponse;
+        return getErrorResponse(appEx, appEx);
     }
 
+    /**
+     * @param ex the {@link Exception} to handle
+     * @return the {@link ErrorResponse} to return to the client
+     */
     @ExceptionHandler(Exception.class)
     public ErrorResponse handleGenericException(Exception ex) {
         String operationId = MDC.get(Constants.MDC_OPERATION_ID);
         log.error(String.format("GenericException: operation-id=[%s]", operationId != null ? operationId : "n/a"), ex);
 
         AppException appEx = new AppException(ex, AppErrorCodeMessageEnum.ERROR, ex.getMessage());
+
+        return getErrorResponse(ex, appEx);
+    }
+
+    private ErrorResponse getErrorResponse(Exception ex, AppException appEx) {
         ErrorResponse errorResponse = errorUtil.forAppException(appEx);
         ProblemDetail problemDetail = errorResponse.updateAndGetBody(this.messageSource, LocaleContextHolder.getLocale());
         errorUtil.finalizeError(ex, problemDetail, errorResponse.getStatusCode().value());
 
         log.error("Failed API operation {} - error: {}", MDC.get(Constants.MDC_BUSINESS_PROCESS), errorResponse);
-
         return errorResponse;
     }
 

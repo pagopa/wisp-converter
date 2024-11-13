@@ -34,41 +34,6 @@ public class ReService {
     private final ReEventRepository reEventRepository;
     private final ReEventMapper reEventMapper;
 
-    private static Long getExecutionTimeMs() {
-        try {
-            return Long.valueOf(MDC.get(Constants.MDC_CLIENT_EXECUTION_TIME));
-        } catch (IllegalArgumentException e) {
-            return -1L;
-        }
-    }
-
-    private static Instant getStartTime() {
-        return MDC.get(Constants.MDC_START_TIME) == null
-                ? null
-                : Instant.ofEpochMilli(Long.parseLong(MDC.get(Constants.MDC_START_TIME)));
-    }
-
-    private static String formatHeaders(HttpHeaders headers) {
-        Stream<String> stream = headers.entrySet().stream()
-                .map(
-                        entry -> {
-                            String values = entry.getValue().stream().collect(Collectors.joining("\", \"", "\"", "\""));
-                            return entry.getKey() + ": [" + values + "]";
-                        });
-        return stream.collect(Collectors.joining(", "));
-    }
-
-    private static String compressData(String payload) {
-        String result = null;
-        try {
-            if (payload != null) {
-                result = AppBase64Util.base64Encode(ZipUtil.zip(payload));
-            }
-        } catch (IOException e) {
-            throw new AppException(AppErrorCodeMessageEnum.ERROR, e);
-        }
-        return result;
-    }
 
     /**
      * @param status the event to send
@@ -163,4 +128,42 @@ public class ReService {
         reEventEntity.setOperationErrorLine(MDC.get(Constants.MDC_ERROR_LINE));
         reEventRepository.save(reEventEntity);
     }
+
+
+    private static Long getExecutionTimeMs() {
+        try {
+            return Long.valueOf(MDC.get(Constants.MDC_CLIENT_EXECUTION_TIME));
+        } catch (IllegalArgumentException e) {
+            return -1L;
+        }
+    }
+
+    private static Instant getStartTime() {
+        return MDC.get(Constants.MDC_START_TIME) == null
+                ? null
+                : Instant.ofEpochMilli(Long.parseLong(MDC.get(Constants.MDC_START_TIME)));
+    }
+
+    private static String formatHeaders(HttpHeaders headers) {
+        Stream<String> stream = headers.entrySet().stream()
+                .map(
+                        entry -> {
+                            String values = entry.getValue().stream().collect(Collectors.joining("\", \"", "\"", "\""));
+                            return entry.getKey() + ": [" + values + "]";
+                        });
+        return stream.collect(Collectors.joining(", "));
+    }
+
+    private static String compressData(String payload) {
+        String result = null;
+        try {
+            if (payload != null) {
+                result = AppBase64Util.base64Encode(ZipUtil.zip(payload));
+            }
+        } catch (IOException e) {
+            throw new AppException(AppErrorCodeMessageEnum.ERROR, e);
+        }
+        return result;
+    }
+
 }

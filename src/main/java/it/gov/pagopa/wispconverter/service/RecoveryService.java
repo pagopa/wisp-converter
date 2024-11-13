@@ -46,6 +46,8 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.StreamSupport;
 
+import static it.gov.pagopa.wispconverter.util.MDCUtil.withMdc;
+
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -103,10 +105,10 @@ public class RecoveryService {
         // creditorInstitution)
         List<RTEntity> rtEntities = rtRepository.findByMidReceiptStatusInAndTimestampBetween(getDateFrom(dateFrom), getDateTo(dateTo), creditorInstitution);
         // Future
-        CompletableFuture<Boolean> executeRecovery = CompletableFuture.supplyAsync(() -> {
+        CompletableFuture<Boolean> executeRecovery = CompletableFuture.supplyAsync(withMdc(() -> {
             rtEntities.forEach(rtEntity -> callSendReceiptKO(rtEntity.getDomainId(), rtEntity.getIuv(), rtEntity.getCcp(), rtEntity.getSessionId()));
             return true;
-        });
+                        }));
         executeRecovery
                 .thenAccept(value -> log.debug("Reconciliation for creditor institution [{}] in date range [{}-{}] completed!", creditorInstitution, dateFrom, dateTo))
                 .exceptionally(e -> {
