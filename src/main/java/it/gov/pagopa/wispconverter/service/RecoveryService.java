@@ -322,7 +322,7 @@ public class RecoveryService {
             }
         }
         catch (Exception e) {
-            throw new AppException(AppErrorCodeMessageEnum.ERROR, "Problem with KO receipt");
+            throw new AppException(e, AppErrorCodeMessageEnum.ERROR, "Problem with KO receipt");
         }
     }
 
