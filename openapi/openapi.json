@@ -443,13 +443,6 @@
         },
         "responses" : {
           "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/RecoveryReceiptReportResponse"
-                }
-              }
-            },
             "description" : "Reconciliation scheduled",
             "headers" : {
               "X-Request-Id" : {
