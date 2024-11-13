@@ -30,6 +30,7 @@ public enum WorkflowStatus {
     COMMUNICATION_WITH_GPD_FOR_DEBT_POSITION_UPSERT_PROCESSED(EventCategoryEnum.INTERNAL, "Request to gpd-core service for debt position upsert"),
     COMMUNICATION_WITH_APIM_FOR_CACHING_RPT_MAPPING_PROCESSED(EventCategoryEnum.INTERNAL, "Request to APIM for caching RPT mapping"),
     COMMUNICATION_WITH_APIM_FOR_CACHING_SESSION_MAPPING_PROCESSED(EventCategoryEnum.INTERNAL, "Request to APIM for caching session mapping"),
+    COMMUNICATION_WITH_APIM_FOR_DELETING_SESSION_MAPPING_PROCESSED(EventCategoryEnum.INTERNAL, "Request to APIM for delete cached session mapping"),
     COMMUNICATION_WITH_CHECKOUT_FOR_CART_CREATION_PROCESSED(EventCategoryEnum.INTERNAL, "Request to checkout service for cart creation"),
     COMMUNICATION_WITH_CREDITOR_INSTITUTION_PROCESSED(EventCategoryEnum.INTERNAL, "Request to creditor institution processed"),
 

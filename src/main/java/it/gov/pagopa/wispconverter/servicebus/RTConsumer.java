@@ -279,17 +279,17 @@ public class RTConsumer extends SBConsumer {
 
                 rtReceiptCosmosService.updateReceiptStatus(ci, iuv, ccp, ReceiptStatusEnum.SCHEDULED);
 
-                MDC.put(Constants.MDC_OUTCOME, OutcomeEnum.SENDING_RT_FAILED_RESCHEDULING_SUCCESSFUL.name());
+                MDC.put(Constants.MDC_OUTCOME, OutcomeEnum.SENDING_RT_FAILED_RESCHEDULED_SUCCESSFULLY.name());
 
             } catch (Exception e) {
 
-                MDC.put(Constants.MDC_OUTCOME, OutcomeEnum.SENDING_RT_FAILED_RESCHEDULING_FAILED.name());
+                MDC.put(Constants.MDC_OUTCOME, OutcomeEnum.SENDING_RT_FAILED_NOT_RESCHEDULED_DUE_ERROR.name());
 
                 rtReceiptCosmosService.updateReceiptStatus(ci, iuv, ccp, ReceiptStatusEnum.NOT_SENT);
             }
         } else {
 
-            MDC.put(Constants.MDC_OUTCOME, OutcomeEnum.SENDING_RT_FAILED_MAX_RETRIES.name());
+            MDC.put(Constants.MDC_OUTCOME, OutcomeEnum.SENDING_RT_FAILED_NOT_RESCHEDULED_DUE_MAX_RETRIES.name());
 
             rtReceiptCosmosService.updateReceiptStatus(ci, iuv, ccp, ReceiptStatusEnum.NOT_SENT);
         }

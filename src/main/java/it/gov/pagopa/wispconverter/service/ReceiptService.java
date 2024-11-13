@@ -546,7 +546,7 @@ public class ReceiptService {
                         receiptDeadLetterRepository.save(mapper.convertValue(rtRequestEntity, ReceiptDeadLetterEntity.class));
                         generateREDeadLetter(rpt, noticeNumber, WorkflowStatus.RT_SEND_MOVED_IN_DEADLETTER, null);
                     } catch (IOException ex) {
-                        //generateREDeadLetter(rpt, noticeNumber, WorkflowStatus.RT_DEAD_LETTER_FAILED, ex.getMessage());
+                        log.error("[DEADLETTER-500][sessionId:{}] {}", sessionData.getCommonFields().getSessionId(), AppErrorCodeMessageEnum.PERSISTENCE_SAVING_DEADLETTER_ERROR.getTitle(), ex);
                     }
                 } else {
                     // because of the not sent receipt, it is necessary to schedule a retry of the sending
@@ -563,7 +563,6 @@ public class ReceiptService {
                             idempotencyKey,
                             receiptType);
                     log.error(EXCEPTION + AppErrorCodeMessageEnum.RECEIPT_KO_NOT_GENERATED_BUT_MAYBE_RESCHEDULED.getDetail());
-                    generateREForNotSentRT(rpt, iuv, noticeNumber, message);
                 }
                 idempotencyStatus = IdempotencyStatusEnum.FAILED;
             } catch (Exception e) {
@@ -585,12 +584,7 @@ public class ReceiptService {
                         receiptType);
 
                 // generate a new event in RE for store the unsuccessful sending of the receipt
-                log.error(
-                        EXCEPTION
-                                + AppErrorCodeMessageEnum.RECEIPT_KO_NOT_GENERATED_BUT_MAYBE_RESCHEDULED
-                                .getDetail());
-                generateREForNotSentRT(rpt, iuv, noticeNumber, message);
-
+                log.error(EXCEPTION + AppErrorCodeMessageEnum.RECEIPT_KO_NOT_GENERATED_BUT_MAYBE_RESCHEDULED.getDetail());
                 idempotencyStatus = IdempotencyStatusEnum.FAILED;
             }
 
@@ -833,7 +827,7 @@ public class ReceiptService {
         MDC.remove(Constants.MDC_CCP);
     }
 
-    public void generateREForNotSentRT(RPTContentDTO rptContent, String iuv, String noticeNumber, String otherInfo) {
+    public void _generateREForNotSentRT(RPTContentDTO rptContent, String iuv, String noticeNumber, String otherInfo) {
 
         // extract psp on which the payment will be sent
         String psp = rptContent.getRpt().getPayeeInstitution().getSubjectUniqueIdentifier().getCode();
@@ -860,7 +854,7 @@ public class ReceiptService {
         MDC.put(Constants.MDC_NOTICE_NUMBER, noticeNumber);
         MDC.put(Constants.MDC_PSP_ID, psp);
         MDC.put(Constants.MDC_CCP, rptContent.getCcp());
-        reService.sendEvent(WorkflowStatus.RT_SEND_SCHEDULING_SUCCESS);
+        reService.sendEvent(WorkflowStatus.RT_SEND_SCHEDULING_SUCCESS, "RT send scheduled successfully");
         MDC.remove(Constants.MDC_IUV);
         MDC.remove(Constants.MDC_NOTICE_NUMBER);
         MDC.remove(Constants.MDC_PSP_ID);
@@ -873,7 +867,7 @@ public class ReceiptService {
         String psp = rptContent.getRpt().getPayeeInstitution().getSubjectUniqueIdentifier().getCode();
 
         // creating event to be persisted for RE
-        String otherInfo = "Caused by: " + e.getMessage();
+        String otherInfo = "RT send not scheduled. Caused by: " + e.getMessage();
         // creating event to be persisted for RE
         MDC.put(Constants.MDC_IUV, iuv);
         MDC.put(Constants.MDC_NOTICE_NUMBER, noticeNumber);
@@ -906,7 +900,9 @@ public class ReceiptService {
 
     public void sendRTKoFromSessionId(String sessionId) {
 
+        // log event
         log.debug("Processing session id: {}", sessionId);
+        MDC.put(Constants.MDC_SESSION_ID, sessionId);
 
         // deactivate the sessionId inside the cache
         it.gov.pagopa.gen.wispconverter.client.decouplercaching.api.DefaultApi apiInstance =
@@ -918,12 +914,7 @@ public class ReceiptService {
 
         // necessary only if rptTimer is triggered, otherwise it has already been removed
         apiInstance.deleteSessionId(sessionIdDto, MDC.get(Constants.MDC_REQUEST_ID));
-
-        // log event
-        MDC.put(Constants.MDC_SESSION_ID, sessionId);
-
         SessionDataDTO sessionDataDTO = getSessionDataFromSessionId(sessionId);
-
         gov.telematici.pagamenti.ws.papernodo.ObjectFactory objectFactory =
                 new gov.telematici.pagamenti.ws.papernodo.ObjectFactory();
 
@@ -1016,7 +1007,6 @@ public class ReceiptService {
                         idempotencyKey,
                         ReceiptTypeEnum.KO);
                 log.error(EXCEPTION + AppErrorCodeMessageEnum.RECEIPT_KO_NOT_GENERATED_BUT_MAYBE_RESCHEDULED.getDetail());
-                generateREForNotSentRT(rpt, iuv, null, message);
             }
             idempotencyStatus = IdempotencyStatusEnum.FAILED;
 
@@ -1040,8 +1030,6 @@ public class ReceiptService {
                     ReceiptTypeEnum.KO);
 
             log.error(EXCEPTION + AppErrorCodeMessageEnum.RECEIPT_KO_NOT_GENERATED_BUT_MAYBE_RESCHEDULED.getDetail());
-            generateREForNotSentRT(rpt, rpt.getIuv(), null, message);
-
             idempotencyStatus = IdempotencyStatusEnum.FAILED;
         }
 

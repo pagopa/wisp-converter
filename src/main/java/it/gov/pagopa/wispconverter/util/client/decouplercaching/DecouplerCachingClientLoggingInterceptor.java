@@ -27,6 +27,9 @@ public class DecouplerCachingClientLoggingInterceptor extends AbstractAppClientL
             status = WorkflowStatus.COMMUNICATION_WITH_APIM_FOR_CACHING_RPT_MAPPING_PROCESSED;
         } else if (url.contains("/save-cart-mapping")) {
             status = WorkflowStatus.COMMUNICATION_WITH_APIM_FOR_CACHING_SESSION_MAPPING_PROCESSED;
+        } else if (url.contains("/delete-sessionId")) {
+            status = WorkflowStatus.COMMUNICATION_WITH_APIM_FOR_DELETING_SESSION_MAPPING_PROCESSED;
+
         }
         return status;
     }
