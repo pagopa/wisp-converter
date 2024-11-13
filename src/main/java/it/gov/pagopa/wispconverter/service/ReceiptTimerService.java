@@ -3,6 +3,8 @@ package it.gov.pagopa.wispconverter.service;
 import com.azure.messaging.servicebus.ServiceBusClientBuilder;
 import com.azure.messaging.servicebus.ServiceBusMessage;
 import com.azure.messaging.servicebus.ServiceBusSenderClient;
+import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 import it.gov.pagopa.wispconverter.controller.model.ReceiptTimerRequest;
 import it.gov.pagopa.wispconverter.repository.CacheRepository;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
@@ -20,6 +22,8 @@ import javax.annotation.PostConstruct;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 @Slf4j
@@ -30,6 +34,7 @@ public class ReceiptTimerService {
     public static final String PAYMENT_TOKEN_CACHING_KEY_TEMPLATE = "2_wisp_%s";
     private final CacheRepository cacheRepository;
     private final ReService reService;
+    private final Pattern paymentTokenCachingKeyTemplatePattern = Pattern.compile("\\s*(\\{.*\\})\\s*");
     @Value("${azure.sb.wisp-payment-timeout-queue.connectionString}")
     private String connectionString;
     @Value("${azure.sb.queue.receiptTimer.name}")
@@ -107,16 +112,9 @@ public class ReceiptTimerService {
     }
 
     private void cancelScheduledMessage(String paymentToken) {
-        MDCUtil.setReceiptTimerInfoInMDC(null, null, paymentToken);
-        ReceiptTimerRequest cacheInfo = cacheRepository.read(String.format(PAYMENT_TOKEN_CACHING_KEY_TEMPLATE, paymentToken), ReceiptTimerRequest.class);
-        if(cacheInfo != null){
-            MDC.put(Constants.MDC_SESSION_ID, cacheInfo.getSessionId());
-            MDC.put(Constants.MDC_PAYMENT_TOKEN, cacheInfo.getPaymentToken());
-            MDC.put(Constants.MDC_DOMAIN_ID, cacheInfo.getFiscalCode());
-            MDC.put(Constants.MDC_NOTICE_NUMBER, cacheInfo.getNoticeNumber());
-        }
 
         log.debug("Cancel scheduled message for payment-token {}", paymentToken);
+        populateMDC(paymentToken);
         String sequenceNumberKey = String.format(CACHING_KEY_TEMPLATE, paymentToken);
         String sequenceNumberString = cacheRepository.read(sequenceNumberKey, String.class);
 
@@ -135,10 +133,27 @@ public class ReceiptTimerService {
         try {
             serviceBusSenderClient.cancelScheduledMessage(sequenceNumber);
         } catch (Exception exception) {
-            log.debug(
-                    String.format(
-                            "Scheduled message with sequence number [%s] not deleted. Cause: %s",
-                            sequenceNumberString, exception.getMessage()));
+            log.debug(String.format("Scheduled message with sequence number [%s] not deleted. Cause: %s", sequenceNumberString, exception.getMessage()));
         }
+    }
+
+    private void populateMDC(String paymentToken) {
+        String domainId = null;
+        String noticeNumber = null;
+        try {
+            String cacheInfo = cacheRepository.read(String.format(PAYMENT_TOKEN_CACHING_KEY_TEMPLATE, paymentToken), String.class);
+            if (cacheInfo != null) {
+                Matcher matcher = paymentTokenCachingKeyTemplatePattern.matcher(cacheInfo);
+                if (matcher.matches()) {
+                    ReceiptTimerRequest receiptTimerRequest = new Gson().fromJson(matcher.group(1), ReceiptTimerRequest.class);
+                    MDC.put(Constants.MDC_SESSION_ID, receiptTimerRequest.getSessionId());
+                    domainId = receiptTimerRequest.getFiscalCode();
+                    noticeNumber = receiptTimerRequest.getNoticeNumber();
+                }
+            }
+        } catch (JsonSyntaxException e) {
+            log.debug("Impossible to generate data for MDC from cached payment token.", e);
+        }
+        MDCUtil.setReceiptTimerInfoInMDC(domainId, noticeNumber, paymentToken);
     }
 }
