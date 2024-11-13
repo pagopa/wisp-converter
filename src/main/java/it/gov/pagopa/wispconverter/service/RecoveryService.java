@@ -398,14 +398,7 @@ public class RecoveryService {
                 String compositedIdForReceipt = String.format("%s_%s", rtRequestEntity.getPartitionKey(), overriddenReceiptId);
                 serviceBusService.sendMessage(compositedIdForReceipt, null);
 
-                generateRE(
-                        Constants.PAA_INVIA_RT,
-                        WorkflowStatus.RT_SEND_RESCHEDULING_SUCCESS,
-                        domainId,
-                        iuv,
-                        rpt.getCcp(),
-                        sessionId,
-                        String.format("Generated receipt: %s", overriddenReceiptId));
+                generateRE(WorkflowStatus.RT_SEND_RESCHEDULING_SUCCESS, domainId, iuv, rpt.getCcp(), sessionId, String.format("Generated receipt: %s", overriddenReceiptId));
                 response.getReceiptStatus().add(Pair.of(overriddenReceiptId, "SCHEDULED"));
                 overrideId += 1;
             }
@@ -438,16 +431,7 @@ public class RecoveryService {
 
     private void handleExceptionRecoverSingleReceipt(String receiptId, RecoveryReceiptReportResponse response, Exception e, String sessionId) {
         log.error("Reconciliation for receipt id [{}] ended unsuccessfully!", receiptId, e);
-
-        generateRE(
-                Constants.PAA_INVIA_RT,
-                WorkflowStatus.RT_SEND_RESCHEDULING_FAILURE,
-                null,
-                null,
-                null,
-                sessionId,
-                null);
-
+        generateRE(WorkflowStatus.RT_SEND_RESCHEDULING_FAILURE, null, null, null, sessionId, null);
         response.getReceiptStatus().add(Pair.of(receiptId, String.format("FAILED: [%s]", e.getMessage())));
     }
 
