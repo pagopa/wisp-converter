@@ -182,6 +182,7 @@ public class ReceiptService {
         try {
             // map the received payload as a list of receipts that will be lately evaluated
             gov.telematici.pagamenti.ws.papernodo.ObjectFactory objectFactory = new gov.telematici.pagamenti.ws.papernodo.ObjectFactory();
+            it.gov.pagopa.gen.wispconverter.client.decouplercaching.model.SessionIdDto sessionIdDto = new it.gov.pagopa.gen.wispconverter.client.decouplercaching.model.SessionIdDto();
 
             // retrieve configuration data from cache
             ConfigDataV1Dto configData = configCacheService.getConfigData();
@@ -191,10 +192,9 @@ public class ReceiptService {
             // generate and send a KO RT for each receipt received in the payload
             for (ReceiptDto receipt : receipts) {
                 // workaround to reuse endpoint service. in this case sessionId = sessionId_fiscalCode_noticeNumber
-                String sessionId = String.format("%s_%s_%s", receipt.getSessionId(), receipt.getFiscalCode(), receipt.getNoticeNumber());
-
+                sessionIdDto.setSessionId(String.format("%s_%s_%s", receipt.getSessionId(), receipt.getFiscalCode(), receipt.getNoticeNumber()));
                 // delete 2_wisp_timer_hang_{wisp_delete_sessionId} from cache via APIM call
-                this.deleteSessionIdAsync(sessionId);
+                this.deleteHangTimerCacheKey(sessionIdDto);
 
                 MDCUtil.setReceiptTimerInfoInMDC(receipt.getFiscalCode(), receipt.getNoticeNumber(), null);
 
@@ -727,8 +727,10 @@ public class ReceiptService {
 
     public void sendRTKoFromSessionId(String sessionId, InternalStepStatus internalStepStatus) {
         log.debug("[sendRTKoFromSessionId] Processing session id: {}", sessionId);
+        it.gov.pagopa.gen.wispconverter.client.decouplercaching.model.SessionIdDto sessionIdDto = new it.gov.pagopa.gen.wispconverter.client.decouplercaching.model.SessionIdDto();
+        sessionIdDto.setSessionId(sessionId);
         // delete 2_wisp_timer_hang_{wisp_delete_sessionId} from cache via APIM call
-        this.deleteSessionIdAsync(sessionId);
+        this.deleteHangTimerCacheKey(sessionIdDto);
 
         // log event
         MDC.put(Constants.MDC_SESSION_ID, sessionId);
@@ -822,18 +824,20 @@ public class ReceiptService {
         MDC.clear();
     }
 
-    private void deleteSessionIdAsync(String sessionId) {
+    /**
+     * sessionIdDto could contain sessionId or sessionId_fiscalCode_noticeNumber
+     * @param sessionIdDto
+     */
+    private void deleteHangTimerCacheKey(it.gov.pagopa.gen.wispconverter.client.decouplercaching.model.SessionIdDto sessionIdDto) {
         // deactivate the sessionId inside the cache
         it.gov.pagopa.gen.wispconverter.client.decouplercaching.api.DefaultApi apiInstance = new it.gov.pagopa.gen.wispconverter.client.decouplercaching.api.DefaultApi(decouplerCachingClientWithRetry);
-        it.gov.pagopa.gen.wispconverter.client.decouplercaching.model.SessionIdDto sessionIdDto = new it.gov.pagopa.gen.wispconverter.client.decouplercaching.model.SessionIdDto();
-        sessionIdDto.setSessionId(sessionId);
 
         CompletableFuture.runAsync(() -> {
-            log.info("[{}][sessionId={}] delete-session-id", sessionId, Instant.now().toString());
+            log.info("[{}][cache-key={}] delete-hang-timer-cache-key", sessionIdDto.getSessionId(), Instant.now().toString());
             // necessary only if rptTimer is triggered, otherwise it has already been removed
             apiInstance.deleteSessionId(sessionIdDto, MDC.get(Constants.MDC_REQUEST_ID));
         }).exceptionally(throwable -> {
-            log.error("[sessionId={}] Exception while delete-session-id: {}", sessionId, throwable.getMessage());
+            log.error("[cache-key={}] Exception while delete-hang-timer-cache-key: {}", sessionIdDto.getSessionId(), throwable.getMessage());
             return null;
         });
     }
