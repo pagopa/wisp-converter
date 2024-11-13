@@ -132,15 +132,34 @@ public class RecoveryController {
         }
     }
 
-    @Operation(summary = "Execute reconciliation for OK receipts by sessionId.", description = "Execute reconciliation of all receipts related to the sessionIds of the request", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"Recovery"})
+    @Operation(summary = "Execute reconciliation for OK receipts by sessionId.", description = "Execute reconciliation of all OK receipts related to the sessionIds of the request", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"Recovery"})
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Reconciliation scheduled")
     })
     @PostMapping(value = "/sessionIds/ok")
-    public ResponseEntity<RecoveryReceiptReportResponse> recoverReceiptToBeReSentBySessionId(@RequestBody RecoveryReceiptBySessionIdRequest request) {
+    public ResponseEntity<RecoveryReceiptReportResponse> recoverOkReceiptToBeReSentBySessionId(@RequestBody RecoveryReceiptBySessionIdRequest request) {
         try {
             log.debug("Invoking API operation recoverReceiptToBeReSentBySessionId - args: {}", sanitizeInput(request.toString()));
             return ResponseEntity.ok(recoveryService.recoverReceiptOkToBeReSentBySessionIds(request));
+        } catch (Exception ex) {
+            String operationId = MDC.get(Constants.MDC_OPERATION_ID);
+            log.error(String.format("GenericException: operation-id=[%s]", operationId != null ? operationId : "n/a"), ex);
+            AppException appException = new AppException(ex, AppErrorCodeMessageEnum.ERROR, ex.getMessage());
+            ErrorResponse errorResponse = errorUtil.forAppException(appException);
+            log.error("Failed API operation recoverReceiptToBeReSentBySessionId - error: {}", errorResponse);
+            throw ex;
+        }
+    }
+
+    @Operation(summary = "Execute reconciliation for KO receipts by sessionId.", description = "Execute reconciliation of all KO receipts related to the sessionIds of the request", security = {@SecurityRequirement(name = "ApiKey")}, tags = {"Recovery"})
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Reconciliation scheduled")
+    })
+    @PostMapping(value = "/sessionIds/ko")
+    public ResponseEntity<RecoveryReceiptReportResponse> recoverKoReceiptToBeReSentBySessionId(@RequestBody RecoveryReceiptBySessionIdRequest request) {
+        try {
+            log.debug("Invoking API operation recoverReceiptToBeReSentBySessionId - args: {}", sanitizeInput(request.toString()));
+            return ResponseEntity.ok(recoveryService.recoverReceiptKoToBeReSentBySessionIds(request));
         } catch (Exception ex) {
             String operationId = MDC.get(Constants.MDC_OPERATION_ID);
             log.error(String.format("GenericException: operation-id=[%s]", operationId != null ? operationId : "n/a"), ex);
