@@ -5,8 +5,8 @@ import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.model.RTEntity;
 import it.gov.pagopa.wispconverter.repository.model.ReEventEntity;
 import it.gov.pagopa.wispconverter.repository.model.SessionIdEntity;
-import it.gov.pagopa.wispconverter.secondary.RTRepositorySecondary;
-import it.gov.pagopa.wispconverter.secondary.ReEventRepositorySecondary;
+import it.gov.pagopa.wispconverter.repository.secondary.RTRepositorySecondary;
+import it.gov.pagopa.wispconverter.repository.secondary.ReEventRepositorySecondary;
 import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -86,14 +86,14 @@ public class RecoveryServiceTest {
         ZonedDateTime dateFrom = ZonedDateTime.now(ZoneOffset.UTC).minusHours(5);
         ZonedDateTime dateTo = ZonedDateTime.now(ZoneOffset.UTC).minusHours(4);
         List<RTEntity> mockRTEntities = List.of(RTEntity.builder()
-                                                        .iuv("iuv")
-                                                        .ccp("ccp")
-                                                        .domainId("idDominio")
-                                                        .build());
+                .iuv("iuv")
+                .ccp("ccp")
+                .domainId("idDominio")
+                .build());
         List<ReEventEntity> mockReEventEntities = List.of(ReEventEntity.builder()
-                                                                  .ccp("ccp2")
-                                                                  .insertedTimestamp(Instant.now())
-                                                                  .build());
+                .ccp("ccp2")
+                .insertedTimestamp(Instant.now())
+                .build());
 
         when(rtRepository.findByMidReceiptStatusInAndTimestampBetween(anyString(), anyString())).thenReturn(mockRTEntities);
         when(reRepository.findByIuvAndOrganizationId(anyString(), anyString(), anyString(), anyString())).thenReturn(mockReEventEntities);
@@ -260,11 +260,11 @@ public class RecoveryServiceTest {
         String dateFrom = "2024-09-05";
         String dateTo = "2024-09-09";
         List<RTEntity> mockRTEntities = List.of(RTEntity.builder()
-                                                        .domainId("ci")
-                                                        .iuv("iuv")
-                                                        .ccp("ccp")
-                                                        .sessionId("sessionId")
-                                                        .build());
+                .domainId("ci")
+                .iuv("iuv")
+                .ccp("ccp")
+                .sessionId("sessionId")
+                .build());
 
         when(rtRepository.findByMidReceiptStatusInAndTimestampBetween(anyString(), anyString(), anyString(), anyString())).thenReturn(mockRTEntities);
 

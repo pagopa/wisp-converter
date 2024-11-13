@@ -18,9 +18,9 @@ import it.gov.pagopa.wispconverter.repository.model.enumz.IdempotencyStatusEnum;
 import it.gov.pagopa.wispconverter.repository.model.enumz.ReceiptStatusEnum;
 import it.gov.pagopa.wispconverter.repository.model.enumz.ReceiptTypeEnum;
 import it.gov.pagopa.wispconverter.repository.model.enumz.WorkflowStatus;
-import it.gov.pagopa.wispconverter.secondary.IdempotencyKeyRepositorySecondary;
-import it.gov.pagopa.wispconverter.secondary.RTRepositorySecondary;
-import it.gov.pagopa.wispconverter.secondary.ReEventRepositorySecondary;
+import it.gov.pagopa.wispconverter.repository.secondary.IdempotencyKeyRepositorySecondary;
+import it.gov.pagopa.wispconverter.repository.secondary.RTRepositorySecondary;
+import it.gov.pagopa.wispconverter.repository.secondary.ReEventRepositorySecondary;
 import it.gov.pagopa.wispconverter.service.model.session.CommonFieldsDTO;
 import it.gov.pagopa.wispconverter.service.model.session.RPTContentDTO;
 import it.gov.pagopa.wispconverter.service.model.session.ReceiptContentDTO;
@@ -52,7 +52,6 @@ import java.util.stream.StreamSupport;
 public class RecoveryService {
 
     private static final String SEMANTIC_CHECK_PASSED = "SEMANTIC_CHECK_PASSED";
-    private static final String STATUS_RT_SEND_SUCCESS = "RT_SEND_SUCCESS";
     private static final String RECOVERY_VALID_START_DATE = "2024-09-03";
     private static final String DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
     private static final String DATE_FORMAT_DAY = "yyyy-MM-dd";
@@ -89,8 +88,7 @@ public class RecoveryService {
     }
 
     // Recover by IUV
-    public RecoveryReceiptResponse recoverReceiptKOByIUV(
-            String creditorInstitution, String iuv, String dateFrom, String dateTo) {
+    public RecoveryReceiptResponse recoverReceiptKOByIUV(String creditorInstitution, String iuv, String dateFrom, String dateTo) {
         // Query database for blocked Receipt in given timestamp with given IUV
         List<RTEntity> rtEntities = rtRepository.findByMidReceiptStatusInAndTimestampBetween(getDateFrom(dateFrom), getDateTo(dateTo), creditorInstitution, iuv);
         // For each entity call send receipt KO
@@ -105,36 +103,16 @@ public class RecoveryService {
         // creditorInstitution)
         List<RTEntity> rtEntities = rtRepository.findByMidReceiptStatusInAndTimestampBetween(getDateFrom(dateFrom), getDateTo(dateTo), creditorInstitution);
         // Future
-        CompletableFuture<Boolean> executeRecovery =
-                CompletableFuture.supplyAsync(
-                        () -> {
-                            rtEntities.forEach(
-                                    rtEntity ->
-                                            callSendReceiptKO(
-                                                    rtEntity.getDomainId(),
-                                                    rtEntity.getIuv(),
-                                                    rtEntity.getCcp(),
-                                                    rtEntity.getSessionId()));
-                            return true;
-                        });
+        CompletableFuture<Boolean> executeRecovery = CompletableFuture.supplyAsync(() -> {
+            rtEntities.forEach(rtEntity -> callSendReceiptKO(rtEntity.getDomainId(), rtEntity.getIuv(), rtEntity.getCcp(), rtEntity.getSessionId()));
+            return true;
+        });
         executeRecovery
-                .thenAccept(
-                        value ->
-                                log.debug(
-                                        "Reconciliation for creditor institution [{}] in date range [{}-{}] completed!",
-                                        creditorInstitution,
-                                        dateFrom,
-                                        dateTo))
-                .exceptionally(
-                        e -> {
-                            log.error(
-                                    "Reconciliation for creditor institution [{}] in date range [{}-{}] ended unsuccessfully!",
-                                    creditorInstitution,
-                                    dateFrom,
-                                    dateTo,
-                                    e);
-                            throw new AppException(e, AppErrorCodeMessageEnum.ERROR, e.getMessage());
-                        });
+                .thenAccept(value -> log.debug("Reconciliation for creditor institution [{}] in date range [{}-{}] completed!", creditorInstitution, dateFrom, dateTo))
+                .exceptionally(e -> {
+                    log.error("Reconciliation for creditor institution [{}] in date range [{}-{}] ended unsuccessfully!", creditorInstitution, dateFrom, dateTo, e);
+                    throw new AppException(e, AppErrorCodeMessageEnum.ERROR, e.getMessage());
+                });
         // Returns the entities that will be recovered in async
         return extractRecoveryReceiptResponse(rtEntities);
     }
@@ -173,7 +151,7 @@ public class RecoveryService {
                 String ccp = reEvent.getCcp();
                 String ci = reEvent.getDomainId();
 
-                List<ReEventEntity> reEventsRT = reEventRepository.findBySessionIdAndStatus(dateFromString, dateToString, sessionId, STATUS_RT_SEND_SUCCESS, 1);
+                List<ReEventEntity> reEventsRT = reEventRepository.findBySessionIdAndStatus(dateFromString, dateToString, sessionId, WorkflowStatus.RT_SEND_SUCCESS.name(), 1);
                 if (reEventsRT.isEmpty()) {
                     this.callSendReceiptKO(ci, iuv, ccp, sessionId);
                     sent++;
@@ -204,9 +182,7 @@ public class RecoveryService {
         LocalDate lowerLimit = LocalDate.parse(RECOVERY_VALID_START_DATE, DateTimeFormatter.ISO_LOCAL_DATE);
         LocalDate dateFromLocalDate = LocalDate.parse(dateFrom, DateTimeFormatter.ISO_LOCAL_DATE);
         if (dateFromLocalDate.isBefore(lowerLimit)) {
-            throw new AppException(
-                    AppErrorCodeMessageEnum.ERROR,
-                    String.format("The lower bound cannot be lower than [%s]", RECOVERY_VALID_START_DATE));
+            throw new AppException(AppErrorCodeMessageEnum.ERROR, String.format("The lower bound cannot be lower than [%s]", RECOVERY_VALID_START_DATE));
         }
         return dateFrom;
     }
@@ -395,7 +371,7 @@ public class RecoveryService {
                 String compositedIdForReceipt = String.format("%s_%s", rtRequestEntity.getPartitionKey(), overriddenReceiptId);
                 serviceBusService.sendMessage(compositedIdForReceipt, null);
 
-                generateRE(WorkflowStatus.RT_SEND_RESCHEDULING_SUCCESS, domainId, iuv, rpt.getCcp(), sessionId, String.format("Generated receipt: %s", overriddenReceiptId));
+                generateRE(WorkflowStatus.RT_SEND_SCHEDULING_SUCCESS, domainId, iuv, rpt.getCcp(), sessionId, String.format("Generated receipt: %s", overriddenReceiptId));
                 response.getReceiptStatus().add(Pair.of(overriddenReceiptId, "SCHEDULED"));
                 overrideId += 1;
             }
@@ -425,7 +401,7 @@ public class RecoveryService {
 
     private void handleExceptionRecoverSingleReceipt(String receiptId, RecoveryReceiptReportResponse response, Exception e, String sessionId) {
         log.error("Reconciliation for receipt id [{}] ended unsuccessfully!", receiptId, e);
-        generateRE(WorkflowStatus.RT_SEND_RESCHEDULING_FAILURE, null, null, null, sessionId, null);
+        generateRE(WorkflowStatus.RT_SEND_SCHEDULING_FAILURE, null, null, null, sessionId, null);
         response.getReceiptStatus().add(Pair.of(receiptId, String.format("FAILED: [%s]", e.getMessage())));
     }
 
@@ -517,34 +493,31 @@ public class RecoveryService {
         List<ReEventEntity> events = reEventRepository.findBySessionIdAndStatusAndPartitionKey(
                 partitionKey,
                 sessionData.getCommonFields().getSessionId(),
-                WorkflowStatus.POSITIVE_RT_TRY_TO_SEND_TO_CREDITOR_INSTITUTION.toString());
-        for (ReEventEntity event : events) {
-            // use operationId used to retrieve the related paSendRTV2 primitives
-            List<ReEventEntity> interfaceReqEventOpt = reEventRepository.findFirstInterfaceRequestByPartitionKey(partitionKey, ReceiptController.BP_RECEIPT_OK, event.getOperationId());
-            if (!interfaceReqEventOpt.isEmpty()) {
+                WorkflowStatus.COMMUNICATION_WITH_CREDITOR_INSTITUTION_PROCESSED.name(),
+                ReceiptController.BP_RECEIPT_OK);
+        for (ReEventEntity reEvent : events) {
 
-                // get the compressed payload from event and decompress it, parsing a well-formed request
-                ReEventEntity reEvent = interfaceReqEventOpt.get(0);
-                String unzippedRequest = new String(ZipUtil.unzip(AppBase64Util.base64Decode(reEvent.getRequestPayload())));
-                ReceiptRequest receiptOkRequest = new Gson().fromJson(unzippedRequest, ReceiptRequest.class);
+            // get the compressed payload from event and decompress it, parsing a well-formed request
+            String unzippedRequest = new String(ZipUtil.unzip(AppBase64Util.base64Decode(reEvent.getRequestPayload())));
+            ReceiptRequest receiptOkRequest = new Gson().fromJson(unzippedRequest, ReceiptRequest.class);
 
-                // now, from request the paSendRTV2 content can be extracted
-                // actualize content for correctly handle multibeneficiary carts
-                PaSendRTV2Request paSendRTV2 = ReceiptService.extractDataFromPaSendRT(jaxbElementUtil, receiptOkRequest.getContent(), rpt);
+            // now, from request the paSendRTV2 content can be extracted
+            // actualize content for correctly handle multibeneficiary carts
+            PaSendRTV2Request paSendRTV2 = ReceiptService.extractDataFromPaSendRT(jaxbElementUtil, receiptOkRequest.getContent(), rpt);
 
-                // check if it is the right paSendRTV2
-                if (paSendRTV2.getIdPA().equals(rpt.getRpt().getDomain().getDomainId()) && paSendRTV2.getReceipt().getCreditorReferenceId().equals(rpt.getIuv())) {
-                    // finally, use the extracted paSendRTV2 content to re-generate paaInviaRT request
-                    IntestazionePPT intestazionePPT = ReceiptService.generateHeader(
-                            paSendRTV2.getIdPA(),
-                            paSendRTV2.getReceipt().getCreditorReferenceId(),
-                            rpt.getRpt().getTransferData().getCcp(),
-                            commonFields.getCreditorInstitutionBrokerId(),
-                            commonFields.getStationId());
-                    ReceiptContentDTO receiptContent = receiptService.generateOkRtFromSessionData(rpt, paSendRTV2, intestazionePPT, commonFields, objectFactory, receiptStatus);
-                    return receiptContent.getPaaInviaRTPayload();
-                }
+            // check if it is the right paSendRTV2
+            if (paSendRTV2.getIdPA().equals(rpt.getRpt().getDomain().getDomainId()) && paSendRTV2.getReceipt().getCreditorReferenceId().equals(rpt.getIuv())) {
+                // finally, use the extracted paSendRTV2 content to re-generate paaInviaRT request
+                IntestazionePPT intestazionePPT = ReceiptService.generateHeader(
+                        paSendRTV2.getIdPA(),
+                        paSendRTV2.getReceipt().getCreditorReferenceId(),
+                        rpt.getRpt().getTransferData().getCcp(),
+                        commonFields.getCreditorInstitutionBrokerId(),
+                        commonFields.getStationId());
+                ReceiptContentDTO receiptContent = receiptService.generateOkRtFromSessionData(rpt, paSendRTV2, intestazionePPT, commonFields, objectFactory, receiptStatus);
+                return receiptContent.getPaaInviaRTPayload();
             }
+            //}
         }
 
         return null;

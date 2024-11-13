@@ -535,23 +535,20 @@ public class ReceiptService {
                 String message = e.getError().getDetail();
                 if (e.getError().equals(AppErrorCodeMessageEnum.RECEIPT_GENERATION_ERROR_DEAD_LETTER)) {
                     try {
-                        RTRequestEntity rtRequestEntity =
-                                generateRTRequestEntity(
-                                        sessionData,
-                                        uri,
-                                        proxyAddress,
-                                        headers,
-                                        receiptContentDTO.getPaaInviaRTPayload(),
-                                        station,
-                                        rpt,
-                                        idempotencyKey,
-                                        receiptType);
-                        receiptDeadLetterRepository.save(
-                                mapper.convertValue(rtRequestEntity, ReceiptDeadLetterEntity.class));
-                        generateREDeadLetter(rpt, noticeNumber, WorkflowStatus.RT_DEAD_LETTER_SAVED, null);
+                        RTRequestEntity rtRequestEntity = generateRTRequestEntity(
+                                sessionData,
+                                uri,
+                                proxyAddress,
+                                headers,
+                                receiptContentDTO.getPaaInviaRTPayload(),
+                                station,
+                                rpt,
+                                idempotencyKey,
+                                receiptType);
+                        receiptDeadLetterRepository.save(mapper.convertValue(rtRequestEntity, ReceiptDeadLetterEntity.class));
+                        generateREDeadLetter(rpt, noticeNumber, WorkflowStatus.RT_SEND_MOVED_IN_DEADLETTER, null);
                     } catch (IOException ex) {
-                        generateREDeadLetter(
-                                rpt, noticeNumber, WorkflowStatus.RT_DEAD_LETTER_FAILED, ex.getMessage());
+                        //generateREDeadLetter(rpt, noticeNumber, WorkflowStatus.RT_DEAD_LETTER_FAILED, ex.getMessage());
                     }
                 } else {
                     // because of the not sent receipt, it is necessary to schedule a retry of the sending
@@ -567,10 +564,7 @@ public class ReceiptService {
                             noticeNumber,
                             idempotencyKey,
                             receiptType);
-                    log.error(
-                            EXCEPTION
-                                    + AppErrorCodeMessageEnum.RECEIPT_KO_NOT_GENERATED_BUT_MAYBE_RESCHEDULED
-                                    .getDetail());
+                    log.error(EXCEPTION + AppErrorCodeMessageEnum.RECEIPT_KO_NOT_GENERATED_BUT_MAYBE_RESCHEDULED.getDetail());
                     generateREForNotSentRT(rpt, iuv, noticeNumber, message);
                 }
                 idempotencyStatus = IdempotencyStatusEnum.FAILED;
@@ -817,7 +811,7 @@ public class ReceiptService {
             MDC.put(Constants.MDC_NOTICE_NUMBER, noticeNumber);
             MDC.put(Constants.MDC_PSP_ID, psp);
             MDC.put(Constants.MDC_CCP, rptContent.getCcp());
-            reService.sendEvent(WorkflowStatus.SENDING_RT_SKIPPED_GPD_STATION);
+            reService.sendEvent(WorkflowStatus.RT_SEND_SKIPPED_FOR_GPD_STATION);
             MDC.remove(Constants.MDC_IUV);
             MDC.remove(Constants.MDC_NOTICE_NUMBER);
             MDC.remove(Constants.MDC_PSP_ID);
@@ -835,16 +829,14 @@ public class ReceiptService {
         MDC.put(Constants.MDC_NOTICE_NUMBER, noticeNumber);
         MDC.put(Constants.MDC_PSP_ID, psp);
         MDC.put(Constants.MDC_CCP, rptContent.getCcp());
-        reService.sendEvent(
-                WorkflowStatus.RT_SEND_SUCCESS);
+        reService.sendEvent(WorkflowStatus.RT_SEND_SUCCESS);
         MDC.remove(Constants.MDC_IUV);
         MDC.remove(Constants.MDC_NOTICE_NUMBER);
         MDC.remove(Constants.MDC_PSP_ID);
         MDC.remove(Constants.MDC_CCP);
     }
 
-    public void generateREForNotSentRT(
-            RPTContentDTO rptContent, String iuv, String noticeNumber, String otherInfo) {
+    public void generateREForNotSentRT(RPTContentDTO rptContent, String iuv, String noticeNumber, String otherInfo) {
 
         // extract psp on which the payment will be sent
         String psp = rptContent.getRpt().getPayeeInstitution().getSubjectUniqueIdentifier().getCode();
@@ -854,16 +846,14 @@ public class ReceiptService {
         MDC.put(Constants.MDC_NOTICE_NUMBER, noticeNumber);
         MDC.put(Constants.MDC_PSP_ID, psp);
         MDC.put(Constants.MDC_CCP, rptContent.getCcp());
-        reService.sendEvent(
-                WorkflowStatus.RT_SEND_FAILURE, otherInfo);
+        reService.sendEvent(WorkflowStatus.RT_SEND_FAILURE, otherInfo);
         MDC.remove(Constants.MDC_IUV);
         MDC.remove(Constants.MDC_NOTICE_NUMBER);
         MDC.remove(Constants.MDC_PSP_ID);
         MDC.remove(Constants.MDC_CCP);
     }
 
-    private void generateREForSuccessfulSchedulingSentRT(
-            RPTContentDTO rptContent, String iuv, String noticeNumber) {
+    private void generateREForSuccessfulSchedulingSentRT(RPTContentDTO rptContent, String iuv, String noticeNumber) {
 
         // extract psp on which the payment will be sent
         String psp = rptContent.getRpt().getPayeeInstitution().getSubjectUniqueIdentifier().getCode();
@@ -873,16 +863,14 @@ public class ReceiptService {
         MDC.put(Constants.MDC_NOTICE_NUMBER, noticeNumber);
         MDC.put(Constants.MDC_PSP_ID, psp);
         MDC.put(Constants.MDC_CCP, rptContent.getCcp());
-        reService.sendEvent(
-                WorkflowStatus.RT_SEND_SCHEDULING_SUCCESS);
+        reService.sendEvent(WorkflowStatus.RT_SEND_SCHEDULING_SUCCESS);
         MDC.remove(Constants.MDC_IUV);
         MDC.remove(Constants.MDC_NOTICE_NUMBER);
         MDC.remove(Constants.MDC_PSP_ID);
         MDC.remove(Constants.MDC_CCP);
     }
 
-    private void generateREForFailedSchedulingSentRT(
-            RPTContentDTO rptContent, String iuv, String noticeNumber, Throwable e) {
+    private void generateREForFailedSchedulingSentRT(RPTContentDTO rptContent, String iuv, String noticeNumber, Throwable e) {
 
         // extract psp on which the payment will be sent
         String psp = rptContent.getRpt().getPayeeInstitution().getSubjectUniqueIdentifier().getCode();
@@ -894,8 +882,7 @@ public class ReceiptService {
         MDC.put(Constants.MDC_NOTICE_NUMBER, noticeNumber);
         MDC.put(Constants.MDC_PSP_ID, psp);
         MDC.put(Constants.MDC_CCP, rptContent.getCcp());
-        reService.sendEvent(
-                WorkflowStatus.RT_SEND_SCHEDULING_FAILURE, otherInfo);
+        reService.sendEvent(WorkflowStatus.RT_SEND_SCHEDULING_FAILURE, otherInfo);
         MDC.remove(Constants.MDC_IUV);
         MDC.remove(Constants.MDC_NOTICE_NUMBER);
         MDC.remove(Constants.MDC_PSP_ID);
@@ -1002,22 +989,20 @@ public class ReceiptService {
             String message = e.getError().getDetail();
             if (e.getError().equals(AppErrorCodeMessageEnum.RECEIPT_GENERATION_ERROR_DEAD_LETTER)) {
                 try {
-                    RTRequestEntity rtRequestEntity =
-                            generateRTRequestEntity(
-                                    sessionDataDTO,
-                                    uri,
-                                    proxyAddress,
-                                    headers,
-                                    rtRawPayload,
-                                    station,
-                                    rpt,
-                                    idempotencyKey,
-                                    ReceiptTypeEnum.KO);
-                    receiptDeadLetterRepository.save(
-                            mapper.convertValue(rtRequestEntity, ReceiptDeadLetterEntity.class));
-                    generateREDeadLetter(rpt, null, WorkflowStatus.RT_DEAD_LETTER_SAVED, null);
+                    RTRequestEntity rtRequestEntity = generateRTRequestEntity(
+                            sessionDataDTO,
+                            uri,
+                            proxyAddress,
+                            headers,
+                            rtRawPayload,
+                            station,
+                            rpt,
+                            idempotencyKey,
+                            ReceiptTypeEnum.KO);
+                    receiptDeadLetterRepository.save(mapper.convertValue(rtRequestEntity, ReceiptDeadLetterEntity.class));
+                    generateREDeadLetter(rpt, null, WorkflowStatus.RT_SEND_MOVED_IN_DEADLETTER, null);
                 } catch (IOException ex) {
-                    generateREDeadLetter(rpt, null, WorkflowStatus.RT_DEAD_LETTER_FAILED, null);
+                    log.error("[DEADLETTER-500][sessionId:{}] {}", sessionDataDTO.getCommonFields().getSessionId(), AppErrorCodeMessageEnum.PERSISTENCE_SAVING_DEADLETTER_ERROR.getTitle(), ex);
                 }
             } else {
                 // because of the not sent receipt, it is necessary to schedule a retry of the sending
@@ -1033,10 +1018,7 @@ public class ReceiptService {
                         null,
                         idempotencyKey,
                         ReceiptTypeEnum.KO);
-                log.error(
-                        EXCEPTION
-                                + AppErrorCodeMessageEnum.RECEIPT_KO_NOT_GENERATED_BUT_MAYBE_RESCHEDULED
-                                .getDetail());
+                log.error(EXCEPTION + AppErrorCodeMessageEnum.RECEIPT_KO_NOT_GENERATED_BUT_MAYBE_RESCHEDULED.getDetail());
                 generateREForNotSentRT(rpt, iuv, null, message);
             }
             idempotencyStatus = IdempotencyStatusEnum.FAILED;
@@ -1060,10 +1042,7 @@ public class ReceiptService {
                     idempotencyKey,
                     ReceiptTypeEnum.KO);
 
-            log.error(
-                    EXCEPTION
-                            + AppErrorCodeMessageEnum.RECEIPT_KO_NOT_GENERATED_BUT_MAYBE_RESCHEDULED
-                            .getDetail());
+            log.error(EXCEPTION + AppErrorCodeMessageEnum.RECEIPT_KO_NOT_GENERATED_BUT_MAYBE_RESCHEDULED.getDetail());
             generateREForNotSentRT(rpt, rpt.getIuv(), null, message);
 
             idempotencyStatus = IdempotencyStatusEnum.FAILED;
@@ -1071,8 +1050,7 @@ public class ReceiptService {
 
         try {
             // Unlock idempotency key after a successful operation
-            idempotencyService.unlockIdempotencyKey(
-                    idempotencyKey, ReceiptTypeEnum.KO, idempotencyStatus);
+            idempotencyService.unlockIdempotencyKey(idempotencyKey, ReceiptTypeEnum.KO, idempotencyStatus);
         } catch (AppException e) {
             log.error("AppException: ", e);
         }
