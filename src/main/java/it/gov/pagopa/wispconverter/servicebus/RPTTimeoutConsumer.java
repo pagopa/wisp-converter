@@ -104,7 +104,6 @@ public class RPTTimeoutConsumer extends SBConsumer {
             log.error("Error when read rpt timer request value from message: '{}'. Body: '{}'", message.getMessageId(), message.getBody());
         } finally {
             reService.sendEvent(WorkflowStatus.RPT_TIMER_IN_TIMEOUT, context.getMessage(), "Triggered timeout ended.", outcome);
-            MDC.clear();
         }
     }
 }

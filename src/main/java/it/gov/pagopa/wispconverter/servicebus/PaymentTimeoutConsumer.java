@@ -86,7 +86,6 @@ public class PaymentTimeoutConsumer extends SBConsumer {
             outcome = MDC.get(Constants.MDC_OUTCOME) == null ? OutcomeEnum.ERROR : OutcomeEnum.valueOf(MDC.get(Constants.MDC_OUTCOME));
         } finally {
             reService.sendEvent(WorkflowStatus.PAYMENT_TOKEN_TIMER_IN_TIMEOUT, context.getMessage(), null, outcome);
-            MDC.clear();
         }
     }
 }

@@ -911,7 +911,6 @@ public class ReceiptService {
         for (RPTContentDTO rpt : sessionDataDTO.getRpts().values()) {
             handleSingleRptForSendRtKo(rpt, sessionDataDTO, objectFactory, configurations, stations);
         }
-        MDC.clear();
     }
 
     private void handleSingleRptForSendRtKo(RPTContentDTO rpt, SessionDataDTO sessionDataDTO, gov.telematici.pagamenti.ws.papernodo.ObjectFactory objectFactory, Map<String, ConfigurationKeyDto> configurations, Map<String, StationDto> stations) {
