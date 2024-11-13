@@ -32,6 +32,7 @@ public class MDCUtil {
             MDC.put(Constants.MDC_PSP_ID, commonFields.getPspId());
 
             if (primitive != null) {
+                MDC.put(Constants.MDC_PRIMITIVE, primitive);
 
                 // if the primitive is nodoInviaCarrelloRPT, it means that a cart was extracted, so set
                 // cartId in MDC. Otherwise, set IUV and CCP in MDC
