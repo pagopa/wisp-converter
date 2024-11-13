@@ -34,111 +34,12 @@ public class ReService {
     private final ReEventRepository reEventRepository;
     private final ReEventMapper reEventMapper;
 
-
-    /**
-     * @param status the event to send
-     */
-    public void sendEvent(WorkflowStatus status) {
-        sendEvent(status, null, null, null, null);
-    }
-
-    /**
-     * @param status           the event to send
-     * @param info             some string to log
-     */
-    public void sendEvent(WorkflowStatus status,  String info) {
-        sendEvent(status, info, null, null, null);
-    }
-
-    /**
-     * @param status           the event to send
-     * @param info             some string to log
-     * @param outcome          the outcome of the event
-     */
-    public void sendEvent(
-            WorkflowStatus status,  String info, OutcomeEnum outcome) {
-        sendEvent(status,  info, outcome, null, null);
-    }
-
-    /**
-     * @param status           the event to send
-     * @param info             some string to log
-     * @param outcome          the outcome of the event
-     * @param request          the request to put in the event
-     * @param response         the response to put in the event
-     */
-    public void sendEvent(
-            WorkflowStatus status,
-            @Nullable String info,
-            @Nullable OutcomeEnum outcome,
-            @Nullable ReRequestContext request,
-            @Nullable ReResponseContext response) {
-
-        try {
-            Instant mdcStartTime = getStartTime();
-
-            // build event
-            var reEvent =
-                    ReEventDto.builder()
-                            //  context
-                            .id(UUID.randomUUID().toString())
-                            .operationId(MDC.get(Constants.MDC_OPERATION_ID))
-                            .insertedTimestamp(mdcStartTime)
-                            .businessProcess(MDC.get(Constants.MDC_BUSINESS_PROCESS))
-                            .sessionId(MDC.get(Constants.MDC_SESSION_ID))
-                            .executionTimeMs(getExecutionTimeMs())
-                            //  event
-                            .status(status.name())
-                            .eventCategory(status.getType())
-                            .outcome(outcome != null ? outcome.name() : null)
-                            .info(info)
-                            //  payment
-                            .cartId(MDC.get(Constants.MDC_CART_ID))
-                            .iuv(MDC.get(Constants.MDC_IUV))
-                            .noticeNumber(MDC.get(Constants.MDC_NOTICE_NUMBER))
-                            .ccp(MDC.get(Constants.MDC_CCP))
-                            .paymentToken(MDC.get(Constants.MDC_PAYMENT_TOKEN))
-                            .domainId(MDC.get(Constants.MDC_DOMAIN_ID))
-                            .psp(MDC.get(Constants.MDC_PSP_ID))
-                            .station(MDC.get(Constants.MDC_STATION_ID))
-                            .channel(MDC.get(Constants.MDC_CHANNEL_ID))
-                            //  error
-                            .operationErrorDetail(MDC.get(Constants.MDC_ERROR_DETAIL))
-                            .operationErrorCode(MDC.get(Constants.MDC_ERROR_CODE));
-
-            //  request
-            if (request != null) {
-                reEvent
-                        .httpMethod(request.getMethod().name())
-                        .httpUri(request.getUri())
-                        .requestHeaders(formatHeaders(request.getHeaders()))
-                        .requestPayload(compressData(request.getPayload()));
-            }
-            //  response
-            if (response != null) {
-                reEvent
-                        .responseHeaders(formatHeaders(response.getHeaders()))
-                        .responsePayload(compressData(response.getPayload()))
-                        .httpStatusCode(response.getStatusCode().value());
-            }
-            addRe(reEvent.build());
-        } catch (Exception e) {
-            throw new AppException(AppErrorCodeMessageEnum.PERSISTENCE_SAVING_RE_ERROR, e);
-        }
-    }
-
     private static Long getExecutionTimeMs() {
         try {
             return Long.valueOf(MDC.get(Constants.MDC_CLIENT_EXECUTION_TIME));
         } catch (IllegalArgumentException e) {
             return -1L;
         }
-    }
-
-    public void addRe(ReEventDto reEventDto) {
-        ReEventEntity reEventEntity = reEventMapper.toReEventEntity(reEventDto);
-        reEventEntity.setOperationErrorLine(MDC.get(Constants.MDC_ERROR_LINE));
-        reEventRepository.save(reEventEntity);
     }
 
     private static Instant getStartTime() {
@@ -148,14 +49,12 @@ public class ReService {
     }
 
     private static String formatHeaders(HttpHeaders headers) {
-        Stream<String> stream =
-                headers.entrySet().stream()
-                        .map(
-                                entry -> {
-                                    String values =
-                                            entry.getValue().stream().collect(Collectors.joining("\", \"", "\"", "\""));
-                                    return entry.getKey() + ": [" + values + "]";
-                                });
+        Stream<String> stream = headers.entrySet().stream()
+                .map(
+                        entry -> {
+                            String values = entry.getValue().stream().collect(Collectors.joining("\", \"", "\"", "\""));
+                            return entry.getKey() + ": [" + values + "]";
+                        });
         return stream.collect(Collectors.joining(", "));
     }
 
@@ -169,5 +68,99 @@ public class ReService {
             throw new AppException(AppErrorCodeMessageEnum.ERROR, e);
         }
         return result;
+    }
+
+    /**
+     * @param status the event to send
+     */
+    public void sendEvent(WorkflowStatus status) {
+        sendEvent(status, null, null, null, null);
+    }
+
+    /**
+     * @param status the event to send
+     * @param info   some string to log
+     */
+    public void sendEvent(WorkflowStatus status, String info) {
+        sendEvent(status, info, null, null, null);
+    }
+
+    /**
+     * @param status  the event to send
+     * @param info    some string to log
+     * @param outcome the outcome of the event
+     */
+    public void sendEvent(WorkflowStatus status, String info, OutcomeEnum outcome) {
+        sendEvent(status, info, outcome, null, null);
+    }
+
+    /**
+     * @param status   the event to send
+     * @param info     some string to log
+     * @param outcome  the outcome of the event
+     * @param request  the request to put in the event
+     * @param response the response to put in the event
+     */
+    public void sendEvent(WorkflowStatus status,
+                          @Nullable String info,
+                          @Nullable OutcomeEnum outcome,
+                          @Nullable ReRequestContext request,
+                          @Nullable ReResponseContext response) {
+
+        String sessionId = MDC.get(Constants.MDC_SESSION_ID);
+        Instant mdcStartTime = getStartTime();
+
+        try {
+            // build event
+            var reEvent = ReEventDto.builder()
+                    //  context
+                    .id(UUID.randomUUID().toString())
+                    .operationId(MDC.get(Constants.MDC_OPERATION_ID))
+                    .insertedTimestamp(mdcStartTime)
+                    .businessProcess(MDC.get(Constants.MDC_BUSINESS_PROCESS))
+                    .sessionId(sessionId)
+                    .executionTimeMs(getExecutionTimeMs())
+                    //  event
+                    .status(status.name())
+                    .eventCategory(status.getType())
+                    .outcome(outcome != null ? outcome.name() : null)
+                    .info(info)
+                    //  payment
+                    .cartId(MDC.get(Constants.MDC_CART_ID))
+                    .iuv(MDC.get(Constants.MDC_IUV))
+                    .noticeNumber(MDC.get(Constants.MDC_NOTICE_NUMBER))
+                    .ccp(MDC.get(Constants.MDC_CCP))
+                    .paymentToken(MDC.get(Constants.MDC_PAYMENT_TOKEN))
+                    .domainId(MDC.get(Constants.MDC_DOMAIN_ID))
+                    .psp(MDC.get(Constants.MDC_PSP_ID))
+                    .station(MDC.get(Constants.MDC_STATION_ID))
+                    .channel(MDC.get(Constants.MDC_CHANNEL_ID))
+                    //  error
+                    .operationErrorDetail(MDC.get(Constants.MDC_ERROR_DETAIL))
+                    .operationErrorCode(MDC.get(Constants.MDC_ERROR_CODE));
+
+            //  request
+            if (request != null) {
+                reEvent.httpMethod(request.getMethod().name())
+                        .httpUri(request.getUri())
+                        .requestHeaders(formatHeaders(request.getHeaders()))
+                        .requestPayload(compressData(request.getPayload()));
+            }
+            //  response
+            if (response != null) {
+                reEvent.responseHeaders(formatHeaders(response.getHeaders()))
+                        .responsePayload(compressData(response.getPayload()))
+                        .httpStatusCode(response.getStatusCode().value());
+            }
+            addRe(reEvent.build());
+        } catch (Exception e) {
+            log.error("[RE-429][sessionId:{}] Exception: {}", sessionId, AppErrorCodeMessageEnum.PERSISTENCE_SAVING_RE_ERROR.getDetail());
+        }
+    }
+
+    public void addRe(ReEventDto reEventDto) {
+        ReEventEntity reEventEntity = reEventMapper.toReEventEntity(reEventDto);
+        reEventEntity.setOperationErrorLine(MDC.get(Constants.MDC_ERROR_LINE));
+        reEventRepository.save(reEventEntity);
     }
 }
