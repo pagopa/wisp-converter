@@ -86,8 +86,8 @@ public class ReService {
                     .sessionId(sessionId)
                     .executionTimeMs(getExecutionTimeMs())
                     //  event
-                    .status(status.name())
-                    .eventCategory(status.getType())
+                    .status(status == null ? null : status.name())
+                    .eventCategory(status == null ? null : status.getType())
                     .outcome(outcome != null ? outcome.name() : null)
                     .info(info)
                     //  payment
