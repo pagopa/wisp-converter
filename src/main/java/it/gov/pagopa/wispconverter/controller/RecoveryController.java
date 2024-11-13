@@ -156,10 +156,11 @@ public class RecoveryController {
             @ApiResponse(responseCode = "200", description = "Reconciliation scheduled")
     })
     @PostMapping(value = "/sessionIds/ko")
-    public ResponseEntity<RecoveryReceiptReportResponse> recoverKoReceiptToBeReSentBySessionId(@RequestBody RecoveryReceiptBySessionIdRequest request) {
+    public ResponseEntity<Void> recoverKoReceiptToBeReSentBySessionId(@RequestBody RecoveryReceiptBySessionIdRequest request) {
         try {
             log.debug("Invoking API operation recoverReceiptToBeReSentBySessionId - args: {}", sanitizeInput(request.toString()));
-            return ResponseEntity.ok(recoveryService.recoverReceiptKoToBeReSentBySessionIds(request));
+            recoveryService.recoverReceiptKoToBeReSentBySessionIds(request);
+            return ResponseEntity.ok().build();
         } catch (Exception ex) {
             String operationId = MDC.get(Constants.MDC_OPERATION_ID);
             log.error(String.format("GenericException: operation-id=[%s]", operationId != null ? operationId : "n/a"), ex);

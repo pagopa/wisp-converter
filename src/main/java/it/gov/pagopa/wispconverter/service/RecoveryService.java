@@ -314,17 +314,14 @@ public class RecoveryService {
     }
 
     @Transactional
-    public RecoveryReceiptReportResponse recoverReceiptKoToBeReSentBySessionIds(RecoveryReceiptBySessionIdRequest request) {
+    public void recoverReceiptKoToBeReSentBySessionIds(RecoveryReceiptBySessionIdRequest request) {
         List<Pair<String, String>> receiptStatus = new ArrayList<>();
         try {
             for (String sessionId : request.getSessionIds()) {
-                receiptService.sendRTKoFromSessionId(sessionId, InternalStepStatus.RT_RECONCILIATION_PROCESS);
-                receiptStatus.add(Pair.of(sessionId, "SCHEDULED"));
+                CompletableFuture.runAsync(() -> {
+                    receiptService.sendRTKoFromSessionId(sessionId, InternalStepStatus.RT_RECONCILIATION_PROCESS);
+                });
             }
-
-            return RecoveryReceiptReportResponse.builder()
-                    .receiptStatus(receiptStatus)
-                    .build();
         }
         catch (Exception e) {
             throw new AppException(AppErrorCodeMessageEnum.ERROR, "Problem with KO receipt");
