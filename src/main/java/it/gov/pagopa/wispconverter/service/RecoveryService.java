@@ -274,14 +274,13 @@ public class RecoveryService {
                             .status(IdempotencyStatusEnum.FAILED)
                             .build();
                     idempotencyKeyRepositorySecondary.save(idempotencyKey);
-                    String payload =
-                            "<soapenv:Envelope\n"
-                                    + "\txmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\"\n"
-                                    + "\txmlns:ns2=\"http://ws.pagamenti.telematici.gov/ppthead\"\n"
-                                    + "\txmlns:ns3=\"http://ws.pagamenti.telematici.gov/\"><soapenv:Header><ns2:intestazionePPT\n"
-                                    + "\t\t\txmlns:ns4=\"http://schemas.xmlsoap.org/soap/envelope/\"><identificativoIntermediarioPA></identificativoIntermediarioPA><identificativoStazioneIntermediarioPA></identificativoStazioneIntermediarioPA><identificativoDominio>DOMINIO</identificativoDominio><identificativoUnivocoVersamento>IUV</identificativoUnivocoVersamento><codiceContestoPagamento></codiceContestoPagamento></ns2:intestazionePPT></soapenv:Header><soapenv:Body><ns3:paaInviaRT><tipoFirma/><rt></rt></ns3:paaInviaRT></soapenv:Body></soapenv:Envelope>"
-                                    .replace("DOMINIO", reItem.getDomainId())
-                                    .replace("IUV", reItem.getIuv());
+                    String payload = "<soapenv:Envelope\n"
+                            + "\txmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\"\n"
+                            + "\txmlns:ns2=\"http://ws.pagamenti.telematici.gov/ppthead\"\n"
+                            + "\txmlns:ns3=\"http://ws.pagamenti.telematici.gov/\"><soapenv:Header><ns2:intestazionePPT\n"
+                            + "\t\t\txmlns:ns4=\"http://schemas.xmlsoap.org/soap/envelope/\"><identificativoIntermediarioPA></identificativoIntermediarioPA><identificativoStazioneIntermediarioPA></identificativoStazioneIntermediarioPA><identificativoDominio>DOMINIO</identificativoDominio><identificativoUnivocoVersamento>IUV</identificativoUnivocoVersamento><codiceContestoPagamento></codiceContestoPagamento></ns2:intestazionePPT></soapenv:Header><soapenv:Body><ns3:paaInviaRT><tipoFirma/><rt></rt></ns3:paaInviaRT></soapenv:Body></soapenv:Envelope>"
+                            .replace("DOMINIO", reItem.getDomainId())
+                            .replace("IUV", reItem.getIuv());
 
                     // create a RTRequestEntity to generate the ok receipt
                     RTRequestEntity receipt = RTRequestEntity.builder()
@@ -293,7 +292,6 @@ public class RecoveryService {
                             .ccp(reItem.getCcp())
                             .sessionId(sessionId)
                             .payload(AppBase64Util.base64Encode(ZipUtil.zip(payload)))
-                            //                  .primitive(reItem.getPrimitive())
                             .receiptType(ReceiptTypeEnum.OK)
                             .station(reItem.getStation())
                             .build();
@@ -309,7 +307,6 @@ public class RecoveryService {
     }
 
     public RecoveryReceiptReportResponse recoverReceiptToBeReSentByPartition(RecoveryReceiptByPartitionRequest request) {
-
         List<String> receiptsIds = request.getPartitionKeys().stream()
                 .map(PartitionKey::new)
                 .flatMap(partitionKey -> StreamSupport.stream(rtRetryRepository.findAll(partitionKey).spliterator(), false))
@@ -398,14 +395,7 @@ public class RecoveryService {
                 String compositedIdForReceipt = String.format("%s_%s", rtRequestEntity.getPartitionKey(), overriddenReceiptId);
                 serviceBusService.sendMessage(compositedIdForReceipt, null);
 
-                generateRE(
-                        Constants.PAA_INVIA_RT,
-                        WorkflowStatus.RT_SEND_RESCHEDULING_SUCCESS,
-                        domainId,
-                        iuv,
-                        rpt.getCcp(),
-                        sessionId,
-                        String.format("Generated receipt: %s", overriddenReceiptId));
+                generateRE(WorkflowStatus.RT_SEND_RESCHEDULING_SUCCESS, domainId, iuv, rpt.getCcp(), sessionId, String.format("Generated receipt: %s", overriddenReceiptId));
                 response.getReceiptStatus().add(Pair.of(overriddenReceiptId, "SCHEDULED"));
                 overrideId += 1;
             }
@@ -422,7 +412,6 @@ public class RecoveryService {
         if (rptRequestOpt.isEmpty()) {
             throw new AppException(AppErrorCodeMessageEnum.ERROR, String.format("No valid RPT request found with id [%s].", sessionId));
         }
-
         return rptRequestOpt.get();
     }
 
@@ -431,23 +420,12 @@ public class RecoveryService {
         if (rtRequestEntityOpt.isEmpty()) {
             throw new AppException(AppErrorCodeMessageEnum.ERROR, String.format("No valid receipt found with id [%s]", receiptId));
         }
-
-        RTRequestEntity rtRequestEntity = rtRequestEntityOpt.get();
-        return rtRequestEntity;
+        return rtRequestEntityOpt.get();
     }
 
     private void handleExceptionRecoverSingleReceipt(String receiptId, RecoveryReceiptReportResponse response, Exception e, String sessionId) {
         log.error("Reconciliation for receipt id [{}] ended unsuccessfully!", receiptId, e);
-
-        generateRE(
-                Constants.PAA_INVIA_RT,
-                WorkflowStatus.RT_SEND_RESCHEDULING_FAILURE,
-                null,
-                null,
-                null,
-                sessionId,
-                null);
-
+        generateRE(WorkflowStatus.RT_SEND_RESCHEDULING_FAILURE, null, null, null, sessionId, null);
         response.getReceiptStatus().add(Pair.of(receiptId, String.format("FAILED: [%s]", e.getMessage())));
     }
 
