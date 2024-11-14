@@ -4,7 +4,6 @@ import com.azure.messaging.servicebus.ServiceBusClientBuilder;
 import com.azure.messaging.servicebus.ServiceBusMessage;
 import com.azure.messaging.servicebus.ServiceBusSenderClient;
 import com.google.gson.Gson;
-import com.google.gson.JsonSyntaxException;
 import it.gov.pagopa.wispconverter.controller.model.ReceiptTimerRequest;
 import it.gov.pagopa.wispconverter.repository.CacheRepository;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
@@ -19,11 +18,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
+import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @Service
 @Slf4j
@@ -34,7 +32,6 @@ public class ReceiptTimerService {
     public static final String PAYMENT_TOKEN_CACHING_KEY_TEMPLATE = "2_wisp_%s";
     private final CacheRepository cacheRepository;
     private final ReService reService;
-    private final Pattern paymentTokenCachingKeyTemplatePattern = Pattern.compile("\\s*(\\{.*\\})\\s*");
     @Value("${azure.sb.wisp-payment-timeout-queue.connectionString}")
     private String connectionString;
     @Value("${azure.sb.queue.receiptTimer.name}")
@@ -141,17 +138,14 @@ public class ReceiptTimerService {
         String domainId = null;
         String noticeNumber = null;
         try {
-            String cacheInfo = cacheRepository.read(String.format(PAYMENT_TOKEN_CACHING_KEY_TEMPLATE, paymentToken), String.class);
-            if (cacheInfo != null) {
-                Matcher matcher = paymentTokenCachingKeyTemplatePattern.matcher(cacheInfo);
-                if (matcher.matches()) {
-                    ReceiptTimerRequest receiptTimerRequest = new Gson().fromJson(matcher.group(1), ReceiptTimerRequest.class);
-                    MDC.put(Constants.MDC_SESSION_ID, receiptTimerRequest.getSessionId());
-                    domainId = receiptTimerRequest.getFiscalCode();
-                    noticeNumber = receiptTimerRequest.getNoticeNumber();
-                }
-            }
-        } catch (JsonSyntaxException e) {
+            byte[] primitiveByteArray = cacheRepository.readByte(String.format(PAYMENT_TOKEN_CACHING_KEY_TEMPLATE, paymentToken));
+            String byteArrayAsString = new String(primitiveByteArray, StandardCharsets.UTF_8);
+            String objectAsString = byteArrayAsString.substring(byteArrayAsString.indexOf('{'), byteArrayAsString.lastIndexOf('}') + 1);
+            ReceiptTimerRequest receiptTimerRequest = new Gson().fromJson(objectAsString, ReceiptTimerRequest.class);
+            MDC.put(Constants.MDC_SESSION_ID, receiptTimerRequest.getSessionId());
+            domainId = receiptTimerRequest.getFiscalCode();
+            noticeNumber = receiptTimerRequest.getNoticeNumber();
+        } catch (Exception e) {
             log.debug("Impossible to generate data for MDC from cached payment token.", e);
         }
         MDCUtil.setReceiptTimerInfoInMDC(domainId, noticeNumber, paymentToken);

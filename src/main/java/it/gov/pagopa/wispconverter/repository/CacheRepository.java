@@ -17,6 +17,10 @@ public class CacheRepository {
     @Qualifier("redisSimpleTemplate")
     private RedisTemplate<String, Object> redisSimpleTemplate;
 
+    @Autowired
+    @Qualifier("redisBinaryTemplate")
+    private RedisTemplate<String, byte[]> redisBinaryTemplate;
+
     public void insert(String key, String value, long ttlInMinutes) {
         this.redisSimpleTemplate.opsForValue().set(key, value, Duration.ofMinutes(ttlInMinutes));
     }
@@ -32,6 +36,16 @@ public class CacheRepository {
             result = clazz.cast(value);
         } catch (ClassCastException e) {
             log.error(String.format("Cannot correctly parse the object retrieved with key [%s] in [%s] class", key, clazz.getCanonicalName()));
+        }
+        return result;
+    }
+
+    public byte[] readByte(String key) {
+        byte[] result = {};
+        try {
+            result = this.redisBinaryTemplate.opsForValue().get(key);
+        } catch (Exception e) {
+            log.error(String.format("Cannot correctly extract binary object retrieved with key [%s]", key));
         }
         return result;
     }
