@@ -85,6 +85,11 @@ public class MDCUtil {
         MDC.put(Constants.MDC_NOTICE_NUMBER, noticeNumber);
     }
 
+    public static void removeEcommerceHangTimerInfoInMDC() {
+        MDC.remove(Constants.MDC_DOMAIN_ID);
+        MDC.remove(Constants.MDC_NOTICE_NUMBER);
+    }
+
     public static void setRPTTimerInfoInMDC(String sessionId) {
         MDC.put(Constants.MDC_SESSION_ID, sessionId);
     }

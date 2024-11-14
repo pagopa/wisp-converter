@@ -20,6 +20,7 @@ import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 
 import static it.gov.pagopa.wispconverter.util.CommonUtility.sanitizeInput;
+import static it.gov.pagopa.wispconverter.util.MDCUtil.removeEcommerceHangTimerInfoInMDC;
 import static it.gov.pagopa.wispconverter.util.MDCUtil.setEcommerceHangTimerInfoInMDC;
 
 @Service
@@ -97,18 +98,10 @@ public class ECommerceHangTimerService {
                     serviceBusSenderClient.scheduleMessage(serviceBusMessage, scheduledExpirationTime);
 
             // log event
-            log.debug(
-                    "Sent scheduled message_base64 {} to the queue: {}",
-                    LogUtils.encodeToBase64(message.toString()),
-                    queueName);
-            reService.sendEvent(
-                    WorkflowStatus.ECOMMERCE_HANG_TIMER_CREATED,
-                    "Scheduled eCommerce hang release: ["
-                            + message
-                            + "] "
-                            + "and will be triggered at "
-                            + scheduledExpirationTime);
-
+            log.debug("Sent scheduled message_base64 {} to the queue: {}", LogUtils.encodeToBase64(message.toString()), queueName);
+            reService.sendEvent(WorkflowStatus.ECOMMERCE_HANG_TIMER_CREATED, "Scheduled eCommerce hang release: [" + message + "] " + "and will be triggered at " + scheduledExpirationTime);
+            removeEcommerceHangTimerInfoInMDC();
+            
             // insert in Redis cache sequenceNumber of the message
             cacheRepository.insert(key, sequenceNumber.toString(), expirationTime, ChronoUnit.SECONDS);
         }

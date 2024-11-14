@@ -50,13 +50,17 @@ public class ReService {
     }
 
     private static String formatHeaders(HttpHeaders headers) {
-        Stream<String> stream = headers.entrySet().stream()
-                .map(
-                        entry -> {
-                            String values = entry.getValue().stream().collect(Collectors.joining("\", \"", "\"", "\""));
-                            return entry.getKey() + ": [" + values + "]";
-                        });
-        return stream.collect(Collectors.joining(", "));
+        String formattedHeaders = null;
+        if (headers != null) {
+            Stream<String> stream = headers.entrySet().stream()
+                    .map(
+                            entry -> {
+                                String values = entry.getValue().stream().collect(Collectors.joining("\", \"", "\"", "\""));
+                                return entry.getKey() + ": [" + values + "]";
+                            });
+            formattedHeaders = stream.collect(Collectors.joining(", "));
+        }
+        return formattedHeaders;
     }
 
     private static String compressData(String payload) {
@@ -132,8 +136,8 @@ public class ReService {
                     .sessionId(sessionId)
                     .executionTimeMs(getExecutionTimeMs())
                     //  event
-                    .status(status == null ? null : status.name())
-                    .eventCategory(status == null ? null : status.getType())
+                    .status(status != null ? status.name() : null)
+                    .eventCategory(status != null ? status.getType() : null)
                     .outcome(outcome != null ? outcome.name() : null)
                     .info(info)
                     //  payment
@@ -152,7 +156,7 @@ public class ReService {
 
             //  request
             if (request != null) {
-                reEvent.httpMethod(request.getMethod().name())
+                reEvent.httpMethod(request.getMethod() != null ? request.getMethod().name() : null)
                         .httpUri(request.getUri())
                         .requestHeaders(formatHeaders(request.getHeaders()))
                         .requestPayload(compressData(request.getPayload()));
@@ -161,7 +165,7 @@ public class ReService {
             if (response != null) {
                 reEvent.responseHeaders(formatHeaders(response.getHeaders()))
                         .responsePayload(compressData(response.getPayload()))
-                        .httpStatusCode(response.getStatusCode().value());
+                        .httpStatusCode(response.getStatusCode() != null ? response.getStatusCode().value() : null);
             }
             addRe(reEvent.build());
         } catch (Exception e) {
