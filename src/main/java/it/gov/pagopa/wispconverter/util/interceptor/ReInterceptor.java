@@ -62,14 +62,15 @@ public class ReInterceptor implements HandlerInterceptor {
     private static HttpHeaders formatServerRequestHeaders(HttpServletRequest request) {
         HttpHeaders headers = new HttpHeaders();
         Enumeration<String> headerNamesEnum = request.getHeaderNames();
-        while (headerNamesEnum.hasMoreElements()) {
-            String headerName = headerNamesEnum.nextElement();
-            Iterator<String> iterator = request.getHeaders(headerName).asIterator();
-            while (iterator.hasNext()) {
-                headers.add(headerName, iterator.next());
+        if (headerNamesEnum != null) {
+            while (headerNamesEnum.hasMoreElements()) {
+                String headerName = headerNamesEnum.nextElement();
+                Iterator<String> iterator = request.getHeaders(headerName).asIterator();
+                while (iterator.hasNext()) {
+                    headers.add(headerName, iterator.next());
+                }
             }
         }
-
         return headers;
     }
 
@@ -146,7 +147,7 @@ public class ReInterceptor implements HandlerInterceptor {
                                 .headers(formatServerRequestHeaders(request))
                                 .build(),
                         ReResponseContext.builder()
-                                .statusCode(HttpStatus.valueOf(response.getStatus()))
+                                .statusCode(response.getStatus() >= 200 && response.getStatus() <= 599 ? HttpStatus.valueOf(response.getStatus()) : null)
                                 .payload(getResponseMessagePayload(response))
                                 .headers(formatServerRequestHeaders(response))
                                 .build());
