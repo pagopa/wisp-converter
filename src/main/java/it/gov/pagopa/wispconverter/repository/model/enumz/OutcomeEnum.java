@@ -7,7 +7,7 @@ import lombok.Getter;
 @Getter
 public enum OutcomeEnum {
     OK("Operation completed successfully"),
-    ERROR("Error during endpoint call"),
+    ERROR("Generic error occurred during execution"),
     SENDING_RT_FAILED_STORED_IN_DEADLETTER(""),
     SENDING_RT_FAILED_REJECTED_BY_CI(""),
     SENDING_RT_FAILED_RESCHEDULED_SUCCESSFULLY(""),

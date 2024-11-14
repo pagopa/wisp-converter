@@ -26,9 +26,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
 
-import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParserFactory;
 import java.io.IOException;
 import java.io.StringReader;
@@ -98,21 +96,19 @@ public class ReceiptController {
     }
 
     private String getReceiptRequestInfoToLog(String xml) {
-        String args = "n/a";
+        String args = "";
         try {
             if (StringUtils.isNotEmpty(xml)) {
                 // fix for sonar issue XML external entity in user-controlled data
                 saxParserFactory.setFeature("http://xml.org/sax/features/external-general-entities", false);
                 saxParserFactory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
                 saxParserFactory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-
                 saxParserFactory.newSAXParser().parse(new InputSource(new StringReader(xml)), receiptRequestHandler);
-
                 PaSendRTV2Request result = receiptRequestHandler.getPaSendRTV2Request();
                 args = "noticeNumber=" + result.getNoticeNumber() + ", fiscalCode=" + result.getFiscalCode() + ", creditorReferenceId=" + result.getCreditorReferenceId();
             }
-        } catch (SAXException | IOException | ParserConfigurationException e) {
-            return args;
+        } catch (Exception e) {
+            args = "n/a";
         }
         return args;
     }

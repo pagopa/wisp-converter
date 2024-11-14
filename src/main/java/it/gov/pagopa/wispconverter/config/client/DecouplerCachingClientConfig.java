@@ -1,5 +1,6 @@
 package it.gov.pagopa.wispconverter.config.client;
 
+import it.gov.pagopa.wispconverter.custom.DecouplerApiClient;
 import it.gov.pagopa.wispconverter.service.ReService;
 import it.gov.pagopa.wispconverter.util.client.RequestResponseLoggingProperties;
 import it.gov.pagopa.wispconverter.util.client.decouplercaching.DecouplerCachingClientLoggingInterceptor;
@@ -66,6 +67,30 @@ public class DecouplerCachingClientConfig {
 
         client.setBasePath(basePath);
         client.setApiKey(apiKey);
+
+        return client;
+    }
+
+    @Bean
+    public it.gov.pagopa.gen.wispconverter.client.decouplercaching.invoker.ApiClient decouplerCachingClientWithRetry() {
+        RequestResponseLoggingProperties clientLoggingProperties = decouplerCachingClientLoggingProperties();
+
+        DecouplerCachingClientLoggingInterceptor clientLogging = new DecouplerCachingClientLoggingInterceptor(clientLoggingProperties, reService, isTracingOfClientOnREEnabled);
+
+        RestTemplate restTemplate = restTemplate();
+
+        List<ClientHttpRequestInterceptor> currentInterceptors = restTemplate.getInterceptors();
+        currentInterceptors.add(clientLogging);
+        restTemplate.setInterceptors(currentInterceptors);
+
+        restTemplate.setErrorHandler(new DecouplerCachingClientResponseErrorHandler());
+
+        DecouplerApiClient client = new DecouplerApiClient(restTemplate);
+
+        client.setBasePath(basePath);
+        client.setApiKey(apiKey);
+        client.setMaxAttemptsForRetry(3);
+        client.setWaitTimeMillis(50);
 
         return client;
     }

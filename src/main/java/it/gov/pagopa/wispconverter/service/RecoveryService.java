@@ -167,15 +167,14 @@ public class RecoveryService {
     // call sendRTKoFromSessionId
     public void callSendReceiptKO(String ci, String iuv, String ccp, String sessionId) {
         MDC.put(Constants.MDC_BUSINESS_PROCESS, "recovery-receipt-ko");
-        generateRE(WorkflowStatus.RT_START_RECONCILIATION_PROCESS, ci, iuv, ccp, sessionId, null);
         try {
             log.info("[WISP-Recovery][SEND-RECEIPT-KO] receipt-ko for ci = {}, iuv = {}, ccp = {}, sessionId = {}", ci, iuv, ccp, sessionId);
             this.receiptService.sendRTKoFromSessionId(sessionId);
         } catch (Exception e) {
-            generateRE(WorkflowStatus.RT_END_RECONCILIATION_PROCESS, ci, iuv, ccp, sessionId, null);
+            generateRE(WorkflowStatus.RT_RECONCILIATION_PROCESSED, ci, iuv, ccp, sessionId, null);
             throw new AppException(e, AppErrorCodeMessageEnum.ERROR, e.getMessage());
         }
-        generateRE(WorkflowStatus.RT_END_RECONCILIATION_PROCESS, ci, iuv, ccp, sessionId, null);
+        generateRE(WorkflowStatus.RT_RECONCILIATION_PROCESSED, ci, iuv, ccp, sessionId, null);
         MDC.remove(Constants.MDC_BUSINESS_PROCESS);
     }
 
@@ -281,6 +280,13 @@ public class RecoveryService {
             return recoverReceiptToBeReSent(req);
         } catch (IOException e) {
             throw new AppException(AppErrorCodeMessageEnum.ERROR, "Problem with receipt payload");
+        }
+    }
+
+    @Transactional
+    public void recoverReceiptKoToBeReSentBySessionIds(RecoveryReceiptBySessionIdRequest request) {
+        for (String sessionId : request.getSessionIds()) {
+            CompletableFuture.runAsync(MDCUtil.withMdc(() -> receiptService.sendRTKoFromSessionId(sessionId)));
         }
     }
 
