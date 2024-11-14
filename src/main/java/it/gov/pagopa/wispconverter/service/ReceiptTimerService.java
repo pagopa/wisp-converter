@@ -135,19 +135,15 @@ public class ReceiptTimerService {
     }
 
     private void populateMDC(String paymentToken) {
-        String domainId = null;
-        String noticeNumber = null;
         try {
             byte[] primitiveByteArray = cacheRepository.readByte(String.format(PAYMENT_TOKEN_CACHING_KEY_TEMPLATE, paymentToken));
             String byteArrayAsString = new String(primitiveByteArray, StandardCharsets.UTF_8);
             String objectAsString = byteArrayAsString.substring(byteArrayAsString.indexOf('{'), byteArrayAsString.lastIndexOf('}') + 1);
             ReceiptTimerRequest receiptTimerRequest = new Gson().fromJson(objectAsString, ReceiptTimerRequest.class);
             MDC.put(Constants.MDC_SESSION_ID, receiptTimerRequest.getSessionId());
-            domainId = receiptTimerRequest.getFiscalCode();
-            noticeNumber = receiptTimerRequest.getNoticeNumber();
         } catch (Exception e) {
             log.debug("Impossible to generate data for MDC from cached payment token.", e);
         }
-        MDCUtil.setReceiptTimerInfoInMDC(domainId, noticeNumber, paymentToken);
+        MDCUtil.setReceiptTimerInfoInMDC(null, null, null);
     }
 }
