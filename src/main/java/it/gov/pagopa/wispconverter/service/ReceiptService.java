@@ -176,7 +176,7 @@ public class ReceiptService {
 
             // generate and send a KO RT for each receipt received in the payload
             for (ReceiptDto receipt : receipts) {
-                handleSingleReceiptForPaaInviaRt(receipt, sessionIdDto, configurations, stations);
+                handleSingleReceiptForKOPaaInviaRt(receipt, sessionIdDto, configurations, stations);
             }
 
         } catch (AppException e) {
@@ -186,7 +186,7 @@ public class ReceiptService {
         }
     }
 
-    private void handleSingleReceiptForPaaInviaRt(ReceiptDto receipt, SessionIdDto sessionIdDto, Map<String, ConfigurationKeyDto> configurations, Map<String, StationDto> stations) {
+    private void handleSingleReceiptForKOPaaInviaRt(ReceiptDto receipt, SessionIdDto sessionIdDto, Map<String, ConfigurationKeyDto> configurations, Map<String, StationDto> stations) {
 
         // workaround to reuse endpoint service. in this case sessionId = sessionId_fiscalCode_noticeNumber
         sessionIdDto.setSessionId(String.format("%s_%s_%s", receipt.getSessionId(), receipt.getFiscalCode(), receipt.getNoticeNumber()));
@@ -220,19 +220,20 @@ public class ReceiptService {
            Each paaInviaRT generated will be autonomously sent to creditor institution in order to track each RPT.
           */
             List<RPTContentDTO> rpts = extractRequiredRPTs(sessionData, iuv, receipt.getFiscalCode());
+            this.rptExtractorService.sendEventForExtractedRPTs(rpts);
             for (RPTContentDTO rpt : rpts) {
-                handleSingleRptForSendingPaaInviaRpt(configurations, stations, rpt, iuv, commonFields, sessionData, noticeNumber);
+                handleSingleRptForSendingKOPaaInviaRpt(configurations, stations, rpt, iuv, commonFields, sessionData, noticeNumber);
             }
         }
     }
 
-    private void handleSingleRptForSendingPaaInviaRpt(Map<String, ConfigurationKeyDto> configurations,
-                                                      Map<String, StationDto> stations,
-                                                      RPTContentDTO rpt,
-                                                      String iuv,
-                                                      CommonFieldsDTO commonFields,
-                                                      SessionDataDTO sessionData,
-                                                      String noticeNumber) {
+    private void handleSingleRptForSendingKOPaaInviaRpt(Map<String, ConfigurationKeyDto> configurations,
+                                                        Map<String, StationDto> stations,
+                                                        RPTContentDTO rpt,
+                                                        String iuv,
+                                                        CommonFieldsDTO commonFields,
+                                                        SessionDataDTO sessionData,
+                                                        String noticeNumber) {
 
         // generate the header for the paaInviaRT SOAP request. This object is common for each generated request
         IntestazionePPT header = generateHeader(
@@ -253,14 +254,12 @@ public class ReceiptService {
         // retrieve station from common station identifier
         StationDto station = stations.get(commonFields.getStationId());
 
-        ReceiptContentDTO receiptContent =
-                ReceiptContentDTO.builder()
-                        .paaInviaRTPayload(paaInviaRtPayload)
-                        .rtPayload(rawGeneratedReceipt)
-                        .build();
+        ReceiptContentDTO receiptContent = ReceiptContentDTO.builder()
+                .paaInviaRTPayload(paaInviaRtPayload)
+                .rtPayload(rawGeneratedReceipt)
+                .build();
 
-        // send receipt to the creditor institution and, if not correctly sent, add to queue for
-        // retry
+        // send receipt to the creditor institution and, if not correctly sent, add to queue for retry
         sendReceiptToCreditorInstitution(sessionData, rpt, receiptContent, rpt.getIuv(), noticeNumber, station, true);
     }
 
@@ -314,6 +313,7 @@ public class ReceiptService {
                   Each paaInviaRT generated will be autonomously sent to creditor institution in order to track each RPT.
                 */
                 List<RPTContentDTO> rpts = extractRequiredRPTs(sessionData, receipt.getCreditorReferenceId(), receipt.getFiscalCode());
+                this.rptExtractorService.sendEventForExtractedRPTs(rpts);
                 for (RPTContentDTO rpt : rpts) {
 
                     // actualize content for correctly handle multibeneficiary carts
@@ -446,7 +446,7 @@ public class ReceiptService {
                 generateREForSentRT(rpt, iuv, noticeNumber);
                 idempotencyStatus = IdempotencyStatusEnum.SUCCESS;
             } catch (AppException e) {
-                String message = e.getError().getDetail();
+
                 if (e.getError().equals(AppErrorCodeMessageEnum.RECEIPT_GENERATION_ERROR_DEAD_LETTER)) {
                     try {
                         RTRequestEntity rtRequestEntity = generateRTRequestEntity(sessionData, uri, proxyAddress, headers, receiptContentDTO.getPaaInviaRTPayload(), station, rpt, idempotencyKey, receiptType);
@@ -456,10 +456,9 @@ public class ReceiptService {
                         log.error("[DEADLETTER-500][sessionId:{}] {}", sessionData.getCommonFields().getSessionId(), AppErrorCodeMessageEnum.PERSISTENCE_SAVING_DEADLETTER_ERROR.getTitle(), ex);
                     }
                 } else {
-                    // because of the not sent receipt, it is necessary to schedule a retry of the sending
-                    // process for this receipt
+                    // because of the not sent receipt, it is necessary to schedule a retry of the sending process for this receipt
                     scheduleRTSend(sessionData, uri, proxyAddress, headers, receiptContentDTO.getPaaInviaRTPayload(), station, rpt, noticeNumber, idempotencyKey, receiptType);
-                    log.error(EXCEPTION + AppErrorCodeMessageEnum.RECEIPT_KO_NOT_GENERATED_BUT_MAYBE_RESCHEDULED.getDetail());
+                    log.error(EXCEPTION + AppErrorCodeMessageEnum.RECEIPT_KO_NOT_GENERATED_BUT_MAYBE_RESCHEDULED.getDetail(), e);
                 }
                 idempotencyStatus = IdempotencyStatusEnum.FAILED;
             } catch (Exception e) {

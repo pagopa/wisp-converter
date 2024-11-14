@@ -67,7 +67,6 @@ public class RPTExtractorService {
 
         // generate and save RE event internal for change status
         MDCUtil.setSessionDataInfo(sessionData, primitive);
-        generateRE(sessionData);
 
         return sessionData;
     }
@@ -81,9 +80,7 @@ public class RPTExtractorService {
         // initializing common fields
         String creditorInstitutionId = soapHeader.getIdentificativoDominio();
         PaymentRequestDTO rpt = extractRPT(soapBody.getRpt());
-        boolean containsDigitalStamp =
-                rpt.getTransferData().getTransfer().stream()
-                        .anyMatch(transfer -> transfer.getDigitalStamp() != null);
+        boolean containsDigitalStamp = rpt.getTransferData().getTransfer().stream().anyMatch(transfer -> transfer.getDigitalStamp() != null);
 
         // finally, generate session data
         return SessionDataDTO.builder()
@@ -117,9 +114,7 @@ public class RPTExtractorService {
                         Collections.singletonMap(
                                 rpt.getTransferData().getIuv(),
                                 RPTContentDTO.builder()
-                                        .iupd(
-                                                soapHeader.getIdentificativoIntermediarioPA()
-                                                        + soapHeader.getIdentificativoUnivocoVersamento())
+                                        .iupd(soapHeader.getIdentificativoIntermediarioPA() + soapHeader.getIdentificativoUnivocoVersamento())
                                         .iuv(rpt.getTransferData().getIuv())
                                         .rpt(rpt)
                                         .ccp(rpt.getTransferData().getCcp())
@@ -132,18 +127,12 @@ public class RPTExtractorService {
     private SessionDataDTO extractSessionDataFromNodoInviaCarrelloRPT(SOAPMessage soapMessage) {
 
         // extracting header and body from SOAP envelope
-        IntestazioneCarrelloPPT soapHeader =
-                this.jaxbElementUtil.getHeader(soapMessage, IntestazioneCarrelloPPT.class);
-        NodoInviaCarrelloRPT soapBody =
-                this.jaxbElementUtil.getBody(soapMessage, NodoInviaCarrelloRPT.class);
+        IntestazioneCarrelloPPT soapHeader = this.jaxbElementUtil.getHeader(soapMessage, IntestazioneCarrelloPPT.class);
+        NodoInviaCarrelloRPT soapBody = this.jaxbElementUtil.getBody(soapMessage, NodoInviaCarrelloRPT.class);
 
         // initializing common fields
-        boolean isMultibeneficiary =
-                soapBody.isMultiBeneficiario() != null && soapBody.isMultiBeneficiario();
-        String creditorInstitutionId =
-                isMultibeneficiary
-                        ? soapBody.getListaRPT().getElementoListaRPT().get(0).getIdentificativoDominio()
-                        : null;
+        boolean isMultibeneficiary = soapBody.isMultiBeneficiario() != null && soapBody.isMultiBeneficiario();
+        String creditorInstitutionId = isMultibeneficiary ? soapBody.getListaRPT().getElementoListaRPT().get(0).getIdentificativoDominio() : null;
         String payerType = null;
         String payerFiscalCode = null;
         String fullName = null;
@@ -163,12 +152,12 @@ public class RPTExtractorService {
             // generating RPT
             PaymentRequestDTO rpt = extractRPT(elementoListaRPT.getRpt());
 
-      /*
-       Validating common fields.
-       These fields will be equals for each RPT if multibeneficiary, so it could be set from 0-index element.
-       But this strategy is used to check the uniqueness of these fields for each RPT and if this is
-       not true, an exception is thrown.
-      */
+           /*
+           Validating common fields.
+           These fields will be equals for each RPT if multibeneficiary, so it could be set from 0-index element.
+           But this strategy is used to check the uniqueness of these fields for each RPT and if this is
+           not true, an exception is thrown.
+           */
             if (isMultibeneficiary) {
                 payerType =
                         checkUniqueness(
@@ -294,8 +283,7 @@ public class RPTExtractorService {
 
     private PaymentRequestDTO extractRPT(byte[] rptBytes) {
 
-        CtRichiestaPagamentoTelematico rptElement =
-                this.jaxbElementUtil.convertToBean(rptBytes, CtRichiestaPagamentoTelematico.class);
+        CtRichiestaPagamentoTelematico rptElement = this.jaxbElementUtil.convertToBean(rptBytes, CtRichiestaPagamentoTelematico.class);
         PaymentRequestDTO paymentRequest = mapper.toPaymentRequestDTO(rptElement);
 
         // explicitly set creditor institution name, taken from cached configuration
@@ -305,11 +293,11 @@ public class RPTExtractorService {
         return paymentRequest;
     }
 
-    private void generateRE(SessionDataDTO sessionData) {
+    public void sendEventForExtractedRPTs(Collection<RPTContentDTO> rpts) {
 
         // creating event to be persisted for RE
         if (Boolean.TRUE.equals(isTracingOnREEnabled)) {
-            for (RPTContentDTO rpt : sessionData.getAllRPTs()) {
+            for (RPTContentDTO rpt : rpts) {
                 MDC.put(Constants.MDC_DOMAIN_ID, rpt.getRpt().getDomain().getDomainId());
                 MDC.put(Constants.MDC_IUV, rpt.getIuv());
                 MDC.put(Constants.MDC_CCP, rpt.getCcp());
