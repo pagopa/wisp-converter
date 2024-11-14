@@ -141,7 +141,7 @@ public class ReInterceptor implements HandlerInterceptor {
                         getOutcomeEnum(response),
                         ReRequestContext.builder()
                                 .uri(requestUri)
-                                .method(HttpMethod.valueOf(request.getMethod()))
+                                .method(request.getMethod() != null ? HttpMethod.valueOf(request.getMethod()) : null)
                                 .payload(getRequestMessagePayload(request))
                                 .headers(formatServerRequestHeaders(request))
                                 .build(),

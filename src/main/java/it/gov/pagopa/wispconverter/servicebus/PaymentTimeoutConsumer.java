@@ -53,12 +53,8 @@ public class PaymentTimeoutConsumer extends SBConsumer {
 
     @PostConstruct
     public void post() {
-        if (StringUtils.isNotBlank(connectionString)
-                && !connectionString.equals("-")
-                && !disableServiceBusReceiver) {
-            receiverClient =
-                    CommonUtility.getServiceBusProcessorClient(
-                            connectionString, queueName, this::processMessage, this::processError);
+        if (StringUtils.isNotBlank(connectionString) && !connectionString.equals("-") && !disableServiceBusReceiver) {
+            receiverClient = CommonUtility.getServiceBusProcessorClient(connectionString, queueName, this::processMessage, this::processError);
         }
     }
 
@@ -79,10 +75,7 @@ public class PaymentTimeoutConsumer extends SBConsumer {
             outcome = MDC.get(Constants.MDC_OUTCOME) == null ? OutcomeEnum.OK : OutcomeEnum.valueOf(MDC.get(Constants.MDC_OUTCOME));
 
         } catch (IOException e) {
-            log.error(
-                    "Error when read ReceiptDto value from message: '{}'. Body: '{}'",
-                    message.getMessageId(),
-                    message.getBody());
+            log.error("Error when read ReceiptDto value from message: '{}'. Body: '{}'", message.getMessageId(), message.getBody());
             outcome = MDC.get(Constants.MDC_OUTCOME) == null ? OutcomeEnum.ERROR : OutcomeEnum.valueOf(MDC.get(Constants.MDC_OUTCOME));
         } finally {
             reService.sendEvent(WorkflowStatus.PAYMENT_TOKEN_TIMER_IN_TIMEOUT, context.getMessage(), null, outcome);
