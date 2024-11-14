@@ -277,6 +277,10 @@ public class ReceiptService {
             PaSendRTV2Request paSendRTV2Request = jaxbElementUtil.getBody(envelopeElement, PaSendRTV2Request.class);
             gov.telematici.pagamenti.ws.papernodo.ObjectFactory objectFactory = new gov.telematici.pagamenti.ws.papernodo.ObjectFactory();
 
+            // extracting paymentNote, using it as session-id (they are equals)
+            String paymentNote = paSendRTV2Request.getReceipt().getPaymentNote();
+            MDC.put(Constants.MDC_SESSION_ID, paymentNote);
+
             // retrieve configuration data from cache
             ConfigDataV1Dto configData = configCacheService.getConfigData();
             Map<String, StationDto> stations = configData.getStations();
@@ -285,9 +289,6 @@ public class ReceiptService {
             String noticeNumber = paSendRTV2Request.getReceipt().getNoticeNumber();
             CachedKeysMapping cachedMapping = decouplerService.getCachedMappingFromNavToIuv(paSendRTV2Request.getIdPA(), noticeNumber);
 
-            // paymentNote is equal to session-id
-            String paymentNote = paSendRTV2Request.getReceipt().getPaymentNote();
-            MDC.put(Constants.MDC_SESSION_ID, paymentNote);
             // use session-id for generate session data information on which the next execution will operate
             SessionDataDTO sessionData = getSessionDataFromSessionId(paymentNote);
             CommonFieldsDTO commonFields = sessionData.getCommonFields();

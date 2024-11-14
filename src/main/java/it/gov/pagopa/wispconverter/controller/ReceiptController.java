@@ -14,6 +14,7 @@ import it.gov.pagopa.wispconverter.repository.model.enumz.WorkflowStatus;
 import it.gov.pagopa.wispconverter.service.ReceiptService;
 import it.gov.pagopa.wispconverter.service.RtReceiptCosmosService;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
+import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.EndpointRETrace;
 import it.gov.pagopa.wispconverter.util.ErrorUtil;
 import it.gov.pagopa.wispconverter.util.ReceiptRequestHandler;
@@ -21,6 +22,7 @@ import it.gov.pagopa.wispconverter.util.ReceiptRequestHandler.PaSendRTV2Request;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.MDC;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -28,7 +30,6 @@ import org.springframework.web.bind.annotation.*;
 import org.xml.sax.InputSource;
 
 import javax.xml.parsers.SAXParserFactory;
-import java.io.IOException;
 import java.io.StringReader;
 import java.util.List;
 
@@ -77,6 +78,7 @@ public class ReceiptController {
     )
     @EndpointRETrace(status = WorkflowStatus.RECEIPT_SEND_PROCESSED, businessProcess = BP_RECEIPT_KO, reEnabled = true)
     public void receiptKo(@RequestBody ReceiptDto request) {
+        MDC.put(Constants.MDC_SESSION_ID, request.getSessionId());
         receiptService.sendKoPaaInviaRtToCreditorInstitution(List.of(request));
     }
 
