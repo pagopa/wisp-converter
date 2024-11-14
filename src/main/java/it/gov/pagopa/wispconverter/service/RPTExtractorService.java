@@ -313,7 +313,7 @@ public class RPTExtractorService {
                 MDC.put(Constants.MDC_DOMAIN_ID, rpt.getRpt().getDomain().getDomainId());
                 MDC.put(Constants.MDC_IUV, rpt.getIuv());
                 MDC.put(Constants.MDC_CCP, rpt.getCcp());
-                reService.sendEvent(WorkflowStatus.RPTS_EXTRACTED);
+                reService.sendEvent(WorkflowStatus.RPT_EXTRACTED);
             }
         }
     }

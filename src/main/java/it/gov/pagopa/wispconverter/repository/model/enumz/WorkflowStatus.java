@@ -8,7 +8,7 @@ import lombok.Getter;
 public enum WorkflowStatus {
 
     // === INTERNAL ===
-    RPTS_EXTRACTED(EventCategoryEnum.INTERNAL, "Data extracted from all analyzed RPTs"),
+    RPT_EXTRACTED(EventCategoryEnum.INTERNAL, "Data extracted from all analyzed RPTs"),
     FOUND_RT_IN_STORAGE(EventCategoryEnum.INTERNAL, "RT found in storage"),
     RPT_TIMER_DELETED(EventCategoryEnum.INTERNAL, "Timer RPT deleted from the cache"),
     ECOMMERCE_HANG_TIMER_CREATED(EventCategoryEnum.INTERNAL, "Ecommerce hang timer created"),
