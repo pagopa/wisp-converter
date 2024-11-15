@@ -92,7 +92,7 @@ public class CommonUtility {
                     query,
                     null);
         } catch (Exception e) {
-            throw new AppException(AppErrorCodeMessageEnum.PARSING_GENERIC_ERROR);
+            throw new AppException(AppErrorCodeMessageEnum.PARSING_GENERIC_ERROR, e.getMessage());
         }
     }
 
@@ -133,22 +133,22 @@ public class CommonUtility {
 
     public static PaymentOptionModelDto getSinglePaymentOption(PaymentPositionModelDto paymentPosition) {
         if (paymentPosition == null || paymentPosition.getPaymentOption() == null || paymentPosition.getPaymentOption().isEmpty()) {
-            throw new AppException(AppErrorCodeMessageEnum.PAYMENT_OPTION_NOT_EXTRACTABLE);
+            throw new AppException(AppErrorCodeMessageEnum.PAYMENT_OPTION_NOT_EXTRACTABLE, "Empty payment option");
         }
         PaymentOptionModelDto paymentOption = paymentPosition.getPaymentOption().get(0);
         if (paymentOption == null) {
-            throw new AppException(AppErrorCodeMessageEnum.PAYMENT_OPTION_NOT_EXTRACTABLE);
+            throw new AppException(AppErrorCodeMessageEnum.PAYMENT_OPTION_NOT_EXTRACTABLE, "Invalid payment option at position 0");
         }
         return paymentOption;
     }
 
     public static PaymentOptionModelResponseDto getSinglePaymentOption(PaymentPositionModelBaseResponseDto paymentPosition) {
         if (paymentPosition == null || paymentPosition.getPaymentOption() == null || paymentPosition.getPaymentOption().isEmpty()) {
-            throw new AppException(AppErrorCodeMessageEnum.PAYMENT_OPTION_NOT_EXTRACTABLE);
+            throw new AppException(AppErrorCodeMessageEnum.PAYMENT_OPTION_NOT_EXTRACTABLE, "Empty payment option");
         }
         PaymentOptionModelResponseDto paymentOption = paymentPosition.getPaymentOption().get(0);
         if (paymentOption == null) {
-            throw new AppException(AppErrorCodeMessageEnum.PAYMENT_OPTION_NOT_EXTRACTABLE);
+            throw new AppException(AppErrorCodeMessageEnum.PAYMENT_OPTION_NOT_EXTRACTABLE, "Invalid payment option at position 0.");
         }
         return paymentOption;
     }

@@ -352,7 +352,7 @@ public class DebtPositionService {
             if (!iuv.equals(iuvFromRetrievedPaymentPosition)) {
                 paymentPosition = gpdClientInstance.getDebtPositionByIUV(creditorInstitutionId, iuv, MDC.get(Constants.MDC_REQUEST_ID));
                 if (paymentPosition.getPaymentOption() == null || paymentPosition.getPaymentOption().isEmpty()) {
-                    throw new AppException(AppErrorCodeMessageEnum.PAYMENT_OPTION_NOT_EXTRACTABLE, iuvFromRetrievedPaymentPosition);
+                    throw new AppException(AppErrorCodeMessageEnum.PAYMENT_OPTION_NOT_EXTRACTABLE, "Empty payment option");
                 }
             }
 
@@ -462,7 +462,7 @@ public class DebtPositionService {
         // update the payment option to be used in bulk insert with the newly generated NAV code
         List<PaymentOptionModelDto> paymentOptions = extractedPaymentPosition.getPaymentOption();
         if (paymentOptions == null || paymentOptions.isEmpty()) {
-            throw new AppException(AppErrorCodeMessageEnum.PAYMENT_OPTION_NOT_EXTRACTABLE);
+            throw new AppException(AppErrorCodeMessageEnum.PAYMENT_OPTION_NOT_EXTRACTABLE, "Empty payment option");
         }
         paymentOptions.get(0).setNav(nav);
 

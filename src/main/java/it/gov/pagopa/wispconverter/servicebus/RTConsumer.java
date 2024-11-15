@@ -194,7 +194,7 @@ public class RTConsumer extends SBConsumer {
             if (receipt.getProxyAddress() != null) {
                 String[] proxyComponents = receipt.getProxyAddress().split(":");
                 if (proxyComponents.length != 2) {
-                    throw new AppException(AppErrorCodeMessageEnum.CONFIGURATION_INVALID_STATION_PROXY);
+                    throw new AppException(AppErrorCodeMessageEnum.CONFIGURATION_INVALID_STATION_PROXY, receipt.getStation());
                 }
                 proxyAddress =
                         new InetSocketAddress(proxyComponents[0], Integer.parseInt(proxyComponents[1]));

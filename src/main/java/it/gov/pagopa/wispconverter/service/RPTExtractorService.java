@@ -61,7 +61,7 @@ public class RPTExtractorService {
             case Constants.NODO_INVIA_RPT -> sessionData = extractSessionDataFromNodoInviaRPT(soapMessage);
             case Constants.NODO_INVIA_CARRELLO_RPT ->
                     sessionData = extractSessionDataFromNodoInviaCarrelloRPT(soapMessage);
-            default -> throw new AppException(AppErrorCodeMessageEnum.PARSING_RPT_PRIMITIVE_NOT_VALID);
+            default -> throw new AppException(AppErrorCodeMessageEnum.PARSING_RPT_PRIMITIVE_NOT_VALID, primitive);
         }
 
         // generate and save RE event internal for change status

@@ -25,7 +25,7 @@ public class XmlUtil {
             xmlGregorianCalendar.setTimezone(DatatypeConstants.FIELD_UNDEFINED); // removing all references about timezone
             return xmlGregorianCalendar;
         } catch (DatatypeConfigurationException e) {
-            throw new AppException(e, AppErrorCodeMessageEnum.PARSING_INVALID_BODY);
+            throw new AppException(e, AppErrorCodeMessageEnum.PARSING_INVALID_BODY, e.getMessage());
         }
     }
 
