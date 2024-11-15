@@ -60,7 +60,7 @@ public interface ReEventRepositorySecondary extends CosmosRepository<ReEventEnti
             "AND ( " +
             "(c.status = 'TRIGGER_PRIMITIVE_PROCESSED' AND c.businessProcess != 'nodoChiediCopiaRT') " +
             "OR " +
-            "(c.businessProcess = 'redirect' AND c.status = 'RPT_EXTRACTED')" +
+            "(c.businessProcess = 'redirect' AND c.status = 'RPT_TIMER_DELETED')" +
             " ) " +
             "GROUP BY c.sessionId " +
             ") AS wispSession " +

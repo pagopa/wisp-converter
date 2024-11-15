@@ -5,7 +5,6 @@ import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.RTRetryRepository;
 import it.gov.pagopa.wispconverter.repository.model.RTRequestEntity;
-import it.gov.pagopa.wispconverter.repository.model.enumz.WorkflowStatus;
 import it.gov.pagopa.wispconverter.util.Constants;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -52,7 +51,7 @@ public class RtRetryComosService {
                 MDC.put(Constants.MDC_SESSION_ID, idempotencyKeySections[0]);
             }
         }
-        reService.sendEvent(WorkflowStatus.FOUND_RT_IN_STORAGE);
+        // reService.sendEvent(WorkflowStatus.FOUND_RT_IN_STORAGE); commented for more reducing logged statuses
 
         return rtRequestEntity;
     }

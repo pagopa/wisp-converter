@@ -8,7 +8,6 @@ import gov.telematici.pagamenti.ws.nodoperpa.ppthead.IntestazionePPT;
 import it.gov.digitpa.schemas._2011.pagamenti.CtRichiestaPagamentoTelematico;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
-import it.gov.pagopa.wispconverter.repository.model.enumz.WorkflowStatus;
 import it.gov.pagopa.wispconverter.service.mapper.RPTMapper;
 import it.gov.pagopa.wispconverter.service.model.PaymentRequestDomainDTO;
 import it.gov.pagopa.wispconverter.service.model.paymentrequest.PaymentRequestDTO;
@@ -293,6 +292,7 @@ public class RPTExtractorService {
         return paymentRequest;
     }
 
+    /*
     public void sendEventForExtractedRPTs(Collection<RPTContentDTO> rpts) {
 
         // creating event to be persisted for RE
@@ -305,4 +305,5 @@ public class RPTExtractorService {
             }
         }
     }
+     */
 }

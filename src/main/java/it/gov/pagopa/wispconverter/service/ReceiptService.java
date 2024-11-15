@@ -217,7 +217,7 @@ public class ReceiptService {
            Each paaInviaRT generated will be autonomously sent to creditor institution in order to track each RPT.
           */
             List<RPTContentDTO> rpts = extractRequiredRPTs(sessionData, iuv, receipt.getFiscalCode());
-            this.rptExtractorService.sendEventForExtractedRPTs(rpts);
+            // this.rptExtractorService.sendEventForExtractedRPTs(rpts);
             for (RPTContentDTO rpt : rpts) {
                 handleSingleRptForSendingKOPaaInviaRpt(configurations, stations, rpt, iuv, commonFields, sessionData, noticeNumber);
             }
@@ -311,7 +311,7 @@ public class ReceiptService {
                   Each paaInviaRT generated will be autonomously sent to creditor institution in order to track each RPT.
                 */
                 List<RPTContentDTO> rpts = extractRequiredRPTs(sessionData, receipt.getCreditorReferenceId(), receipt.getFiscalCode());
-                this.rptExtractorService.sendEventForExtractedRPTs(rpts);
+                // this.rptExtractorService.sendEventForExtractedRPTs(rpts);  commented for more reducing logged statuses
                 for (RPTContentDTO rpt : rpts) {
 
                     // actualize content for correctly handle multibeneficiary carts
