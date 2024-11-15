@@ -89,9 +89,7 @@ public class ReceiptService {
     private final ServiceBusService serviceBusService;
 
     private final ReceiptDeadLetterRepository receiptDeadLetterRepository;
-
-    private final it.gov.pagopa.gen.wispconverter.client.decouplercaching.invoker.ApiClient decouplerCachingClient;
-
+    
     @Autowired
     private final it.gov.pagopa.gen.wispconverter.client.decouplercaching.invoker.ApiClient decouplerCachingClientWithRetry;
 
