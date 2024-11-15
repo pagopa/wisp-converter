@@ -15,6 +15,7 @@ import it.gov.pagopa.wispconverter.service.ConfigCacheService;
 import it.gov.pagopa.wispconverter.service.PaaInviaRTSenderService;
 import it.gov.pagopa.wispconverter.service.RecoveryService;
 import it.gov.pagopa.wispconverter.service.RtReceiptCosmosService;
+import it.gov.pagopa.wispconverter.service.mapper.RTMapper;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
 import it.gov.pagopa.wispconverter.utils.TestUtils;
 import lombok.SneakyThrows;
@@ -67,6 +68,8 @@ class ReceiptTest {
     private CacheRepository cacheRepository;
     @MockBean
     private NavToIuvMappingRepository navToIuvMappingRepository;
+    @MockBean
+    private RTMapper rtMapper;
 
     @MockBean
     @Qualifier("decouplerCachingClient")
