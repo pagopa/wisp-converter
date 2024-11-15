@@ -445,6 +445,7 @@ public class ReceiptService {
                 idempotencyStatus = IdempotencyStatusEnum.SUCCESS;
             } catch (AppException e) {
 
+                MDC.put(Constants.MDC_OUTCOME, OutcomeEnum.SENDING_RT_FAILED.name());
                 if (e.getError().equals(AppErrorCodeMessageEnum.RECEIPT_GENERATION_ERROR_DEAD_LETTER)) {
                     try {
                         RTRequestEntity rtRequestEntity = generateRTRequestEntity(sessionData, uri, proxyAddress, headers, receiptContentDTO.getPaaInviaRTPayload(), station, rpt, idempotencyKey, receiptType);
@@ -462,6 +463,7 @@ public class ReceiptService {
             } catch (Exception e) {
 
                 // because of the not sent receipt, it is necessary to schedule a retry of the sending process for this receipt
+                MDC.put(Constants.MDC_OUTCOME, OutcomeEnum.SENDING_RT_FAILED.name());
                 scheduleRTSend(sessionData, uri, proxyAddress, headers, receiptContentDTO.getPaaInviaRTPayload(), station, rpt, noticeNumber, idempotencyKey, receiptType);
 
                 // generate a new event in RE for store the unsuccessful sending of the receipt
