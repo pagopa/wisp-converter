@@ -228,9 +228,9 @@ public class RTConsumer extends SBConsumer {
                 // Remove receipt from receipt collection
                 rtRetryComosService.deleteRTRequestEntity(receipt);
             } else {
-                MDC.put(Constants.MDC_OUTCOME, OutcomeEnum.SENDING_RT_FAILED.name());
 
                 // Rescheduled due to errors caused by faulty communication with creditor institution
+                MDC.put(Constants.MDC_OUTCOME, OutcomeEnum.SENDING_RT_FAILED.name());
                 reScheduleReceiptSend(receipt, receiptId, compositedIdForReceipt);
             }
 
@@ -277,19 +277,16 @@ public class RTConsumer extends SBConsumer {
                 serviceBusService.sendMessage(compositedIdForReceipt, schedulingTimeInMinutes);
 
                 rtReceiptCosmosService.updateReceiptStatus(ci, iuv, ccp, ReceiptStatusEnum.SCHEDULED);
-
                 MDC.put(Constants.MDC_OUTCOME, OutcomeEnum.SENDING_RT_FAILED_RESCHEDULED_SUCCESSFULLY.name());
 
             } catch (Exception e) {
 
                 MDC.put(Constants.MDC_OUTCOME, OutcomeEnum.SENDING_RT_FAILED_NOT_RESCHEDULED_DUE_ERROR.name());
-
                 rtReceiptCosmosService.updateReceiptStatus(ci, iuv, ccp, ReceiptStatusEnum.NOT_SENT);
             }
         } else {
 
             MDC.put(Constants.MDC_OUTCOME, OutcomeEnum.SENDING_RT_FAILED_NOT_RESCHEDULED_DUE_MAX_RETRIES.name());
-
             rtReceiptCosmosService.updateReceiptStatus(ci, iuv, ccp, ReceiptStatusEnum.NOT_SENT);
         }
     }

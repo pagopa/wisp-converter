@@ -19,10 +19,7 @@ import it.gov.pagopa.wispconverter.repository.ReceiptDeadLetterRepository;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
 import it.gov.pagopa.wispconverter.repository.model.RTRequestEntity;
 import it.gov.pagopa.wispconverter.repository.model.ReceiptDeadLetterEntity;
-import it.gov.pagopa.wispconverter.repository.model.enumz.IdempotencyStatusEnum;
-import it.gov.pagopa.wispconverter.repository.model.enumz.ReceiptStatusEnum;
-import it.gov.pagopa.wispconverter.repository.model.enumz.ReceiptTypeEnum;
-import it.gov.pagopa.wispconverter.repository.model.enumz.WorkflowStatus;
+import it.gov.pagopa.wispconverter.repository.model.enumz.*;
 import it.gov.pagopa.wispconverter.service.mapper.RTMapper;
 import it.gov.pagopa.wispconverter.service.model.CachedKeysMapping;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
@@ -708,6 +705,7 @@ public class ReceiptService {
         MDC.put(Constants.MDC_NOTICE_NUMBER, noticeNumber);
         MDC.put(Constants.MDC_PSP_ID, psp);
         MDC.put(Constants.MDC_CCP, rptContent.getCcp());
+        MDC.put(Constants.MDC_OUTCOME, OutcomeEnum.SENDING_RT_FAILED.name());
         reService.sendEvent(WorkflowStatus.RT_SEND_SCHEDULING_FAILURE, otherInfo);
         MDC.remove(Constants.MDC_IUV);
         MDC.remove(Constants.MDC_NOTICE_NUMBER);
@@ -725,6 +723,7 @@ public class ReceiptService {
         MDC.put(Constants.MDC_NOTICE_NUMBER, noticeNumber);
         MDC.put(Constants.MDC_PSP_ID, psp);
         MDC.put(Constants.MDC_CCP, rptContent.getCcp());
+        MDC.put(Constants.MDC_OUTCOME, OutcomeEnum.SENDING_RT_FAILED.name());
         reService.sendEvent(status, info);
         MDC.remove(Constants.MDC_IUV);
         MDC.remove(Constants.MDC_NOTICE_NUMBER);
