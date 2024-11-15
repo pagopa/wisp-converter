@@ -156,6 +156,13 @@ public class ReceiptService {
         return deepCopySendRTV2;
     }
 
+    private static void replaceOutcomeForErrorResponse(OutcomeEnum outcome) {
+        String currentOutcome = MDC.get(Constants.MDC_OUTCOME);
+        if (currentOutcome == null || currentOutcome.equals(OutcomeEnum.OK.name())) {
+            MDC.put(Constants.MDC_OUTCOME, outcome.name());
+        }
+    }
+
     /**
      * send a paaInviaRT with a KO. The body is generated from the list of receipts.
      *
@@ -217,7 +224,6 @@ public class ReceiptService {
            Each paaInviaRT generated will be autonomously sent to creditor institution in order to track each RPT.
           */
             List<RPTContentDTO> rpts = extractRequiredRPTs(sessionData, iuv, receipt.getFiscalCode());
-            // this.rptExtractorService.sendEventForExtractedRPTs(rpts);
             for (RPTContentDTO rpt : rpts) {
                 handleSingleRptForSendingKOPaaInviaRpt(configurations, stations, rpt, iuv, commonFields, sessionData, noticeNumber);
             }
@@ -481,7 +487,6 @@ public class ReceiptService {
 
     }
 
-
     private CtRicevutaTelematica generateRTContentForKoReceipt(RPTContentDTO rpt, Map<String, ConfigurationKeyDto> configurations, Instant now, String paymentOutcome) {
 
         it.gov.digitpa.schemas._2011.pagamenti.ObjectFactory objectFactory = new it.gov.digitpa.schemas._2011.pagamenti.ObjectFactory();
@@ -671,6 +676,7 @@ public class ReceiptService {
         MDC.put(Constants.MDC_NOTICE_NUMBER, noticeNumber);
         MDC.put(Constants.MDC_PSP_ID, psp);
         MDC.put(Constants.MDC_CCP, rptContent.getCcp());
+        MDC.put(Constants.MDC_OUTCOME, OutcomeEnum.OK.toString());
         reService.sendEvent(WorkflowStatus.RT_SEND_SUCCESS);
         MDC.remove(Constants.MDC_IUV);
         MDC.remove(Constants.MDC_NOTICE_NUMBER);
@@ -693,6 +699,9 @@ public class ReceiptService {
         MDC.remove(Constants.MDC_NOTICE_NUMBER);
         MDC.remove(Constants.MDC_PSP_ID);
         MDC.remove(Constants.MDC_CCP);
+
+        // replace outcome for error response
+        replaceOutcomeForErrorResponse(OutcomeEnum.SENDING_RT_FAILED);
     }
 
     private void generateREForFailedSchedulingSentRT(RPTContentDTO rptContent, String iuv, String noticeNumber, Throwable e) {
@@ -707,12 +716,14 @@ public class ReceiptService {
         MDC.put(Constants.MDC_NOTICE_NUMBER, noticeNumber);
         MDC.put(Constants.MDC_PSP_ID, psp);
         MDC.put(Constants.MDC_CCP, rptContent.getCcp());
-        MDC.put(Constants.MDC_OUTCOME, OutcomeEnum.SENDING_RT_FAILED.name());
         reService.sendEvent(WorkflowStatus.RT_SEND_SCHEDULING_FAILURE, otherInfo);
         MDC.remove(Constants.MDC_IUV);
         MDC.remove(Constants.MDC_NOTICE_NUMBER);
         MDC.remove(Constants.MDC_PSP_ID);
         MDC.remove(Constants.MDC_CCP);
+
+        // replace outcome for error response
+        replaceOutcomeForErrorResponse(OutcomeEnum.SENDING_RT_FAILED);
     }
 
     private void generateREDeadLetter(RPTContentDTO rptContent, String noticeNumber, WorkflowStatus status, String info) {
@@ -725,12 +736,14 @@ public class ReceiptService {
         MDC.put(Constants.MDC_NOTICE_NUMBER, noticeNumber);
         MDC.put(Constants.MDC_PSP_ID, psp);
         MDC.put(Constants.MDC_CCP, rptContent.getCcp());
-        MDC.put(Constants.MDC_OUTCOME, OutcomeEnum.SENDING_RT_FAILED.name());
         reService.sendEvent(status, info);
         MDC.remove(Constants.MDC_IUV);
         MDC.remove(Constants.MDC_NOTICE_NUMBER);
         MDC.remove(Constants.MDC_PSP_ID);
         MDC.remove(Constants.MDC_CCP);
+
+        // replace outcome for error response
+        replaceOutcomeForErrorResponse(OutcomeEnum.SENDING_RT_FAILED);
     }
 
     public void sendRTKoFromSessionId(String sessionId) {
