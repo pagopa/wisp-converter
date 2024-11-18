@@ -2,7 +2,7 @@
   "openapi": "3.0.1",
   "info": {
     "title": "WISP-Converter-redirect",
-    "version": "0.4.31-10-PAGOPA-2341-dismissione-wisp-rest-modificare-stati-re"
+    "version": "1.0.0"
   },
   "servers": [
     {
