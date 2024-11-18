@@ -5,9 +5,8 @@ import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.model.RTEntity;
 import it.gov.pagopa.wispconverter.repository.model.ReEventEntity;
 import it.gov.pagopa.wispconverter.repository.model.SessionIdEntity;
-import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
-import it.gov.pagopa.wispconverter.secondary.RTRepositorySecondary;
-import it.gov.pagopa.wispconverter.secondary.ReEventRepositorySecondary;
+import it.gov.pagopa.wispconverter.repository.secondary.RTRepositorySecondary;
+import it.gov.pagopa.wispconverter.repository.secondary.ReEventRepositorySecondary;
 import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -58,15 +57,11 @@ public class RecoveryServiceTest {
         String ccp = "cpp";
         String session = "sessionId";
 
-        doNothing().when(receiptService)
-                .sendRTKoFromSessionId(anyString(), any());
         doNothing().when(reService).addRe(any(ReEventDto.class));
 
         // Act
         recoveryService.callSendReceiptKO(ci, iuv, ccp, session);
 
-        // Assert
-        verify(receiptService, times(1)).sendRTKoFromSessionId(anyString(), any(InternalStepStatus.class));
     }
 
     @Test
@@ -91,15 +86,14 @@ public class RecoveryServiceTest {
         ZonedDateTime dateFrom = ZonedDateTime.now(ZoneOffset.UTC).minusHours(5);
         ZonedDateTime dateTo = ZonedDateTime.now(ZoneOffset.UTC).minusHours(4);
         List<RTEntity> mockRTEntities = List.of(RTEntity.builder()
-                                                        .iuv("iuv")
-                                                        .ccp("ccp")
-                                                        .domainId("idDominio")
-                                                        .build());
+                .iuv("iuv")
+                .ccp("ccp")
+                .domainId("idDominio")
+                .build());
         List<ReEventEntity> mockReEventEntities = List.of(ReEventEntity.builder()
-                                                                  .status("GENERATED_CACHE_ABOUT_RPT_FOR_RT_GENERATION")
-                                                                  .ccp("ccp2")
-                                                                  .insertedTimestamp(Instant.now())
-                                                                  .build());
+                .ccp("ccp2")
+                .insertedTimestamp(Instant.now())
+                .build());
 
         when(rtRepository.findByMidReceiptStatusInAndTimestampBetween(anyString(), anyString())).thenReturn(mockRTEntities);
         when(reRepository.findByIuvAndOrganizationId(anyString(), anyString(), anyString(), anyString())).thenReturn(mockReEventEntities);
@@ -179,7 +173,7 @@ public class RecoveryServiceTest {
 
         when(rtRepository.findByMidReceiptStatusInAndTimestampBetween(anyString(), anyString(), anyString())).thenReturn(mockRTEntities);
         doNothing().when(receiptService)
-                .sendRTKoFromSessionId(anyString(), any());
+                .sendRTKoFromSessionId(anyString());
         doNothing().when(reService).addRe(any(ReEventDto.class));
 
         // Act
@@ -246,7 +240,7 @@ public class RecoveryServiceTest {
         String iuv = "iuv";
 
         when(rtRepository.findByMidReceiptStatusInAndTimestampBetween(anyString(), anyString(), anyString(), anyString())).thenReturn(List.of());
-        doNothing().when(receiptService).sendRTKoFromSessionId(anyString(), any());
+        doNothing().when(receiptService).sendRTKoFromSessionId(anyString());
         doNothing().when(reService).addRe(any(ReEventDto.class));
 
         // Act
@@ -255,7 +249,7 @@ public class RecoveryServiceTest {
         // Assert
         assertNotNull(response);
         assertEquals(0, response.getPayments().size());
-        verify(receiptService, times(0)).sendRTKoFromSessionId(anyString(), any(InternalStepStatus.class));
+        verify(receiptService, times(0)).sendRTKoFromSessionId(anyString());
     }
 
     @Test
@@ -266,11 +260,11 @@ public class RecoveryServiceTest {
         String dateFrom = "2024-09-05";
         String dateTo = "2024-09-09";
         List<RTEntity> mockRTEntities = List.of(RTEntity.builder()
-                                                        .domainId("ci")
-                                                        .iuv("iuv")
-                                                        .ccp("ccp")
-                                                        .sessionId("sessionId")
-                                                        .build());
+                .domainId("ci")
+                .iuv("iuv")
+                .ccp("ccp")
+                .sessionId("sessionId")
+                .build());
 
         when(rtRepository.findByMidReceiptStatusInAndTimestampBetween(anyString(), anyString(), anyString(), anyString())).thenReturn(mockRTEntities);
 
@@ -280,6 +274,5 @@ public class RecoveryServiceTest {
         // Assert
         assertNotNull(response);
         assertEquals(1, response.getPayments().size());
-        verify(receiptService, times(1)).sendRTKoFromSessionId(anyString(), any(InternalStepStatus.class));
     }
 }

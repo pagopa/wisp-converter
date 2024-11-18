@@ -6,15 +6,11 @@ import com.azure.messaging.servicebus.ServiceBusSenderClient;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.CacheRepository;
-import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
+import it.gov.pagopa.wispconverter.repository.model.enumz.WorkflowStatus;
 import it.gov.pagopa.wispconverter.service.model.ECommerceHangTimeoutMessage;
-import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
-import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.LogUtils;
-import it.gov.pagopa.wispconverter.util.ReUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -24,6 +20,7 @@ import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 
 import static it.gov.pagopa.wispconverter.util.CommonUtility.sanitizeInput;
+import static it.gov.pagopa.wispconverter.util.MDCUtil.removeEcommerceHangTimerInfoInMDC;
 import static it.gov.pagopa.wispconverter.util.MDCUtil.setEcommerceHangTimerInfoInMDC;
 
 @Service
@@ -54,7 +51,10 @@ public class ECommerceHangTimerService {
     private CacheRepository cacheRepository;
 
     @Autowired
-    public ECommerceHangTimerService(CacheRepository cacheRepository, ServiceBusSenderClient serviceBusSenderClient, ReService reService) {
+    public ECommerceHangTimerService(
+            CacheRepository cacheRepository,
+            ServiceBusSenderClient serviceBusSenderClient,
+            ReService reService) {
         this.cacheRepository = cacheRepository;
         this.serviceBusSenderClient = serviceBusSenderClient;
         this.reService = reService;
@@ -62,28 +62,27 @@ public class ECommerceHangTimerService {
 
     @PostConstruct
     public void post() {
-        serviceBusSenderClient = new ServiceBusClientBuilder()
-                .connectionString(connectionString)
-                .sender()
-                .queueName(queueName)
-                .buildClient();
+        serviceBusSenderClient =
+                new ServiceBusClientBuilder()
+                        .connectionString(connectionString)
+                        .sender()
+                        .queueName(queueName)
+                        .buildClient();
     }
 
     /**
-     * This method add a new scheduled message in the queue.
-     * Note: This method use Redis Cache to handle the metadata of the message
+     * This method add a new scheduled message in the queue. Note: This method use Redis Cache to
+     * handle the metadata of the message
      *
      * @param message the message to send on the queue of the service bus.
      */
     public void sendMessage(ECommerceHangTimeoutMessage message) {
-        if(!disableServiceBusSender) {
+        if (!disableServiceBusSender) {
             String noticeNumber = message.getNoticeNumber();
             String fiscalCode = message.getFiscalCode();
             String sessionId = message.getSessionId();
             setEcommerceHangTimerInfoInMDC(fiscalCode, noticeNumber);
-
             String key = String.format(ECOMMERCE_TIMER_MESSAGE_KEY_FORMAT, noticeNumber, fiscalCode, sessionId);
-
             // If the key is already present in the cache, we delete it to avoid duplicated message.
             if (Boolean.TRUE.equals(cacheRepository.hasKey(key))) {
                 cancelScheduledMessage(noticeNumber, fiscalCode, sessionId);
@@ -95,18 +94,18 @@ public class ECommerceHangTimerService {
 
             // compute time and schedule message for consumer trigger
             OffsetDateTime scheduledExpirationTime = OffsetDateTime.now().plusSeconds(expirationTime);
-            Long sequenceNumber = serviceBusSenderClient.scheduleMessage(serviceBusMessage, scheduledExpirationTime);
+            Long sequenceNumber =
+                    serviceBusSenderClient.scheduleMessage(serviceBusMessage, scheduledExpirationTime);
 
             // log event
             log.debug("Sent scheduled message_base64 {} to the queue: {}", LogUtils.encodeToBase64(message.toString()), queueName);
-            generateRE(InternalStepStatus.ECOMMERCE_HANG_TIMER_CREATED, "Scheduled eCommerce hang release: [" + message + "] " +
-                                                                                "and will be triggered at " + scheduledExpirationTime);
-
+            reService.sendEvent(WorkflowStatus.ECOMMERCE_HANG_TIMER_CREATED, "Scheduled eCommerce hang release: [" + message + "] " + "and will be triggered at " + scheduledExpirationTime);
+            removeEcommerceHangTimerInfoInMDC();
+            
             // insert in Redis cache sequenceNumber of the message
             cacheRepository.insert(key, sequenceNumber.toString(), expirationTime, ChronoUnit.SECONDS);
         }
     }
-
 
     /**
      * This method deletes a scheduled message from the queue
@@ -115,16 +114,21 @@ public class ECommerceHangTimerService {
      * @param fiscalCode   use to find the message
      */
     public void cancelScheduledMessage(String noticeNumber, String fiscalCode, String sessionId) {
-        if(!disableServiceBusSender) {
-            log.debug("Cancel scheduled message for eCommerce hang release {} {}", sanitizeInput(noticeNumber), sanitizeInput(fiscalCode));
-            String key = String.format(ECOMMERCE_TIMER_MESSAGE_KEY_FORMAT, noticeNumber, fiscalCode, sessionId);
+        if (!disableServiceBusSender) {
+            log.debug(
+                    "Cancel scheduled message for eCommerce hang release {} {}",
+                    sanitizeInput(noticeNumber),
+                    sanitizeInput(fiscalCode));
+            String key =
+                    String.format(ECOMMERCE_TIMER_MESSAGE_KEY_FORMAT, noticeNumber, fiscalCode, sessionId);
 
             // get the sequenceNumber from the Redis cache
             String sequenceNumber = cacheRepository.read(key, String.class);
 
             // for retro-compatibility check old key format wisp_timer_hang_<notice-number>_<fiscal-code>
             if (sequenceNumber == null) {
-                String oldKey = String.format(OLD_ECOMMERCE_TIMER_MESSAGE_KEY_FORMAT, noticeNumber, fiscalCode);
+                String oldKey =
+                        String.format(OLD_ECOMMERCE_TIMER_MESSAGE_KEY_FORMAT, noticeNumber, fiscalCode);
                 sequenceNumber = cacheRepository.read(oldKey, String.class);
             }
 
@@ -132,14 +136,21 @@ public class ECommerceHangTimerService {
 
                 // cancel scheduled message in the service bus queue
                 callCancelScheduledMessage(sequenceNumber);
-                log.debug("Canceled scheduled message for ecommerce_hang_timeout_base64 {} {}", LogUtils.encodeToBase64(sanitizeInput(noticeNumber)), LogUtils.encodeToBase64(sanitizeInput(fiscalCode)));
+                log.debug(
+                        "Canceled scheduled message for ecommerce_hang_timeout_base64 {} {}",
+                        LogUtils.encodeToBase64(sanitizeInput(noticeNumber)),
+                        LogUtils.encodeToBase64(sanitizeInput(fiscalCode)));
 
                 // delete the sequenceNumber from the Redis cache
                 cacheRepository.delete(key);
 
                 // log event
-                log.debug("Deleted sequence number {} for ecommerce_hang_timeout_base64-token: {} {} from cache", sequenceNumber, sanitizeInput(noticeNumber), sanitizeInput(fiscalCode));
-                generateRE(InternalStepStatus.ECOMMERCE_HANG_TIMER_DELETED, "Deleted sequence number: [" + sequenceNumber + "] for notice: [" + noticeNumber + "] for fiscalCode [" + fiscalCode + "]");
+                log.debug(
+                        "Deleted sequence number {} for ecommerce_hang_timeout_base64-token: {} {} from cache",
+                        sequenceNumber,
+                        sanitizeInput(noticeNumber),
+                        sanitizeInput(fiscalCode));
+                reService.sendEvent(WorkflowStatus.ECOMMERCE_HANG_TIMER_DELETED);
             }
         }
     }
@@ -151,22 +162,9 @@ public class ECommerceHangTimerService {
                 // delete the message from the queue
                 serviceBusSenderClient.cancelScheduledMessage(sequenceNumber);
             } catch (Exception exception) {
-                throw new AppException(AppErrorCodeMessageEnum.PERSISTENCE_SERVICE_BUS_CANCEL_ERROR, exception.getMessage());
+                throw new AppException(
+                        AppErrorCodeMessageEnum.PERSISTENCE_SERVICE_BUS_CANCEL_ERROR, exception.getMessage());
             }
         }
     }
-
-
-    private void generateRE(InternalStepStatus status, String otherInfo) {
-        // setting data in MDC for next use
-        // TODO fix the info
-        ReEventDto reEvent = ReUtil.getREBuilder()
-                .status(status)
-                .domainId(MDC.get(Constants.MDC_DOMAIN_ID))
-                .paymentToken(MDC.get(Constants.MDC_PAYMENT_TOKEN))
-                .info(otherInfo)
-                .build();
-        reService.addRe(reEvent);
-    }
-
 }

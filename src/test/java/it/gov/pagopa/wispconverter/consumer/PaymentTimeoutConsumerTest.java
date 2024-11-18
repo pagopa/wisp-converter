@@ -71,7 +71,7 @@ public class PaymentTimeoutConsumerTest {
         when(message.getMessageId()).thenReturn("messageId");
         when(message.getSequenceNumber()).thenReturn(1L);
 
-        doNothing().when(reService).addRe(any());
+        doNothing().when(reService).sendEvent(any(), any(), any(), any());
 
         // Mock the message body
         ReceiptDto receiptDto = new ReceiptDto();
@@ -82,7 +82,7 @@ public class PaymentTimeoutConsumerTest {
 
         paymentTimeoutConsumer.processMessage(context);
 
-        verify(receiptService, times(1)).sendKoPaaInviaRtToCreditorInstitution(anyString());
+        verify(receiptService, times(1)).sendKoPaaInviaRtToCreditorInstitution(anyList());
     }
 
     @Test

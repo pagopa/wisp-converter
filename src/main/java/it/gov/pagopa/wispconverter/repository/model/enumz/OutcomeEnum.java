@@ -1,24 +1,22 @@
 package it.gov.pagopa.wispconverter.repository.model.enumz;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 
+@AllArgsConstructor
+@Getter
 public enum OutcomeEnum {
+    OK("Operation completed successfully"),
+    ERROR("Generic error occurred during execution"),
+    SENDING_RT_FAILED_STORED_IN_DEADLETTER(""),
+    SENDING_RT_FAILED_REJECTED_BY_CI(""),
+    SENDING_RT_FAILED_RESCHEDULED_SUCCESSFULLY(""),
+    SENDING_RT_FAILED_NOT_RESCHEDULED_DUE_ERROR(""),
+    SENDING_RT_FAILED_NOT_RESCHEDULED_DUE_MAX_RETRIES(""),
+    COMMUNICATION_FAILURE(""),
+    SENDING_RT_FAILED("");
 
-    @Schema(description = "Correctly sent request to HTTP endpoint. In NDP it is mapped with value 'INVIATA'.")
-    SEND,
+    private final String description;
 
-    @Schema(description = "Failed to send request to HTTP endpoint. In NDP it is mapped with value 'INVIATA_KO'")
-    SEND_FAILURE,
 
-    @Schema(description = "Received an OK response from HTTP endpoint. In NDP it is mapped with value 'RICEVUTA_KO'")
-    RECEIVED,
-
-    @Schema(description = "Received a failure response from endpoint. In NDP it is mapped with value 'RICEVUTA_KO'")
-    RECEIVED_FAILURE,
-
-    @Schema(description = "Failed to receive response at all from endpoint. In NDP it is mapped with value 'NO_RICEVUTA'")
-    NEVER_RECEIVED,
-
-    @Schema(description = "Executed internal step on execution. In NDP it is mapped with value 'CAMBIO_STATO'")
-    EXECUTED_INTERNAL_STEP,
 }

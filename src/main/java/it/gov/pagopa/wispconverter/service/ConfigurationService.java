@@ -20,13 +20,13 @@ public class ConfigurationService {
 
     private final ConfigurationRepository configurationRepositoryRepository;
 
-    public String getCreditorInstitutionConfiguration(){
+    public String getCreditorInstitutionConfiguration() {
         ConfigurationEntity configurationEntity = configurationRepositoryRepository.findById(CREDITOR_INSTITUTION_ID)
                 .orElseThrow(() -> new AppException(AppErrorCodeMessageEnum.CONFIGURATION_NOT_FOUND));
         return configurationEntity.getContent();
     }
 
-    public String getStationConfiguration(){
+    public String getStationConfiguration() {
         ConfigurationEntity configurationEntity = configurationRepositoryRepository.findById(STATION_ID)
                 .orElseThrow(() -> new AppException(AppErrorCodeMessageEnum.CONFIGURATION_NOT_FOUND));
         return configurationEntity.getContent();

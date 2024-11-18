@@ -1,7 +1,5 @@
-package it.gov.pagopa.wispconverter.controller.advice;
+package it.gov.pagopa.wispconverter.exception;
 
-import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
-import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.ErrorUtil;
 import it.gov.pagopa.wispconverter.util.MDCUtil;
@@ -31,33 +29,43 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     private final ErrorUtil errorUtil;
     private final MessageSource messageSource;
 
+    /**
+     * @param appEx the {@link AppException} to handle
+     * @return the {@link ErrorResponse} to return to the client
+     */
     @ExceptionHandler(AppException.class)
     public ErrorResponse handleAppException(AppException appEx) {
         String operationId = MDC.get(Constants.MDC_OPERATION_ID);
 
-        if( appEx.getError() == AppErrorCodeMessageEnum.ERROR || appEx.getError() == AppErrorCodeMessageEnum.GENERIC_ERROR ) {
-            log.error(String.format("[ALERT] AppException: operation-id=[%s]", operationId!=null?operationId:"n/a"), appEx);
+        if (appEx.getError() == AppErrorCodeMessageEnum.ERROR || appEx.getError() == AppErrorCodeMessageEnum.GENERIC_ERROR) {
+            log.error(String.format("[ALERT] AppException: operation-id=[%s]", operationId != null ? operationId : "n/a"), appEx);
         } else {
-            log.error(String.format("AppException: operation-id=[%s]", operationId!=null?operationId:"n/a"), appEx);
+            log.error(String.format("AppException: operation-id=[%s]", operationId != null ? operationId : "n/a"), appEx);
         }
 
-        ErrorResponse errorResponse = errorUtil.forAppException(appEx);
-        ProblemDetail problemDetail = errorResponse.updateAndGetBody(this.messageSource, LocaleContextHolder.getLocale());
-        errorUtil.finalizeError(problemDetail, errorResponse.getStatusCode().value());
-
-        return errorResponse;
+        return getErrorResponse(appEx, appEx);
     }
 
+    /**
+     * @param ex the {@link Exception} to handle
+     * @return the {@link ErrorResponse} to return to the client
+     */
     @ExceptionHandler(Exception.class)
     public ErrorResponse handleGenericException(Exception ex) {
         String operationId = MDC.get(Constants.MDC_OPERATION_ID);
-        log.error(String.format("GenericException: operation-id=[%s]", operationId!=null?operationId:"n/a"), ex);
+        log.error(String.format("GenericException: operation-id=[%s]", operationId != null ? operationId : "n/a"), ex);
 
         AppException appEx = new AppException(ex, AppErrorCodeMessageEnum.ERROR, ex.getMessage());
+
+        return getErrorResponse(ex, appEx);
+    }
+
+    private ErrorResponse getErrorResponse(Exception ex, AppException appEx) {
         ErrorResponse errorResponse = errorUtil.forAppException(appEx);
         ProblemDetail problemDetail = errorResponse.updateAndGetBody(this.messageSource, LocaleContextHolder.getLocale());
-        errorUtil.finalizeError(problemDetail, errorResponse.getStatusCode().value());
+        errorUtil.finalizeError(ex, problemDetail, errorResponse.getStatusCode().value());
 
+        log.error("Failed API operation {} - error: {}", MDC.get(Constants.MDC_BUSINESS_PROCESS), errorResponse);
         return errorResponse;
     }
 
@@ -65,7 +73,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     protected ResponseEntity<Object> handleExceptionInternal(Exception ex, Object body, HttpHeaders headers, HttpStatusCode statusCode, WebRequest request) {
         if (body == null && ex instanceof ErrorResponse errorResponse) {
             ProblemDetail problemDetail = errorResponse.updateAndGetBody(this.messageSource, LocaleContextHolder.getLocale());
-            errorUtil.finalizeError(problemDetail, errorResponse.getStatusCode().value());
+            errorUtil.finalizeError(ex, problemDetail, errorResponse.getStatusCode().value());
 
             body = problemDetail;
         } else {

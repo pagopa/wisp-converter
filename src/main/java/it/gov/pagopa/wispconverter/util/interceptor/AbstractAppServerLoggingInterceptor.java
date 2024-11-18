@@ -1,7 +1,7 @@
 package it.gov.pagopa.wispconverter.util.interceptor;
 
 import it.gov.pagopa.wispconverter.util.Constants;
-import it.gov.pagopa.wispconverter.util.Trace;
+import it.gov.pagopa.wispconverter.util.EndpointRETrace;
 import it.gov.pagopa.wispconverter.util.client.RequestResponseLoggingProperties;
 import it.gov.pagopa.wispconverter.util.filter.RepeatableContentCachingRequestWrapper;
 import jakarta.servlet.http.HttpServletRequest;
@@ -78,13 +78,13 @@ public abstract class AbstractAppServerLoggingInterceptor implements HandlerInte
                 this.responsePretty = response.isPretty();
             }
         }
-        this.sessionIdPattern = Pattern.compile("sessionId=([a-zA-Z0-9_-]+)");
+        this.sessionIdPattern = Pattern.compile("(idSession|sessionId)=([a-zA-Z0-9_-]+)");
     }
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         if (handler instanceof HandlerMethod handlerMethod) {
-            Trace trace = handlerMethod.getMethod().getAnnotation(Trace.class);
+            EndpointRETrace trace = handlerMethod.getMethod().getAnnotation(EndpointRETrace.class);
             if (trace != null) {
                 handleMDCSessionContent(request, trace);
                 request(MDC.get(Constants.MDC_OPERATION_ID), request);
@@ -97,7 +97,7 @@ public abstract class AbstractAppServerLoggingInterceptor implements HandlerInte
     @Override
     public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
         if (handler instanceof HandlerMethod handlerMethod) {
-            Trace trace = handlerMethod.getMethod().getAnnotation(Trace.class);
+            EndpointRETrace trace = handlerMethod.getMethod().getAnnotation(EndpointRETrace.class);
             if (trace != null) {
                 String operationId = MDC.get(Constants.MDC_OPERATION_ID);
                 String executionTime = MDC.get(Constants.MDC_EXECUTION_TIME);
@@ -359,7 +359,7 @@ public abstract class AbstractAppServerLoggingInterceptor implements HandlerInte
         }
     }
 
-    private void handleMDCSessionContent(HttpServletRequest request, Trace trace) {
+    private void handleMDCSessionContent(HttpServletRequest request, EndpointRETrace trace) {
         String operationId = UUID.randomUUID().toString();
         MDC.put(Constants.MDC_START_TIME, String.valueOf(System.currentTimeMillis()));
         MDC.put(Constants.MDC_OPERATION_ID, operationId);
@@ -367,11 +367,11 @@ public abstract class AbstractAppServerLoggingInterceptor implements HandlerInte
 
         String queryString = request.getQueryString();
 
-        if(queryString != null) {
+        if (queryString != null) {
             // include sessionID in MDC
             Matcher sessionIdMatcher = this.sessionIdPattern.matcher(queryString);
             if (sessionIdMatcher.find()) {
-                MDC.put(Constants.MDC_SESSION_ID, sessionIdMatcher.group(1));
+                MDC.put(Constants.MDC_SESSION_ID, sessionIdMatcher.group(2));
             }
         }
     }

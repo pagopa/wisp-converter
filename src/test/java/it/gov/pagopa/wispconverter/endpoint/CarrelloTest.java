@@ -8,10 +8,7 @@ import it.gov.pagopa.wispconverter.repository.NavToIuvMappingRepository;
 import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.ReceiptDeadLetterRepository;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
-import it.gov.pagopa.wispconverter.service.ConfigCacheService;
-import it.gov.pagopa.wispconverter.service.PaaInviaRTSenderService;
-import it.gov.pagopa.wispconverter.service.ReceiptService;
-import it.gov.pagopa.wispconverter.service.RecoveryService;
+import it.gov.pagopa.wispconverter.service.*;
 import it.gov.pagopa.wispconverter.utils.TestUtils;
 import org.junit.Assert;
 import org.junit.jupiter.api.Test;
@@ -78,6 +75,8 @@ class CarrelloTest {
     private NavToIuvMappingRepository navToIuvMappingRepository;
     @MockBean
     private ReceiptDeadLetterRepository receiptDeadLetterRepository;
+    @MockBean
+    private ReService reService;
 
     @Test
     void success() throws Exception {

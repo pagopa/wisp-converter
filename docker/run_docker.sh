@@ -27,16 +27,16 @@ if test -f "$FILE"; then
 fi
 config=$(yq  -r '."microservice-chart".envConfig' ../helm/values-$ENV.yaml)
 IFS=$'\n'
-for line in $(echo "$config" | jq -r '. | to_entries[] | select(.key) | "\(.key)=\(.value)"'); do
+for line in $(echo "$config" | yq -r '. | to_entries[] | select(.key) | "\(.key)=\(.value)"'); do
     echo "$line" >> .env
 done
 
-keyvault=$(yq  -r '."microservice-chart".keyvault.name' ../helm/values-$ENV.yaml)
-secret=$(yq  -r '."microservice-chart".envSecret' ../helm/values-$ENV.yaml)
-for line in $(echo "$secret" | jq -r '. | to_entries[] | select(.key) | "\(.key)=\(.value)"'); do
+keyvault=$(yq  -r '."microservice-chart".secretProvider.keyvault.name' ../helm/values-$ENV.yaml)
+secret=$(yq  -r '."microservice-chart".secretProvider.envSecrets' ../helm/values-$ENV.yaml)
+for line in $(echo "$secret" | yq -r '. | to_entries[] | select(.key) | "\(.key)=\(.value)"'); do
   IFS='=' read -r -a array <<< "$line"
   response=$(az keyvault secret show --vault-name $keyvault --name "${array[1]}")
-  value=$(echo "$response" | jq -r '.value')
+  value=$(echo "$response" | yq -r '.value')
   echo "${array[0]}=$value" >> .env
 done
 
