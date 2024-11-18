@@ -92,7 +92,7 @@ public class CommonUtility {
                     query,
                     null);
         } catch (Exception e) {
-            throw new AppException(AppErrorCodeMessageEnum.PARSING_GENERIC_ERROR, e.getMessage());
+            throw new AppException(e, AppErrorCodeMessageEnum.PARSING_GENERIC_ERROR, e.getMessage());
         }
     }
 
@@ -127,7 +127,7 @@ public class CommonUtility {
         try {
             return configurations.get(key).getValue();
         } catch (NullPointerException e) {
-            throw new AppException(AppErrorCodeMessageEnum.ERROR, "ConfigurationKey '" + key + "' not found in cache");
+            throw new AppException(e, AppErrorCodeMessageEnum.ERROR, "ConfigurationKey '" + key + "' not found in cache");
         }
     }
 
@@ -203,7 +203,7 @@ public class CommonUtility {
                 station = configCacheService.getStationsByCreditorInstitutionAndSegregationCodeFromCache(creditorInstitutionId, segregationCodeFromNoticeNumber);
 
             } catch (NumberFormatException e) {
-                throw new AppException(AppErrorCodeMessageEnum.PAYMENT_POSITION_NOT_VALID, noticeNumber, "In order to check the station validity is required a notice number from which the segregation code must be extracted, but it is not correctly set as numeric string in the payment position.");
+                throw new AppException(e, AppErrorCodeMessageEnum.PAYMENT_POSITION_NOT_VALID, noticeNumber, "In order to check the station validity is required a notice number from which the segregation code must be extracted, but it is not correctly set as numeric string in the payment position.");
             }
 
         } else {
