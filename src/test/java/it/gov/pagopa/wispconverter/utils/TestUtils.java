@@ -213,6 +213,7 @@ public class TestUtils {
                 .replace("{datiSpecificiRiscossione}", datiSpecificiRiscossione)
                 .replace("{pa}", pa)
                 .replace("{iuv}", iuv)
+                .replace("{dataOraMessaggioRichiesta}", "2017-09-06")
                 .replaceAll("\\{amount}", amount);
         String nodoInviaRPT = TestUtils.loadFileContent("/requests/nodoInviaRPT.xml");
         return nodoInviaRPT

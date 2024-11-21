@@ -12,6 +12,7 @@ import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.ReceiptDeadLetterRepository;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
 import it.gov.pagopa.wispconverter.service.ConfigCacheService;
+import it.gov.pagopa.wispconverter.service.ReService;
 import it.gov.pagopa.wispconverter.service.ReceiptService;
 import it.gov.pagopa.wispconverter.service.RecoveryService;
 import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
@@ -86,6 +87,8 @@ class RptTest {
     private NavToIuvMappingRepository navToIuvMappingRepository;
     @MockBean
     private ReceiptDeadLetterRepository receiptDeadLetterRepository;
+    @MockBean
+    private ReService reService;
 
     private void setConfigCacheStoredData(String servicePath, int primitiveVersion) {
         StationCreditorInstitutionDto stationCreditorInstitutionDto = new StationCreditorInstitutionDto();

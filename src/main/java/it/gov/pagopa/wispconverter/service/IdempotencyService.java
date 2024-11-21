@@ -43,7 +43,7 @@ public class IdempotencyService {
              */
             IdempotencyKeyEntity idempotencyKeyEntity = optIdempotencyKeyEntity.get();
             if (!receiptType.equals(idempotencyKeyEntity.getReceiptType())) {
-                throw new AppException(AppErrorCodeMessageEnum.RECEIPT_GENERATION_ANOMALY_ON_PROCESSING, idempotencyKey);
+                throw new AppException(AppErrorCodeMessageEnum.RECEIPT_GENERATION_ANOMALY_ON_PROCESSING, idempotencyKey, idempotencyKeyEntity.getReceiptType(), receiptType);
             }
 
             // check the processability of the idempotency key

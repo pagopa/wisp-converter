@@ -12,45 +12,45 @@ import java.io.InputStream;
 
 public class RepeatableContentCachingRequestWrapper extends ContentCachingRequestWrapper {
 
-  public RepeatableContentCachingRequestWrapper(HttpServletRequest request) throws IOException {
-    super(request);
-    StreamUtils.drain(super.getInputStream());
-  }
-
-  @Override
-  public ServletInputStream getInputStream() throws IOException {
-    return new ByteServletInputStream(getContentAsByteArray());
-  }
-
-  private static class ByteServletInputStream extends ServletInputStream {
-
-    private final InputStream is;
-
-    private ByteServletInputStream(byte[] content) {
-      this.is = new ByteArrayInputStream(content);
+    public RepeatableContentCachingRequestWrapper(HttpServletRequest request) throws IOException {
+        super(request);
+        StreamUtils.drain(super.getInputStream());
     }
 
     @Override
-    public boolean isFinished() {
-      return true;
+    public ServletInputStream getInputStream() throws IOException {
+        return new ByteServletInputStream(getContentAsByteArray());
     }
 
-    @Override
-    public boolean isReady() {
-      return true;
-    }
+    private static class ByteServletInputStream extends ServletInputStream {
 
-    @Override
-    public void setReadListener(ReadListener readListener) { /* empty */ }
+        private final InputStream is;
 
-    @Override
-    public int read() throws IOException {
-      return this.is.read();
-    }
+        private ByteServletInputStream(byte[] content) {
+            this.is = new ByteArrayInputStream(content);
+        }
 
-    @Override
-    public void close() throws IOException {
-      this.is.close();
+        @Override
+        public boolean isFinished() {
+            return true;
+        }
+
+        @Override
+        public boolean isReady() {
+            return true;
+        }
+
+        @Override
+        public void setReadListener(ReadListener readListener) { /* empty */ }
+
+        @Override
+        public int read() throws IOException {
+            return this.is.read();
+        }
+
+        @Override
+        public void close() throws IOException {
+            this.is.close();
+        }
     }
-  }
 }

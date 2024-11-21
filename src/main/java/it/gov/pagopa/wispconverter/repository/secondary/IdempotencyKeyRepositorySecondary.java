@@ -1,4 +1,4 @@
-package it.gov.pagopa.wispconverter.secondary;
+package it.gov.pagopa.wispconverter.repository.secondary;
 
 import com.azure.spring.data.cosmos.repository.CosmosRepository;
 import it.gov.pagopa.wispconverter.repository.model.IdempotencyKeyEntity;

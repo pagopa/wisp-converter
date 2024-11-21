@@ -63,10 +63,13 @@ public class ErrorUtil {
         }
     }
 
-    public void finalizeError(ProblemDetail problemDetail, int statusCode) {
+    public void finalizeError(Exception ex, ProblemDetail problemDetail, int statusCode) {
         setExtraProperties(problemDetail);
         MDCUtil.setMDCError(problemDetail);
         MDCUtil.setMDCCloseFailedOperation(statusCode);
+        if (ex != null && ex.getStackTrace() != null && ex.getStackTrace().length > 0) {
+            MDC.put(Constants.MDC_ERROR_LINE, ex.getStackTrace()[0].toString());
+        }
     }
 
     public URI getTypeFromErrorCode(String errorCode) {

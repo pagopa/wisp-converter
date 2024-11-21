@@ -41,24 +41,24 @@ public class SecondaryCosmosConfig extends AbstractCosmosConfiguration {
 
     @Bean(name = "secondaryCosmosClient")
     public CosmosAsyncClient getCosmosAsyncClient() {
-    return new CosmosClientBuilder()
-        .key(cosmosKey)
-        .endpoint(cosmosUri)
-        .preferredRegions(List.of(readRegion))
-        .buildAsyncClient();
+        return new CosmosClientBuilder()
+                .key(cosmosKey)
+                .endpoint(cosmosUri)
+                .preferredRegions(List.of(readRegion))
+                .buildAsyncClient();
     }
 
     @Bean(name = "secondaryCosmosTemplate")
     public CosmosTemplate secondaryCosmosTemplate(@Qualifier("secondaryCosmosClient") CosmosAsyncClient client,
-                                                     MappingCosmosConverter mappingCosmosConverter) {
+                                                  MappingCosmosConverter mappingCosmosConverter) {
         return new CosmosTemplate(client, cosmosDatabase, cosmosConfig(), mappingCosmosConverter);
     }
 
     @Override
     public CosmosConfig cosmosConfig() {
         return CosmosConfig.builder()
-                       .enableQueryMetrics(cosmosQueryMetrics)
-                       .build();
+                .enableQueryMetrics(cosmosQueryMetrics)
+                .build();
     }
 
     @Override

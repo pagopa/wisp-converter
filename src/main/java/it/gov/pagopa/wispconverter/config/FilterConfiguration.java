@@ -29,7 +29,7 @@ public class FilterConfiguration {
     }
 
     @Bean
-    @Order(Ordered.HIGHEST_PRECEDENCE+1)
+    @Order(Ordered.HIGHEST_PRECEDENCE + 1)
     public RequestResponseWrapperFilter requestResponseWrapperFilter() {
         RequestResponseWrapperFilter filter = new RequestResponseWrapperFilter();
         filter.setExcludeUrlPatterns(excludeUrlPatterns);

@@ -1,4 +1,4 @@
-package it.gov.pagopa.wispconverter.custom;
+package it.gov.pagopa.wispconverter.util.client.decouplercaching;
 
 import it.gov.pagopa.wispconverter.exception.AppException;
 import org.springframework.core.ParameterizedTypeReference;

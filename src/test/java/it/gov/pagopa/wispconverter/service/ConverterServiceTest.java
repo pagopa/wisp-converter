@@ -108,8 +108,8 @@ class ConverterServiceTest {
 		try {
 			converterService.convert(UUID.randomUUID().toString());
 		} catch (Exception e) {
-			if (e.getMessage().equals("mock-exception")) {
-				verify(receiptService, times(1)).sendRTKoFromSessionId(anyString(), any());
+			if (e.getMessage().equals("org.springframework.dao.OptimisticLockingFailureException: mock-exception")) {
+				verify(receiptService, times(1)).sendRTKoFromSessionId(anyString());
 			} else {
 				Assertions.fail();
 			}
@@ -123,8 +123,8 @@ class ConverterServiceTest {
 		try {
 			converterService.convert(UUID.randomUUID().toString());
 		} catch (AppException e) {
-			if (e.getMessage().equals(AppErrorCodeMessageEnum.GENERIC_ERROR.getDetail())) {
-				verify(receiptService, times(1)).sendRTKoFromSessionId(anyString(), any());
+			if (e.getMessage().contains(AppErrorCodeMessageEnum.GENERIC_ERROR.getDetail())) {
+				verify(receiptService, times(1)).sendRTKoFromSessionId(anyString());
 			} else {
 				Assertions.fail();
 			}

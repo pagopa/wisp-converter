@@ -17,10 +17,10 @@ public class ReceiptTimerRequest {
 
     private String sessionId;
 
-    @Pattern(regexp="\\w*")
+    @Pattern(regexp = "\\w*")
     private String fiscalCode;
 
-    @Pattern(regexp="\\d*")
+    @Pattern(regexp = "\\d*")
     private String noticeNumber;
 
     @PositiveOrZero

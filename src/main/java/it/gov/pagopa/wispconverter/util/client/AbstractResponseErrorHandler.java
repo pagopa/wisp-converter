@@ -15,34 +15,33 @@ import java.nio.charset.StandardCharsets;
 
 public abstract class AbstractResponseErrorHandler implements ResponseErrorHandler {
 
-  protected byte[] getResponseBody(ClientHttpResponse response) {
-    try {
-      return FileCopyUtils.copyToByteArray(response.getBody());
+    protected byte[] getResponseBody(ClientHttpResponse response) {
+        try {
+            return FileCopyUtils.copyToByteArray(response.getBody());
+        } catch (IOException ex) {
+            // ignore
+        }
+        return new byte[0];
     }
-    catch (IOException ex) {
-      // ignore
+
+    @Nullable
+    protected Charset getCharset(ClientHttpResponse response) {
+        HttpHeaders headers = response.getHeaders();
+        MediaType contentType = headers.getContentType();
+        return (contentType != null ? contentType.getCharset() : null);
     }
-    return new byte[0];
-  }
 
-  @Nullable
-  protected Charset getCharset(ClientHttpResponse response) {
-    HttpHeaders headers = response.getHeaders();
-    MediaType contentType = headers.getContentType();
-    return (contentType != null ? contentType.getCharset() : null);
-  }
+    protected String getErrorMessage(int rawStatusCode, String statusText, @Nullable byte[] responseBody, @Nullable Charset charset) {
+        String preface = rawStatusCode + " " + statusText + ": ";
+        if (ObjectUtils.isEmpty(responseBody)) {
+            return preface + "[no body]";
+        }
+        charset = (charset != null ? charset : StandardCharsets.UTF_8);
 
-  protected String getErrorMessage(int rawStatusCode, String statusText, @Nullable byte[] responseBody, @Nullable Charset charset) {
-    String preface = rawStatusCode + " " + statusText + ": ";
-    if (ObjectUtils.isEmpty(responseBody)) {
-      return preface + "[no body]";
+        String bodyText = new String(responseBody, charset);
+        bodyText = LogFormatUtils.formatValue(bodyText, -1, true);
+
+        return preface + bodyText;
     }
-    charset = (charset != null ? charset : StandardCharsets.UTF_8);
-
-    String bodyText = new String(responseBody, charset);
-    bodyText = LogFormatUtils.formatValue(bodyText, -1, true);
-
-    return preface + bodyText;
-  }
 
 }

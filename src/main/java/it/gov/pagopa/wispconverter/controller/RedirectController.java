@@ -10,10 +10,12 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
+import it.gov.pagopa.wispconverter.repository.model.enumz.OutcomeEnum;
+import it.gov.pagopa.wispconverter.repository.model.enumz.WorkflowStatus;
 import it.gov.pagopa.wispconverter.service.ConverterService;
 import it.gov.pagopa.wispconverter.util.Constants;
+import it.gov.pagopa.wispconverter.util.EndpointRETrace;
 import it.gov.pagopa.wispconverter.util.ErrorUtil;
-import it.gov.pagopa.wispconverter.util.Trace;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
@@ -47,35 +49,28 @@ public class RedirectController {
             @ApiResponse(responseCode = "302", description = "Redirect to Checkout service.", content = @Content(schema = @Schema()))
     })
     @GetMapping(value = "/payments")
-    @Trace(businessProcess = BP_REDIRECT, reEnabled = true)
+    @EndpointRETrace(status = WorkflowStatus.CONVERSION_PROCESSED, businessProcess = BP_REDIRECT, reEnabled = true)
     public String redirect(@Parameter(description = "", example = "identificativoIntermediarioPA_sessionId")
                            @NotBlank(message = "{redirect.session-id.not-blank}")
                            @RequestParam("idSession") String idSession,
                            HttpServletResponse response) {
         try {
-            log.info("Invoking API operation redirect - args: {}", idSession.matches("[\\w\\-]*") ? idSession : "...");
             String redirectURI = converterService.convert(idSession);
-            log.info("Successful API operation redirect - result: {}", redirectURI);
             return "redirect:" + redirectURI;
-        } catch (AppException appException) {
-            ErrorResponse errorResponse = errorUtil.forAppException(appException);
+        } catch (Exception e) {
+            MDC.put(Constants.MDC_OUTCOME, OutcomeEnum.ERROR.name());
+            AppException appEx = e instanceof AppException appException
+                    ? appException
+                    : new AppException(e, AppErrorCodeMessageEnum.ERROR, e.getMessage());
+            ErrorResponse errorResponse = errorUtil.forAppException(appEx);
             ProblemDetail problemDetail = errorResponse.updateAndGetBody(this.messageSource, LocaleContextHolder.getLocale());
-            errorUtil.finalizeError(problemDetail, errorResponse.getStatusCode().value());
-            response.setStatus(200);
-            log.error("Failed API operation redirect - error: {}", errorResponse);
-            return "error";
-        } catch (Exception ex) {
-            String operationId = MDC.get(Constants.MDC_OPERATION_ID);
-            log.error(String.format("GenericException: operation-id=[%s]", operationId != null ? operationId : "n/a"), ex);
+            errorUtil.finalizeError(e, problemDetail, errorResponse.getStatusCode().value());
 
-            AppException appException = new AppException(ex, AppErrorCodeMessageEnum.ERROR, ex.getMessage());
-            ErrorResponse errorResponse = errorUtil.forAppException(appException);
-            ProblemDetail problemDetail = errorResponse.updateAndGetBody(this.messageSource, LocaleContextHolder.getLocale());
-            errorUtil.finalizeError(problemDetail, errorResponse.getStatusCode().value());
-            response.setStatus(200);
-            log.error("Failed API operation redirect - error: {}", errorResponse);
+            log.error("Failed API operation {} - error: {}", MDC.get(Constants.MDC_BUSINESS_PROCESS), errorResponse);
+
             return "error";
         }
     }
+
 
 }

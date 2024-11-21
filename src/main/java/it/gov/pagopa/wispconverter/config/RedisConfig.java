@@ -31,12 +31,31 @@ public class RedisConfig {
         return new LettuceConnectionFactory(redisConfiguration, lettuceConfig);
     }
 
-    @Bean(name="redisSimpleTemplate")
+    @Bean(name = "redisSimpleTemplate")
     public RedisTemplate<String, Object> registerRedisSimpleTemplate(final LettuceConnectionFactory connectionFactory, ObjectMapper objectMapper) {
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setKeySerializer(new StringRedisSerializer());
         Jackson2JsonRedisSerializer<Object> redisSerializer = new Jackson2JsonRedisSerializer<>(objectMapper, Object.class);
         template.setValueSerializer(redisSerializer);
+        template.setConnectionFactory(connectionFactory);
+        return template;
+    }
+
+    @Bean(name = "redisBinaryTemplate")
+    public RedisTemplate<String, byte[]> registerRedisBinaryTemplate(final LettuceConnectionFactory connectionFactory) {
+        RedisTemplate<String, byte[]> template = new RedisTemplate<>();
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setValueSerializer(new org.springframework.data.redis.serializer.RedisSerializer<byte[]>() {
+            @Override
+            public byte[] serialize(byte[] bytes) {
+                return bytes;
+            }
+
+            @Override
+            public byte[] deserialize(byte[] bytes) {
+                return bytes;
+            }
+        });
         template.setConnectionFactory(connectionFactory);
         return template;
     }

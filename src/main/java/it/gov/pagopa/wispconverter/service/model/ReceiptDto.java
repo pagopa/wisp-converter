@@ -2,7 +2,10 @@ package it.gov.pagopa.wispconverter.service.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.google.gson.Gson;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @Builder

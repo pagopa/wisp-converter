@@ -8,21 +8,21 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class AppServerLoggingInterceptor extends AbstractAppServerLoggingInterceptor {
 
-  public AppServerLoggingInterceptor(RequestResponseLoggingProperties serverLoggingProperties){
-    super(serverLoggingProperties);
-  }
-
-  @Override
-  protected void request(String operationId, HttpServletRequest request) {
-    if(log.isDebugEnabled()){
-      log.debug(createRequestMessage(operationId, request));
+    public AppServerLoggingInterceptor(RequestResponseLoggingProperties serverLoggingProperties) {
+        super(serverLoggingProperties);
     }
-  }
 
-  @Override
-  protected void response(String operationId, String executionTime, HttpServletRequest request, HttpServletResponse response) {
-    if(log.isDebugEnabled()){
-      log.debug(createResponseMessage(operationId, executionTime, request, response));
+    @Override
+    protected void request(String operationId, HttpServletRequest request) {
+        if (log.isDebugEnabled()) {
+            log.debug(createRequestMessage(operationId, request));
+        }
     }
-  }
+
+    @Override
+    protected void response(String operationId, String executionTime, HttpServletRequest request, HttpServletResponse response) {
+        if (log.isDebugEnabled()) {
+            log.debug(createResponseMessage(operationId, executionTime, request, response));
+        }
+    }
 }

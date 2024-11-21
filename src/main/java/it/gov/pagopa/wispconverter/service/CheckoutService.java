@@ -3,17 +3,15 @@ package it.gov.pagopa.wispconverter.service;
 import it.gov.pagopa.gen.wispconverter.client.cache.model.StationDto;
 import it.gov.pagopa.gen.wispconverter.client.checkout.model.CartRequestDto;
 import it.gov.pagopa.gen.wispconverter.client.checkout.model.CartResponseDto;
-import it.gov.pagopa.gen.wispconverter.client.checkout.model.PaymentNoticeDto;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
-import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
 import it.gov.pagopa.wispconverter.service.mapper.CartMapper;
-import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
 import it.gov.pagopa.wispconverter.service.model.session.PaymentNoticeContentDTO;
 import it.gov.pagopa.wispconverter.service.model.session.SessionDataDTO;
-import it.gov.pagopa.wispconverter.util.ReUtil;
+import it.gov.pagopa.wispconverter.util.Constants;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
@@ -52,14 +50,11 @@ public class CheckoutService {
             CartResponseDto response = apiInstance.postCarts(cart);
             location = response.getCheckoutRedirectUrl().toString();
 
-            // generate and save re events internal for change status
-            generateRE(sessionData, cart, location);
-
         } catch (RestClientException e) {
             throw new AppException(AppErrorCodeMessageEnum.CLIENT_CHECKOUT,
                     String.format("RestClientException ERROR [%s] - %s", e.getCause().getClass().getCanonicalName(), e.getMessage()));
         } catch (URISyntaxException e) {
-            throw new AppException(AppErrorCodeMessageEnum.CONFIGURATION_INVALID_STATION_REDIRECT_URL);
+            throw new AppException(AppErrorCodeMessageEnum.CONFIGURATION_INVALID_STATION_REDIRECT_URL, sessionData.getCommonFields().getStationId());
         }
 
         return location;
@@ -81,6 +76,7 @@ public class CheckoutService {
         returnUrls.setReturnErrorUrl(new URI(String.format(uriContent, "ERROR")));
         cart.setReturnUrls(returnUrls);
 
+        MDC.put(Constants.MDC_CART_ID, cart.getIdCart());
         return cart;
     }
 
@@ -121,24 +117,5 @@ public class CheckoutService {
         url = url.replace("//", "/");
 
         return protocol + "://" + url;
-    }
-
-    private void generateRE(SessionDataDTO sessionData, CartRequestDto cartRequest, String redirectUrl) {
-
-        // creating event to be persisted for RE
-        if (Boolean.TRUE.equals(isTracingOnREEnabled)) {
-            for (PaymentNoticeDto paymentNoticeFromCart : cartRequest.getPaymentNotices()) {
-                PaymentNoticeContentDTO paymentNotice = sessionData.getPaymentNoticeByNoticeNumber(paymentNoticeFromCart.getNoticeNumber());
-                ReEventDto reEvent = ReUtil.getREBuilder()
-                        .status(InternalStepStatus.SAVED_RPT_IN_CART_RECEIVED_REDIRECT_URL_FROM_CHECKOUT)
-                        .domainId(paymentNotice.getFiscalCode())
-                        .iuv(paymentNotice.getIuv())
-                        .noticeNumber(paymentNotice.getNoticeNumber())
-                        .ccp(paymentNotice.getCcp())
-                        .info(String.format("Redirect URL = [%s]", redirectUrl))
-                        .build();
-                reService.addRe(reEvent);
-            }
-        }
     }
 }

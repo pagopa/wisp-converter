@@ -3,7 +3,7 @@ package it.gov.pagopa.wispconverter.repository.model;
 import com.azure.spring.data.cosmos.core.mapping.Container;
 import com.azure.spring.data.cosmos.core.mapping.GeneratedValue;
 import com.azure.spring.data.cosmos.core.mapping.PartitionKey;
-import it.gov.pagopa.wispconverter.repository.model.enumz.*;
+import it.gov.pagopa.wispconverter.repository.model.enumz.EventCategoryEnum;
 import lombok.Builder;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
@@ -28,29 +28,23 @@ public class ReEventEntity {
     @PartitionKey
     private String partitionKey;
 
-    private String requestId;
     private String operationId;
-    private String clientOperationId;
-    private ComponentEnum component;
     private Instant insertedTimestamp;
+    private String businessProcess;
     private EventCategoryEnum eventCategory;
-    private EventSubcategoryEnum eventSubcategory;
-    private CallTypeEnum callType;
-    private OutcomeEnum outcome;
+    private String status;
+    private String outcome;
     private String httpMethod;
     private String httpUri;
-    private String httpHeaders;
-    private String httpCallRemoteAddress;
     private Integer httpStatusCode;
     private Long executionTimeMs;
-    private String compressedPayload;
-    private Integer compressedPayloadLength;
-    private String businessProcess;
-    private String operationStatus;
-    private String operationErrorTitle;
-    private String operationErrorDetail;
+    private String requestHeaders;
+    private String responseHeaders;
+    private String requestPayload;
+    private String responsePayload;
     private String operationErrorCode;
-    private String primitive;
+    private String operationErrorLine;
+    private String operationErrorDetail;
     private String sessionId;
     private String cartId;
     private String iuv;
@@ -60,7 +54,6 @@ public class ReEventEntity {
     private String psp;
     private String station;
     private String channel;
-    private String status;
     private String paymentToken;
     private String info;
 }

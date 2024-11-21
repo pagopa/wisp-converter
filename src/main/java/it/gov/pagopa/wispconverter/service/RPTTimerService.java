@@ -8,11 +8,9 @@ import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.CacheRepository;
 import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
-import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
-import it.gov.pagopa.wispconverter.service.model.re.ReEventDto;
+import it.gov.pagopa.wispconverter.repository.model.enumz.OutcomeEnum;
 import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.LogUtils;
-import it.gov.pagopa.wispconverter.util.ReUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
@@ -55,7 +53,11 @@ public class RPTTimerService {
     private RPTRequestRepository rptRequestRepository;
 
     @Autowired
-    public RPTTimerService(CacheRepository cacheRepository, ServiceBusSenderClient serviceBusSenderClient, ReService reService, RPTRequestRepository rptRequestRepository) {
+    public RPTTimerService(
+            CacheRepository cacheRepository,
+            ServiceBusSenderClient serviceBusSenderClient,
+            ReService reService,
+            RPTRequestRepository rptRequestRepository) {
         this.cacheRepository = cacheRepository;
         this.serviceBusSenderClient = serviceBusSenderClient;
         this.reService = reService;
@@ -64,16 +66,17 @@ public class RPTTimerService {
 
     @PostConstruct
     public void post() {
-        serviceBusSenderClient = new ServiceBusClientBuilder()
-                .connectionString(connectionString)
-                .sender()
-                .queueName(queueName)
-                .buildClient();
+        serviceBusSenderClient =
+                new ServiceBusClientBuilder()
+                        .connectionString(connectionString)
+                        .sender()
+                        .queueName(queueName)
+                        .buildClient();
     }
 
     /**
-     * This method add a new scheduled message in the queue.
-     * Note: This method use Redis Cache to handle the metadata of the message
+     * This method add a new scheduled message in the queue. Note: This method use Redis Cache to
+     * handle the metadata of the message
      *
      * @param message the message to send on the queue of the service bus.
      */
@@ -83,7 +86,7 @@ public class RPTTimerService {
             setRPTTimerInfoInMDC(sessionId);
 
             // checking if sessionId is present in container data
-            this.rptRequestRepository.findById(sessionId).orElseThrow(() -> new AppException(AppErrorCodeMessageEnum.PERSISTENCE_RPT_NOT_FOUND, sessionId));
+            checkIfRptExists(sessionId);
 
             String key = String.format(RPT_TIMER_MESSAGE_KEY_FORMAT, sessionId);
 
@@ -100,20 +103,30 @@ public class RPTTimerService {
             OffsetDateTime scheduledExpirationTime = OffsetDateTime.now().plusSeconds(expirationTime);
             Long sequenceNumber = serviceBusSenderClient.scheduleMessage(serviceBusMessage, scheduledExpirationTime);
 
-            try {
-                // insert in Redis cache sequenceNumber of the message
-                cacheRepository.insert(key, sequenceNumber.toString(), expirationTime, ChronoUnit.SECONDS);
+            tryToInsertKeyInRedis(message, key, sequenceNumber, sessionId);
 
-                // log event
-                log.info("Sent scheduled message_base64 {} to the queue: {}", LogUtils.encodeToBase64(sanitizeInput(message.toString())), queueName);
-                generateRE(InternalStepStatus.RPT_TIMER_CREATED, "Scheduled RPTTimerService: [" + message + "]");
-            } catch (Exception e) {
-                serviceBusSenderClient.cancelScheduledMessage(sequenceNumber);
+        }
+    }
 
-                // log event
-                log.debug("Timer not set due to an exception for rpt_timer_key: {} and sessionId: {}", sanitizeInput(key), sanitizeInput(sessionId));
-                generateRE(InternalStepStatus.RPT_TIMER_NOT_SET, "Exception timer not set: [" + sequenceNumber + "] for sessionId: [" + sessionId + "]");
-            }
+    private void checkIfRptExists(String sessionId) {
+        var rpt = this.rptRequestRepository.findById(sessionId);
+        if (rpt.isEmpty()) {
+            throw new AppException(AppErrorCodeMessageEnum.PERSISTENCE_RPT_NOT_FOUND, sessionId);
+        }
+    }
+
+    private void tryToInsertKeyInRedis(RPTTimerRequest message, String key, Long sequenceNumber, String sessionId) {
+        try {
+            // insert in Redis cache sequenceNumber of the message
+            cacheRepository.insert(key, sequenceNumber.toString(), expirationTime, ChronoUnit.SECONDS);
+            // log event
+            log.info("Sent scheduled message_base64 {} to the queue: {}", LogUtils.encodeToBase64(sanitizeInput(message.toString())), queueName);
+        } catch (Exception e) {
+            serviceBusSenderClient.cancelScheduledMessage(sequenceNumber);
+            // log event
+            MDC.put(Constants.MDC_OUTCOME, OutcomeEnum.ERROR.name());
+            MDC.put(Constants.MDC_INFO, "Exception timer not set: [" + sequenceNumber + "] for sessionId: [" + sessionId + "]");
+            log.debug("Timer not set due to an exception for rpt_timer_key: {} and sessionId: {}", sanitizeInput(key), sanitizeInput(sessionId));
         }
     }
 
@@ -134,14 +147,14 @@ public class RPTTimerService {
 
                 // cancel scheduled message in the service bus queue
                 callCancelScheduledMessage(sequenceNumber);
-                log.info("Canceled scheduled message for rpt_timer_base64 {}", LogUtils.encodeToBase64(sanitizeInput(sessionId)));
+                log.info("Canceled scheduled message for rpt_timer_base64 {}",
+                        LogUtils.encodeToBase64(sanitizeInput(sessionId)));
 
                 // delete the sequenceNumber from the Redis cache
                 cacheRepository.delete(key);
 
                 // log event
                 log.debug("Deleted sequence number {} for rpt_timer_base64-token: {} from cache", sequenceNumber, sanitizeInput(sessionId));
-                generateRE(InternalStepStatus.RPT_TIMER_DELETED, "Deleted sequence number: [" + sequenceNumber + "] for sessionId: [" + sessionId + "]");
             }
         }
     }
@@ -153,22 +166,9 @@ public class RPTTimerService {
                 // delete the message from the queue
                 serviceBusSenderClient.cancelScheduledMessage(sequenceNumber);
             } catch (Exception exception) {
-                throw new AppException(AppErrorCodeMessageEnum.PERSISTENCE_SERVICE_BUS_CANCEL_ERROR, exception.getMessage());
+                throw new AppException(
+                        AppErrorCodeMessageEnum.PERSISTENCE_SERVICE_BUS_CANCEL_ERROR, exception.getMessage());
             }
         }
     }
-
-
-    private void generateRE(InternalStepStatus status, String otherInfo) {
-        // setting data in MDC for next use
-        // TODO fix the info
-        ReEventDto reEvent = ReUtil.getREBuilder()
-                .status(status)
-                .domainId(MDC.get(Constants.MDC_DOMAIN_ID))
-                .paymentToken(MDC.get(Constants.MDC_PAYMENT_TOKEN))
-                .info(otherInfo)
-                .build();
-        reService.addRe(reEvent);
-    }
-
 }

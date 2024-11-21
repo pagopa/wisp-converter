@@ -3,7 +3,9 @@ package it.gov.pagopa.wispconverter.servicebus;
 import com.azure.messaging.servicebus.ServiceBusReceivedMessage;
 import com.azure.messaging.servicebus.ServiceBusReceivedMessageContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import it.gov.pagopa.wispconverter.repository.model.enumz.InternalStepStatus;
+import it.gov.pagopa.wispconverter.repository.model.enumz.OutcomeEnum;
+import it.gov.pagopa.wispconverter.repository.model.enumz.WorkflowStatus;
+import it.gov.pagopa.wispconverter.service.ReService;
 import it.gov.pagopa.wispconverter.service.ReceiptService;
 import it.gov.pagopa.wispconverter.service.model.ECommerceHangTimeoutMessage;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
@@ -13,7 +15,6 @@ import it.gov.pagopa.wispconverter.util.MDCUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.MDC;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
@@ -34,18 +35,19 @@ import java.util.List;
 public class ECommerceHangTimeoutConsumer extends SBConsumer {
 
     private final ObjectMapper mapper = new ObjectMapper();
-
+    private final ReceiptService receiptService;
+    private final ReService reService;
     @Value("${azure.sb.wisp-ecommerce-hang-timeout-queue.connectionString}")
     private String connectionString;
-
     @Value("${azure.sb.queue.ecommerce-hang-timeout.name}")
     private String queueName;
-
-    @Autowired
-    private ReceiptService receiptService;
-
     @Value("${disable-service-bus-receiver}")
     private boolean disableServiceBusReceiver;
+
+    public ECommerceHangTimeoutConsumer(ReceiptService receiptService, ReService reService) {
+        this.receiptService = receiptService;
+        this.reService = reService;
+    }
 
     @PostConstruct
     public void post() {
@@ -67,6 +69,7 @@ public class ECommerceHangTimeoutConsumer extends SBConsumer {
         MDCUtil.setSessionDataInfo("ecommerce-hang-timeout-trigger");
         ServiceBusReceivedMessage message = context.getMessage();
         log.debug("Processing message. Session: {}, Sequence #: {}. Contents: {}", message.getMessageId(), message.getSequenceNumber(), message.getBody());
+        OutcomeEnum outcome = OutcomeEnum.ERROR;
         try {
             // read the message
             ECommerceHangTimeoutMessage timeoutMessage = mapper.readValue(message.getBody().toStream(), ECommerceHangTimeoutMessage.class);
@@ -74,7 +77,7 @@ public class ECommerceHangTimeoutConsumer extends SBConsumer {
             // log event
             MDC.put(Constants.MDC_DOMAIN_ID, timeoutMessage.getFiscalCode());
             MDC.put(Constants.MDC_NOTICE_NUMBER, timeoutMessage.getNoticeNumber());
-            generateRE(InternalStepStatus.ECOMMERCE_HANG_TIMER_TRIGGER, "Expired eCommerce hang timer. A Negative sendRT will be sent: " + timeoutMessage);
+            MDC.put(Constants.MDC_SESSION_ID, timeoutMessage.getSessionId());
 
             // transform to string list
             var inputPaaInviaRTKo = List.of(ReceiptDto.builder()
@@ -83,10 +86,15 @@ public class ECommerceHangTimeoutConsumer extends SBConsumer {
                     .sessionId(timeoutMessage.getSessionId())
                     .build());
             receiptService.sendKoPaaInviaRtToCreditorInstitution(inputPaaInviaRTKo);
+
+            outcome = MDC.get(Constants.MDC_OUTCOME) == null ? OutcomeEnum.OK : OutcomeEnum.valueOf(MDC.get(Constants.MDC_OUTCOME));
         } catch (IOException e) {
             log.error("Error when read ECommerceHangTimeoutDto value from message: '{}'. Body: '{}'", message.getMessageId(), message.getBody());
+            outcome = MDC.get(Constants.MDC_OUTCOME) == null ? OutcomeEnum.ERROR : OutcomeEnum.valueOf(MDC.get(Constants.MDC_OUTCOME));
+        } finally {
+            reService.sendEvent(WorkflowStatus.ECOMMERCE_HANG_TIMER_IN_TIMEOUT, context.getMessage(), null, outcome);
         }
-        MDC.clear();
+
     }
 
 

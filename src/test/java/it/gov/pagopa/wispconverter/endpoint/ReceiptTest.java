@@ -11,10 +11,7 @@ import it.gov.pagopa.wispconverter.repository.NavToIuvMappingRepository;
 import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.ReceiptDeadLetterRepository;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
-import it.gov.pagopa.wispconverter.service.ConfigCacheService;
-import it.gov.pagopa.wispconverter.service.PaaInviaRTSenderService;
-import it.gov.pagopa.wispconverter.service.RecoveryService;
-import it.gov.pagopa.wispconverter.service.RtReceiptCosmosService;
+import it.gov.pagopa.wispconverter.service.*;
 import it.gov.pagopa.wispconverter.service.mapper.RTMapper;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
 import it.gov.pagopa.wispconverter.utils.TestUtils;
@@ -68,6 +65,8 @@ class ReceiptTest {
     private CacheRepository cacheRepository;
     @MockBean
     private NavToIuvMappingRepository navToIuvMappingRepository;
+    @MockBean
+    private ReService reService;
     @MockBean
     private RTMapper rtMapper;
 
@@ -425,7 +424,7 @@ class ReceiptTest {
                         .accept(MediaType.APPLICATION_JSON)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(MockMvcResultMatchers.status().is5xxServerError())
+                .andExpect(MockMvcResultMatchers.status().is4xxClientError())
                 .andDo(result -> {
                     assertNotNull(result);
                     assertNotNull(result.getResponse());

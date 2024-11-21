@@ -1,8 +1,8 @@
 package it.gov.pagopa.wispconverter.config.client;
 
-import it.gov.pagopa.wispconverter.custom.DecouplerApiClient;
 import it.gov.pagopa.wispconverter.service.ReService;
 import it.gov.pagopa.wispconverter.util.client.RequestResponseLoggingProperties;
+import it.gov.pagopa.wispconverter.util.client.decouplercaching.DecouplerApiClient;
 import it.gov.pagopa.wispconverter.util.client.decouplercaching.DecouplerCachingClientLoggingInterceptor;
 import it.gov.pagopa.wispconverter.util.client.decouplercaching.DecouplerCachingClientResponseErrorHandler;
 import lombok.RequiredArgsConstructor;
