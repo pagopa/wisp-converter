@@ -18,7 +18,7 @@ import org.springframework.context.annotation.Configuration;
 import java.util.List;
 
 @Configuration
-@EnableCosmosRepositories(basePackages = "it.gov.pagopa.wispconverter.secondary")
+@EnableCosmosRepositories(basePackages = "it.gov.pagopa.wispconverter.repository.secondary")
 @EnableConfigurationProperties
 @ConditionalOnExpression("'${info.properties.environment}'!='test'")
 @Slf4j
