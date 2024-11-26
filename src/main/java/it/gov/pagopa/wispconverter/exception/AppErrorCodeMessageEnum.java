@@ -64,7 +64,10 @@ public enum AppErrorCodeMessageEnum {
     CLIENT_CHECKOUT(3004, "Checkout error", "Error while communicating with Checkout service. {0}", HttpStatus.INTERNAL_SERVER_ERROR, "An error occurred while communicating with Checkout backend internal service in order to send a request about the cart creation. It can be related to any client problem, so the best way to handle this is to use the Technical Support's APIs in order to find the cause."),
     CLIENT_PAAINVIART(3005, "PaaInviaRT error", "Error while communicating with Station for paaInviaRT service. {0}", HttpStatus.INTERNAL_SERVER_ERROR, "An error occurred while communicating with the creditor institution's station (external service) in order to sending of a paaInviaRT request. It can be related to any client problem, so the best way to handle this is to use the Technical Support's APIs in order to find the cause."),
     CLIENT_CARTSESSION_CACHING(3006, "Cart caching client error", "Error while communicating with cart caching API. {0}", HttpStatus.INTERNAL_SERVER_ERROR, "An error occurred while communicating with an internal service endpoint dedicated to storing internal cache for handle unique session on cart. It can be related to any client problem, so the best way to handle this is to use the Technical Support's APIs in order to find the cause."),
-    UNKNOWN(0, "Unknown", "Unknown error", HttpStatus.INTERNAL_SERVER_ERROR, null);
+    UNKNOWN(0, "Unknown", "Unknown error", HttpStatus.INTERNAL_SERVER_ERROR, null),
+    // -- TIMER
+    DELETE_PAYMENT_TOKEN_TIMER_FAILURE(4001, "Impossible delete payment token timer", "Error while trying to delete payment token timer. Impossible finish operation for payment tokens: {0}.", HttpStatus.INTERNAL_SERVER_ERROR, "An error occurred wile trying to delete timer on payment tokens (timer for ClosePayment detection). This error may cause side effects such as sending ko receipt due to timer timeout.");
+
 
     private final Integer code;
     private final String title;

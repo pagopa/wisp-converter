@@ -2,6 +2,7 @@ package it.gov.pagopa.wispconverter.repository.model.enumz;
 
 public enum ReceiptStatusEnum {
     REDIRECT,
+    PAYING, // the execution flow between ClosePayment sending and paSendRTV2
     SENDING,
     SCHEDULED,
     SENT,
