@@ -84,8 +84,8 @@ public class ReceiptTimerController {
                 String sessionId = receiptDto.getSessionId();
                 SessionDataDTO sessionDataDTO = rptExtractorService.getSessionDataFromSessionId(sessionId);
                 // Update receipts-rt status to PAYING
-                sessionDataDTO.getAllPaymentNotices().forEach(paymentNotice ->
-                        rtReceiptCosmosService.updateReceiptStatus(paymentNotice.getFiscalCode(), paymentNotice.getIuv(), paymentNotice.getCcp(), ReceiptStatusEnum.PAYING));
+                sessionDataDTO.getAllRPTs().forEach(rpt ->
+                        rtReceiptCosmosService.updateReceiptStatus(receiptDto.getFiscalCode(), rpt.getIuv(), rpt.getCcp(), ReceiptStatusEnum.PAYING));
             }
             // cancel scheduled message
             receiptTimerService.cancelScheduledMessage(tokens);
