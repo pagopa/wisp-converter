@@ -87,13 +87,14 @@ public class ReceiptTimerController {
                 sessionDataDTO.getAllRPTs().forEach(rpt ->
                         rtReceiptCosmosService.updateReceiptStatus(receiptDto.getFiscalCode(), rpt.getIuv(), rpt.getCcp(), ReceiptStatusEnum.PAYING));
             }
-            // cancel scheduled message
-            receiptTimerService.cancelScheduledMessage(tokens);
         } catch (Exception e) {
             throw new AppException(AppErrorCodeMessageEnum.DELETE_PAYMENT_TOKEN_TIMER_FAILURE, e);
         } finally {
-            // do or retry to cancel scheduled message
+            // cancel scheduled message if PAYING status transition goes in exception
             receiptTimerService.cancelScheduledMessage(tokens);
         }
+
+        // cancel scheduled message
+        receiptTimerService.cancelScheduledMessage(tokens);
     }
 }
