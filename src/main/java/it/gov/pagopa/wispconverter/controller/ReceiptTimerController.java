@@ -10,7 +10,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import it.gov.pagopa.wispconverter.controller.model.ReceiptTimerRequest;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
-import it.gov.pagopa.wispconverter.repository.model.enumz.ReceiptStatusEnum;
 import it.gov.pagopa.wispconverter.repository.model.enumz.WorkflowStatus;
 import it.gov.pagopa.wispconverter.service.*;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
@@ -84,8 +83,7 @@ public class ReceiptTimerController {
                 String sessionId = receiptDto.getSessionId();
                 SessionDataDTO sessionDataDTO = rptExtractorService.getSessionDataFromSessionId(sessionId);
                 // Update receipts-rt status to PAYING
-                sessionDataDTO.getAllRPTs().forEach(rpt ->
-                        rtReceiptCosmosService.updateReceiptStatus(receiptDto.getFiscalCode(), rpt.getIuv(), rpt.getCcp(), ReceiptStatusEnum.PAYING));
+                sessionDataDTO.getAllRPTs().forEach(rtReceiptCosmosService::updateStatusToPaying);
             }
         } catch (Exception e) {
             throw new AppException(AppErrorCodeMessageEnum.DELETE_PAYMENT_TOKEN_TIMER_FAILURE, e);
