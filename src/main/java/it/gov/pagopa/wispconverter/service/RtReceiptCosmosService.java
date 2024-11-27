@@ -79,6 +79,18 @@ public class RtReceiptCosmosService {
     }
 
     @Transactional
+    public boolean updateReceiptStatus(RTEntity rtEntity, ReceiptStatusEnum status) {
+        try {
+            rtEntity.setReceiptStatus(status);
+            rtRepository.save(rtEntity);
+
+            return true;
+        } catch (CosmosException e) {
+            log.error("An exception occurred while saveRTEntity: " + e.getMessage());
+            return false;
+        }
+    }
+
     public boolean updateStatusToPaying(RPTContentDTO rptContentDTO) {
         String fiscalCode = rptContentDTO.getRpt().getDomain().getDomainId();
         Optional<RTEntity> rtEntityOpt = this.findById(fiscalCode, rptContentDTO.getIuv(), rptContentDTO.getCcp());
@@ -96,19 +108,6 @@ public class RtReceiptCosmosService {
         }
 
         return false;
-    }
-
-    @Transactional
-    public boolean updateReceiptStatus(RTEntity rtEntity, ReceiptStatusEnum status) {
-        try {
-            rtEntity.setReceiptStatus(status);
-            rtRepository.save(rtEntity);
-
-            return true;
-        } catch (CosmosException e) {
-            log.error("An exception occurred while saveRTEntity: " + e.getMessage());
-            return false;
-        }
     }
 
     public Optional<RTEntity> findById(String domainId, String iuv, String ccp) {
