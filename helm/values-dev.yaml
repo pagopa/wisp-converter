@@ -95,7 +95,7 @@ microservice-chart: &microservice-chart
     CLIENT_IUVGENERATOR_HOST: 'https://api.dev.platform.pagopa.it/shared/pagopa-iuvgenerator/v1'
     CLIENT_CHECKOUT_HOST: 'https://api.dev.platform.pagopa.it/checkout/carts-auth/v1'
     CLIENT_DECOUPLERCACHING_HOST: 'https://api.dev.platform.pagopa.it/wisp-converter/caching/api/v1'
-    CLIENT_CACHE_HOST: 'https://api.dev.platform.pagopa.it/api-config-cache/p/v1'
+    CLIENT_CACHE_HOST: 'https://api.dev.platform.pagopa.it/api-config-cache/p/v1/stakeholders/wisp/cache/schemas/v1'
     STATION_IN_GPD_PARTIAL_PATH: 'gpd-payments/api/v1'
     RT_SEND_MAX_RETRIES: '5'
     RT_SEND_SCHEDULING_TIME_IN_MINUTES: '1'
