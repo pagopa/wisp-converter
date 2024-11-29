@@ -6,12 +6,10 @@ import it.gov.pagopa.wispconverter.exception.AppException;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
 
-import java.util.List;
 import java.util.Map;
 
 @Service
@@ -25,21 +23,18 @@ public class ConfigCacheService {
     @Getter
     private it.gov.pagopa.gen.wispconverter.client.cache.model.ConfigDataV1Dto configData;
 
-    @Value("${client.cache.keys}")
-    private List<String> cacheKeys;
-
     public void refreshCache() {
         log.debug("loadCache from cache api");
 
         try {
             it.gov.pagopa.gen.wispconverter.client.cache.api.CacheApi apiInstance = new it.gov.pagopa.gen.wispconverter.client.cache.api.CacheApi(configCacheClient);
             if (configData == null) {
-                configData = apiInstance.get(cacheKeys);
+                configData = apiInstance.cache(false);
                 log.debug("loadCache from cache api...done");
             } else {
-                CacheVersionDto id = apiInstance.id();
-                if (!configData.getVersion().equals(id.getVersion())) {
-                    configData = apiInstance.get(cacheKeys);
+                CacheVersionDto id = apiInstance.idV1();
+                if (!configData.getVersion().equals(id)) {
+                    configData = apiInstance.cache(false);
                     log.debug("loadCache from cache api...done");
                 }
             }
