@@ -91,8 +91,5 @@ public class ReceiptTimerController {
             // cancel scheduled message if PAYING status transition goes in exception
             receiptTimerService.cancelScheduledMessage(tokens);
         }
-
-        // cancel scheduled message
-        receiptTimerService.cancelScheduledMessage(tokens);
     }
 }
