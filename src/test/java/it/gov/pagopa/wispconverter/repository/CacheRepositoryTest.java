@@ -22,10 +22,6 @@ class CacheRepositoryTest {
     @Qualifier("redisSimpleTemplate")
     private RedisTemplate<String, Object> redisSimpleTemplate;
 
-    @MockBean
-    @Qualifier("redisBinaryTemplate")
-    private RedisTemplate<String, byte[]> redisBinaryTemplate;
-
     @Mock
     private ValueOperations<String, Object> valueOperations;
 
