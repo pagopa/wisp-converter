@@ -41,7 +41,7 @@ public class ConfigCacheService {
 
         } catch (RestClientException e) {
             if (configData != null) {
-                log.debug("loadCache from cache api failed, using old version. Version: %s", configData.getVersion());
+                log.error("loadCache from cache api failed, using old version. Version: %s", configData.getVersion());
             } else {
                 throw new AppException(AppErrorCodeMessageEnum.CLIENT_APICONFIGCACHE,
                         String.format("RestClientException ERROR [%s] - %s", e.getCause().getClass().getCanonicalName(), e.getMessage()));
