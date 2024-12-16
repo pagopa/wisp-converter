@@ -16,7 +16,6 @@ import it.gov.pagopa.wispconverter.service.model.session.*;
 import it.gov.pagopa.wispconverter.util.CommonUtility;
 import it.gov.pagopa.wispconverter.util.Constants;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.util.Pair;
@@ -32,7 +31,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
-@Slf4j
 @RequiredArgsConstructor
 public class DebtPositionService {
 
@@ -43,10 +41,6 @@ public class DebtPositionService {
     private final it.gov.pagopa.gen.wispconverter.client.iuvgenerator.invoker.ApiClient iuvGeneratorClient;
 
     private final ReService reService;
-
-    private final ReceiptService receiptService;
-
-    private final DecouplerService decouplerService;
 
     private final ConfigCacheService configCacheService;
 
@@ -526,8 +520,8 @@ public class DebtPositionService {
                     it.gov.pagopa.gen.wispconverter.client.gpd.model.MultiplePaymentPositionModelDto multiplePaymentPositions = new MultiplePaymentPositionModelDto();
                     multiplePaymentPositions.setPaymentPositions(paymentPositionsToCreateForCreditorInstitution);
 
-                    // communicating with GPD service in order to update the existing payment position
-                    gpdClientInstance.createMultiplePositions(creditorInstitutionId, multiplePaymentPositions, MDC.get(Constants.MDC_REQUEST_ID), true);
+                    // communicating with GPD service in order to update the existing payment position (serviceType WISP)
+                    gpdClientInstance.createMultiplePositions(creditorInstitutionId, multiplePaymentPositions, MDC.get(Constants.MDC_REQUEST_ID), true, "WISP");
                 }
 
             } catch (RestClientException e) {

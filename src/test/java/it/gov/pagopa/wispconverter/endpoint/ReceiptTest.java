@@ -12,6 +12,7 @@ import it.gov.pagopa.wispconverter.repository.RPTRequestRepository;
 import it.gov.pagopa.wispconverter.repository.ReceiptDeadLetterRepository;
 import it.gov.pagopa.wispconverter.repository.model.RPTRequestEntity;
 import it.gov.pagopa.wispconverter.service.*;
+import it.gov.pagopa.wispconverter.service.mapper.RTMapper;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
 import it.gov.pagopa.wispconverter.utils.TestUtils;
 import lombok.SneakyThrows;
@@ -19,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -65,8 +67,11 @@ class ReceiptTest {
     private NavToIuvMappingRepository navToIuvMappingRepository;
     @MockBean
     private ReService reService;
+    @MockBean
+    private RTMapper rtMapper;
 
     @MockBean
+    @Qualifier("decouplerCachingClient")
     private it.gov.pagopa.gen.wispconverter.client.decouplercaching.invoker.ApiClient decouplerCachingClient;
 
     private String getPaSendRTPayload() {

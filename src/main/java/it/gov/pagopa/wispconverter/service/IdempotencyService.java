@@ -30,23 +30,31 @@ public class IdempotencyService {
     }
 
     public boolean isIdempotencyKeyProcessable(String idempotencyKey, ReceiptTypeEnum receiptType) {
-
         boolean isProcessable = true;
-
         // try to retrieve idempotency key entity from the storage and check if exists
         Optional<IdempotencyKeyEntity> optIdempotencyKeyEntity = idempotencyKeyRepository.findById(idempotencyKey);
-        if (optIdempotencyKeyEntity.isPresent()) {
 
-            /*
-              Check if receipt type (set in idempotency key) is equals to the one defined in the receipt entity.
-              If they are not equals it is an anomaly, so throw a dedicated exception
-             */
+        if (optIdempotencyKeyEntity.isPresent()) {
+            // Check if receipt type (set in idempotency key) is equals to the one defined in the receipt entity.
             IdempotencyKeyEntity idempotencyKeyEntity = optIdempotencyKeyEntity.get();
-            if (!receiptType.equals(idempotencyKeyEntity.getReceiptType())) {
+            ReceiptTypeEnum receiptTypeSent = idempotencyKeyEntity.getReceiptType();
+
+            if(receiptType.equals(ReceiptTypeEnum.OK) && receiptTypeSent.equals(ReceiptTypeEnum.KO)) {
+                // if coming receipt is OK and sent receipt is KO -> reset idempotency key (ie force receipt-ok sending)
+                idempotencyKeyEntity.setStatus(IdempotencyStatusEnum.FAILED);
+                idempotencyKeyEntity.setLockedAt(null);
+                idempotencyKeyEntity.setReceiptType(ReceiptTypeEnum.OK);
+                idempotencyKeyRepository.save(idempotencyKeyEntity);
+            } else if(receiptType.equals(ReceiptTypeEnum.KO) && receiptTypeSent.equals(ReceiptTypeEnum.OK)) {
+                // if coming receipt is KO and sent receipt is OK -> do nothing, it is an anomaly, so throw a dedicated exception
                 throw new AppException(AppErrorCodeMessageEnum.RECEIPT_GENERATION_ANOMALY_ON_PROCESSING, idempotencyKey, idempotencyKeyEntity.getReceiptType(), receiptType);
+            } else {
+                // same type between coming receipt and sent receipt [(OK,OK), (KO,KO)] -> do nothing
+                log.warn("Attempt to send a receipt of the same type (incoming receipt request {}, receipt type {} sent already) " +
+                        "will not be completed if it is locked or already successfully done.", receiptType, receiptTypeSent);
             }
 
-            // check the processability of the idempotency key
+            // check if the idempotency key is processable
             isProcessable = !IdempotencyStatusEnum.SUCCESS.equals(idempotencyKeyEntity.getStatus()) && isActiveLockExpired(idempotencyKeyEntity) || IdempotencyStatusEnum.FAILED.equals(idempotencyKeyEntity.getStatus());
         }
         return isProcessable;
