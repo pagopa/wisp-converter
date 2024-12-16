@@ -457,6 +457,7 @@ public class DebtPositionService {
         String nav = generateNavCodeFromIuvGenerator(creditorInstitutionId);
         if (!Constants.NODO_INVIA_CARRELLO_RPT.equals(MDC.get(Constants.MDC_PRIMITIVE))) {
             MDC.put(Constants.MDC_NOTICE_NUMBER, nav);
+            MDC.put(Constants.MDC_IUV, iuv);
         }
 
         // update the payment option to be used in bulk insert with the newly generated NAV code
@@ -487,6 +488,7 @@ public class DebtPositionService {
 
             // generating NAV code using standard AUX digit and the generated IUV code
             navCode = this.auxDigit + response.getIuv();
+
         } catch (RestClientException e) {
             throw new AppException(AppErrorCodeMessageEnum.CLIENT_IUVGENERATOR,
                     String.format(REST_CLIENT_LOG_STRING, e.getCause().getClass().getCanonicalName(), e.getMessage()));

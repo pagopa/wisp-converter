@@ -379,9 +379,15 @@ public abstract class AbstractAppClientLoggingInterceptor implements ClientHttpR
                             .build();
         }
         if (this.mustPersistEventOnRE) {
+            setInMDCAfterClientResponse(new String(body));
             reService.sendEvent(status, null, outcome, requestContext, responseContext);
+            deleteFromMDCAfterClientResponse();
         }
     }
 
     protected abstract WorkflowStatus getOperationStatus(String url, HttpMethod httpMethod);
+
+    protected abstract void setInMDCAfterClientResponse(String payload);
+
+    protected abstract void deleteFromMDCAfterClientResponse();
 }
