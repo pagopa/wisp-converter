@@ -16,7 +16,7 @@ import java.util.regex.Pattern;
 @Slf4j
 public class IuvGeneratorClientLoggingInterceptor extends AbstractAppClientLoggingInterceptor {
 
-    private final Pattern iuvPattern = Pattern.compile("\\\\\"iuv\\\\\":\\\\\"([0-9]+)\\\\\"");
+    private final Pattern iuvPattern = Pattern.compile("\\\"iuv\\\":\\\"([0-9]+)\\\"");
 
     public IuvGeneratorClientLoggingInterceptor(RequestResponseLoggingProperties clientLoggingProperties, ReService reService, Boolean isTracingOfClientOnREEnabled) {
         super(clientLoggingProperties, reService, ClientServiceEnum.IUV_GENERATOR);

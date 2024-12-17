@@ -16,7 +16,7 @@ import java.util.regex.Pattern;
 @Slf4j
 public class GpdClientLoggingInterceptor extends AbstractAppClientLoggingInterceptor {
 
-    private final Pattern navPattern = Pattern.compile("\\\\\"nav\\\\\":\\\\\"([0-9]+)\\\\\"");
+    private final Pattern navPattern = Pattern.compile("\\\"nav\\\":\\\"([0-9]+)\\\"");
 
 
     public GpdClientLoggingInterceptor(RequestResponseLoggingProperties clientLoggingProperties, ReService reService, Boolean isTracingOfClientOnREEnabled) {
