@@ -33,4 +33,14 @@ public class DecouplerCachingClientLoggingInterceptor extends AbstractAppClientL
         }
         return status;
     }
+
+    @Override
+    protected void setInMDCAfterClientResponse(String payload) {
+        // nothing to do
+    }
+
+    @Override
+    protected void deleteFromMDCAfterClientResponse() {
+        // nothing to do
+    }
 }
