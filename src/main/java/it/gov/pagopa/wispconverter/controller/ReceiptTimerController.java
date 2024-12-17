@@ -85,6 +85,8 @@ public class ReceiptTimerController {
                 // Update receipts-rt status to PAYING
                 sessionDataDTO.getAllRPTs().forEach(rtReceiptCosmosService::updateStatusToPaying);
             }
+        } catch (AppException appException) {
+            throw appException;
         } catch (Exception e) {
             throw new AppException(AppErrorCodeMessageEnum.RECEIPT_RT_STATUS_TO_PAYING_FAILURE, e);
         } finally {

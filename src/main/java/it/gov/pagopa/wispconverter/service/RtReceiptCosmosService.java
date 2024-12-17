@@ -103,7 +103,7 @@ public class RtReceiptCosmosService {
                 log.debug("Receipt-rt with id = {} has been updated with status PAYING", rtEntity.getId());
                 return true;
             }
-            log.warn("Attempt to update receipt-rt with id = {} has been failed because is the status is {}",
+            log.warn("Attempt to update receipt-rt with id = {} has been failed because the current status is {}",
                     rtEntity.getId(), rtEntity.getReceiptStatus());
         }
 
