@@ -44,7 +44,7 @@ microservice-chart: &microservice-chart
     allowPrivilegeEscalation: false
   resources: &resources
     requests:
-      memory: "640Mi"
+      memory: "1792Mi"
       cpu: "200m"
     limits:
       memory: "2048Mi"
@@ -63,7 +63,7 @@ microservice-chart: &microservice-chart
       - type: memory
         metricType: Utilization
         metadata:
-          value: "200"
+          value: "100"
     advanced:
       horizontalPodAutoscalerConfig:
         behavior:
