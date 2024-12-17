@@ -72,6 +72,7 @@ class RptTest {
     @MockBean
     private it.gov.pagopa.gen.wispconverter.client.cache.invoker.ApiClient cacheClient;
     @MockBean
+    @Qualifier("decouplerCachingClient")
     private it.gov.pagopa.gen.wispconverter.client.decouplercaching.invoker.ApiClient decouplerCachingClient;
     @Qualifier("redisSimpleTemplate")
     @MockBean
