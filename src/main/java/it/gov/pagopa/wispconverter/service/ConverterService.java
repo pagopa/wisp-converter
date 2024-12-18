@@ -53,7 +53,6 @@ public class ConverterService {
         try {
             // unmarshalling and mapping RPT content from request entity, generating session data
             SessionDataDTO sessionData = this.rptExtractorService.extractSessionData(rptRequestEntity.getPrimitive(), rptRequestEntity.getPayload());
-            // this.rptExtractorService.sendEventForExtractedRPTs(sessionData.getAllRPTs());  commented for more reducing logged statuses
 
             // prepare receipt-rt saving (nodoChiediCopiaRT)
             rtReceiptCosmosService.saveRTEntity(sessionData, ReceiptStatusEnum.REDIRECT);
