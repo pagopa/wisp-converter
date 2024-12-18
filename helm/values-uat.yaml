@@ -78,6 +78,7 @@ microservice-chart: &microservice-chart
     REDIS_PORT: "6380"
     COSMOS_URI: "https://pagopa-u-weu-nodo-wispconv-cosmos-account.documents.azure.com:443/"
     COSMOS_READ_REGION: "West Europe"
+    COSMOS_CONSISTENCY_LEVEL: "BOUNDED_STALENESS"
     PAAINVIART_SERVICE_BUS_NAME: "nodo_wisp_paainviart_queue"
     RECEIPT_TIMER_QUEUE_NAME: "nodo_wisp_payment_timeout_queue"
     RECEIPT_TIMER_DELTA_ACTIVATE_EXPTIME_MS: '60000'
