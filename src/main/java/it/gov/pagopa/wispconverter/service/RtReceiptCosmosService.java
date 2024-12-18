@@ -111,7 +111,7 @@ public class RtReceiptCosmosService {
     }
 
     public Optional<RTEntity> findById(String domainId, String iuv, String ccp) {
-        String id = String.format("%s_%s_%s", domainId, iuv, ccp);
+        String id = getId(domainId, iuv, ccp);
         // Remove illegal characters ['/', '\', '#'] because cannot be used in Resource ID
         return rtRepository.findById(id, new PartitionKey(id));
     }
