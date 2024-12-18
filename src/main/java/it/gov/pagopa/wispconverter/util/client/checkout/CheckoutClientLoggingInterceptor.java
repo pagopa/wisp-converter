@@ -24,4 +24,14 @@ public class CheckoutClientLoggingInterceptor extends AbstractAppClientLoggingIn
     protected WorkflowStatus getOperationStatus(String url, HttpMethod httpMethod) {
         return WorkflowStatus.COMMUNICATION_WITH_CHECKOUT_FOR_CART_CREATION_PROCESSED;
     }
+
+    @Override
+    protected void setInMDCAfterClientResponse(String payload) {
+        // nothing to do
+    }
+
+    @Override
+    protected void deleteFromMDCAfterClientResponse() {
+        // nothing to do
+    }
 }

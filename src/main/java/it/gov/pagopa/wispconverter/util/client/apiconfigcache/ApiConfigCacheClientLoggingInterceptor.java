@@ -22,4 +22,14 @@ public class ApiConfigCacheClientLoggingInterceptor extends AbstractAppClientLog
     protected WorkflowStatus getOperationStatus(String url, HttpMethod httpMethod) {
         return WorkflowStatus.COMMUNICATION_WITH_APICONFIG_CACHE_PROCESSED;
     }
+
+    @Override
+    protected void setInMDCAfterClientResponse(String payload) {
+        // nothing to do
+    }
+
+    @Override
+    protected void deleteFromMDCAfterClientResponse() {
+        // nothing to do
+    }
 }
