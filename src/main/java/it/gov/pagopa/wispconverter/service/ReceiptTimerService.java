@@ -17,7 +17,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
@@ -48,14 +47,14 @@ public class ReceiptTimerService {
     public void post() {
         ServiceBusClientBuilder builder = new ServiceBusClientBuilder();
         serviceBusSenderClient = builder.connectionString(connectionString)
-                        .sender()
-                        .queueName(queueName)
-                        .buildClient();
+                .sender()
+                .queueName(queueName)
+                .buildClient();
 
         serviceBusReceiverClient = builder.connectionString(connectionString)
-                        .receiver()
-                        .queueName(queueName)
-                        .buildClient();
+                .receiver()
+                .queueName(queueName)
+                .buildClient();
     }
 
     public void sendMessage(ReceiptTimerRequest message) {
@@ -112,15 +111,20 @@ public class ReceiptTimerService {
         // read sequence number from redis cache
         String sequenceNumberKey = String.format(CACHING_KEY_TEMPLATE, paymentToken);
         String sequenceNumberString = cacheRepository.read(sequenceNumberKey, String.class);
-        // read message without changing the service bus state
-        ServiceBusReceivedMessage message = serviceBusReceiverClient.peekMessage(Long.parseLong(sequenceNumberString));
-        log.debug("Get message. Session: {}, Sequence #: {}. Contents: {}", message.getMessageId(), message.getSequenceNumber(), message.getBody());
-        try {
-            return mapper.readValue(message.getBody().toStream(), ReceiptDto.class);
-        } catch (Exception e) {
-            log.error("Error when read ReceiptDto value from message: '{}'. Body: '{}'", message.getMessageId(), message.getBody());
-            return null;
+        ReceiptDto receiptDto = null;
+        if (sequenceNumberString != null) {
+            // read message without changing the service bus state
+            ServiceBusReceivedMessage message = serviceBusReceiverClient.peekMessage(Long.parseLong(sequenceNumberString));
+            if (message != null) {
+                try {
+                    log.debug("Get message. Session: {}, Sequence #: {}. Contents: {}", message.getMessageId(), message.getSequenceNumber(), message.getBody());
+                    receiptDto = mapper.readValue(message.getBody().toStream(), ReceiptDto.class);
+                } catch (Exception e) {
+                    log.error("Error when read ReceiptDto value from message: '{}'. Body: '{}'", message.getMessageId(), message.getBody());
+                }
+            }
         }
+        return receiptDto;
     }
 
     public void cancelScheduledMessage(List<String> paymentTokens) {

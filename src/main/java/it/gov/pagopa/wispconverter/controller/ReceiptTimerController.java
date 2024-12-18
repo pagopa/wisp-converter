@@ -11,7 +11,9 @@ import it.gov.pagopa.wispconverter.controller.model.ReceiptTimerRequest;
 import it.gov.pagopa.wispconverter.exception.AppErrorCodeMessageEnum;
 import it.gov.pagopa.wispconverter.exception.AppException;
 import it.gov.pagopa.wispconverter.repository.model.enumz.WorkflowStatus;
-import it.gov.pagopa.wispconverter.service.*;
+import it.gov.pagopa.wispconverter.service.RPTExtractorService;
+import it.gov.pagopa.wispconverter.service.ReceiptTimerService;
+import it.gov.pagopa.wispconverter.service.RtReceiptCosmosService;
 import it.gov.pagopa.wispconverter.service.model.ReceiptDto;
 import it.gov.pagopa.wispconverter.service.model.session.SessionDataDTO;
 import it.gov.pagopa.wispconverter.util.EndpointRETrace;
@@ -79,7 +81,7 @@ public class ReceiptTimerController {
             // set receipts-rt status to PAYING stands for waiting SendPaymentOutcome and then paSendRTV2 (after the latter, the state will change to SENDING -> SENT)
             // Get sessionData for the first ReceiptDTO because by design session-id is equal for all paymentTokens in input
             ReceiptDto receiptDto = receiptTimerService.peek(tokens.get(0));
-            if(receiptDto != null) {
+            if (receiptDto != null) {
                 String sessionId = receiptDto.getSessionId();
                 SessionDataDTO sessionDataDTO = rptExtractorService.getSessionDataFromSessionId(sessionId);
                 // Update receipts-rt status to PAYING
@@ -90,7 +92,7 @@ public class ReceiptTimerController {
         } catch (Exception e) {
             throw new AppException(AppErrorCodeMessageEnum.RECEIPT_RT_STATUS_TO_PAYING_FAILURE, e);
         } finally {
-            // cancel scheduled message if PAYING status transition goes in exception
+            // cancel scheduled message, either if PAYING status transition goes in exception or not
             receiptTimerService.cancelScheduledMessage(tokens);
         }
     }

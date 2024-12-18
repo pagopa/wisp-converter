@@ -38,7 +38,7 @@ public class IuvGeneratorClientLoggingInterceptor extends AbstractAppClientLoggi
             if (payload != null && !payload.isBlank()) {
                 Matcher matcher = iuvPattern.matcher(payload);
                 if (matcher.find()) {
-                    String noticeNumber = matcher.group(0);
+                    String noticeNumber = matcher.group(1);
                     if (noticeNumber != null && !noticeNumber.isBlank()) {
                         MDC.put(Constants.MDC_NOTICE_NUMBER, noticeNumber);
                     }
