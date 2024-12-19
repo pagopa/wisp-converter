@@ -2,14 +2,21 @@ package it.gov.pagopa.wispconverter.util.client.decouplercaching;
 
 import it.gov.pagopa.wispconverter.repository.model.enumz.WorkflowStatus;
 import it.gov.pagopa.wispconverter.service.ReService;
+import it.gov.pagopa.wispconverter.util.Constants;
 import it.gov.pagopa.wispconverter.util.client.AbstractAppClientLoggingInterceptor;
 import it.gov.pagopa.wispconverter.util.client.ClientServiceEnum;
 import it.gov.pagopa.wispconverter.util.client.RequestResponseLoggingProperties;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.http.HttpMethod;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Slf4j
 public class DecouplerCachingClientLoggingInterceptor extends AbstractAppClientLoggingInterceptor {
+
+    private final Pattern sessionIdPattern = Pattern.compile("\\\"sessionId\\\":\\\"([a-zA-Z0-9-]+)\\\"");
 
     public DecouplerCachingClientLoggingInterceptor(RequestResponseLoggingProperties clientLoggingProperties, ReService reService, Boolean isTracingOfClientOnREEnabled) {
         super(clientLoggingProperties, reService, ClientServiceEnum.DECOUPLER);
@@ -36,7 +43,19 @@ public class DecouplerCachingClientLoggingInterceptor extends AbstractAppClientL
 
     @Override
     protected void setInMDCAfterClientResponse(String payload) {
-        // nothing to do
+        try {
+            if (payload != null && !payload.isBlank()) {
+                Matcher matcher = sessionIdPattern.matcher(payload);
+                if (matcher.find()) {
+                    String sessionId = matcher.group(1);
+                    if (sessionId != null && !sessionId.isBlank()) {
+                        MDC.put(Constants.MDC_SESSION_ID, sessionId);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            // catch this but do nothing, as nothing is required to do
+        }
     }
 
     @Override
