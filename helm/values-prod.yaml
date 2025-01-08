@@ -4,7 +4,7 @@ microservice-chart: &microservice-chart
   fullnameOverride: ""
   image:
     repository: ghcr.io/pagopa/pagopa-wisp-converter
-    tag: "1.0.2"
+    tag: "1.0.6"
     pullPolicy: Always
   livenessProbe:
     httpGet:
@@ -44,7 +44,7 @@ microservice-chart: &microservice-chart
     allowPrivilegeEscalation: false
   resources: &resources
     requests:
-      memory: "640Mi"
+      memory: "1792Mi"
       cpu: "200m"
     limits:
       memory: "2048Mi"
@@ -63,7 +63,7 @@ microservice-chart: &microservice-chart
       - type: memory
         metricType: Utilization
         metadata:
-          value: "200"
+          value: "100"
     advanced:
       horizontalPodAutoscalerConfig:
         behavior:
@@ -97,6 +97,7 @@ microservice-chart: &microservice-chart
     REDIS_PORT: "6380"
     COSMOS_URI: "https://pagopa-p-weu-nodo-wispconv-cosmos-account.documents.azure.com:443/"
     COSMOS_READ_REGION: "North Europe"
+    COSMOS_CONSISTENCY_LEVEL: "BOUNDED_STALENESS"
     PAAINVIART_SERVICE_BUS_NAME: "nodo_wisp_paainviart_queue"
     RECEIPT_TIMER_QUEUE_NAME: "nodo_wisp_payment_timeout_queue"
     RECEIPT_TIMER_DELTA_ACTIVATE_EXPTIME_MS: '60000'
