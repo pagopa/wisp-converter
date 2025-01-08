@@ -140,7 +140,7 @@ public class PaaInviaRTSenderService {
                     ReResponseContext.builder()
                             .headers(response.getHeaders())
                             .statusCode(HttpStatus.valueOf(response.getStatusCode().value()))
-                            .payload(response.getBody() != null ? response.getBody() : null)
+                            .payload(response.getBody())
                             .build());
             FaultBean fault = paaInviaRTRisposta.getFault();
             String faultCode = "ND";
